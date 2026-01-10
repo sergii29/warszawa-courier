@@ -1,1 +1,461 @@
-<p><font color="#000000" size="3">&lt;!DOCTYPE html&gt;</font></p><p><font color="#000000" size="3">&lt;html lang="ru"&gt;</font></p><p><font color="#000000" size="3">&lt;head&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;meta charset="UTF-8"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;title&gt;Warszawa Courier Simulator&lt;/title&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;script src="https://telegram.org/js/telegram-web-app.js"&gt;&lt;/script&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;style&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; :root {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; --bg: #0a0a0c; --card: rgba(30, 30, 35, 0.95); --accent: #007aff;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; --success: #34c759; --danger: #ff3b30; --gold: #ffcc00; --neon-blue: #00f2ff;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; body {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; background-image: url('https://images.unsplash.com/photo-1519125323398-675f0ddb6308?q=80&amp;w=2070&amp;auto=format&amp;fit=crop');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; background-size: cover; background-position: center; background-attachment: fixed;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 0; min-height: 100vh; overflow: hidden;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; touch-action: manipulation;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; body::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: -1; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .header-container { position: sticky; top: 0; z-index: 500; background: rgba(10, 10, 12, 0.9); padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .top-nav { display: flex; justify-content: space-between; align-items: flex-start; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .energy-track { height: 10px; background: #222; border-radius: 5px; overflow: hidden; margin-top: 8px; border: 1px solid #444; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .energy-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #5ac8fa); transition: width 0.1s linear; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .content { padding: 15px; height: calc(100vh - 240px); overflow-y: auto; padding-bottom: 110px; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .view { display: none; flex-direction: column; gap: 12px; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .view.active { display: flex; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .btn-action { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: opacity 0.2s; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #work-sphere {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; width: 140px; height: 140px; border-radius: 50%;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; background: radial-gradient(circle, #007aff, #004080);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; display: flex; flex-direction: column; align-items: center; justify-content: center;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; margin: 15px auto 10px auto;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; box-shadow: 0 0 30px rgba(0,122,255,0.5);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; user-select: none; touch-action: none;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; transition: all 0.3s ease;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #work-sphere:active { transform: scale(0.92); }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #game-log {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; background: rgba(0,0,0,0.7); height: 75px; overflow-y: hidden;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; font-size: 10px; padding: 5px 12px; border-top: 1px solid #444;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; color: #eee; display: flex; flex-direction: column-reverse;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; backdrop-filter: blur(5px);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .log-entry { margin-bottom: 2px; border-bottom: 1px solid #222; padding-bottom: 2px; line-height: 1.2; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #quest-bar {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; display: none; position: fixed; bottom: 85px; left: 10px; right: 10px;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; background: rgba(20, 20, 25, 0.98); border: 2px solid var(--accent); border-radius: 12px;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; padding: 15px; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.9);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; backdrop-filter: blur(15px);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .tab-bar {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; background: rgba(10, 10, 12, 0.98); position: fixed; bottom: 0; width: 100%;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid rgba(255,255,255,0.1);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .tab-item { padding: 15px 0; text-align: center; color: #666; font-size: 10px; cursor: pointer; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .tab-item.active { color: var(--accent); border-top: 2px solid var(--accent); background: rgba(0,122,255,0.05); }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #inventory-display { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; justify-content: flex-end; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .inv-item { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-size: 9px; color: #ccc; border: 1px solid rgba(255,255,255,0.05); }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #auto-status-ui, #bike-status-ui, #buff-status-ui { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; display: none; margin-bottom: 2px; text-align:center; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #auto-status-ui { background: var(--gold); color: black; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #bike-status-ui { background: var(--neon-blue); color: black; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; #buff-status-ui { background: var(--success); color: white; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .weather-badge { font-size: 9px; padding: 2px 8px; border-radius: 10px; background: #333; font-weight: bold; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .career-progress { height: 6px; background: #222; border-radius: 3px; margin: 8px 0; overflow: hidden; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; .career-fill { height: 100%; background: var(--gold); transition: width 0.4s; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/style&gt;</font></p><p><font color="#000000" size="3">&lt;/head&gt;</font></p><p><font color="#000000" size="3">&lt;body&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&lt;div id="quest-bar"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div style="display:flex; justify-content:space-between; align-items:flex-start;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div&gt;&lt;b id="quest-title" style="color:var(--gold); font-size: 14px;"&gt;📦 ЗАКАЗ КУРЬЕРА&lt;/b&gt;&lt;br&gt;&lt;small&gt;Выплата:&lt;/small&gt; &lt;b style="color:var(--success);" id="quest-pay"&gt;0.00&lt;/b&gt; PLN&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 20px;"&gt;0:00&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="quest-actions-choice" style="margin-top:12px; display: flex; gap: 8px;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()"&gt;ПРИНЯТЬ&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" onclick="activateAutopilot()"&gt;АВТОПИЛОТ&lt;br&gt;&lt;small&gt;45 PLN / -0.15 LVL&lt;/small&gt;&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="quest-active-ui" style="display:none; margin-top:10px;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent);"&gt;Доставка выполняется...&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="energy-track" style="height:8px;"&gt;&lt;div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success);"&gt;&lt;/div&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&lt;div class="header-container"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div class="top-nav"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div&gt;&lt;small style="color:#aaa;"&gt;Баланс&lt;/small&gt;&lt;br&gt;&lt;b id="money-val" style="font-size: 20px;"&gt;0.00 PLN&lt;/b&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;b id="lvl-val" style="color:var(--gold); font-size: 13px;"&gt;LVL 1.000000&lt;/b&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="inventory-display"&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="bike-status-ui"&gt;🚲 00:00&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="auto-status-ui"&gt;АВТО 00:00&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="buff-status-ui"&gt;⚡ BOOST 00:00&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;span id="weather-ui" class="weather-badge"&gt;☀️ Ясно&lt;/span&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div style="font-size: 11px; margin-top: 10px; display: flex; justify-content: space-between;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;span&gt;⚡ &lt;b id="en-text"&gt;0/2000&lt;/b&gt;&lt;/span&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;span&gt;🧴 Вода: &lt;b id="water-val" style="color:var(--accent)"&gt;0&lt;/b&gt; мл&lt;/span&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div class="energy-track"&gt;&lt;div id="en-fill" class="energy-fill"&gt;&lt;/div&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div style="display: flex; justify-content: space-between; font-size: 9px; margin-top: 5px; opacity: 0.8;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;span id="tax-timer"&gt;Налог: 05:00&lt;/span&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;span id="rent-timer" style="color:var(--danger)"&gt;Аренда: 10:00&lt;/span&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&lt;div class="content"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="view-main" class="view active"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div style="text-align: center; font-size: 12px; color: var(--gold); font-weight: bold;" id="district-ui"&gt;Район: Praga&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="work-sphere"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;b id="work-label" style="font-size: 16px;"&gt;РАБОТАТЬ&lt;/b&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="click-rate-ui" style="font-size: 10px; opacity: 0.8; margin-top: 5px;"&gt;0.10 PLN&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="fatigue-ui" style="text-align:center; font-size: 10px; color: var(--danger); font-weight: bold; visibility: hidden;"&gt;ВЫ УСТАЛИ&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;button class="btn-action" style="background:#444;" onclick="collectBottles()"&gt;🧴 СОБРАТЬ БУТЫЛКИ (0.02 PLN)&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;button class="btn-action" style="background:#222; border: 1px solid var(--gold); color: var(--gold); margin-top: 5px;" onclick="switchTab('districts', this)"&gt;🏘️ ПЕРЕЕХАТЬ В ДРУГОЙ РАЙОН&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="view-districts" class="view"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;h3 style="margin:0; color:var(--gold)"&gt;🏙️ Районы Варшавы&lt;/h3&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="card"&gt;&lt;b&gt;Praga&lt;/b&gt;&lt;br&gt;&lt;small&gt;Аренда: 50 PLN. Базовый доход.&lt;/small&gt;&lt;br&gt;&lt;button class="btn-action" style="margin-top:5px; background:var(--success);" onclick="moveDistrict(0)"&gt;ТЕКУЩИЙ&lt;/button&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="card"&gt;&lt;b&gt;Mokotów (LVL 2.5)&lt;/b&gt;&lt;br&gt;&lt;small&gt;Аренда: 120 PLN. Доход: +50%.&lt;/small&gt;&lt;br&gt;&lt;button id="dist-btn-1" class="btn-action" style="margin-top:5px;" onclick="moveDistrict(1)"&gt;ПЕРЕЕХАТЬ (150 PLN)&lt;/button&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="card"&gt;&lt;b&gt;Śródmieście (LVL 5.0)&lt;/b&gt;&lt;br&gt;&lt;small&gt;Аренда: 300 PLN. Доход: x2.5.&lt;/small&gt;&lt;br&gt;&lt;button id="dist-btn-2" class="btn-action" style="margin-top:5px;" onclick="moveDistrict(2)"&gt;ПЕРЕЕХАТЬ (500 PLN)&lt;/button&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="view-quests" class="view"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;h3 style="margin:0; color:var(--gold)"&gt;🏆 Карьерный Путь&lt;/h3&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="milestones-list"&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="view-shop" class="view"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="card"&gt;&lt;b&gt;🧴 Вода 1.5л&lt;/b&gt;&lt;button class="btn-action" onclick="buyWater()"&gt;1.50 PLN&lt;/button&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="card" style="border:1px solid #ffcc00"&gt;&lt;b&gt;☕ Кофе&lt;/b&gt;&lt;small&gt; +300 энергии&lt;/small&gt;&lt;button class="btn-action" style="background:#6f4e37" onclick="buyDrink('coffee', 5)"&gt;5.00 PLN&lt;/button&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="card" style="border:1px solid #34c759"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;b&gt;🔋 Энергетик (2 мин)&lt;/b&gt;&lt;br&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;small style="color:#ddd;"&gt;Замораживает расход энергии. Вода тратится.&lt;/small&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;button class="btn-action" style="background:#34c759" onclick="buyDrink('energy', 12)"&gt;12.00 PLN&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="view-invest" class="view"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;h3 style="margin:0; color:var(--accent);"&gt;Инвестиции&lt;/h3&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="invest-list"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="card" style="border: 1px solid #5ac8fa;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;b&gt;🚲 Аренда Электровелосипеда&lt;/b&gt;&lt;br&gt;&lt;small&gt;Скорость x2. 30 PLN / 10 мин.&lt;/small&gt;&lt;br&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;button id="buy-bike-rent" class="btn-action" style="margin-top:8px; background:#5ac8fa; color:black;" onclick="rentBike()"&gt;АРЕНДОВАТЬ (30 PLN)&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="upgrade-items"&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div id="view-bank" class="view"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;div id="bank-actions-ui"&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;h3 style="margin:10px 0 5px 0; color:var(--gold)"&gt;Биржа Репутации&lt;/h3&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold); margin-bottom:10px;" onclick="exchangeLvl(0.05, 10)"&gt;ОБМЕН -0.05 LVL ⮕ 10 PLN&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &lt;button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold);" onclick="exchangeLvl(1.00, 300)"&gt;ОБМЕН -1.00 LVL ⮕ 300 PLN&lt;/button&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;/div&gt;</font></p><p><font color="#000000" size="3">&lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&lt;div id="game-log"&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&lt;div class="tab-bar"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div class="tab-item active" onclick="switchTab('main', this)"&gt;City&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div class="tab-item" onclick="switchTab('quests', this)"&gt;🏆 Карьера&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div class="tab-item" onclick="switchTab('shop', this)"&gt;🍔 Shop&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div class="tab-item" onclick="switchTab('invest', this)"&gt;💎 Инвест&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &lt;div class="tab-item" onclick="switchTab('bank', this)"&gt;🏦 Bank&lt;/div&gt;</font></p><p><font color="#000000" size="3">&lt;/div&gt;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&lt;script&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; // ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; const tg = window.Telegram.WebApp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; tg.expand(); // Развернуть на весь экран</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; tg.ready();</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; const SAVE_KEY = "WARSZAWA_FOREVER";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; let G = {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 600,&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, autoTime: 0,</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; scooter: false, bag: false, phone: false, district: 0,&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; bikeRentTime: 0, buffTime: 0, unlocked: [],</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; activeMilestones: [</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 },</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 },</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; ]</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; };</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false };</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; let curView = 'main';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; let weather = "Ясно";&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; let isBroken = false;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; const DISTRICTS = [</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; { name: "Praga", minLvl: 0, rent: 50, mult: 1, price: 0 },</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; { name: "Mokotów", minLvl: 2.5, rent: 120, mult: 1.5, price: 150 },</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; { name: "Śródmieście", minLvl: 5.0, rent: 300, mult: 2.5, price: 500 }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; ];</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; const UPGRADES = [</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам за каждый заказ.', price: 350, bonus: '+15% PLN' },</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы прилетают на 40% чаще.', price: 1200, bonus: 'Заказы x1.4' },</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Снижает расход энергии на 30% навсегда.', price: 500, bonus: '⚡ -30%' }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; ];</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; const sphere = document.getElementById('work-sphere');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; sphere.addEventListener('touchstart', (e) =&gt; {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; e.preventDefault();&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; tg.HapticFeedback.impactOccurred('medium'); // Виброотклик Telegram</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; for (let i = 0; i &lt; e.changedTouches.length; i++) doWork();&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }, {passive: false});</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; sphere.addEventListener('mousedown', (e) =&gt; { if (!('ontouchstart' in window)) doWork(); });</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function log(msg, color = "#eee") {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; const logEl = document.getElementById('game-log');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; const entry = document.createElement('div');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; entry.className = "log-entry";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; entry.style.color = color;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; entry.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; logEl.appendChild(entry);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (logEl.childNodes.length &gt; 5) logEl.removeChild(logEl.firstChild);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function load() {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; let d = localStorage.getItem(SAVE_KEY);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(d) { G = {...G, ...JSON.parse(d)}; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.maxEn = 2000; updateUI();&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function updateUI() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('money-val').innerText = G.money.toFixed(2) + " PLN";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('money-val').style.color = G.money &lt; 0 ? "var(--danger)" : "var(--success)";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('lvl-val').innerText = "LVL " + G.lvl.toFixed(6);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('water-val').innerText = Math.floor(G.waterStock);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('district-ui').innerText = "Район: " + DISTRICTS[G.district].name;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('auto-status-ui').style.display = G.autoTime &gt; 0 ? 'block' : 'none';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(G.autoTime &gt; 0) document.getElementById('auto-status-ui').innerText = `АВТО ${Math.floor(G.autoTime/60)}:${(G.autoTime%60&lt;10?'0':'')+G.autoTime%60}`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('bike-status-ui').style.display = G.bikeRentTime &gt; 0 ? 'block' : 'none';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(G.bikeRentTime &gt; 0) document.getElementById('bike-status-ui').innerText = `🚲 ${Math.floor(G.bikeRentTime/60)}:${(G.bikeRentTime%60&lt;10?'0':'')+G.bikeRentTime%60}`;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; const buffUI = document.getElementById('buff-status-ui');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; buffUI.style.display = G.buffTime &gt; 0 ? 'block' : 'none';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(G.buffTime &gt; 0) buffUI.innerText = `⚡ BOOST ${Math.floor(G.buffTime/60)}:${(G.buffTime%60&lt;10?'0':'')+G.buffTime%60}`;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; const invDisp = document.getElementById('inventory-display');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; invDisp.innerHTML = '';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; UPGRADES.forEach(up =&gt; {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if(G[up.id]) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; const span = document.createElement('span');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; span.className = 'inv-item';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; span.innerText = `${up.icon} ${up.bonus}`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; invDisp.appendChild(span);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; });</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; const upgradeList = document.getElementById('upgrade-items');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; upgradeList.innerHTML = '';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; UPGRADES.forEach(up =&gt; {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if(!G[up.id]) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; const div = document.createElement('div');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; div.className = 'card';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; div.style.marginTop = '8px';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; div.innerHTML = `&lt;b&gt;${up.icon} ${up.name}&lt;/b&gt;&lt;br&gt;&lt;small style="color:#aaa;"&gt;${up.desc}&lt;/small&gt;&lt;br&gt;&lt;button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', ${up.price})"&gt;${up.price} PLN&lt;/button&gt;`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; upgradeList.appendChild(div);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; });</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; const qBar = document.getElementById('quest-bar');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (order.visible &amp;&amp; curView === 'main') {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; qBar.style.display = 'block';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (order.active) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-actions-choice').style.display = 'none';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-active-ui').style.display = 'block';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-timer-ui').innerText = `${Math.floor(order.time/60)}:${(order.time%60&lt;10?'0':'')+order.time%60}`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; } else {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-actions-choice').style.display = 'flex';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-active-ui').style.display = 'none';</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-timer-ui').innerText = `0:${(order.offerTimer&lt;10?'0':'')+order.offerTimer}`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; } else { qBar.style.display = 'none'; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('buy-bike-rent').innerText = G.bikeRentTime &gt; 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('click-rate-ui').innerText = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2) + " PLN";</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; renderBank(); renderMilestones();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function doWork() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (isBroken) return;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (G.waterStock &gt; 0 &amp;&amp; G.en &lt; (G.maxEn - 10)) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; let eff = 1 + (Math.max(0.1, G.lvl) * 0.1);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; let drink = Math.min(G.waterStock, 50);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; G.en = Math.min(G.maxEn, G.en + (drink * eff));&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; G.waterStock -= drink;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; save();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (G.en &lt; 1) return;</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(order.active) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; consumeResources(true);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; order.steps += (G.bikeRentTime &gt; 0 ? 2 : 1);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (G.bikeRentTime &gt; 0 &amp;&amp; Math.random() &lt; 0.002) { triggerBreakdown(); return; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if(order.steps &gt;= order.target) finishOrder(true);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; updateUI(); return;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(!order.visible) { if(Math.random() &lt; (G.phone ? 0.35 : 0.18)) generateOrder(); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; consumeResources(false);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.money += 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.lvl += 0.00025; G.totalClicks++; checkMilestones(); updateUI(); save();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function consumeResources(isOrder) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (G.buffTime &gt; 0) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (isOrder || Math.random() &lt; 0.2) G.waterStock = Math.max(0, G.waterStock - (isOrder ? 8 : 2));</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; return;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; let cost = (G.scooter ? 7 : 10);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (G.bikeRentTime &gt; 0) cost *= 0.5;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (weather === "Дождь") cost *= 1.2;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (isOrder) cost *= 1.5;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.en = Math.max(0, G.en - cost);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.waterStock = Math.max(0, G.waterStock - (isOrder ? 10 : 3));</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function triggerBreakdown() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; isBroken = true; log("🚲 ПОЛОМКА!", "var(--danger)");</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.money -= 7;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; setTimeout(() =&gt; { isBroken = false; updateUI(); }, 3000);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function buyDrink(type, p) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(G.money &gt;= p) { G.money -= p;&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; else G.buffTime += 120;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; save(); updateUI();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function rentBike() { if (G.money &gt;= 30) { G.money -= 30; G.bikeRentTime += 600; save(); updateUI(); } }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function generateOrder() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (order.visible || order.active) return;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; order.visible = true; order.offerTimer = 15;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; order.isCriminal = Math.random() &lt; 0.08;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; let d = 0.5 + Math.random() * 3.5;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(order.isCriminal) baseRew *= 5;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; order.reward = baseRew.toFixed(2);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; order.target = Math.floor(d * 160); order.steps = 0;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; order.time = Math.floor(order.target / 1.5 + 45);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('quest-pay').innerText = order.reward;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; updateUI();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function activateAutopilot() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(G.money &gt;= 45 &amp;&amp; G.lvl &gt;= 0.15) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; G.money -= 45; G.lvl -= 0.15; G.autoTime += 600;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; acceptOrder(); save(); updateUI();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; } else { log("Недостаточно средств или LVL", "var(--danger)"); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function acceptOrder() { order.active = true; updateUI(); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function finishOrder(win) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(win) {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if(order.isCriminal &amp;&amp; Math.random() &lt; 0.2) { G.lvl -= 1.0; G.money -= 100; log("🚔 ПОЛИЦИЯ!", "var(--danger)"); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; else { G.money += parseFloat(order.reward); G.lvl += (order.isCriminal ? 0.1 : 0.015); G.totalOrders++;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if(Math.random() &lt; 0.40) { let tip = 5 + Math.random()*15; G.money += tip; log(`💰 ЧАЕВЫЕ: +${tip.toFixed(2)} PLN`, "var(--success)"); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; order.active = false; order.visible = false; updateUI(); save();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function checkMilestones() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.activeMilestones.forEach((m, i) =&gt; {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if(cur &gt;= m.goal) { G.money += m.reward; G.lvl += 0.01;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; log(`ВЕХА: ${m.name}`, "var(--gold)");</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; G.activeMilestones[i] = { id: Date.now()+i, name: m.name, goal: cur + Math.floor(m.goal*0.6), type: m.type, reward: m.reward + 20 };</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; save();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; });</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function renderMilestones() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('milestones-list').innerHTML = G.activeMilestones.map(m =&gt; {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; return `&lt;div class="card" style="margin-top:8px;"&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;b&gt;${m.name}&lt;/b&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div style="font-size:10px; color:var(--gold); margin-top:2px;"&gt;Бонус: +${m.reward} PLN, +0.01 LVL&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;div class="career-progress"&gt;&lt;div class="career-fill" style="width:${Math.min(100,(cur/m.goal*100))}%"&gt;&lt;/div&gt;&lt;/div&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;small&gt;${cur}/${m.goal}&lt;/small&gt;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;/div&gt;`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }).join('');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function collectBottles() { G.money += 0.02; G.totalBottles++; checkMilestones(); save(); updateUI(); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function buyWater() { if(G.money &gt;= 1.50) { G.money -= 1.50; G.waterStock += 1500; save(); updateUI(); } }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function buyInvest(type, p) { if(!G[type] &amp;&amp; G.money &gt;= p) { G.money -= p; G[type] = true; save(); updateUI(); } }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function exchangeLvl(l, m) { G.lvl -= l; G.money += m; save(); updateUI(); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function switchTab(v, el) { curView = v; document.querySelectorAll('.view').forEach(x =&gt; x.classList.remove('active')); document.getElementById('view-'+v).classList.add('active'); document.querySelectorAll('.tab-item').forEach(x =&gt; x.classList.remove('active')); el.classList.add('active'); updateUI(); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function moveDistrict(id) { if (G.lvl &gt;= DISTRICTS[id].minLvl &amp;&amp; G.money &gt;= DISTRICTS[id].price) { G.money -= DISTRICTS[id].price; G.district = id; save(); updateUI(); } }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; function renderBank() {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; const ui = document.getElementById('bank-actions-ui');</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; ui.innerHTML = G.debt &lt;= 0 ? `&lt;button class="btn-action" onclick="G.money+=50;G.debt=50;updateUI();save();"&gt;ВЗЯТЬ КРЕДИТ 50 PLN&lt;/button&gt;` : `&lt;button class="btn-action" style="background:var(--success)" onclick="if(G.money&gt;=G.debt){G.money-=G.debt;G.debt=0;updateUI();save();}"&gt;ВЕРНУТЬ ДОЛГ&lt;/button&gt;`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; setInterval(() =&gt; {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.tax--; if(G.tax &lt;= 0) { G.money *= 0.75; G.tax = 300; log("Налог 25% списан"); save(); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; G.rent--; if(G.rent &lt;= 0) { G.money -= DISTRICTS[G.district].rent; G.rent = 600; log(`Аренда ${DISTRICTS[G.district].name} списана`); save(); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (Math.random() &lt; 0.015) { weather = Math.random() &lt; 0.35 ? "Дождь" : "Ясно"; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (G.bikeRentTime &gt; 0) { G.bikeRentTime--; if (G.bikeRentTime &lt;= 0) { if (G.money &gt;= 30) { G.money -= 30; G.bikeRentTime = 600; save(); } } }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (G.buffTime &gt; 0) G.buffTime--;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if (G.autoTime &gt; 0) { G.autoTime--;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (order.active &amp;&amp; !isBroken) {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for(let i=0; i&lt;8; i++) {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (order.active) {&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (G.waterStock &gt; 0 &amp;&amp; G.en &lt; 200) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; let eff = 1 + (Math.max(0.1, G.lvl) * 0.1);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; G.en = Math.min(G.maxEn, G.en + (10 * eff));</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; G.waterStock = Math.max(0, G.waterStock - 10);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (G.en &gt; 5) {</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; consumeResources(true);</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; order.steps += (G.bikeRentTime &gt; 0 ? 2 : 1);&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (order.steps &gt;= order.target) { finishOrder(true); break; }&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }&nbsp;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(order.visible &amp;&amp; !order.active) { order.offerTimer--; if(order.offerTimer &lt;= 0) { order.visible = false; G.lvl -= 0.02; } }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; if(order.active) { order.time--; if(order.time &lt;= 0) finishOrder(false); }</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('tax-timer').innerText = `Налог: ${Math.floor(G.tax/60)}:${G.tax%60&lt;10?'0':''}${G.tax%60}`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; document.getElementById('rent-timer').innerText = `Аренда: ${Math.floor(G.rent/60)}:${G.rent%60&lt;10?'0':''}${G.rent%60}`;</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; &nbsp; &nbsp; updateUI();</font></p><p><font color="#000000" size="3">&nbsp; &nbsp; }, 1000);</font></p><p><font color="#000000" size="3"><br></font></p><p><font color="#000000" size="3">&nbsp; &nbsp; window.onload = load;</font></p><p><font color="#000000" size="3">&lt;/script&gt;</font></p><p><font color="#000000" size="3">&lt;/body&gt;</font></p><p><font color="#000000" size="3">&lt;/html&gt;</font></p><p><br></p>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warszawa Courier Simulator</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0c; --card: rgba(30, 30, 35, 0.95); --accent: #007aff;
+            --success: #34c759; --danger: #ff3b30; --gold: #ffcc00; --neon-blue: #00f2ff;
+        }
+        body {
+            background-image: url('https://images.unsplash.com/photo-1519125323398-675f0ddb6308?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
+            touch-action: manipulation;
+        }
+        body::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: -1; }
+
+        .header-container { position: sticky; top: 0; z-index: 500; background: rgba(10, 10, 12, 0.9); padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px); }
+        .top-nav { display: flex; justify-content: space-between; align-items: flex-start; }
+        .energy-track { height: 10px; background: #222; border-radius: 5px; overflow: hidden; margin-top: 8px; border: 1px solid #444; }
+        .energy-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #5ac8fa); transition: width 0.1s linear; }
+
+        .content { padding: 15px; height: calc(100vh - 240px); overflow-y: auto; padding-bottom: 110px; }
+        .view { display: none; flex-direction: column; gap: 12px; }
+        .view.active { display: flex; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .btn-action { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: opacity 0.2s; }
+        
+        #work-sphere { 
+            width: 140px; height: 140px; border-radius: 50%; 
+            background: radial-gradient(circle, #007aff, #004080); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            margin: 15px auto 10px auto; 
+            box-shadow: 0 0 30px rgba(0,122,255,0.5); 
+            user-select: none; touch-action: none;
+            transition: all 0.3s ease;
+        }
+        #work-sphere:active { transform: scale(0.92); }
+
+        #game-log {
+            background: rgba(0,0,0,0.7); height: 75px; overflow-y: hidden;
+            font-size: 10px; padding: 5px 12px; border-top: 1px solid #444;
+            color: #eee; display: flex; flex-direction: column-reverse;
+            backdrop-filter: blur(5px);
+        }
+        .log-entry { margin-bottom: 2px; border-bottom: 1px solid #222; padding-bottom: 2px; line-height: 1.2; }
+
+        #quest-bar { 
+            display: none; position: fixed; bottom: 85px; left: 10px; right: 10px; 
+            background: rgba(20, 20, 25, 0.98); border: 2px solid var(--accent); border-radius: 12px; 
+            padding: 15px; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); 
+            backdrop-filter: blur(15px);
+        }
+
+        .tab-bar { 
+            background: rgba(10, 10, 12, 0.98); position: fixed; bottom: 0; width: 100%; 
+            display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid rgba(255,255,255,0.1); 
+        }
+        .tab-item { padding: 15px 0; text-align: center; color: #666; font-size: 10px; cursor: pointer; }
+        .tab-item.active { color: var(--accent); border-top: 2px solid var(--accent); background: rgba(0,122,255,0.05); }
+
+        #inventory-display { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; justify-content: flex-end; }
+        .inv-item { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-size: 9px; color: #ccc; border: 1px solid rgba(255,255,255,0.05); }
+
+        #auto-status-ui, #bike-status-ui, #buff-status-ui { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; display: none; margin-bottom: 2px; text-align:center; }
+        #auto-status-ui { background: var(--gold); color: black; }
+        #bike-status-ui { background: var(--neon-blue); color: black; }
+        #buff-status-ui { background: var(--success); color: white; }
+        .weather-badge { font-size: 9px; padding: 2px 8px; border-radius: 10px; background: #333; font-weight: bold; }
+        .career-progress { height: 6px; background: #222; border-radius: 3px; margin: 8px 0; overflow: hidden; }
+        .career-fill { height: 100%; background: var(--gold); transition: width 0.4s; }
+    </style>
+</head>
+<body>
+
+<div id="quest-bar">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div><b id="quest-title" style="color:var(--gold); font-size: 14px;">📦 ЗАКАЗ КУРЬЕРА</b><br><small>Выплата:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN</div>
+        <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 20px;">0:00</div>
+    </div>
+    <div id="quest-actions-choice" style="margin-top:12px; display: flex; gap: 8px;">
+        <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
+        <button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" onclick="activateAutopilot()">АВТОПИЛОТ<br><small>45 PLN / -0.15 LVL</small></button>
+    </div>
+    <div id="quest-active-ui" style="display:none; margin-top:10px;">
+        <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent);">Доставка выполняется...</div>
+        <div class="energy-track" style="height:8px;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success);"></div></div>
+    </div>
+</div>
+
+<div class="header-container">
+    <div class="top-nav">
+        <div><small style="color:#aaa;">Баланс</small><br><b id="money-val" style="font-size: 20px;">0.00 PLN</b></div>
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+            <b id="lvl-val" style="color:var(--gold); font-size: 13px;">LVL 1.000000</b>
+            <div id="inventory-display"></div>
+            <div id="bike-status-ui">🚲 00:00</div>
+            <div id="auto-status-ui">АВТО 00:00</div>
+            <div id="buff-status-ui">⚡ BOOST 00:00</div>
+            <span id="weather-ui" class="weather-badge">☀️ Ясно</span>
+        </div>
+    </div>
+    <div style="font-size: 11px; margin-top: 10px; display: flex; justify-content: space-between;">
+        <span>⚡ <b id="en-text">0/2000</b></span>
+        <span>🧴 Вода: <b id="water-val" style="color:var(--accent)">0</b> мл</span>
+    </div>
+    <div class="energy-track"><div id="en-fill" class="energy-fill"></div></div>
+    <div style="display: flex; justify-content: space-between; font-size: 9px; margin-top: 5px; opacity: 0.8;">
+        <span id="tax-timer">Налог: 05:00</span>
+        <span id="rent-timer" style="color:var(--danger)">Аренда: 10:00</span>
+    </div>
+</div>
+
+<div class="content">
+    <div id="view-main" class="view active">
+        <div style="text-align: center; font-size: 12px; color: var(--gold); font-weight: bold;" id="district-ui">Район: Praga</div>
+        <div id="work-sphere">
+            <b id="work-label" style="font-size: 16px;">РАБОТАТЬ</b>
+            <div id="click-rate-ui" style="font-size: 10px; opacity: 0.8; margin-top: 5px;">0.10 PLN</div>
+        </div>
+        <div id="fatigue-ui" style="text-align:center; font-size: 10px; color: var(--danger); font-weight: bold; visibility: hidden;">ВЫ УСТАЛИ</div>
+        <button class="btn-action" style="background:#444;" onclick="collectBottles()">🧴 СОБРАТЬ БУТЫЛКИ (0.02 PLN)</button>
+        <button class="btn-action" style="background:#222; border: 1px solid var(--gold); color: var(--gold); margin-top: 5px;" onclick="switchTab('districts', this)">🏘️ ПЕРЕЕХАТЬ В ДРУГОЙ РАЙОН</button>
+    </div>
+
+    <div id="view-districts" class="view">
+        <h3 style="margin:0; color:var(--gold)">🏙️ Районы Варшавы</h3>
+        <div class="card"><b>Praga</b><br><small>Аренда: 50 PLN. Базовый доход.</small><br><button class="btn-action" style="margin-top:5px; background:var(--success);" onclick="moveDistrict(0)">ТЕКУЩИЙ</button></div>
+        <div class="card"><b>Mokotów (LVL 2.5)</b><br><small>Аренда: 120 PLN. Доход: +50%.</small><br><button id="dist-btn-1" class="btn-action" style="margin-top:5px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button></div>
+        <div class="card"><b>Śródmieście (LVL 5.0)</b><br><small>Аренда: 300 PLN. Доход: x2.5.</small><br><button id="dist-btn-2" class="btn-action" style="margin-top:5px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button></div>
+    </div>
+
+    <div id="view-quests" class="view">
+        <h3 style="margin:0; color:var(--gold)">🏆 Карьерный Путь</h3>
+        <div id="milestones-list"></div>
+    </div>
+
+    <div id="view-shop" class="view">
+        <div class="card"><b>🧴 Вода 1.5л</b><button class="btn-action" onclick="buyWater()">1.50 PLN</button></div>
+        <div class="card" style="border:1px solid #ffcc00"><b>☕ Кофе</b><small> +300 энергии</small><button class="btn-action" style="background:#6f4e37" onclick="buyDrink('coffee', 5)">5.00 PLN</button></div>
+        <div class="card" style="border:1px solid #34c759">
+            <b>🔋 Энергетик (2 мин)</b><br>
+            <small style="color:#ddd;">Замораживает расход энергии. Вода тратится.</small>
+            <button class="btn-action" style="background:#34c759" onclick="buyDrink('energy', 12)">12.00 PLN</button>
+        </div>
+    </div>
+
+    <div id="view-invest" class="view">
+        <h3 style="margin:0; color:var(--accent);">Инвестиции</h3>
+        <div id="invest-list">
+            <div class="card" style="border: 1px solid #5ac8fa;">
+                <b>🚲 Аренда Электровелосипеда</b><br><small>Скорость x2. 30 PLN / 10 мин.</small><br>
+                <button id="buy-bike-rent" class="btn-action" style="margin-top:8px; background:#5ac8fa; color:black;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
+            </div>
+            <div id="upgrade-items"></div>
+        </div>
+    </div>
+
+    <div id="view-bank" class="view">
+        <div id="bank-actions-ui"></div>
+        <h3 style="margin:10px 0 5px 0; color:var(--gold)">Биржа Репутации</h3>
+        <button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold); margin-bottom:10px;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL ⮕ 10 PLN</button>
+        <button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold);" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL ⮕ 300 PLN</button>
+    </div>
+</div>
+
+<div id="game-log"></div>
+
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab('main', this)">City</div>
+    <div class="tab-item" onclick="switchTab('quests', this)">🏆 Карьера</div>
+    <div class="tab-item" onclick="switchTab('shop', this)">🍔 Shop</div>
+    <div class="tab-item" onclick="switchTab('invest', this)">💎 Инвест</div>
+    <div class="tab-item" onclick="switchTab('bank', this)">🏦 Bank</div>
+</div>
+
+<script>
+    // ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Развернуть на весь экран
+    tg.ready();
+
+    const SAVE_KEY = "WARSZAWA_FOREVER";
+    
+    let G = { 
+        money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 600, 
+        waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, autoTime: 0,
+        scooter: false, bag: false, phone: false, district: 0, 
+        bikeRentTime: 0, buffTime: 0, unlocked: [],
+        activeMilestones: [
+            { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 },
+            { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 },
+            { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
+        ]
+    };
+
+    let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false };
+    let curView = 'main';
+    let weather = "Ясно"; 
+    let isBroken = false;
+
+    const DISTRICTS = [
+        { name: "Praga", minLvl: 0, rent: 50, mult: 1, price: 0 },
+        { name: "Mokotów", minLvl: 2.5, rent: 120, mult: 1.5, price: 150 },
+        { name: "Śródmieście", minLvl: 5.0, rent: 300, mult: 2.5, price: 500 }
+    ];
+
+    const UPGRADES = [
+        { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам за каждый заказ.', price: 350, bonus: '+15% PLN' },
+        { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы прилетают на 40% чаще.', price: 1200, bonus: 'Заказы x1.4' },
+        { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Снижает расход энергии на 30% навсегда.', price: 500, bonus: '⚡ -30%' }
+    ];
+
+    const sphere = document.getElementById('work-sphere');
+    sphere.addEventListener('touchstart', (e) => { 
+        e.preventDefault(); 
+        tg.HapticFeedback.impactOccurred('medium'); // Виброотклик Telegram
+        for (let i = 0; i < e.changedTouches.length; i++) doWork(); 
+    }, {passive: false});
+    sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
+
+    function log(msg, color = "#eee") {
+        const logEl = document.getElementById('game-log');
+        const entry = document.createElement('div');
+        entry.className = "log-entry";
+        entry.style.color = color;
+        entry.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}`;
+        logEl.appendChild(entry);
+        if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild);
+    }
+
+    function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); }
+    function load() { 
+        let d = localStorage.getItem(SAVE_KEY); 
+        if(d) { G = {...G, ...JSON.parse(d)}; }
+        G.maxEn = 2000; updateUI(); 
+    }
+
+    function updateUI() {
+        document.getElementById('money-val').innerText = G.money.toFixed(2) + " PLN";
+        document.getElementById('money-val').style.color = G.money < 0 ? "var(--danger)" : "var(--success)";
+        document.getElementById('lvl-val').innerText = "LVL " + G.lvl.toFixed(6);
+        document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
+        document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
+        document.getElementById('water-val').innerText = Math.floor(G.waterStock);
+        document.getElementById('district-ui').innerText = "Район: " + DISTRICTS[G.district].name;
+        document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
+
+        document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
+        if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = `АВТО ${Math.floor(G.autoTime/60)}:${(G.autoTime%60<10?'0':'')+G.autoTime%60}`;
+        
+        document.getElementById('bike-status-ui').style.display = G.bikeRentTime > 0 ? 'block' : 'none';
+        if(G.bikeRentTime > 0) document.getElementById('bike-status-ui').innerText = `🚲 ${Math.floor(G.bikeRentTime/60)}:${(G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60}`;
+
+        const buffUI = document.getElementById('buff-status-ui');
+        buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
+        if(G.buffTime > 0) buffUI.innerText = `⚡ BOOST ${Math.floor(G.buffTime/60)}:${(G.buffTime%60<10?'0':'')+G.buffTime%60}`;
+
+        const invDisp = document.getElementById('inventory-display');
+        invDisp.innerHTML = '';
+        UPGRADES.forEach(up => {
+            if(G[up.id]) {
+                const span = document.createElement('span');
+                span.className = 'inv-item';
+                span.innerText = `${up.icon} ${up.bonus}`;
+                invDisp.appendChild(span);
+            }
+        });
+
+        const upgradeList = document.getElementById('upgrade-items');
+        upgradeList.innerHTML = '';
+        UPGRADES.forEach(up => {
+            if(!G[up.id]) {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.marginTop = '8px';
+                div.innerHTML = `<b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', ${up.price})">${up.price} PLN</button>`;
+                upgradeList.appendChild(div);
+            }
+        });
+
+        const qBar = document.getElementById('quest-bar');
+        if (order.visible && curView === 'main') {
+            qBar.style.display = 'block';
+            if (order.active) {
+                document.getElementById('quest-actions-choice').style.display = 'none';
+                document.getElementById('quest-active-ui').style.display = 'block';
+                document.getElementById('quest-timer-ui').innerText = `${Math.floor(order.time/60)}:${(order.time%60<10?'0':'')+order.time%60}`;
+                document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%";
+            } else {
+                document.getElementById('quest-actions-choice').style.display = 'flex';
+                document.getElementById('quest-active-ui').style.display = 'none';
+                document.getElementById('quest-timer-ui').innerText = `0:${(order.offerTimer<10?'0':'')+order.offerTimer}`;
+            }
+        } else { qBar.style.display = 'none'; }
+
+        document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
+        document.getElementById('click-rate-ui').innerText = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2) + " PLN";
+        
+        renderBank(); renderMilestones();
+    }
+
+    function doWork() {
+        if (isBroken) return;
+        if (G.waterStock > 0 && G.en < (G.maxEn - 10)) {
+            let eff = 1 + (Math.max(0.1, G.lvl) * 0.1);
+            let drink = Math.min(G.waterStock, 50); 
+            G.en = Math.min(G.maxEn, G.en + (drink * eff)); 
+            G.waterStock -= drink;
+            save();
+        }
+        if (G.en < 1) return;
+
+        if(order.active) {
+            consumeResources(true); 
+            order.steps += (G.bikeRentTime > 0 ? 2 : 1);
+            if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; }
+            if(order.steps >= order.target) finishOrder(true);
+            updateUI(); return;
+        }
+        if(!order.visible) { if(Math.random() < (G.phone ? 0.35 : 0.18)) generateOrder(); }
+        consumeResources(false);
+        G.money += 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult;
+        G.lvl += 0.00025; G.totalClicks++; checkMilestones(); updateUI(); save();
+    }
+
+    function consumeResources(isOrder) {
+        if (G.buffTime > 0) {
+            if (isOrder || Math.random() < 0.2) G.waterStock = Math.max(0, G.waterStock - (isOrder ? 8 : 2));
+            return;
+        }
+        let cost = (G.scooter ? 7 : 10);
+        if (G.bikeRentTime > 0) cost *= 0.5;
+        if (weather === "Дождь") cost *= 1.2;
+        if (isOrder) cost *= 1.5; 
+        G.en = Math.max(0, G.en - cost);
+        G.waterStock = Math.max(0, G.waterStock - (isOrder ? 10 : 3));
+    }
+
+    function triggerBreakdown() {
+        isBroken = true; log("🚲 ПОЛОМКА!", "var(--danger)");
+        G.money -= 7;
+        setTimeout(() => { isBroken = false; updateUI(); }, 3000);
+    }
+
+    function buyDrink(type, p) {
+        if(G.money >= p) { G.money -= p; 
+            if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300);
+            else G.buffTime += 120;
+            save(); updateUI();
+        }
+    }
+
+    function rentBike() { if (G.money >= 30) { G.money -= 30; G.bikeRentTime += 600; save(); updateUI(); } }
+
+    function generateOrder() {
+        if (order.visible || order.active) return;
+        order.visible = true; order.offerTimer = 15;
+        order.isCriminal = Math.random() < 0.08;
+        let d = 0.5 + Math.random() * 3.5;
+        let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1);
+        if(order.isCriminal) baseRew *= 5;
+        order.reward = baseRew.toFixed(2);
+        order.target = Math.floor(d * 160); order.steps = 0;
+        order.time = Math.floor(order.target / 1.5 + 45);
+        document.getElementById('quest-pay').innerText = order.reward;
+        updateUI();
+    }
+
+    function activateAutopilot() {
+        if(G.money >= 45 && G.lvl >= 0.15) {
+            G.money -= 45; G.lvl -= 0.15; G.autoTime += 600;
+            acceptOrder(); save(); updateUI();
+        } else { log("Недостаточно средств или LVL", "var(--danger)"); }
+    }
+
+    function acceptOrder() { order.active = true; updateUI(); }
+    function finishOrder(win) {
+        if(win) { 
+            if(order.isCriminal && Math.random() < 0.2) { G.lvl -= 1.0; G.money -= 100; log("🚔 ПОЛИЦИЯ!", "var(--danger)"); }
+            else { G.money += parseFloat(order.reward); G.lvl += (order.isCriminal ? 0.1 : 0.015); G.totalOrders++;
+                if(Math.random() < 0.40) { let tip = 5 + Math.random()*15; G.money += tip; log(`💰 ЧАЕВЫЕ: +${tip.toFixed(2)} PLN`, "var(--success)"); }
+            }
+        }
+        order.active = false; order.visible = false; updateUI(); save();
+    }
+
+    function checkMilestones() {
+        G.activeMilestones.forEach((m, i) => {
+            let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles;
+            if(cur >= m.goal) { G.money += m.reward; G.lvl += 0.01;
+                log(`ВЕХА: ${m.name}`, "var(--gold)");
+                G.activeMilestones[i] = { id: Date.now()+i, name: m.name, goal: cur + Math.floor(m.goal*0.6), type: m.type, reward: m.reward + 20 };
+                save();
+            }
+        });
+    }
+
+    function renderMilestones() {
+        document.getElementById('milestones-list').innerHTML = G.activeMilestones.map(m => {
+            let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles;
+            return `<div class="card" style="margin-top:8px;">
+                <b>${m.name}</b>
+                <div style="font-size:10px; color:var(--gold); margin-top:2px;">Бонус: +${m.reward} PLN, +0.01 LVL</div>
+                <div class="career-progress"><div class="career-fill" style="width:${Math.min(100,(cur/m.goal*100))}%"></div></div>
+                <small>${cur}/${m.goal}</small>
+            </div>`;
+        }).join('');
+    }
+
+    function collectBottles() { G.money += 0.02; G.totalBottles++; checkMilestones(); save(); updateUI(); }
+    function buyWater() { if(G.money >= 1.50) { G.money -= 1.50; G.waterStock += 1500; save(); updateUI(); } }
+    function buyInvest(type, p) { if(!G[type] && G.money >= p) { G.money -= p; G[type] = true; save(); updateUI(); } }
+    function exchangeLvl(l, m) { G.lvl -= l; G.money += m; save(); updateUI(); }
+    function switchTab(v, el) { curView = v; document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); document.getElementById('view-'+v).classList.add('active'); document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active')); el.classList.add('active'); updateUI(); }
+    function moveDistrict(id) { if (G.lvl >= DISTRICTS[id].minLvl && G.money >= DISTRICTS[id].price) { G.money -= DISTRICTS[id].price; G.district = id; save(); updateUI(); } }
+
+    function renderBank() {
+        const ui = document.getElementById('bank-actions-ui');
+        ui.innerHTML = G.debt <= 0 ? `<button class="btn-action" onclick="G.money+=50;G.debt=50;updateUI();save();">ВЗЯТЬ КРЕДИТ 50 PLN</button>` : `<button class="btn-action" style="background:var(--success)" onclick="if(G.money>=G.debt){G.money-=G.debt;G.debt=0;updateUI();save();}">ВЕРНУТЬ ДОЛГ</button>`;
+    }
+
+    setInterval(() => {
+        G.tax--; if(G.tax <= 0) { G.money *= 0.75; G.tax = 300; log("Налог 25% списан"); save(); }
+        G.rent--; if(G.rent <= 0) { G.money -= DISTRICTS[G.district].rent; G.rent = 600; log(`Аренда ${DISTRICTS[G.district].name} списана`); save(); }
+        if (Math.random() < 0.015) { weather = Math.random() < 0.35 ? "Дождь" : "Ясно"; }
+        if (G.bikeRentTime > 0) { G.bikeRentTime--; if (G.bikeRentTime <= 0) { if (G.money >= 30) { G.money -= 30; G.bikeRentTime = 600; save(); } } }
+        if (G.buffTime > 0) G.buffTime--;
+        if (G.autoTime > 0) { G.autoTime--;
+            if (order.active && !isBroken) { 
+                for(let i=0; i<8; i++) { 
+                    if (order.active) { 
+                        if (G.waterStock > 0 && G.en < 200) {
+                            let eff = 1 + (Math.max(0.1, G.lvl) * 0.1);
+                            G.en = Math.min(G.maxEn, G.en + (10 * eff));
+                            G.waterStock = Math.max(0, G.waterStock - 10);
+                        }
+                        if (G.en > 5) {
+                            consumeResources(true);
+                            order.steps += (G.bikeRentTime > 0 ? 2 : 1); 
+                            if (order.steps >= order.target) { finishOrder(true); break; } 
+                        }
+                    } 
+                } 
+            }
+        }
+        if(order.visible && !order.active) { order.offerTimer--; if(order.offerTimer <= 0) { order.visible = false; G.lvl -= 0.02; } }
+        if(order.active) { order.time--; if(order.time <= 0) finishOrder(false); }
+        document.getElementById('tax-timer').innerText = `Налог: ${Math.floor(G.tax/60)}:${G.tax%60<10?'0':''}${G.tax%60}`;
+        document.getElementById('rent-timer').innerText = `Аренда: ${Math.floor(G.rent/60)}:${G.rent%60<10?'0':''}${G.rent%60}`;
+        updateUI();
+    }, 1000);
+
+    window.onload = load;
+</script>
+</body>
+</html>
