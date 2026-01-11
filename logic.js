@@ -48,14 +48,12 @@ const UPGRADES = [
     { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Снижает расход энергии на 30% навсегда.', price: 500, bonus: '⚡ -30%' }
 ];
 
-// Функция добавления записи в историю
 function addHistory(msg, val, type = 'plus') {
     const time = new Date().toLocaleTimeString().split(' ')[0];
     G.history.unshift({ time, msg, val, type });
     if (G.history.length > 20) G.history.pop();
 }
 
-// УМНЫЕ ПРОМОКОДЫ
 async function usePromo() {
     const inputField = document.getElementById('promo-input');
     const code = inputField.value.trim().toUpperCase();
@@ -63,7 +61,6 @@ async function usePromo() {
     if (G.usedPromos.includes(code)) { log("Уже использовано!", "var(--danger)"); return; }
 
     try {
-        // Ищем файл promos.json рядом с index.html
         const response = await fetch('promos.json?nocache=' + Date.now());
         const promoData = await response.json();
 
@@ -81,12 +78,10 @@ async function usePromo() {
         }
     } catch (e) {
         log("Ошибка связи с базой!", "var(--danger)");
-        console.error(e);
     }
 }
 
 const sphere = document.getElementById('work-sphere');
-// Обработчики нажатий
 if(sphere) {
     sphere.addEventListener('touchstart', (e) => { e.preventDefault(); tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
     sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
@@ -103,26 +98,38 @@ function log(msg, color = "#eee") {
     if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild); 
 }
 
-function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); }
-function load() { let d = localStorage.getItem(SAVE_KEY); if(d) { G = {...G, ...JSON.parse(d)}; } G.maxEn = 2000; updateUI(); }
+// === ВАЖНЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ ===
+function save() { 
+    localStorage.setItem(SAVE_KEY, JSON.stringify(G)); 
+    // Отправляем данные в базу при каждом сохранении
+    if(typeof saveToCloud === 'function') saveToCloud(); 
+}
+
+function load() { 
+    let d = localStorage.getItem(SAVE_KEY); 
+    if(d) { G = {...G, ...JSON.parse(d)}; } 
+    G.maxEn = 2000; 
+    
+    // Подключаемся к прослушке изменений из админки
+    if(typeof listenToCloud === 'function') listenToCloud();
+    
+    updateUI(); 
+}
+// ==============================
 
 function updateUI() {
-    // Обновление текстов и баланса
     const moneyEl = document.getElementById('money-val');
     if(moneyEl) {
         moneyEl.innerText = G.money.toFixed(2) + " PLN";
         moneyEl.style.color = G.money < 0 ? "var(--danger)" : "var(--success)";
     }
-    
     document.getElementById('lvl-val').innerText = "LVL " + G.lvl.toFixed(6);
     document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
     document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
     document.getElementById('water-val').innerText = Math.floor(G.waterStock);
-    
     document.getElementById('district-ui').innerText = "Район: " + DISTRICTS[G.district].name;
     document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️" : "☀️");
     
-    // Статусы
     document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
     if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = `АВТО ${Math.floor(G.autoTime/60)}:${(G.autoTime%60<10?'0':'')+G.autoTime%60}`;
     
@@ -133,7 +140,6 @@ function updateUI() {
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
     if(G.buffTime > 0) buffUI.innerText = `⚡ BOOST ${Math.floor(G.buffTime/60)}:${(G.buffTime%60<10?'0':'')+G.buffTime%60}`;
     
-    // Инвентарь
     const invDisp = document.getElementById('inventory-display'); 
     invDisp.innerHTML = ''; 
     UPGRADES.forEach(up => { 
@@ -145,7 +151,6 @@ function updateUI() {
         } 
     });
     
-    // Магазин улучшений (скрываем купленное)
     const upgradeList = document.getElementById('upgrade-items'); 
     upgradeList.innerHTML = ''; 
     UPGRADES.forEach(up => { 
@@ -158,7 +163,6 @@ function updateUI() {
         } 
     });
     
-    // Квест бар
     const qBar = document.getElementById('quest-bar'); 
     if (order.visible && curView === 'main') { 
         qBar.style.display = 'block'; 
@@ -178,7 +182,6 @@ function updateUI() {
     document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
     document.getElementById('click-rate-ui').innerText = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2) + " PLN";
 
-    // История
     document.getElementById('history-ui').innerHTML = G.history.map(h => `<div class="history-item"><span>${h.time} ${h.msg}</span><b style="color:${h.type==='plus'?'var(--success)':'var(--danger)'}">${h.type==='plus'?'+':'-'}${h.val}</b></div>`).join('');
     
     renderBank(); 
@@ -187,8 +190,6 @@ function updateUI() {
 
 function doWork() {
     if (isBroken) return;
-    
-    // Питье воды для энергии
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
         let drink = Math.min(G.waterStock, 50); 
@@ -196,9 +197,7 @@ function doWork() {
         G.waterStock -= drink; 
         save(); 
     }
-    
     if (G.en < 1) return;
-    
     if(order.active) { 
         consumeResources(true); 
         order.steps += (G.bikeRentTime > 0 ? 2 : 1); 
@@ -207,13 +206,10 @@ function doWork() {
         updateUI(); 
         return; 
     }
-    
     if(!order.visible) { 
         if(Math.random() < (G.phone ? 0.35 : 0.18)) generateOrder(); 
     }
-    
     consumeResources(false);
-    
     let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult;
     G.money = parseFloat((G.money + gain).toFixed(2));
     G.lvl += 0.00025; 
@@ -223,21 +219,15 @@ function doWork() {
     save();
 }
 
-// Потребление ресурсов (Важно: Энергетик не спасает от жажды!)
 function consumeResources(isOrder) {
     if (G.buffTime > 0) { 
-        // Если активен энергетик: энергия НЕ тратится, но вода ТРАТИТСЯ
-        if (isOrder || Math.random() < 0.2) {
-            G.waterStock = Math.max(0, G.waterStock - (isOrder ? 8 : 2)); 
-        }
+        if (isOrder || Math.random() < 0.2) G.waterStock = Math.max(0, G.waterStock - (isOrder ? 8 : 2)); 
         return; 
     }
-    
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
     if (weather === "Дождь") cost *= 1.2; 
     if (isOrder) cost *= 1.5; 
-    
     G.en = Math.max(0, G.en - cost); 
     G.waterStock = Math.max(0, G.waterStock - (isOrder ? 10 : 3));
 }
@@ -411,7 +401,6 @@ function renderBank() {
         `<button class="btn-action" style="background:var(--success)" onclick="if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}">ВЕРНУТЬ ДОЛГ (${G.debt} PLN)</button>`; 
 }
 
-// Игровой цикл
 setInterval(() => {
     G.tax--; 
     if(G.tax <= 0) { 
@@ -444,13 +433,11 @@ setInterval(() => {
     
     if (G.buffTime > 0) G.buffTime--;
     
-    // Логика автопилота
     if (G.autoTime > 0) { 
         G.autoTime--;
         if (order.active && !isBroken) {
             for(let i=0; i<10; i++) {
                 if(!order.active || isBroken) break;
-                // Автопилот тоже пьет воду
                 if (G.waterStock > 0 && G.en < 600) { 
                     let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
                     G.en = Math.min(G.maxEn, G.en + (15 * eff)); 
