@@ -1,26 +1,44 @@
-/* Пульсация сферы при нажатии */
+:root {
+    --bg: #0a0a0c; --card: rgba(30, 30, 35, 0.95); --accent: #007aff;
+    --success: #34c759; --danger: #ff3b30; --gold: #ffcc00; --neon-blue: #00f2ff;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+    background-image: url('https://images.unsplash.com/photo-1519125323398-675f0ddb6308?q=80&w=2070&auto=format&fit=crop');
+    background-size: cover; background-position: center; background-attachment: fixed;
+    color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
+}
+body::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: -1; }
+
+.header-container { background: rgba(10, 10, 12, 0.9); padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px); }
+.top-nav { display: flex; justify-content: space-between; align-items: flex-start; }
+
+/* ПУЛЬСИРУЮЩАЯ СФЕРА */
 #work-sphere {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: radial-gradient(circle, #007aff, #004080);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 20px auto; box-shadow: 0 0 30px rgba(0,122,255,0.5);
     transition: transform 0.05s ease, box-shadow 0.1s ease;
-    cursor: pointer;
+    user-select: none;
 }
-#work-sphere:active {
-    transform: scale(0.92);
-    box-shadow: 0 0 50px rgba(0, 122, 255, 0.8);
-}
+#work-sphere:active { transform: scale(0.92); box-shadow: 0 0 60px rgba(0,122,255,0.8); }
+#work-sphere.danger-mode { background: radial-gradient(circle, #ff3b30, #8b0000); box-shadow: 0 0 40px rgba(255, 59, 48, 0.7); }
 
-/* Эффект для кнопок */
-.btn-action:active {
-    transform: scale(0.96);
-    filter: brightness(1.2);
-}
+.energy-track { height: 10px; background: #222; border-radius: 5px; overflow: hidden; margin-top: 8px; }
+.energy-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #5ac8fa); transition: width 0.3s ease-out; }
 
-/* Анимация плавного изменения прогресс-баров */
-.energy-fill, #quest-progress-bar {
-    transition: width 0.2s ease-out;
-}
+.content { padding: 15px; height: calc(100vh - 240px); overflow-y: auto; padding-bottom: 110px; }
+.view { display: none; flex-direction: column; gap: 12px; }
+.view.active { display: flex; }
 
-/* Красная сфера для опасных заказов */
-#work-sphere.danger-mode {
-    background: radial-gradient(circle, #ff3b30, #8b0000);
-    box-shadow: 0 0 30px rgba(255, 59, 48, 0.6);
-}
+.btn-action { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; width: 100%; transition: transform 0.1s; }
+.btn-action:active { transform: scale(0.96); filter: brightness(1.1); }
+
+/* МЕНЮ */
+.tab-bar { background: rgba(10, 10, 12, 0.98); position: fixed; bottom: 0; width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid rgba(255,255,255,0.1); }
+.tab-item { padding: 15px 0; text-align: center; color: #666; font-size: 10px; cursor: pointer; }
+.tab-item.active { color: var(--accent); background: rgba(0,122,255,0.05); border-top: 2px solid var(--accent); }
+
+/* ЗАКАЗ */
+#quest-bar { display: none; position: fixed; bottom: 85px; left: 10px; right: 10px; background: rgba(20, 20, 25, 0.98); border: 2px solid var(--accent); border-radius: 12px; padding: 15px; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
