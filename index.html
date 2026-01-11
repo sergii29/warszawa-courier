@@ -5,18 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <div id="quest-bar">
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div><b id="quest-title" style="color:var(--gold); font-size: 14px;">📦 НОВЫЙ ЗАКАЗ</b><br><small>Цена тает:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN</div>
+        <div>
+            <b id="quest-title" style="color:var(--gold); font-size: 14px;">📦 НОВЫЙ ЗАКАЗ</b><br>
+            <small>Цена тает:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
+        </div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 20px;">0:15</div>
     </div>
     <div id="quest-actions-choice" style="margin-top:12px; display: flex; gap: 8px;">
-        <button class="btn-action" style="background:var(--success); flex: 2;" id="accept-order-btn">ПРИНЯТЬ</button>
-        <button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" id="autopilot-btn">АВТОПИЛОТ<br><small>45 PLN / -0.15 LVL</small></button>
+        <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
+        <button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" onclick="activateAutopilot()">АВТОПИЛОТ<br><small>45 PLN / -0.15 LVL</small></button>
     </div>
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
         <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent);">Доставка в процессе...</div>
@@ -48,49 +51,67 @@
 </div>
 
 <div class="content">
+    
     <div id="view-main" class="view active">
         <div style="text-align: center; font-size: 12px; color: var(--gold); font-weight: bold;" id="district-ui">Район: Praga</div>
         <div id="work-sphere">
             <b style="font-size: 16px;">РАБОТАТЬ</b>
             <div id="click-rate-ui" style="font-size: 10px; opacity: 0.8; margin-top: 5px;">0.10 PLN</div>
         </div>
-        <button class="btn-action" style="background:#444;" id="collect-bottles-btn">🧴 СОБРАТЬ БУТЫЛКИ (+0.02 PLN)</button>
-        <button class="btn-action" style="background:#222; border: 1px solid var(--gold); color: var(--gold); margin-top: 5px;" id="switch-dist-btn">🏙️ СМЕНИТЬ РАЙОН</button>
+        <button class="btn-action" style="background:#444;" onclick="collectBottles()">🧴 СОБРАТЬ БУТЫЛКИ (+0.02 PLN)</button>
+        <button class="btn-action" style="background:#222; border: 1px solid var(--gold); color: var(--gold); margin-top: 5px;" onclick="switchTab('districts', this)">🏙️ СМЕНИТЬ РАЙОН</button>
     </div>
-    <div id="view-districts" class="view"></div>
+
+    <div id="view-districts" class="view">
+        <h3 style="margin:0; color:var(--gold)">🏙️ Выбор района</h3>
+        <div class="card"><b>Praga</b><br><small>Аренда: 50 PLN. Стартовый доход.</small><br><button class="btn-action" style="margin-top:5px; background:var(--success);" onclick="moveDistrict(0)">ТЕКУЩИЙ</button></div>
+        <div class="card"><b>Mokotów (LVL 2.5)</b><br><small>Аренда: 120 PLN. Доход: +50%.</small><br><button id="dist-btn-1" class="btn-action" style="margin-top:5px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button></div>
+        <div class="card"><b>Śródmieście (LVL 5.0)</b><br><small>Аренда: 300 PLN. Доход: x2.5.</small><br><button id="dist-btn-2" class="btn-action" style="margin-top:5px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button></div>
+    </div>
+
     <div id="view-quests" class="view">
         <h3 style="margin:0; color:var(--gold)">🏆 Карьерные цели</h3>
         <div id="milestones-list"></div>
     </div>
-    <div id="view-shop" class="view"></div>
+
+    <div id="view-shop" class="view">
+        <div class="card"><b>🧴 Вода (1.5л)</b><br><small>Восполняет энергию при кликах. 1500 мл.</small><button class="btn-action" style="margin-top:8px;" onclick="buyWater()">1.50 PLN</button></div>
+        <div class="card" style="border:1px solid #ffcc00"><b>☕ Кофе</b><br><small>Мгновенно восстанавливает +300 энергии.</small><button class="btn-action" style="background:#6f4e37; margin-top:8px;" onclick="buyDrink('coffee', 5)">5.00 PLN</button></div>
+        <div class="card" style="border:1px solid #34c759"><b>🔋 Энергетик (2 мин)</b><br><small>Замораживает расход энергии. Вода продолжает тратиться.</small><button class="btn-action" style="background:#34c759; margin-top:8px;" onclick="buyDrink('energy', 12)">12.00 PLN</button></div>
+    </div>
+
     <div id="view-invest" class="view">
         <h3 style="margin:0; color:var(--accent);">Инвестиции и Оборудование</h3>
+        <div class="card" style="border: 1px solid #5ac8fa;"><b>🚲 Аренда Электровелосипеда</b><br><small>Скорость выполнения заказов x2. 30 PLN за 10 минут.</small><button id="buy-bike-rent" class="btn-action" style="margin-top:8px; background:#5ac8fa; color:black;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button></div>
         <div id="upgrade-items"></div>
     </div>
+
     <div id="view-bank" class="view">
         <div class="card" style="border: 1px solid var(--neon-blue);">
             <h3 style="margin:0 0 10px 0; color:var(--neon-blue);">🎁 Секретный промокод</h3>
             <input type="text" id="promo-input" class="promo-input" placeholder="ВВЕДИТЕ СЛОВО...">
-            <button class="btn-action" style="background:var(--neon-blue); color:black;" id="promo-btn">АКТИВИРОВАТЬ</button>
+            <button class="btn-action" style="background:var(--neon-blue); color:black;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
         </div>
         <div id="bank-actions-ui"></div>
         <h3 style="margin:10px 0 5px 0; color:var(--gold)">Биржа Репутации</h3>
-        <button class="btn-action" id="exch-05" style="background:none; border:1px solid var(--gold); color:var(--gold); margin:10px 0;">ОБМЕН -0.05 LVL ⮕ 10 PLN</button>
-        <button class="btn-action" id="exch-10" style="background:none; border:1px solid var(--gold); color:var(--gold);">ОБМЕН -1.00 LVL ⮕ 300 PLN</button>
+        <button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold); margin:10px 0;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL ⮕ 10 PLN</button>
+        <button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold);" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL ⮕ 300 PLN</button>
         <h3 style="margin:15px 0 5px 0; color:var(--accent);">📜 История операций</h3>
         <div class="card history-list" id="history-ui"></div>
     </div>
 </div>
+
 <div id="game-log"></div>
+
 <div class="tab-bar">
-    <div class="tab-item active" id="tab-main">Город</div>
-    <div class="tab-item" id="tab-quests">Карьера</div>
-    <div class="tab-item" id="tab-shop">Магазин</div>
-    <div class="tab-item" id="tab-invest">Инвест</div>
-    <div class="tab-item" id="tab-bank">Банк</div>
+    <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
+    <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
+    <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
+    <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
+    <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
 </div>
 
-<script type="module" src="logic.js"></script>
+<script src="js/game.js" defer></script>
 </body>
 </html>
 ￼Enter
