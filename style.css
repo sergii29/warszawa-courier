@@ -1,1 +1,17 @@
+:root {
+    --bg: #0a0a0c; --accent: #007aff; --gold: #ffcc00; --danger: #ff3b30;
+}
+body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding: 15px; }
+#work-sphere {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: radial-gradient(circle, #007aff, #004080);
+    margin: 40px auto; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 30px rgba(0,122,255,0.5); font-weight: bold;
+}
+.energy-track { height: 10px; background: #222; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+.energy-fill { height: 100%; background: var(--accent); transition: 0.3s; }
+.btn-action { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; background: var(--accent); color: white; }
 
+/* Стили для капчи */
+#captcha-ui { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); flex-direction: column; align-items: center; justify-content: center; z-index: 10000; }
+#btn-captcha { width: 180px; height: 180px; border-radius: 50%; background: #34c759; font-size: 20px; }
