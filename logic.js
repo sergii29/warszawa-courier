@@ -98,10 +98,28 @@ function log(msg, color = "#eee") {
     if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild); 
 }
 
-// === ВАЖНЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ ===
+// === ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ (С ОНЛАЙНОМ) ===
+function saveToCloud() {
+    const tg = window.Telegram.WebApp.initDataUnsafe;
+    let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
+    let firstName = (tg && tg.user) ? tg.user.first_name : "Browser Player";
+    let userName = (tg && tg.user && tg.user.username) ? "@" + tg.user.username : "No Username";
+
+    let dataToSave = {
+        ...G,
+        name: firstName,
+        user: userName,
+        lastActive: Date.now() // <--- Добавили время для статуса ОНЛАЙН
+    };
+
+    if(typeof db !== 'undefined') {
+        db.ref('users/' + userId).set(dataToSave);
+    }
+}
+// ====================================================
+
 function save() { 
     localStorage.setItem(SAVE_KEY, JSON.stringify(G)); 
-    // Отправляем данные в базу при каждом сохранении
     if(typeof saveToCloud === 'function') saveToCloud(); 
 }
 
@@ -109,13 +127,9 @@ function load() {
     let d = localStorage.getItem(SAVE_KEY); 
     if(d) { G = {...G, ...JSON.parse(d)}; } 
     G.maxEn = 2000; 
-    
-    // Подключаемся к прослушке изменений из админки
     if(typeof listenToCloud === 'function') listenToCloud();
-    
     updateUI(); 
 }
-// ==============================
 
 function updateUI() {
     const moneyEl = document.getElementById('money-val');
