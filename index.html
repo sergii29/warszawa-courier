@@ -17,69 +17,30 @@
             touch-action: manipulation;
         }
         body::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: -1; }
-
-        /* HEADER */
         .header-container { position: sticky; top: 0; z-index: 500; background: rgba(10, 10, 12, 0.9); padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px); }
         .top-nav { display: flex; justify-content: space-between; align-items: flex-start; }
         .energy-track { height: 10px; background: #222; border-radius: 5px; overflow: hidden; margin-top: 8px; border: 1px solid #444; }
         .energy-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #5ac8fa); transition: width 0.1s linear; }
-
-        /* CONTENT AREA */
         .content { padding: 15px; height: calc(100vh - 240px); overflow-y: auto; padding-bottom: 110px; }
         .view { display: none; flex-direction: column; gap: 12px; }
         .view.active { display: flex; }
         .card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        
         .btn-action { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: opacity 0.2s; font-size: 14px; }
-        .btn-action:active { opacity: 0.7; }
-
-        /* WORK SPHERE */
-        #work-sphere { 
-            width: 140px; height: 140px; border-radius: 50%; 
-            background: radial-gradient(circle, #007aff, #004080); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            margin: 15px auto 10px auto; 
-            box-shadow: 0 0 30px rgba(0,122,255,0.5); 
-            user-select: none; touch-action: none;
-            transition: all 0.2s ease;
-        }
+        #work-sphere { width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, #007aff, #004080); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 15px auto 10px auto; box-shadow: 0 0 30px rgba(0,122,255,0.5); user-select: none; touch-action: none; transition: all 0.2s ease; }
         #work-sphere:active { transform: scale(0.92); }
-
-        /* LOGS */
-        #game-log {
-            background: rgba(0,0,0,0.7); height: 75px; overflow-y: hidden;
-            font-size: 10px; padding: 5px 12px; border-top: 1px solid #444;
-            color: #eee; display: flex; flex-direction: column-reverse;
-            backdrop-filter: blur(5px);
-        }
+        #game-log { background: rgba(0,0,0,0.7); height: 75px; overflow-y: hidden; font-size: 10px; padding: 5px 12px; border-top: 1px solid #444; color: #eee; display: flex; flex-direction: column-reverse; backdrop-filter: blur(5px); }
         .log-entry { margin-bottom: 2px; border-bottom: 1px solid #222; padding-bottom: 2px; }
-
-        /* QUEST / ORDER BAR */
-        #quest-bar { 
-            display: none; position: fixed; bottom: 85px; left: 10px; right: 10px; 
-            background: rgba(20, 20, 25, 0.98); border: 2px solid var(--accent); border-radius: 12px; 
-            padding: 15px; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); 
-            backdrop-filter: blur(15px);
-        }
-
-        /* TABS */
-        .tab-bar { 
-            background: rgba(10, 10, 12, 0.98); position: fixed; bottom: 0; width: 100%; 
-            display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid rgba(255,255,255,0.1); 
-        }
+        #quest-bar { display: none; position: fixed; bottom: 85px; left: 10px; right: 10px; background: rgba(20, 20, 25, 0.98); border: 2px solid var(--accent); border-radius: 12px; padding: 15px; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); backdrop-filter: blur(15px); }
+        .tab-bar { background: rgba(10, 10, 12, 0.98); position: fixed; bottom: 0; width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid rgba(255,255,255,0.1); }
         .tab-item { padding: 15px 0; text-align: center; color: #666; font-size: 10px; cursor: pointer; }
         .tab-item.active { color: var(--accent); border-top: 2px solid var(--accent); background: rgba(0,122,255,0.05); }
-
-        /* STATUS BADGES */
         #inventory-display { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; justify-content: flex-end; }
         .inv-item { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-size: 9px; color: #ccc; border: 1px solid rgba(255,255,255,0.05); }
-
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; display: none; margin-bottom: 2px; text-align:center; }
         #auto-status-ui { background: var(--gold); color: black; }
         #bike-status-ui { background: var(--neon-blue); color: black; }
         #buff-status-ui { background: var(--success); color: white; }
         .weather-badge { font-size: 9px; padding: 2px 8px; border-radius: 10px; background: #333; font-weight: bold; }
-
         .career-progress { height: 6px; background: #222; border-radius: 3px; margin: 8px 0; overflow: hidden; }
         .career-fill { height: 100%; background: var(--gold); transition: width 0.4s; }
     </style>
@@ -125,7 +86,6 @@
 </div>
 
 <div class="content">
-    
     <div id="view-main" class="view active">
         <div style="text-align: center; font-size: 12px; color: var(--gold); font-weight: bold;" id="district-ui">Район: Praga</div>
         <div id="work-sphere">
@@ -149,40 +109,25 @@
     </div>
 
     <div id="view-shop" class="view">
-        <div class="card">
-            <b>🧴 Вода (1.5л)</b><br><small>Восполняет энергию при кликах. 1500 мл.</small>
-            <button class="btn-action" style="margin-top:8px;" onclick="buyWater()">1.50 PLN</button>
-        </div>
-        <div class="card" style="border:1px solid #ffcc00">
-            <b>☕ Кофе</b><br><small>Мгновенно восстанавливает +300 энергии.</small>
-            <button class="btn-action" style="background:#6f4e37; margin-top:8px;" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
-        </div>
-        <div class="card" style="border:1px solid #34c759">
-            <b>🔋 Энергетик (2 мин)</b><br><small>Замораживает расход энергии. Вода продолжает тратиться.</small>
-            <button class="btn-action" style="background:#34c759; margin-top:8px;" onclick="buyDrink('energy', 12)">12.00 PLN</button>
-        </div>
+        <div class="card"><b>🧴 Вода (1.5л)</b><br><small>Восполняет энергию при кликах. 1500 мл.</small><button class="btn-action" style="margin-top:8px;" onclick="buyWater()">1.50 PLN</button></div>
+        <div class="card" style="border:1px solid #ffcc00"><b>☕ Кофе</b><br><small>Мгновенно восстанавливает +300 энергии.</small><button class="btn-action" style="background:#6f4e37; margin-top:8px;" onclick="buyDrink('coffee', 5)">5.00 PLN</button></div>
+        <div class="card" style="border:1px solid #34c759"><b>🔋 Энергетик (2 мин)</b><br><small>Замораживает расход энергии. Вода продолжает тратиться.</small><button class="btn-action" style="background:#34c759; margin-top:8px;" onclick="buyDrink('energy', 12)">12.00 PLN</button></div>
     </div>
 
     <div id="view-invest" class="view">
         <h3 style="margin:0; color:var(--accent);">Инвестиции и Оборудование</h3>
-        <div class="card" style="border: 1px solid #5ac8fa;">
-            <b>🚲 Аренда Электровелосипеда</b><br><small>Скорость выполнения заказов x2. 30 PLN за 10 минут.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px; background:#5ac8fa; color:black;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
-        </div>
+        <div class="card" style="border: 1px solid #5ac8fa;"><b>🚲 Аренда Электровелосипеда</b><br><small>Скорость выполнения заказов x2. 30 PLN за 10 минут.</small><button id="buy-bike-rent" class="btn-action" style="margin-top:8px; background:#5ac8fa; color:black;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button></div>
         <div id="upgrade-items"></div>
     </div>
 
     <div id="view-bank" class="view">
         <div id="bank-actions-ui"></div>
         <h3 style="margin:10px 0 5px 0; color:var(--gold)">Биржа Репутации</h3>
-        <small style="color:#aaa;">Вы можете продать свой опыт (LVL) за наличные.</small>
         <button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold); margin:10px 0;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL ⮕ 10 PLN</button>
         <button class="btn-action" style="background:none; border:1px solid var(--gold); color:var(--gold);" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL ⮕ 300 PLN</button>
     </div>
 </div>
-
 <div id="game-log"></div>
-
 <div class="tab-bar">
     <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
     <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
@@ -192,66 +137,21 @@
 </div>
 
 <script>
-    // ТЕЛЕГРАМ ИНИЦИАЛИЗАЦИЯ
-    const tg = window.Telegram.WebApp;
-    tg.expand(); tg.ready();
-
+    const tg = window.Telegram.WebApp; tg.expand(); tg.ready();
     const SAVE_KEY = "WARSZAWA_FOREVER";
-    
-    let G = { 
-        money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 600, 
-        waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, autoTime: 0,
-        scooter: false, bag: false, phone: false, district: 0, 
-        bikeRentTime: 0, buffTime: 0, unlocked: [],
-        activeMilestones: [
-            { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 },
-            { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 },
-            { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
-        ]
-    };
-
+    let G = { money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 600, waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, autoTime: 0, scooter: false, bag: false, phone: false, district: 0, bikeRentTime: 0, buffTime: 0, activeMilestones: [{ id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }] };
     let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false };
-    let curView = 'main';
-    let weather = "Ясно"; 
-    let isBroken = false;
+    let curView = 'main', weather = "Ясно", isBroken = false;
+    const DISTRICTS = [{ name: "Praga", minLvl: 0, rent: 50, mult: 1, price: 0 }, { name: "Mokotów", minLvl: 2.5, rent: 120, mult: 1.5, price: 150 }, { name: "Śródmieście", minLvl: 5.0, rent: 300, mult: 2.5, price: 500 }];
+    const UPGRADES = [{ id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам за каждый заказ.', price: 350, bonus: '+15% PLN' }, { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы прилетают на 40% чаще.', price: 1200, bonus: 'Заказы x1.4' }, { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Снижает расход энергии на 30% навсегда.', price: 500, bonus: '⚡ -30%' }];
 
-    const DISTRICTS = [
-        { name: "Praga", minLvl: 0, rent: 50, mult: 1, price: 0 },
-        { name: "Mokotów", minLvl: 2.5, rent: 120, mult: 1.5, price: 150 },
-        { name: "Śródmieście", minLvl: 5.0, rent: 300, mult: 2.5, price: 500 }
-    ];
-
-    const UPGRADES = [
-        { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам за каждый заказ.', price: 350, bonus: '+15% PLN' },
-        { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы прилетают на 40% чаще.', price: 1200, bonus: 'Заказы x1.4' },
-        { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Снижает расход энергии на 30% навсегда.', price: 500, bonus: '⚡ -30%' }
-    ];
-
-    // КЛИКЕР
     const sphere = document.getElementById('work-sphere');
-    sphere.addEventListener('touchstart', (e) => { 
-        e.preventDefault(); 
-        tg.HapticFeedback.impactOccurred('medium'); 
-        doWork(); 
-    }, {passive: false});
+    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
     sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
 
-    function log(msg, color = "#eee") {
-        const logEl = document.getElementById('game-log');
-        const entry = document.createElement('div');
-        entry.className = "log-entry";
-        entry.style.color = color;
-        entry.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}`;
-        logEl.appendChild(entry);
-        if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild);
-    }
-
+    function log(msg, color = "#eee") { const logEl = document.getElementById('game-log'); const entry = document.createElement('div'); entry.className = "log-entry"; entry.style.color = color; entry.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}`; logEl.appendChild(entry); if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild); }
     function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); }
-    function load() { 
-        let d = localStorage.getItem(SAVE_KEY); 
-        if(d) { G = {...G, ...JSON.parse(d)}; }
-        G.maxEn = 2000; updateUI(); 
-    }
+    function load() { let d = localStorage.getItem(SAVE_KEY); if(d) { G = {...G, ...JSON.parse(d)}; } G.maxEn = 2000; updateUI(); }
 
     function updateUI() {
         document.getElementById('money-val').innerText = G.money.toFixed(2) + " PLN";
@@ -262,218 +162,74 @@
         document.getElementById('water-val').innerText = Math.floor(G.waterStock);
         document.getElementById('district-ui').innerText = "Район: " + DISTRICTS[G.district].name;
         document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️" : "☀️");
-
         document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
         if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = `АВТО ${Math.floor(G.autoTime/60)}:${(G.autoTime%60<10?'0':'')+G.autoTime%60}`;
-        
         document.getElementById('bike-status-ui').style.display = G.bikeRentTime > 0 ? 'block' : 'none';
         if(G.bikeRentTime > 0) document.getElementById('bike-status-ui').innerText = `🚲 ${Math.floor(G.bikeRentTime/60)}:${(G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60}`;
-
-        const buffUI = document.getElementById('buff-status-ui');
-        buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
+        const buffUI = document.getElementById('buff-status-ui'); buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
         if(G.buffTime > 0) buffUI.innerText = `⚡ ${Math.floor(G.buffTime/60)}:${(G.buffTime%60<10?'0':'')+G.buffTime%60}`;
-
-        const invDisp = document.getElementById('inventory-display');
-        invDisp.innerHTML = '';
-        UPGRADES.forEach(up => {
-            if(G[up.id]) {
-                const span = document.createElement('span');
-                span.className = 'inv-item';
-                span.innerText = `${up.icon} ${up.bonus}`;
-                invDisp.appendChild(span);
-            }
-        });
-
-        const upgradeList = document.getElementById('upgrade-items');
-        upgradeList.innerHTML = '';
-        UPGRADES.forEach(up => {
-            if(!G[up.id]) {
-                const div = document.createElement('div');
-                div.className = 'card';
-                div.style.marginTop = '8px';
-                div.innerHTML = `<b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', ${up.price})">КУПИТЬ (${up.price} PLN)</button>`;
-                upgradeList.appendChild(div);
-            }
-        });
-
-        const qBar = document.getElementById('quest-bar');
-        if (order.visible && curView === 'main') {
-            qBar.style.display = 'block';
-            if (order.active) {
-                document.getElementById('quest-actions-choice').style.display = 'none';
-                document.getElementById('quest-active-ui').style.display = 'block';
-                document.getElementById('quest-timer-ui').innerText = `${Math.floor(order.time/60)}:${(order.time%60<10?'0':'')+order.time%60}`;
-                document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%";
-            } else {
-                document.getElementById('quest-actions-choice').style.display = 'flex';
-                document.getElementById('quest-active-ui').style.display = 'none';
-                document.getElementById('quest-timer-ui').innerText = `0:${(order.offerTimer<10?'0':'')+order.offerTimer}`;
-            }
-        } else { qBar.style.display = 'none'; }
-
+        const invDisp = document.getElementById('inventory-display'); invDisp.innerHTML = ''; UPGRADES.forEach(up => { if(G[up.id]) { const span = document.createElement('span'); span.className = 'inv-item'; span.innerText = `${up.icon} ${up.bonus}`; invDisp.appendChild(span); } });
+        const upgradeList = document.getElementById('upgrade-items'); upgradeList.innerHTML = ''; UPGRADES.forEach(up => { if(!G[up.id]) { const div = document.createElement('div'); div.className = 'card'; div.style.marginTop = '8px'; div.innerHTML = `<b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', ${up.price})">КУПИТЬ (${up.price} PLN)</button>`; upgradeList.appendChild(div); } });
+        const qBar = document.getElementById('quest-bar'); if (order.visible && curView === 'main') { qBar.style.display = 'block'; if (order.active) { document.getElementById('quest-actions-choice').style.display = 'none'; document.getElementById('quest-active-ui').style.display = 'block'; document.getElementById('quest-timer-ui').innerText = `${Math.floor(order.time/60)}:${(order.time%60<10?'0':'')+order.time%60}`; document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%"; } else { document.getElementById('quest-actions-choice').style.display = 'flex'; document.getElementById('quest-active-ui').style.display = 'none'; document.getElementById('quest-timer-ui').innerText = `0:${(order.offerTimer<10?'0':'')+order.offerTimer}`; } } else { qBar.style.display = 'none'; }
         document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
         document.getElementById('click-rate-ui').innerText = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2) + " PLN";
-        
         renderBank(); renderMilestones();
     }
 
     function doWork() {
         if (isBroken) return;
-        // Авто-питье воды при работе
-        if (G.waterStock > 0 && G.en < (G.maxEn - 10)) {
-            let eff = 1 + (Math.max(0.1, G.lvl) * 0.1);
-            let drink = Math.min(G.waterStock, 50); 
-            G.en = Math.min(G.maxEn, G.en + (drink * eff)); 
-            G.waterStock -= drink;
-            save();
-        }
+        if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); let drink = Math.min(G.waterStock, 50); G.en = Math.min(G.maxEn, G.en + (drink * eff)); G.waterStock -= drink; save(); }
         if (G.en < 1) return;
-
-        if(order.active) {
-            consumeResources(true); 
-            order.steps += (G.bikeRentTime > 0 ? 2 : 1);
-            if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; }
-            if(order.steps >= order.target) finishOrder(true);
-            updateUI(); return;
-        }
+        if(order.active) { consumeResources(true); order.steps += (G.bikeRentTime > 0 ? 2 : 1); if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; } if(order.steps >= order.target) finishOrder(true); updateUI(); return; }
         if(!order.visible) { if(Math.random() < (G.phone ? 0.35 : 0.18)) generateOrder(); }
         consumeResources(false);
-        G.money += 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult;
+        let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult;
+        G.money = parseFloat((G.money + gain).toFixed(2));
         G.lvl += 0.00025; G.totalClicks++; checkMilestones(); updateUI(); save();
     }
 
     function consumeResources(isOrder) {
-        if (G.buffTime > 0) {
-            if (isOrder || Math.random() < 0.2) G.waterStock = Math.max(0, G.waterStock - (isOrder ? 8 : 2));
-            return;
-        }
-        let cost = (G.scooter ? 7 : 10);
-        if (G.bikeRentTime > 0) cost *= 0.5;
-        if (weather === "Дождь") cost *= 1.2;
-        if (isOrder) cost *= 1.5; 
-        G.en = Math.max(0, G.en - cost);
-        G.waterStock = Math.max(0, G.waterStock - (isOrder ? 10 : 3));
+        if (G.buffTime > 0) { if (isOrder || Math.random() < 0.2) G.waterStock = Math.max(0, G.waterStock - (isOrder ? 8 : 2)); return; }
+        let cost = (G.scooter ? 7 : 10); if (G.bikeRentTime > 0) cost *= 0.5; if (weather === "Дождь") cost *= 1.2; if (isOrder) cost *= 1.5; 
+        G.en = Math.max(0, G.en - cost); G.waterStock = Math.max(0, G.waterStock - (isOrder ? 10 : 3));
     }
 
-    function generateOrder() {
-        if (order.visible || order.active) return;
-        order.visible = true; order.offerTimer = 15;
-        order.isCriminal = Math.random() < 0.08;
-        let d = 0.5 + Math.random() * 3.5;
-        let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1);
-        if(order.isCriminal) baseRew *= 5;
-        order.reward = baseRew.toFixed(2);
-        order.target = Math.floor(d * 160); order.steps = 0;
-        order.time = Math.floor(order.target / 1.5 + 45);
-        document.getElementById('quest-pay').innerText = order.reward;
-        updateUI();
-    }
-
-    function activateAutopilot() {
-        if(G.money >= 45 && G.lvl >= 0.15) {
-            G.money -= 45; G.lvl -= 0.15; G.autoTime += 600;
-            acceptOrder(); save(); updateUI();
-            log("Автопилот активирован на 10 мин", "var(--gold)");
-        }
-    }
-
+    function generateOrder() { if (order.visible || order.active) return; order.visible = true; order.offerTimer = 15; order.isCriminal = Math.random() < 0.08; let d = 0.5 + Math.random() * 3.5; let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1); if(order.isCriminal) baseRew *= 5; order.reward = parseFloat(baseRew.toFixed(2)); order.target = Math.floor(d * 160); order.steps = 0; order.time = Math.floor(order.target / 1.5 + 45); document.getElementById('quest-pay').innerText = order.reward.toFixed(2); updateUI(); }
+    function activateAutopilot() { if(G.money >= 45 && G.lvl >= 0.15) { G.money = parseFloat((G.money - 45).toFixed(2)); G.lvl -= 0.15; G.autoTime += 600; acceptOrder(); save(); updateUI(); } }
     function acceptOrder() { order.active = true; updateUI(); }
-    
-    function finishOrder(win) {
-        if(win) { 
-            if(order.isCriminal && Math.random() < 0.2) { 
-                G.lvl -= 1.0; G.money -= 100; log("🚔 ПОЛИЦИЯ! Штраф и LVL-", "var(--danger)"); 
-            } else { 
-                G.money += parseFloat(order.reward); 
-                G.lvl += (order.isCriminal ? 0.1 : 0.015); 
-                G.totalOrders++;
-                if(Math.random() < 0.40) { 
-                    let tip = 5 + Math.random()*15; G.money += tip; 
-                    log(`💰 Чаевые: +${tip.toFixed(2)} PLN`, "var(--success)"); 
-                }
-                log(`Заказ доставлен! +${order.reward} PLN`, "var(--success)");
-            }
-        } else {
-            log("Время заказа вышло!", "var(--danger)");
-        }
-        order.active = false; order.visible = false; updateUI(); save();
-    }
-
-    function checkMilestones() {
-        G.activeMilestones.forEach((m, i) => {
-            let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles;
-            if(cur >= m.goal) { 
-                G.money += m.reward; G.lvl += 0.01;
-                log(`🏆 ДОСТИЖЕНИЕ: ${m.name}`, "var(--gold)");
-                G.activeMilestones[i] = { id: Date.now()+i, name: m.name, goal: cur + Math.floor(m.goal*0.6), type: m.type, reward: m.reward + 20 };
-                save();
-            }
-        });
-    }
-
-    function renderMilestones() {
-        document.getElementById('milestones-list').innerHTML = G.activeMilestones.map(m => {
-            let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles;
-            return `<div class="card" style="margin-top:8px;">
-                <b>${m.name}</b>
-                <div style="font-size:10px; color:var(--gold); margin-top:2px;">Награда: +${m.reward} PLN, +0.01 LVL</div>
-                <div class="career-progress"><div class="career-fill" style="width:${Math.min(100,(cur/m.goal*100))}%"></div></div>
-                <small>${cur}/${m.goal}</small>
-            </div>`;
-        }).join('');
-    }
-
-    function collectBottles() { G.money += 0.02; G.totalBottles++; checkMilestones(); save(); updateUI(); }
-    function buyWater() { if(G.money >= 1.50) { G.money -= 1.50; G.waterStock += 1500; save(); updateUI(); } }
-    function buyDrink(type, p) { if(G.money >= p) { G.money -= p; if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300); else G.buffTime += 120; save(); updateUI(); } }
-    function buyInvest(type, p) { if(!G[type] && G.money >= p) { G.money -= p; G[type] = true; save(); updateUI(); } }
-    function rentBike() { if (G.money >= 30) { G.money -= 30; G.bikeRentTime += 600; save(); updateUI(); } }
-    function exchangeLvl(l, m) { if(G.lvl >= l) { G.lvl -= l; G.money += m; save(); updateUI(); } }
+    function finishOrder(win) { if(win) { if(order.isCriminal && Math.random() < 0.2) { G.lvl -= 1.0; G.money = parseFloat((G.money - 100).toFixed(2)); log("🚔 ПОЛИЦИЯ! Штраф -100", "var(--danger)"); } else { G.money = parseFloat((G.money + order.reward).toFixed(2)); G.lvl += (order.isCriminal ? 0.1 : 0.015); G.totalOrders++; if(Math.random() < 0.40) { let tip = 5 + Math.random()*15; G.money = parseFloat((G.money + tip).toFixed(2)); log(`💰 Чаевые: +${tip.toFixed(2)}`, "var(--success)"); } } } order.active = false; order.visible = false; updateUI(); save(); }
+    function checkMilestones() { G.activeMilestones.forEach((m, i) => { let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; if(cur >= m.goal) { G.money = parseFloat((G.money + m.reward).toFixed(2)); G.lvl += 0.01; log(`🏆 ДОСТИЖЕНИЕ: ${m.name}`, "var(--gold)"); G.activeMilestones[i] = { id: Date.now()+i, name: m.name, goal: cur + Math.floor(m.goal*0.6), type: m.type, reward: m.reward + 20 }; save(); } }); }
+    function renderMilestones() { document.getElementById('milestones-list').innerHTML = G.activeMilestones.map(m => { let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; return `<div class="card" style="margin-top:8px;"><b>${m.name}</b><div class="career-progress"><div class="career-fill" style="width:${Math.min(100,(cur/m.goal*100))}%"></div></div><small>${cur}/${m.goal}</small></div>`; }).join(''); }
+    function collectBottles() { G.money = parseFloat((G.money + 0.02).toFixed(2)); G.totalBottles++; checkMilestones(); save(); updateUI(); }
+    function buyWater() { if(G.money >= 1.50) { G.money = parseFloat((G.money - 1.50).toFixed(2)); G.waterStock += 1500; save(); updateUI(); } }
+    function buyDrink(type, p) { if(G.money >= p) { G.money = parseFloat((G.money - p).toFixed(2)); if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300); else G.buffTime += 120; save(); updateUI(); } }
+    function buyInvest(type, p) { if(!G[type] && G.money >= p) { G.money = parseFloat((G.money - p).toFixed(2)); G[type] = true; save(); updateUI(); } }
+    function rentBike() { if (G.money >= 30) { G.money = parseFloat((G.money - 30).toFixed(2)); G.bikeRentTime += 600; save(); updateUI(); } }
+    function exchangeLvl(l, m) { if(G.lvl >= l) { G.lvl -= l; G.money = parseFloat((G.money + m).toFixed(2)); save(); updateUI(); } }
     function switchTab(v, el) { curView = v; document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); document.getElementById('view-'+v).classList.add('active'); document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active')); el.classList.add('active'); updateUI(); }
-    function moveDistrict(id) { if (G.lvl >= DISTRICTS[id].minLvl && G.money >= DISTRICTS[id].price) { G.money -= DISTRICTS[id].price; G.district = id; save(); updateUI(); } }
-    function triggerBreakdown() { isBroken = true; log("🚲 ПОЛОМКА! Ремонт -7 PLN", "var(--danger)"); G.money -= 7; setTimeout(() => { isBroken = false; updateUI(); }, 3000); }
+    function moveDistrict(id) { if (G.lvl >= DISTRICTS[id].minLvl && G.money >= DISTRICTS[id].price) { G.money = parseFloat((G.money - DISTRICTS[id].price).toFixed(2)); G.district = id; save(); updateUI(); } }
+    function triggerBreakdown() { isBroken = true; log("🚲 ПОЛОМКА!", "var(--danger)"); G.money = parseFloat((G.money - 7).toFixed(2)); setTimeout(() => { isBroken = false; updateUI(); }, 3000); }
+    function renderBank() { const ui = document.getElementById('bank-actions-ui'); ui.innerHTML = G.debt <= 0 ? `<button class="btn-action" onclick="G.money=parseFloat((G.money+50).toFixed(2));G.debt=50;updateUI();save();">ВЗЯТЬ КРЕДИТ (50 PLN)</button>` : `<button class="btn-action" style="background:var(--success)" onclick="if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));G.debt=0;updateUI();save();}">ВЕРНУТЬ ДОЛГ (${G.debt} PLN)</button>`; }
 
-    function renderBank() {
-        const ui = document.getElementById('bank-actions-ui');
-        ui.innerHTML = G.debt <= 0 ? `<button class="btn-action" onclick="G.money+=50;G.debt=50;updateUI();save();">ВЗЯТЬ КРЕДИТ (50 PLN)</button>` : `<button class="btn-action" style="background:var(--success)" onclick="if(G.money>=G.debt){G.money-=G.debt;G.debt=0;updateUI();save();}">ВЕРНУТЬ ДОЛГ (${G.debt} PLN)</button>`;
-    }
-
-    // ОСНОВНОЙ ТИКЕР ИГРЫ (1 раз в секунду)
     setInterval(() => {
-        G.tax--; if(G.tax <= 0) { G.money *= 0.75; G.tax = 300; log("Налог 25% списан!"); save(); }
-        G.rent--; if(G.rent <= 0) { G.money -= DISTRICTS[G.district].rent; G.rent = 600; log(`Аренда ${DISTRICTS[G.district].name} списана`); save(); }
-        if (Math.random() < 0.015) { weather = Math.random() < 0.35 ? "Дождь" : "Ясно"; }
-        if (G.bikeRentTime > 0) { G.bikeRentTime--; if (G.bikeRentTime <= 0) { if (G.money >= 30) { G.money -= 30; G.bikeRentTime = 600; save(); } } }
+        G.tax--; if(G.tax <= 0) { G.money = parseFloat((G.money * 0.75).toFixed(2)); G.tax = 300; log("Налог 25%"); save(); }
+        G.rent--; if(G.rent <= 0) { G.money = parseFloat((G.money - DISTRICTS[G.district].rent).toFixed(2)); G.rent = 600; save(); }
+        if (Math.random() < 0.015) weather = Math.random() < 0.35 ? "Дождь" : "Ясно";
+        if (G.bikeRentTime > 0) { G.bikeRentTime--; if (G.bikeRentTime <= 0 && G.money >= 30) { G.money = parseFloat((G.money - 30).toFixed(2)); G.bikeRentTime = 600; } }
         if (G.buffTime > 0) G.buffTime--;
-
-        // ЛОГИКА АВТОПИЛОТА
         if (G.autoTime > 0) { 
             G.autoTime--;
             if (order.active && !isBroken) {
-                // Пытаемся пить воду если энергия кончается
-                if (G.waterStock > 0 && G.en < 400) {
-                    let eff = 1 + (Math.max(0.1, G.lvl) * 0.1);
-                    G.en = Math.min(G.maxEn, G.en + (20 * eff));
-                    G.waterStock = Math.max(0, G.waterStock - 20);
-                }
-                // На автопилоте работаем в 10 раз быстрее обычного тика (имитируем клики)
-                if (G.en > 5) {
-                    consumeResources(true);
-                    order.steps += (G.bikeRentTime > 0 ? 3 : 2); 
-                    if (order.steps >= order.target) finishOrder(true);
-                }
+                if (G.waterStock > 0 && G.en < 400) { let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); G.en = Math.min(G.maxEn, G.en + (20 * eff)); G.waterStock -= 20; }
+                if (G.en > 5) { consumeResources(true); order.steps += (G.bikeRentTime > 0 ? 3 : 2); if (order.steps >= order.target) finishOrder(true); }
             }
         }
-
         if(order.visible && !order.active) { order.offerTimer--; if(order.offerTimer <= 0) { order.visible = false; G.lvl -= 0.02; } }
         if(order.active) { order.time--; if(order.time <= 0) finishOrder(false); }
-        
-        // Обновление текстов таймеров в шапке
         document.getElementById('tax-timer').innerText = `Налог через: ${Math.floor(G.tax/60)}:${G.tax%60<10?'0':''}${G.tax%60}`;
         document.getElementById('rent-timer').innerText = `Аренда через: ${Math.floor(G.rent/60)}:${G.rent%60<10?'0':''}${G.rent%60}`;
         updateUI();
     }, 1000);
-
     window.onload = load;
 </script>
 </body>
