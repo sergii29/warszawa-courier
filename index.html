@@ -7,63 +7,92 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <div id="quest-bar">
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div><b id="quest-title" style="color:var(--gold);">📦 НОВЫЙ ЗАКАЗ</b><br><small>Цена тает:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN</div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 20px;">0:15</div>
     </div>
     <div id="quest-actions-choice" style="margin-top:12px; display: flex; gap: 8px;">
-        <button class="btn-action" style="background:var(--success); flex: 2;" id="btn-accept-order">ПРИНЯТЬ</button>
-        <button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" id="btn-auto-pilot">АВТОПИЛОТ<br><small>45 PLN / -0.15 LVL</small></button>
+        <button class="btn-action" style="background:var(--success); flex: 2;" id="btn-accept">ПРИНЯТЬ</button>
+        <button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" id="btn-auto">АВТОПИЛОТ<br><small>45 PLN / -0.15 LVL</small></button>
     </div>
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
-        <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent);">Доставка...</div>
+        <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent);">Доставка в процессе...</div>
         <div class="energy-track" style="height:8px;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success);"></div></div>
     </div>
 </div>
 
 <div class="header-container">
     <div class="top-nav">
-        <div><small>Баланс</small><br><b id="money-val" style="font-size: 20px;">0.00 PLN</b></div>
+        <div><small style="color:#aaa;">Баланс</small><br><b id="money-val" style="font-size: 20px;">0.00 PLN</b></div>
         <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
             <b id="lvl-val" style="color:var(--gold); font-size: 13px;">LVL 1.000000</b>
             <div id="inventory-display"></div>
             <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
             <div id="auto-status-ui" class="status-badge">АВТО 00:00</div>
-            <div id="buff-status-ui" class="status-badge">⚡ 00:00</div>
+            <div id="buff-status-ui" class="status-badge">⚡ BOOST 00:00</div>
             <span id="weather-ui" class="weather-badge">☀️ Ясно</span>
         </div>
     </div>
     <div style="font-size: 11px; margin-top: 10px; display: flex; justify-content: space-between;">
         <span>⚡ <b id="en-text">2000/2000</b></span>
-        <span>🧴 Вода: <b id="water-val">0</b> мл</span>
+        <span>🧴 Вода: <b id="water-val" style="color:var(--accent)">0</b> мл</span>
     </div>
     <div class="energy-track"><div id="en-fill" class="energy-fill"></div></div>
     <div style="display: flex; justify-content: space-between; font-size: 9px; margin-top: 5px; opacity: 0.8;">
-        <span id="tax-timer">Налог: 05:00</span>
-        <span id="rent-timer">Аренда: 10:00</span>
+        <span id="tax-timer">Налог через: 05:00</span>
+        <span id="rent-timer">Аренда через: 10:00</span>
     </div>
 </div>
 
 <div class="content">
     <div id="view-main" class="view active">
-        <div style="text-align: center; font-size: 12px; color: var(--gold);" id="district-ui">Район: Praga</div>
-        <div id="work-sphere"><b>РАБОТАТЬ</b><div id="click-rate-ui" style="font-size: 10px; opacity: 0.8;">0.10 PLN</div></div>
-        <button class="btn-action" style="background:#444;" id="btn-collect-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02)</button>
-        <button class="btn-action" style="background:#222; border:1px solid var(--gold); color:var(--gold);" id="btn-goto-districts">🏙️ СМЕНИТЬ РАЙОН</button>
+        <div style="text-align: center; font-size: 12px; color: var(--gold); font-weight: bold;" id="district-ui">Район: Praga</div>
+        <div id="work-sphere">
+            <b style="font-size: 16px;">РАБОТАТЬ</b>
+            <div id="click-rate-ui" style="font-size: 10px; opacity: 0.8; margin-top: 5px;">0.10 PLN</div>
+        </div>
+        <button class="btn-action" style="background:#444;" id="collect-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02 PLN)</button>
+        <button class="btn-action" style="background:#222; border: 1px solid var(--gold); color: var(--gold); margin-top: 5px;" id="btn-districts">🏙️ СМЕНИТЬ РАЙОН</button>
     </div>
-    <div id="view-districts" class="view"></div>
-    <div id="view-quests" class="view"><h3>Карьера</h3><div id="milestones-list"></div></div>
-    <div id="view-shop" class="view"></div>
-    <div id="view-invest" class="view"><div id="upgrade-items"></div></div>
+
+    <div id="view-districts" class="view">
+        <h3 style="margin:0; color:var(--gold)">🏙️ Выбор района</h3>
+        <div id="districts-list"></div>
+    </div>
+
+    <div id="view-quests" class="view">
+        <h3 style="margin:0; color:var(--gold)">🏆 Карьерные цели</h3>
+        <div id="milestones-list"></div>
+    </div>
+
+    <div id="view-shop" class="view">
+        <div id="shop-list"></div>
+    </div>
+
+    <div id="view-invest" class="view">
+        <h3 style="margin:0; color:var(--accent);">Инвестиции и Оборудование</h3>
+        <div id="upgrade-items"></div>
+    </div>
+
     <div id="view-bank" class="view">
+        <div class="card" style="border: 1px solid var(--neon-blue);">
+            <h3 style="margin:0 0 10px 0; color:var(--neon-blue);">🎁 Секретный промокод</h3>
+            <input type="text" id="promo-input" class="promo-input" placeholder="ВВЕДИТЕ СЛОВО...">
+            <button class="btn-action" style="background:var(--neon-blue); color:black;" id="activate-promo">АКТИВИРОВАТЬ</button>
+        </div>
         <div id="bank-actions-ui"></div>
-        <h3 style="color:var(--gold)">Биржа Репутации</h3>
-        <button class="btn-action" id="btn-exch-small">-0.05 LVL ⮕ 10 PLN</button>
-        <button class="btn-action" id="btn-exch-large">-1.00 LVL ⮕ 300 PLN</button>
+        <h3 style="margin:10px 0 5px 0; color:var(--gold)">Биржа Репутации</h3>
+        <button class="btn-action bank-btn" data-lvl="0.05" data-pay="10">ОБМЕН -0.05 LVL ⮕ 10 PLN</button>
+        <button class="btn-action bank-btn" data-lvl="1.00" data-pay="300">ОБМЕН -1.00 LVL ⮕ 300 PLN</button>
+        <h3 style="margin:15px 0 5px 0; color:var(--accent);">📜 История операций</h3>
+        <div class="card history-list" id="history-ui"></div>
     </div>
 </div>
+
 <div id="game-log"></div>
+
 <div class="tab-bar">
     <div class="tab-item active" data-view="main">Город</div>
     <div class="tab-item" data-view="quests">Карьера</div>
@@ -71,6 +100,7 @@
     <div class="tab-item" data-view="invest">Инвест</div>
     <div class="tab-item" data-view="bank">Банк</div>
 </div>
+
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script type="module" src="logic.js"></script>
 </body>
