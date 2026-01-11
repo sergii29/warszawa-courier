@@ -1,52 +1,62 @@
-hereimport { db, ref, onValue, update } from './database.js';
+import { db, ref, onValue, update, set } from './database.js';
 
 const tg = window.Telegram.WebApp;
-const userId = tg.initDataUnsafe?.user?.id || "local_user";
+// Используем ID пользователя Telegram для сохранения прогресса
+const userId = tg.initDataUnsafe?.user?.id || "admin_test";
 const userRef = ref(db, 'users/' + userId);
 
-let G = { money: 0, lvl: 1.0, en: 2000, waterStock: 0, scooter: false, phone: false, bag: false };
+// Твои новые стартовые настройки (0.00 PLN, LVL 1.0)
+let G = { 
+    money: 0, 
+    lvl: 1.0, 
+    en: 2000, 
+    waterStock: 0, 
+    scooter: false, 
+    phone: false, 
+    bag: false,
+    district: 0
+};
+
 let captchaActive = false;
 
-// Загрузка данных из Firebase
+// Подключаемся к твоей базе в Бельгии
 onValue(userRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
         G = data;
         updateUI();
     } else {
-        // Если игрока нет в базе, создаем новый аккаунт 0/1/0
-        update(userRef, G);
+        // Создаем запись в Firebase, если зашли первый раз
+        set(userRef, G);
     }
 });
 
 function updateUI() {
     document.getElementById('money-val').innerText = G.money.toFixed(2) + " PLN";
     document.getElementById('lvl-val').innerText = "LVL " + G.lvl.toFixed(6);
-    document.getElementById('water-val').innerText = G.waterStock;
+    document.getElementById('water-val').innerText = Math.floor(G.waterStock);
     document.getElementById('en-fill').style.width = (G.en / 20) + "%";
 }
 
-// АНТИКЛИКЕР: Появление капчи раз в 7-12 минут
+// Капча-антикликер: появляется внезапно
 function triggerCaptcha() {
     if (captchaActive) return;
     captchaActive = true;
-    const captchaUi = document.getElementById('captcha-ui');
-    captchaUi.style.display = 'flex';
+    document.getElementById('captcha-ui').style.display = 'flex';
     
-    // Если не нажать за 10 секунд - штраф
+    // Если игрок не нажмет за 10 секунд — штраф 5 PLN
     const timeout = setTimeout(() => {
         if (captchaActive) {
             G.money = Math.max(0, G.money - 5);
-            G.lvl -= 0.05;
+            update(userRef, { money: G.money });
             hideCaptcha();
-            alert("Ты пропустил проверку! Штраф за использование ботов.");
         }
     }, 10000);
 
     document.getElementById('btn-captcha').onclick = () => {
         clearTimeout(timeout);
         hideCaptcha();
-        G.money += 0.50; // Бонус за бдительность
+        G.money += 0.50; // Бонус за честность
         update(userRef, { money: G.money });
     };
 }
@@ -56,12 +66,14 @@ function hideCaptcha() {
     document.getElementById('captcha-ui').style.display = 'none';
 }
 
-setInterval(triggerCaptcha, (7 + Math.random() * 5) * 60000);
+// Запускаем проверку раз в 10 минут
+setInterval(triggerCaptcha, 600000);
 
-// Логика работы
+// Логика работы по сфере
 document.getElementById('work-sphere').onclick = () => {
     if (captchaActive || G.en <= 0) return;
     G.money += 0.10 * G.lvl;
-    G.en -= 10;
+    G.en -= 5;
+    // Данные сразу улетают в Firebase
     update(userRef, { money: G.money, en: G.en });
 };
