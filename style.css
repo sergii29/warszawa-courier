@@ -1,58 +1,53 @@
-here:root {
-    --bg: #0a0a0c; --card: #15151a; --accent: #007aff;
+:root {
+    --bg: #0a0a0c; --card: rgba(30, 30, 35, 0.95); --accent: #007aff;
     --success: #34c759; --danger: #ff3b30; --gold: #ffcc00;
 }
 body {
-    background: var(--bg); color: white; font-family: sans-serif;
-    margin: 0; padding: 0; overflow: hidden;
+    background: var(--bg); color: white; font-family: -apple-system, sans-serif;
+    margin: 0; padding: 0; height: 100vh; overflow: hidden;
 }
-.header-container { padding: 12px 15px; background: rgba(20,20,25,0.9); border-bottom: 1px solid #222; }
+.header-container { padding: 10px 15px; background: rgba(10, 10, 12, 0.95); border-bottom: 1px solid #222; }
 .top-nav { display: flex; justify-content: space-between; align-items: flex-start; }
-.money-text { font-size: 22px; color: var(--success); }
-.lvl-text { color: var(--gold); font-size: 14px; }
-.status-box { text-align: right; display: flex; flex-direction: column; gap: 4px; }
+.status-column { text-align: right; display: flex; flex-direction: column; gap: 3px; }
 
-/* Таймеры и бейджи */
-.timers-column { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; min-width: 60px; text-align: center; }
+/* ТАЙМЕРЫ И БЕЙДЖИ КАК НА СКРИНЕ */
+.badge-row { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
 .badge.bike { background: #00f2ff; color: black; }
 .badge.auto { background: var(--gold); color: black; }
 .badge.boost { background: var(--success); color: white; }
 
-/* Сфера */
+.energy-track { height: 8px; background: #222; border-radius: 4px; margin: 8px 0; overflow: hidden; }
+.energy-fill { height: 100%; background: var(--accent); transition: 0.3s; }
+
+/* СФЕРА ПО ЦЕНТРУ */
 #work-sphere {
     width: 150px; height: 150px; border-radius: 50%;
     background: radial-gradient(circle, #007aff, #004080);
-    margin: 25px auto; display: flex; flex-direction: column;
+    margin: 30px auto; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     box-shadow: 0 0 40px rgba(0,122,255,0.4); border: 2px solid rgba(255,255,255,0.1);
 }
-.work-label { font-size: 18px; font-weight: bold; }
 
-/* Кнопки */
+/* КНОПКИ */
 .btn-action {
-    width: 100%; padding: 14px; border-radius: 10px; border: none;
-    font-weight: bold; margin-bottom: 8px; cursor: pointer;
+    width: 90%; margin: 5px auto; display: block;
+    background: #2a2a2e; color: white; border: none;
+    padding: 12px; border-radius: 10px; font-weight: bold;
 }
-.btn-action.secondary { background: #333; color: #ccc; }
-.btn-action.outline { background: none; border: 2px solid var(--gold); color: var(--gold); }
+.btn-district { background: none; border: 1px solid var(--gold); color: var(--gold); }
 
-/* Меню (Таб-бар) */
+/* МЕНЮ ВНИЗУ */
 .tab-bar {
     position: fixed; bottom: 0; width: 100%; height: 60px;
     display: grid; grid-template-columns: repeat(5, 1fr);
     background: #050505; border-top: 1px solid #222;
 }
-.tab-item {
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; color: #555; cursor: pointer;
-}
+.tab-item { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #555; }
 .tab-item.active { color: var(--accent); background: rgba(0,122,255,0.1); border-top: 2px solid var(--accent); }
 
-/* Карточка заказа */
-.order-card {
-    background: var(--card); border: 2px solid var(--accent);
-    border-radius: 12px; padding: 12px; margin-top: 10px;
+/* ПРОВЕРКА (КАПЧА) */
+#captcha-ui {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.98);
+    display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000;
 }
-.order-header { display: flex; justify-content: space-between; font-weight: bold; color: var(--gold); }
-.timer-red { color: var(--danger); font-size: 18px; }
