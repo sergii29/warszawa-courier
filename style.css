@@ -1,70 +1,45 @@
 :root {
-    --bg: #0a0a0c; --card: #15151a; --accent: #007aff;
-    --success: #34c759; --danger: #ff3b30; --gold: #ffcc00;
+    --bg: #0a0a0c; --card: rgba(30, 30, 35, 0.95); --accent: #007aff;
+    --success: #34c759; --danger: #ff3b30; --gold: #ffcc00; --neon-blue: #00f2ff;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
-    background: var(--bg); color: white; font-family: -apple-system, sans-serif;
+    background-color: var(--bg); color: white; font-family: -apple-system, sans-serif;
     margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden;
 }
-
-/* ФИКС ШАПКИ ДЛЯ ТГ */
-.header-container { 
-    padding: 10px 15px; background: rgba(20,20,25,0.95); 
-    border-bottom: 1px solid #222; position: relative; z-index: 10;
-}
-.top-nav { display: flex; justify-content: space-between; align-items: flex-start; }
+.header-container { padding: 10px 15px; background: rgba(10, 10, 12, 0.95); border-bottom: 1px solid #333; }
+.top-nav { display: flex; justify-content: space-between; }
 .money-text { font-size: 22px; color: var(--success); font-weight: bold; }
-.status-box { text-align: right; }
 
-.badge-row { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; margin-top: 4px; }
-.badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; min-width: 55px; text-align: center; }
-.badge.bike { background: #00f2ff; color: black; }
-.badge.auto { background: var(--gold); color: black; }
-.badge.boost { background: var(--success); color: white; }
+/* КАРТОЧКА ЗАКАЗА (QUEST BAR) */
+#quest-bar {
+    display: none; position: fixed; bottom: 80px; left: 10px; right: 10px;
+    background: rgba(20, 20, 25, 0.98); border: 2px solid var(--accent);
+    border-radius: 12px; padding: 15px; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
+}
 
-.energy-track { height: 8px; background: #222; border-radius: 4px; margin: 10px 0; overflow: hidden; border: 1px solid #333; }
-.energy-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; }
+.energy-track { height: 8px; background: #222; border-radius: 4px; margin: 8px 0; overflow: hidden; }
+.energy-fill { height: 100%; background: var(--accent); transition: width 0.1s linear; }
 
-/* ФИКС КОНТЕНТА */
-.content { height: calc(100vh - 220px); overflow-y: auto; padding: 10px 15px 80px 15px; }
-.view { display: none; flex-direction: column; }
+.content { height: calc(100vh - 250px); overflow-y: auto; padding: 10px 15px; }
+.view { display: none; flex-direction: column; gap: 10px; }
 .view.active { display: flex; }
 
-/* СФЕРА - ИДЕАЛЬНЫЙ КРУГ */
 #work-sphere {
-    width: 150px; height: 150px; border-radius: 50%;
+    width: 140px; height: 140px; border-radius: 50%;
     background: radial-gradient(circle, #007aff, #004080);
     margin: 20px auto; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    box-shadow: 0 0 35px rgba(0,122,255,0.4); border: 2px solid rgba(255,255,255,0.1);
-    cursor: pointer; transition: transform 0.1s;
+    box-shadow: 0 0 30px rgba(0,122,255,0.5); border: 2px solid rgba(255,255,255,0.1);
 }
-#work-sphere:active { transform: scale(0.95); }
 
-/* КНОПКИ */
-.btn-action {
-    width: 100%; padding: 14px; border-radius: 10px; border: none;
-    font-weight: bold; margin-bottom: 8px; font-size: 14px;
-    background: #2a2a2e; color: white;
-}
-.btn-district { background: none; border: 1.5px solid var(--gold); color: var(--gold); }
-
-/* ФИКС МЕНЮ ТГ */
 .tab-bar {
     position: fixed; bottom: 0; width: 100%; height: 65px;
-    display: flex; background: #050505; border-top: 1px solid #222;
-    padding-bottom: env(safe-area-inset-bottom); z-index: 100;
+    display: flex; background: #050505; border-top: 1px solid #333;
 }
-.tab-item {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    font-size: 11px; color: #555; font-weight: bold;
-}
-.tab-item.active { color: var(--accent); background: rgba(0,122,255,0.1); border-top: 2px solid var(--accent); }
+.tab-item { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #555; }
+.tab-item.active { color: var(--accent); border-top: 2px solid var(--accent); }
 
-/* КАПЧА */
-#captcha-ui {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.98);
-    display: none; flex-direction: column; align-items: center; 
-    justify-content: center; z-index: 9999;
-}
+#game-log { background: rgba(0,0,0,0.7); height: 60px; overflow: hidden; font-size: 10px; padding: 5px 12px; border-top: 1px solid #444; color: #eee; display: flex; flex-direction: column-reverse; }
+.log-entry { margin-bottom: 2px; border-bottom: 1px solid #222; }
+.btn-action { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; background: var(--accent); color: white; margin-top: 5px; }
