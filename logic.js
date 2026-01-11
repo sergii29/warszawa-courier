@@ -1,4 +1,4 @@
-import { db, ref, onValue, update } from './database.js';
+hereimport { db, ref, onValue, update } from './database.js';
 
 const tg = window.Telegram.WebApp;
 const userId = tg.initDataUnsafe?.user?.id || "local_user";
@@ -65,4 +65,3 @@ document.getElementById('work-sphere').onclick = () => {
     G.en -= 10;
     update(userRef, { money: G.money, en: G.en });
 };
-
