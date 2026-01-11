@@ -3,47 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Courier Admin Panel 🛠️</title>
+    <title>Warszawa Admin Center 🚁</title>
     <style>
-        body { background: #111; color: white; font-family: monospace; padding: 20px; max-width: 600px; margin: 0 auto; }
-        input, button { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; font-size: 16px; border-radius: 8px; }
-        input { background: #222; border: 1px solid #444; color: #0f0; }
-        button { background: #007aff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { opacity: 0.8; }
-        .card { background: #1e1e23; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
-        h2 { border-bottom: 1px solid #333; padding-bottom: 5px; color: #ffcc00; }
-        .user-info { color: #aaa; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        :root { --bg: #0f0f13; --card: #1e1e24; --accent: #007aff; --green: #34c759; --text: #eee; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, monospace; margin: 0; padding: 20px; }
+        
+        .stats-bar { display: flex; gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #333; flex: 1; text-align: center; }
+        .stat-val { font-size: 24px; font-weight: bold; display: block; margin-bottom: 5px; }
+        .stat-label { color: #888; font-size: 12px; text-transform: uppercase; }
+        .online-dot { height: 10px; width: 10px; background: var(--green); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--green); }
+
+        .table-container { overflow-x: auto; background: var(--card); border-radius: 12px; border: 1px solid #333; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #333; }
+        th { background: rgba(0,0,0,0.3); color: #aaa; font-size: 12px; text-transform: uppercase; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        
+        .user-name { font-weight: bold; color: #fff; }
+        .user-nick { color: #aaa; font-size: 11px; }
+        .status-badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+        .status-on { background: rgba(52, 199, 89, 0.2); color: var(--green); border: 1px solid var(--green); }
+        .status-off { background: rgba(255, 255, 255, 0.1); color: #777; }
+        .btn-edit { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-edit:hover { opacity: 0.8; }
+
+        #editor-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
+        .editor-content { background: #222; padding: 25px; border-radius: 16px; width: 90%; max-width: 400px; border: 1px solid #444; position: relative; }
+        input { background: #111; border: 1px solid #444; color: white; padding: 10px; width: 100%; margin: 5px 0 15px 0; border-radius: 6px; box-sizing: border-box; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #777; }
     </style>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
 
-    <h1 style="text-align:center">🛠️ Админка Курьера</h1>
+    <h2 style="margin-top:0">🛰️ Warszawa Control Center</h2>
 
-    <div class="card">
-        <h3>🔍 Поиск игрока</h3>
-        <input type="text" id="user-id-input" placeholder="Введите ID игрока">
-        <button onclick="loadUser()">Найти и Загрузить</button>
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-val" style="color:var(--green)" id="online-count">0</span>
+            <span class="stat-label"><span class="online-dot"></span> Игроков Онлайн</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-val" id="total-count">0</span>
+            <span class="stat-label">Всего в базе</span>
+        </div>
     </div>
 
-    <div id="editor" class="card" style="display:none;">
-        <div class="user-info">
-            ID: <span id="current-id" style="color:#00f2ff"></span><br>
-            Имя: <b id="player-name" style="color:var(--gold); font-size:18px;">---</b><br>
-            Ник: <span id="player-nick">---</span>
-        </div>
-        
-        <label>💰 Деньги (PLN):</label>
-        <input type="number" id="edit-money">
-        
-        <label>⭐ Уровень (LVL):</label>
-        <input type="number" id="edit-lvl">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Игрок</th>
+                    <th>Баланс</th>
+                    <th>LVL</th>
+                    <th>Статус</th>
+                    <th>Управление</th>
+                </tr>
+            </thead>
+            <tbody id="players-list">
+                <tr><td colspan="5" style="text-align:center; padding: 20px;">Загрузка данных... 📡</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-        <button onclick="saveChanges()" style="background: #34c759; margin-top: 15px;">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+    <div id="editor-modal">
+        <div class="editor-content">
+            <span class="close-btn" onclick="closeEditor()">×</span>
+            <h3 style="margin-top:0">✏️ Редактирование</h3>
+            <div style="margin-bottom:15px; color:#aaa; font-size:12px;">
+                ID: <span id="edit-id" style="color:#00f2ff">---</span><br>
+                Игрок: <span id="edit-name" style="color:white">---</span>
+            </div>
+
+            <label>💰 Деньги (PLN)</label>
+            <input type="number" id="input-money">
+
+            <label>⭐ Уровень (LVL)</label>
+            <input type="number" id="input-lvl">
+
+            <button class="btn-edit" style="width:100%; background:#34c759; padding:12px; font-size:16px;" onclick="saveUserChanges()">СОХРАНИТЬ</button>
+        </div>
     </div>
 
     <script>
+        // ТВОИ КЛЮЧИ (Я ВСТАВИЛ ИХ ИЗ ТВОЕГО СООБЩЕНИЯ ВЫШЕ)
         const firebaseConfig = {
           apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
           authDomain: "warszawa-courier.firebaseapp.com",
@@ -57,41 +103,76 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        function loadUser() {
-            const userId = document.getElementById('user-id-input').value.trim();
-            if(!userId) return alert("Введите ID!");
+        let allUsersData = {};
 
-            db.ref('users/' + userId).once('value').then((snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    document.getElementById('editor').style.display = 'block';
-                    document.getElementById('current-id').innerText = userId;
-                    
-                    // Выводим имя и ник
-                    document.getElementById('player-name').innerText = data.name || "Без имени";
-                    document.getElementById('player-nick').innerText = data.user || "Без ника";
+        db.ref('users').on('value', (snapshot) => {
+            const users = snapshot.val();
+            if (!users) {
+                document.getElementById('players-list').innerHTML = "<tr><td colspan='5' style='text-align:center'>База пуста 🌑</td></tr>";
+                return;
+            }
+            allUsersData = users;
+            renderTable(users);
+        });
 
-                    document.getElementById('edit-money').value = data.money;
-                    document.getElementById('edit-lvl').value = data.lvl;
-                } else {
-                    alert("Игрок не найден! (Проверь ID или пусть он зайдет в игру)");
-                }
+        function renderTable(users) {
+            const tbody = document.getElementById('players-list');
+            tbody.innerHTML = '';
+            let onlineCounter = 0;
+            let totalCounter = 0;
+            const now = Date.now();
+            const usersArray = Object.entries(users).map(([id, data]) => ({ id, ...data }));
+            
+            usersArray.sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
+
+            usersArray.forEach(user => {
+                totalCounter++;
+                const lastSeen = user.lastActive || 0;
+                const isOnline = (now - lastSeen) < (3 * 60 * 1000); 
+                if (isOnline) onlineCounter++;
+                let timeString = lastSeen === 0 ? "Давно" : new Date(lastSeen).toLocaleTimeString();
+                if(isOnline) timeString = "🔥 Сейчас";
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-name">${user.name || 'Неизвестный'}</div>
+                        <div class="user-nick">${user.user || user.id}</div>
+                    </td>
+                    <td style="color:var(--green)">${(user.money || 0).toFixed(2)} PLN</td>
+                    <td style="color:#ffcc00">${(user.lvl || 1).toFixed(2)}</td>
+                    <td>
+                        <span class="status-badge ${isOnline ? 'status-on' : 'status-off'}">${isOnline ? '🟢 ON' : '⚫ OFF'}</span>
+                        <div style="font-size:10px; color:#666; margin-top:3px;">${timeString}</div>
+                    </td>
+                    <td><button class="btn-edit" onclick="openEditor('${user.id}')">✏️ Edit</button></td>
+                `;
+                tbody.appendChild(row);
             });
+            document.getElementById('online-count').innerText = onlineCounter;
+            document.getElementById('total-count').innerText = totalCounter;
         }
 
-        function saveChanges() {
-            const userId = document.getElementById('user-id-input').value.trim();
-            const newMoney = parseFloat(document.getElementById('edit-money').value);
-            const newLvl = parseFloat(document.getElementById('edit-lvl').value);
-
-            db.ref('users/' + userId).update({
-                money: newMoney,
-                lvl: newLvl
-            }).then(() => {
-                alert("✅ Сохранено!");
-            });
+        function openEditor(userId) {
+            const user = allUsersData[userId];
+            if (!user) return;
+            document.getElementById('edit-id').innerText = userId;
+            document.getElementById('edit-name').innerText = user.name || "---";
+            document.getElementById('input-money').value = user.money;
+            document.getElementById('input-lvl').value = user.lvl;
+            document.getElementById('editor-modal').style.display = 'flex';
         }
+
+        function closeEditor() { document.getElementById('editor-modal').style.display = 'none'; }
+
+        function saveUserChanges() {
+            const userId = document.getElementById('edit-id').innerText;
+            const newMoney = parseFloat(document.getElementById('input-money').value);
+            const newLvl = parseFloat(document.getElementById('input-lvl').value);
+            db.ref('users/' + userId).update({ money: newMoney, lvl: newLvl }).then(() => closeEditor());
+        }
+
+        window.onclick = function(event) { if (event.target == document.getElementById('editor-modal')) closeEditor(); }
     </script>
 </body>
 </html>
