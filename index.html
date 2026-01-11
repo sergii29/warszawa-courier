@@ -2,20 +2,20 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Warszawa Courier</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="captcha-ui">
-        <h1 style="color:var(--danger)">ПРОВЕРКА!</h1>
-        <button id="btn-captcha" style="width:120px; height:120px; border-radius:50%; background:var(--success); border:none; color:white; font-weight:bold;">Я ТУТ!</button>
+        <h1 style="color:var(--danger); margin-bottom:20px;">ПРОВЕРКА!</h1>
+        <button id="btn-captcha" style="width:130px; height:130px; border-radius:50%; background:var(--success); border:none; color:white; font-weight:bold; font-size:18px;">Я ТУТ!</button>
     </div>
 
     <div class="header-container">
         <div class="top-nav">
-            <div><small style="opacity:0.7">Баланс</small><br><b id="money-val" style="font-size:22px; color:var(--success)">0.00 PLN</b></div>
-            <div class="status-column">
+            <div><small style="opacity:0.6">Баланс</small><br><b id="money-val" class="money-text">0.00 PLN</b></div>
+            <div class="status-box">
                 <b id="lvl-val" style="color:var(--gold); font-size:14px;">LVL 1.000000</b>
                 <div class="badge-row">
                     <div id="bike-status-ui" class="badge bike">🚲 00:00</div>
@@ -24,27 +24,31 @@
                 </div>
             </div>
         </div>
-        <div style="font-size:11px; margin-top:8px; display:flex; justify-content:space-between;">
+        <div style="font-size:11px; margin-top:10px; display:flex; justify-content:space-between;">
             <span>⚡ <b id="en-text">2000/2000</b></span>
             <span>🧴 Вода: <b id="water-val" style="color:var(--accent)">0</b> мл</span>
         </div>
         <div class="energy-track"><div id="en-fill" class="energy-fill" style="width:100%"></div></div>
-        <div style="font-size:10px; opacity:0.6; display:flex; justify-content:space-between;">
-            <span id="tax-timer">Налог через: 5:00</span>
-            <span id="rent-timer">Аренда через: 10:00</span>
+        <div style="font-size:10px; opacity:0.5; display:flex; justify-content:space-between;">
+            <span id="tax-timer">Налог: 5:00</span>
+            <span id="rent-timer">Аренда: 10:00</span>
         </div>
     </div>
 
-    <div class="content" style="padding-top:10px;">
+    <div class="content">
         <div id="view-main" class="view active">
-            <div style="text-align:center; color:var(--gold); font-size:12px;">Район: Praga</div>
+            <div style="text-align:center; color:var(--gold); font-size:12px; margin-bottom:5px;">Район: Praga</div>
             <div id="work-sphere">
-                <b style="font-size:18px;">РАБОТАТЬ</b>
+                <span style="font-size:18px; font-weight:bold;">РАБОТАТЬ</span>
                 <small id="click-rate-ui" style="opacity:0.7">0.10 PLN</small>
             </div>
-            <button class="btn-action" id="btn-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02 PLN)</button>
-            <button class="btn-action btn-district">🏙️ СМЕНИТЬ РАЙОН</button>
+            <button class="btn-action" id="btn-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02)</button>
+            <button class="btn-action btn-district" id="btn-districts">🏙️ СМЕНИТЬ РАЙОН</button>
         </div>
+        <div id="view-quests" class="view"><h3 style="text-align:center;">🏆 Карьера</h3></div>
+        <div id="view-shop" class="view"><h3 style="text-align:center;">🛒 Магазин</h3></div>
+        <div id="view-invest" class="view"><h3 style="text-align:center;">📈 Инвест</h3></div>
+        <div id="view-bank" class="view"><h3 style="text-align:center;">🏦 Банк</h3></div>
     </div>
 
     <div class="tab-bar">
