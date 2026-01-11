@@ -8,58 +8,43 @@
 </head>
 <body>
     <div id="captcha-ui">
-        <h2 style="color:var(--danger)">ПРОВЕРКА!</h2>
-        <button id="btn-captcha">Я ТУТ!</button>
+        <h1 style="color:var(--danger)">ПРОВЕРКА!</h1>
+        <button id="btn-captcha" style="width:120px; height:120px; border-radius:50%; background:var(--success); border:none; color:white; font-weight:bold;">Я ТУТ!</button>
     </div>
 
     <div class="header-container">
         <div class="top-nav">
-            <div><small>Баланс</small><br><b id="money-val" class="money-text">0.00 PLN</b></div>
-            <div class="status-box">
-                <b id="lvl-val" class="lvl-text">LVL 1.000000</b>
-                <div id="inventory-display" class="inv-row"></div>
-                <div class="timers-column">
+            <div><small style="opacity:0.7">Баланс</small><br><b id="money-val" style="font-size:22px; color:var(--success)">0.00 PLN</b></div>
+            <div class="status-column">
+                <b id="lvl-val" style="color:var(--gold); font-size:14px;">LVL 1.000000</b>
+                <div class="badge-row">
                     <div id="bike-status-ui" class="badge bike">🚲 00:00</div>
                     <div id="auto-status-ui" class="badge auto">АВТО 00:00</div>
                     <div id="buff-status-ui" class="badge boost">⚡ 00:00</div>
                 </div>
             </div>
         </div>
-        <div class="resource-row">
+        <div style="font-size:11px; margin-top:8px; display:flex; justify-content:space-between;">
             <span>⚡ <b id="en-text">2000/2000</b></span>
-            <span>🧴 Вода: <b id="water-val" class="water-text">0</b> мл</span>
+            <span>🧴 Вода: <b id="water-val" style="color:var(--accent)">0</b> мл</span>
         </div>
-        <div class="energy-track"><div id="en-fill" class="energy-fill"></div></div>
-        <div class="small-timers">
+        <div class="energy-track"><div id="en-fill" class="energy-fill" style="width:100%"></div></div>
+        <div style="font-size:10px; opacity:0.6; display:flex; justify-content:space-between;">
             <span id="tax-timer">Налог через: 5:00</span>
             <span id="rent-timer">Аренда через: 10:00</span>
         </div>
     </div>
 
-    <div class="content">
+    <div class="content" style="padding-top:10px;">
         <div id="view-main" class="view active">
-            <div class="district-label">Район: Praga</div>
+            <div style="text-align:center; color:var(--gold); font-size:12px;">Район: Praga</div>
             <div id="work-sphere">
-                <span class="work-label">РАБОТАТЬ</span>
-                <small id="click-rate-ui">0.10 PLN</small>
+                <b style="font-size:18px;">РАБОТАТЬ</b>
+                <small id="click-rate-ui" style="opacity:0.7">0.10 PLN</small>
             </div>
-            <button class="btn-action secondary" id="btn-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02 PLN)</button>
-            <button class="btn-action outline" id="btn-change-district">🏙️ СМЕНИТЬ РАЙОН</button>
-            
-            <div id="quest-bar" class="order-card">
-                <div class="order-header">
-                    <span>📦 НОВЫЙ ЗАКАЗ</span>
-                    <span id="quest-timer-ui" class="timer-red">2:15</span>
-                </div>
-                <div class="order-pay">Цена тает: <span id="quest-pay">0.00</span> PLN</div>
-                <div id="order-status-text">Доставка в процессе...</div>
-                <div class="order-progress-bg"><div id="quest-progress-bar"></div></div>
-            </div>
+            <button class="btn-action" id="btn-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02 PLN)</button>
+            <button class="btn-action btn-district">🏙️ СМЕНИТЬ РАЙОН</button>
         </div>
-        <div id="view-quests" class="view"><h3>Карьера</h3></div>
-        <div id="view-shop" class="view"><h3>Магазин</h3></div>
-        <div id="view-invest" class="view"><h3>Инвест</h3></div>
-        <div id="view-bank" class="view"><h3>Банк</h3></div>
     </div>
 
     <div class="tab-bar">
