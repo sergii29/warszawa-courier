@@ -12,6 +12,7 @@
         button:hover { opacity: 0.8; }
         .card { background: #1e1e23; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
         h2 { border-bottom: 1px solid #333; padding-bottom: 5px; color: #ffcc00; }
+        .user-info { color: #aaa; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -22,13 +23,16 @@
 
     <div class="card">
         <h3>🔍 Поиск игрока</h3>
-        <p style="color:#aaa; font-size:12px;">Введи ID из базы данных (или test_user_from_browser)</p>
-        <input type="text" id="user-id-input" placeholder="Введите ID (например: 123456789)">
-        <button onclick="loadUser()">Загрузить данные</button>
+        <input type="text" id="user-id-input" placeholder="Введите ID игрока">
+        <button onclick="loadUser()">Найти и Загрузить</button>
     </div>
 
     <div id="editor" class="card" style="display:none;">
-        <h3>✏️ Редактор: <span id="current-id" style="color:#00f2ff"></span></h3>
+        <div class="user-info">
+            ID: <span id="current-id" style="color:#00f2ff"></span><br>
+            Имя: <b id="player-name" style="color:var(--gold); font-size:18px;">---</b><br>
+            Ник: <span id="player-nick">---</span>
+        </div>
         
         <label>💰 Деньги (PLN):</label>
         <input type="number" id="edit-money">
@@ -63,10 +67,15 @@
                 if (data) {
                     document.getElementById('editor').style.display = 'block';
                     document.getElementById('current-id').innerText = userId;
+                    
+                    // Выводим имя и ник
+                    document.getElementById('player-name').innerText = data.name || "Без имени";
+                    document.getElementById('player-nick').innerText = data.user || "Без ника";
+
                     document.getElementById('edit-money').value = data.money;
                     document.getElementById('edit-lvl').value = data.lvl;
                 } else {
-                    alert("Игрок не найден в базе! Пусть сначала запустит игру.");
+                    alert("Игрок не найден! (Проверь ID или пусть он зайдет в игру)");
                 }
             });
         }
@@ -80,7 +89,7 @@
                 money: newMoney,
                 lvl: newLvl
             }).then(() => {
-                alert("✅ Данные обновлены! Смотри в игру.");
+                alert("✅ Сохранено!");
             });
         }
     </script>
