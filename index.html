@@ -8,47 +8,51 @@
 </head>
 <body>
     <div id="captcha-ui">
-        <h1 style="color:var(--danger); margin-bottom:20px;">ПРОВЕРКА!</h1>
-        <button id="btn-captcha" style="width:130px; height:130px; border-radius:50%; background:var(--success); border:none; color:white; font-weight:bold; font-size:18px;">Я ТУТ!</button>
+        <h1 style="color:var(--danger)">ПРОВЕРКА!</h1>
+        <button id="btn-captcha" style="width:120px; height:120px; border-radius:50%; background:var(--success); border:none; color:white; font-weight:bold;">Я ТУТ!</button>
     </div>
 
     <div class="header-container">
         <div class="top-nav">
-            <div><small style="opacity:0.6">Баланс</small><br><b id="money-val" class="money-text">0.00 PLN</b></div>
-            <div class="status-box">
+            <div><small>Баланс</small><br><b id="money-val" style="font-size:22px; color:var(--success)">0.00 PLN</b></div>
+            <div style="text-align: right;">
                 <b id="lvl-val" style="color:var(--gold); font-size:14px;">LVL 1.000000</b>
-                <div class="badge-row">
-                    <div id="bike-status-ui" class="badge bike">🚲 00:00</div>
-                    <div id="auto-status-ui" class="badge auto">АВТО 00:00</div>
-                    <div id="buff-status-ui" class="badge boost">⚡ 00:00</div>
-                </div>
+                <div style="font-size:11px; margin-top:4px;">🧴 <span id="water-val">0</span> мл</div>
             </div>
         </div>
-        <div style="font-size:11px; margin-top:10px; display:flex; justify-content:space-between;">
-            <span>⚡ <b id="en-text">2000/2000</b></span>
-            <span>🧴 Вода: <b id="water-val" style="color:var(--accent)">0</b> мл</span>
-        </div>
         <div class="energy-track"><div id="en-fill" class="energy-fill" style="width:100%"></div></div>
-        <div style="font-size:10px; opacity:0.5; display:flex; justify-content:space-between;">
-            <span id="tax-timer">Налог: 5:00</span>
-            <span id="rent-timer">Аренда: 10:00</span>
-        </div>
     </div>
 
     <div class="content">
         <div id="view-main" class="view active">
-            <div style="text-align:center; color:var(--gold); font-size:12px; margin-bottom:5px;">Район: Praga</div>
+            <div style="text-align:center; color:var(--gold); font-size:12px;">Район: Praga</div>
             <div id="work-sphere">
-                <span style="font-size:18px; font-weight:bold;">РАБОТАТЬ</span>
-                <small id="click-rate-ui" style="opacity:0.7">0.10 PLN</small>
+                <b>РАБОТАТЬ</b>
+                <small id="click-rate-ui">0.10 PLN</small>
             </div>
             <button class="btn-action" id="btn-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02)</button>
-            <button class="btn-action btn-district" id="btn-districts">🏙️ СМЕНИТЬ РАЙОН</button>
+            <button class="btn-action" id="btn-districts" style="border:1px solid var(--gold); background:none; color:var(--gold)">🏙️ СМЕНИТЬ РАЙОН</button>
         </div>
-        <div id="view-quests" class="view"><h3 style="text-align:center;">🏆 Карьера</h3></div>
-        <div id="view-shop" class="view"><h3 style="text-align:center;">🛒 Магазин</h3></div>
-        <div id="view-invest" class="view"><h3 style="text-align:center;">📈 Инвест</h3></div>
-        <div id="view-bank" class="view"><h3 style="text-align:center;">🏦 Банк</h3></div>
+
+        <div id="view-quests" class="view">
+            <h3 style="text-align:center; color:var(--gold)">🏆 Карьера</h3>
+            <div id="quests-content"></div>
+        </div>
+
+        <div id="view-shop" class="view">
+            <h3 style="text-align:center; color:var(--success)">🛒 Магазин</h3>
+            <div id="shop-content"></div>
+        </div>
+
+        <div id="view-invest" class="view">
+            <h3 style="text-align:center; color:var(--accent)">📈 Инвест</h3>
+            <p style="text-align:center; opacity:0.5">Скоро...</p>
+        </div>
+
+        <div id="view-bank" class="view">
+            <h3 style="text-align:center; color:var(--neon-blue)">🏦 Банк</h3>
+            <div id="bank-content"></div>
+        </div>
     </div>
 
     <div class="tab-bar">
