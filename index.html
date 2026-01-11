@@ -4,50 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" src="database.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="quest-bar">
-        <div style="display:flex; justify-content:space-between;">
-            <div><b id="quest-title" style="color:var(--gold);">📦 НОВЫЙ ЗАКАЗ</b><br><b style="color:var(--success);" id="quest-pay">0.00</b> PLN</div>
-            <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 20px;">0:15</div>
-        </div>
-        <div id="quest-actions-choice" style="margin-top:12px; display: flex; gap: 8px;">
-            <button class="btn-action" style="background:var(--success); flex: 2;" id="btn-accept">ПРИНЯТЬ</button>
-            <button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" id="btn-auto">АВТОПИЛОТ</button>
-        </div>
-        <div id="quest-active-ui" style="display:none; margin-top:10px;">
-            <div class="energy-track"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success);"></div></div>
-        </div>
+    <div id="captcha-ui">
+        <h2 style="color:var(--danger)">ПРОВЕРКА!</h2>
+        <button id="btn-captcha" style="width:150px; height:150px; border-radius:50%; background:var(--success); border:none; color:white; font-weight:bold;">Я ТУТ!</button>
     </div>
 
     <div class="header-container">
         <div class="top-nav">
             <div><small>Баланс</small><br><b id="money-val" style="font-size: 20px;">0.00 PLN</b></div>
             <div style="text-align: right;">
-                <b id="lvl-val" style="color:var(--gold);">LVL 1.000000</b>
-                <div id="inventory-display"></div>
-                <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
-                <div id="auto-status-ui" class="status-badge">АВТО 00:00</div>
-                <div id="buff-status-ui" class="status-badge">⚡ BOOST 00:00</div>
+                <b id="lvl-val" style="color:var(--gold); font-size: 13px;">LVL 1.000000</b>
+                <div style="font-size: 10px; opacity: 0.8;">🧴 Вода: <b id="water-val">0</b> мл</div>
             </div>
         </div>
-        <div style="font-size: 11px; margin-top: 10px; display: flex; justify-content: space-between;">
-            <span>⚡ <b id="en-text">2000/2000</b></span>
-            <span>🧴 Вода: <b id="water-val" style="color:var(--accent)">0</b> мл</span>
-        </div>
-        <div class="energy-track"><div id="en-fill" class="energy-fill" style="width: 100%;"></div></div>
+        <div class="energy-track"><div id="en-fill" class="energy-fill"></div></div>
     </div>
 
     <div class="content">
         <div id="view-main" class="view active">
-            <div id="district-ui" style="text-align: center; color: var(--gold);">Район: Praga</div>
-            <div id="work-sphere"><b>РАБОТАТЬ</b></div>
-            <button class="btn-action" style="background:#444;" id="btn-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02)</button>
+            <div id="work-sphere">РАБОТАТЬ</div>
+            <button class="btn-action" style="background:#444;" id="btn-bottles">🧴 СОБРАТЬ БУТЫЛКИ</button>
         </div>
-        </div>
+        <div id="view-quests" class="view"><h3>Карьера</h3><p>Скоро добавлю цели...</p></div>
+        <div id="view-shop" class="view"><h3>Магазин</h3><button class="btn-action" id="buy-water">Купить воду (1.50 PLN)</button></div>
+        <div id="view-invest" class="view"><h3>Инвест</h3><p>Оборудование здесь...</p></div>
+        <div id="view-bank" class="view"><h3>Банк</h3><p>Кредиты и промокоды...</p></div>
+    </div>
 
     <div class="tab-bar">
         <div class="tab-item active" data-view="main">Город</div>
@@ -57,12 +42,8 @@
         <div class="tab-item" data-view="bank">Банк</div>
     </div>
 
-    <div id="captcha-ui" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
-        <h2 style="color:var(--danger)">ПРОВЕРКА!</h2>
-        <p>Нажми на кнопку ниже, чтобы доказать, что ты не бот.</p>
-        <button id="btn-captcha" class="btn-action" style="width:200px; height:200px; border-radius:50%; background:var(--success); font-size:24px;">Я ТУТ!</button>
-    </div>
-
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script type="module" src="logic.js"></script>
 </body>
 </html>
+￼Enter
