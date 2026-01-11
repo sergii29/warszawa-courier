@@ -197,7 +197,33 @@
     function generateOrder() { if (order.visible || order.active) return; order.visible = true; order.offerTimer = 15; order.isCriminal = Math.random() < 0.08; let d = 0.5 + Math.random() * 3.5; let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1); if(order.isCriminal) baseRew *= 5; order.reward = parseFloat(baseRew.toFixed(2)); order.target = Math.floor(d * 160); order.steps = 0; order.time = Math.floor(order.target / 1.5 + 45); document.getElementById('quest-pay').innerText = order.reward.toFixed(2); updateUI(); }
     function activateAutopilot() { if(G.money >= 45 && G.lvl >= 0.15) { G.money = parseFloat((G.money - 45).toFixed(2)); G.lvl -= 0.15; G.autoTime += 600; acceptOrder(); save(); updateUI(); } }
     function acceptOrder() { order.active = true; updateUI(); }
-    function finishOrder(win) { if(win) { if(order.isCriminal && Math.random() < 0.2) { G.lvl -= 1.0; G.money = parseFloat((G.money - 100).toFixed(2)); log("🚔 ПОЛИЦИЯ! Штраф -100", "var(--danger)"); } else { G.money = parseFloat((G.money + order.reward).toFixed(2)); G.lvl += (order.isCriminal ? 0.1 : 0.015); G.totalOrders++; if(Math.random() < 0.40) { let tip = 5 + Math.random()*15; G.money = parseFloat((G.money + tip).toFixed(2)); log(`💰 Чаевые: +${tip.toFixed(2)}`, "var(--success)"); } } } order.active = false; order.visible = false; updateUI(); save(); }
+    
+    // ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАВЕРШЕНИЯ ЗАКАЗА (ЗАЩИТА ОТ ДВОЙНЫХ ВЫПЛАТ)
+    function finishOrder(win) { 
+        if(!order.active) return; // Если заказ уже закрыт, выходим
+        order.active = false; // Сразу выключаем активность, чтобы цикл не зашел дважды
+        
+        if(win) { 
+            if(order.isCriminal && Math.random() < 0.2) { 
+                G.lvl -= 1.0; 
+                G.money = parseFloat((G.money - 100).toFixed(2)); 
+                log("🚔 ПОЛИЦИЯ! Штраф -100", "var(--danger)"); 
+            } else { 
+                G.money = parseFloat((G.money + order.reward).toFixed(2)); 
+                G.lvl += (order.isCriminal ? 0.1 : 0.015); 
+                G.totalOrders++; 
+                if(Math.random() < 0.40) { 
+                    let tip = 5 + Math.random()*15; 
+                    G.money = parseFloat((G.money + tip).toFixed(2)); 
+                    log(`💰 Чаевые: +${tip.toFixed(2)}`, "var(--success)"); 
+                } 
+            } 
+        } 
+        order.visible = false; 
+        updateUI(); 
+        save(); 
+    }
+
     function checkMilestones() { G.activeMilestones.forEach((m, i) => { let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; if(cur >= m.goal) { G.money = parseFloat((G.money + m.reward).toFixed(2)); G.lvl += 0.01; log(`🏆 ДОСТИЖЕНИЕ: ${m.name}`, "var(--gold)"); G.activeMilestones[i] = { id: Date.now()+i, name: m.name, goal: cur + Math.floor(m.goal*0.6), type: m.type, reward: m.reward + 20 }; save(); } }); }
     function renderMilestones() { document.getElementById('milestones-list').innerHTML = G.activeMilestones.map(m => { let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; return `<div class="card" style="margin-top:8px;"><b>${m.name}</b><div class="career-progress"><div class="career-fill" style="width:${Math.min(100,(cur/m.goal*100))}%"></div></div><small>${cur}/${m.goal}</small></div>`; }).join(''); }
     function collectBottles() { G.money = parseFloat((G.money + 0.02).toFixed(2)); G.totalBottles++; checkMilestones(); save(); updateUI(); }
@@ -221,10 +247,8 @@
         if (G.autoTime > 0) { 
             G.autoTime--;
             if (order.active && !isBroken) {
-                // АВТОПИЛОТ УСКОРЕН В 3 РАЗА (делает 10 циклов за секунду)
                 for(let i=0; i<10; i++) {
                     if(!order.active || isBroken) break;
-                    // Авто-питье воды (усилено для скорости)
                     if (G.waterStock > 0 && G.en < 600) { 
                         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
                         G.en = Math.min(G.maxEn, G.en + (15 * eff)); 
