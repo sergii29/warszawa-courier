@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courier Admin Panel 🛠️</title>
+    <style>
+        body { background: #111; color: white; font-family: monospace; padding: 20px; max-width: 600px; margin: 0 auto; }
+        input, button { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; font-size: 16px; border-radius: 8px; }
+        input { background: #222; border: 1px solid #444; color: #0f0; }
+        button { background: #007aff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { opacity: 0.8; }
+        .card { background: #1e1e23; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        h2 { border-bottom: 1px solid #333; padding-bottom: 5px; color: #ffcc00; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+
+    <h1 style="text-align:center">🛠️ Админка Курьера</h1>
+
+    <div class="card">
+        <h3>🔍 Поиск игрока</h3>
+        <p style="color:#aaa; font-size:12px;">Введи ID из базы данных (или test_user_from_browser)</p>
+        <input type="text" id="user-id-input" placeholder="Введите ID (например: 123456789)">
+        <button onclick="loadUser()">Загрузить данные</button>
+    </div>
+
+    <div id="editor" class="card" style="display:none;">
+        <h3>✏️ Редактор: <span id="current-id" style="color:#00f2ff"></span></h3>
+        
+        <label>💰 Деньги (PLN):</label>
+        <input type="number" id="edit-money">
+        
+        <label>⭐ Уровень (LVL):</label>
+        <input type="number" id="edit-lvl">
+
+        <button onclick="saveChanges()" style="background: #34c759; margin-top: 15px;">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
+          authDomain: "warszawa-courier.firebaseapp.com",
+          databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "warszawa-courier",
+          storageBucket: "warszawa-courier.firebasestorage.app",
+          messagingSenderId: "295860613508",
+          appId: "1:295860613508:web:86fe8364377d6875612dd1",
+          measurementId: "G-TGSCHBVLX2"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        function loadUser() {
+            const userId = document.getElementById('user-id-input').value.trim();
+            if(!userId) return alert("Введите ID!");
+
+            db.ref('users/' + userId).once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('editor').style.display = 'block';
+                    document.getElementById('current-id').innerText = userId;
+                    document.getElementById('edit-money').value = data.money;
+                    document.getElementById('edit-lvl').value = data.lvl;
+                } else {
+                    alert("Игрок не найден в базе! Пусть сначала запустит игру.");
+                }
+            });
+        }
+
+        function saveChanges() {
+            const userId = document.getElementById('user-id-input').value.trim();
+            const newMoney = parseFloat(document.getElementById('edit-money').value);
+            const newLvl = parseFloat(document.getElementById('edit-lvl').value);
+
+            db.ref('users/' + userId).update({
+                money: newMoney,
+                lvl: newLvl
+            }).then(() => {
+                alert("✅ Данные обновлены! Смотри в игру.");
+            });
+        }
+    </script>
+</body>
+</html>
