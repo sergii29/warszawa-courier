@@ -2,69 +2,76 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Warszawa Courier</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warszawa Courier Simulator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="quest-bar">
-        <div style="display:flex; justify-content:space-between;">
-            <div><b id="quest-title" style="color:var(--gold);">📦 НОВЫЙ ЗАКАЗ</b><br><small>Цена:</small> <b id="quest-pay">0.00</b></div>
-            <div id="quest-timer-ui" style="color:var(--danger); font-size: 20px; font-weight:bold;">0:15</div>
-        </div>
-        <div id="quest-actions-choice" style="margin-top:10px; display:flex; gap:8px;">
-            <button class="btn-action" id="btn-accept" style="background:var(--success); flex:2;">ПРИНЯТЬ</button>
-            <button class="btn-action" id="btn-auto-order" style="background:var(--gold); color:black; flex:1; font-size:9px;">АВТО</button>
-        </div>
-        <div id="quest-active-ui" style="display:none; margin-top:10px;">
-            <small id="order-status-text">Доставка...</small>
-            <div class="energy-track"><div id="quest-progress-bar" class="energy-fill" style="background:var(--success)"></div></div>
+<div id="quest-bar">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div><b id="quest-title" style="color:var(--gold);">📦 НОВЫЙ ЗАКАЗ</b><br><small>Цена тает:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN</div>
+        <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 20px;">0:15</div>
+    </div>
+    <div id="quest-actions-choice" style="margin-top:12px; display: flex; gap: 8px;">
+        <button class="btn-action" style="background:var(--success); flex: 2;" id="btn-accept-order">ПРИНЯТЬ</button>
+        <button class="btn-action" style="background:var(--gold); color: black; flex: 1.5; font-size: 8px;" id="btn-auto-pilot">АВТОПИЛОТ<br><small>45 PLN / -0.15 LVL</small></button>
+    </div>
+    <div id="quest-active-ui" style="display:none; margin-top:10px;">
+        <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent);">Доставка...</div>
+        <div class="energy-track" style="height:8px;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success);"></div></div>
+    </div>
+</div>
+
+<div class="header-container">
+    <div class="top-nav">
+        <div><small>Баланс</small><br><b id="money-val" style="font-size: 20px;">0.00 PLN</b></div>
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+            <b id="lvl-val" style="color:var(--gold); font-size: 13px;">LVL 1.000000</b>
+            <div id="inventory-display"></div>
+            <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
+            <div id="auto-status-ui" class="status-badge">АВТО 00:00</div>
+            <div id="buff-status-ui" class="status-badge">⚡ 00:00</div>
+            <span id="weather-ui" class="weather-badge">☀️ Ясно</span>
         </div>
     </div>
-
-    <div class="header-container">
-        <div class="top-nav">
-            <div><small>Баланс</small><br><b id="money-val" class="money-text">0.00 PLN</b></div>
-            <div style="text-align:right;">
-                <b id="lvl-val" style="color:var(--gold)">LVL 1.000000</b>
-                <div id="bike-status-ui" style="color:var(--neon-blue); font-size:10px; display:none;">🚲 00:00</div>
-                <div id="auto-status-ui" style="color:var(--gold); font-size:10px; display:none;">АВТО 00:00</div>
-            </div>
-        </div>
-        <div style="font-size:11px; margin-top:8px; display:flex; justify-content:space-between;">
-            <span>⚡ <b id="en-text">2000/2000</b></span>
-            <span>🧴 Вода: <b id="water-val">0</b> мл</span>
-        </div>
-        <div class="energy-track"><div id="en-fill" class="energy-fill"></div></div>
-        <div style="font-size:9px; opacity:0.6; display:flex; justify-content:space-between;">
-            <span id="tax-timer">Налог: 05:00</span>
-            <span id="rent-timer">Аренда: 10:00</span>
-        </div>
+    <div style="font-size: 11px; margin-top: 10px; display: flex; justify-content: space-between;">
+        <span>⚡ <b id="en-text">2000/2000</b></span>
+        <span>🧴 Вода: <b id="water-val">0</b> мл</span>
     </div>
-
-    <div class="content">
-        <div id="view-main" class="view active">
-            <div id="district-ui" style="text-align:center; color:var(--gold); font-size:12px;">Район: Praga</div>
-            <div id="work-sphere"><b>РАБОТАТЬ</b><small id="click-rate-ui">0.10 PLN</small></div>
-            <button class="btn-action" id="btn-bottles" style="background:#444;">🧴 СОБРАТЬ БУТЫЛКИ</button>
-        </div>
-        <div id="view-quests" class="view"><div id="milestones-list"></div></div>
-        <div id="view-shop" class="view"></div>
-        <div id="view-invest" class="view"></div>
-        <div id="view-bank" class="view"></div>
+    <div class="energy-track"><div id="en-fill" class="energy-fill"></div></div>
+    <div style="display: flex; justify-content: space-between; font-size: 9px; margin-top: 5px; opacity: 0.8;">
+        <span id="tax-timer">Налог: 05:00</span>
+        <span id="rent-timer">Аренда: 10:00</span>
     </div>
+</div>
 
-    <div id="game-log"></div>
-
-    <div class="tab-bar">
-        <div class="tab-item active" data-view="main">Город</div>
-        <div class="tab-item" data-view="quests">Карьера</div>
-        <div class="tab-item" data-view="shop">Магазин</div>
-        <div class="tab-item" data-view="invest">Инвест</div>
-        <div class="tab-item" data-view="bank">Банк</div>
+<div class="content">
+    <div id="view-main" class="view active">
+        <div style="text-align: center; font-size: 12px; color: var(--gold);" id="district-ui">Район: Praga</div>
+        <div id="work-sphere"><b>РАБОТАТЬ</b><div id="click-rate-ui" style="font-size: 10px; opacity: 0.8;">0.10 PLN</div></div>
+        <button class="btn-action" style="background:#444;" id="btn-collect-bottles">🧴 СОБРАТЬ БУТЫЛКИ (+0.02)</button>
+        <button class="btn-action" style="background:#222; border:1px solid var(--gold); color:var(--gold);" id="btn-goto-districts">🏙️ СМЕНИТЬ РАЙОН</button>
     </div>
-
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" src="logic.js"></script>
+    <div id="view-districts" class="view"></div>
+    <div id="view-quests" class="view"><h3>Карьера</h3><div id="milestones-list"></div></div>
+    <div id="view-shop" class="view"></div>
+    <div id="view-invest" class="view"><div id="upgrade-items"></div></div>
+    <div id="view-bank" class="view">
+        <div id="bank-actions-ui"></div>
+        <h3 style="color:var(--gold)">Биржа Репутации</h3>
+        <button class="btn-action" id="btn-exch-small">-0.05 LVL ⮕ 10 PLN</button>
+        <button class="btn-action" id="btn-exch-large">-1.00 LVL ⮕ 300 PLN</button>
+    </div>
+</div>
+<div id="game-log"></div>
+<div class="tab-bar">
+    <div class="tab-item active" data-view="main">Город</div>
+    <div class="tab-item" data-view="quests">Карьера</div>
+    <div class="tab-item" data-view="shop">Магазин</div>
+    <div class="tab-item" data-view="invest">Инвест</div>
+    <div class="tab-item" data-view="bank">Банк</div>
+</div>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script type="module" src="logic.js"></script>
 </body>
 </html>
