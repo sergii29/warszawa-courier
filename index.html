@@ -184,6 +184,8 @@
         .daily-quest-info { flex: 1; }
         .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
         .stat-row:last-child { border-bottom: none; }
+        
+        .section-title { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -370,27 +372,9 @@
     </div>
 
     <div id="view-shop" class="view">
-        <h3 style="margin:0; color:var(--text-primary)">🏪 Магазин</h3>
+        <h3 style="margin:0; color:var(--text-primary)">🏪 Супермаркет</h3>
         
-        <h4 style="margin:10px 0 5px 0; color:var(--purple);">👟 Hype Shoes (Обувь)</h4>
-        <div class="card" style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
-             <div style="font-size:20px;">🐼</div>
-            <div style="flex:1;">
-                <b>Abibas Ultra</b><br>
-                <small>Надежность: 5000 шагов.</small>
-            </div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--purple);" onclick="buyShoes('Abibas', 50, 100)">50.00</button>
-        </div>
-        <div class="card" style="display:flex; align-items:center; gap:10px;">
-             <div style="font-size:20px;">🔥</div>
-            <div style="flex:1;">
-                <b>Jorban Air</b><br>
-                <small>Надежность: 15000 шагов. +20% к чаевым.</small>
-            </div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--purple);" onclick="buyShoes('Jorban', 250, 150)">250.00</button>
-        </div>
-
-        <h4 style="margin:15px 0 5px 0; color:var(--text-primary);">⚡ Расходники</h4>
+        <div class="section-title">🥤 Энергия и Питание</div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:20px;">💧</div>
             <div style="flex:1;">
@@ -399,15 +383,15 @@
             </div>
             <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">1.50</button>
         </div>
-        <div class="card" style="display:flex; align-items:center; gap:10px;">
+        <div class="card" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
              <div style="font-size:20px;">☕</div>
             <div style="flex:1;">
                 <b>Кофе</b><br>
-                <small>Мгновенно восстанавливает +300 энергии.</small>
+                <small>Мгновенно +300 энергии.</small>
             </div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">5.00</button>
         </div>
-        <div class="card" style="display:flex; align-items:center; gap:10px;">
+        <div class="card" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
              <div style="font-size:20px;">🔋</div>
             <div style="flex:1;">
                 <b>Энергетик</b><br>
@@ -415,25 +399,41 @@
             </div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">12.00</button>
         </div>
+
+        <div class="section-title">👟 Обувь и Стиль</div>
+        <div class="card" style="display:flex; align-items:center; gap:10px;">
+             <div style="font-size:20px;">🐼</div>
+            <div style="flex:1;">
+                <b>Abibas Ultra</b><br>
+                <small>Надежность: 5000 шагов.</small>
+            </div>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--purple);" onclick="buyShoes('Abibas', 50, 100)">50.00</button>
+        </div>
+        <div class="card" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+             <div style="font-size:20px;">🔥</div>
+            <div style="flex:1;">
+                <b>Jorban Air</b><br>
+                <small>Надежность: 15000. +20% чаевые.</small>
+            </div>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--purple);" onclick="buyShoes('Jorban', 250, 150)">250.00</button>
+        </div>
+
+        <div class="section-title">⚙️ Проф. Экипировка</div>
+        <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05); margin-bottom:8px;">
+            <b>🚲 Аренда Электровелосипеда</b><br>
+            <small>Скорость x2. 30 PLN за 10 минут.</small>
+            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
+        </div>
+        <div id="shop-upgrades-list"></div>
     </div>
 
     <div id="view-invest" class="view">
-        <h3 style="margin:0;">🎒 Инвентарь</h3>
+        <h3 style="margin:0;">🎒 Рюкзак (Инвентарь)</h3>
         
         <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
         <div id="my-items-list" style="margin-bottom:15px;">
             <div style="text-align:center; padding:10px; color:#555; font-size:11px;">Пусто...</div>
         </div>
-
-        <div style="height:1px; background:rgba(255,255,255,0.1); margin:10px 0;"></div>
-
-        <h4 style="margin:10px 0 8px 0; color:var(--text-secondary);">🛒 Доступные улучшения</h4>
-        <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05);">
-            <b>🚲 Аренда Электровелосипеда</b><br>
-            <small>Скорость выполнения заказов x2. 30 PLN за 10 минут.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
-        </div>
-        <div id="upgrade-items"></div>
     </div>
 
     <div id="view-bank" class="view">
@@ -472,7 +472,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js"></script>
-<script src="logic.js?v=2.5" defer></script>
+<script src="logic.js?v=2.6" defer></script>
 
 </body>
 </html>
