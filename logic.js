@@ -304,7 +304,7 @@ function updateUI() {
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
     if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
     
-    // --- ОБНОВЛЕНИЕ ОБУВИ (С ИНДИКАТОРОМ) ---
+    // Обувь UI
     let shoeNameDisplay = G.shoes.name;
     if (G.shoes.dur <= 0) {
         shoeNameDisplay += " <span style='color:var(--danger); font-size:10px;'>(🐌 -30%)</span>";
@@ -413,7 +413,6 @@ function updateUI() {
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
     
-    // Обувь (с фиксом текста)
     const shoeDiv = document.createElement('div');
     shoeDiv.className = 'card';
     shoeDiv.style.marginBottom = '5px';
@@ -594,9 +593,10 @@ function doWork() {
     if (G.totalOrders >= 150) rankBonus = 0.10;
     if (G.totalOrders >= 400) rankBonus = 0.20;
 
+    // ПРОВЕРКА БОНУСОВ (И ПРОФИ, И СТАРТОВЫХ)
     let bagBonus = 1;
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
-    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
+    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02; // Старый рюкзак дает +2%
 
     let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
     
@@ -641,6 +641,7 @@ function generateOrder() {
 
     let d = 0.5 + Math.random() * 3.5; 
     
+    // БОНУС СУМКИ (ИЛИ СТАРТОВОЙ)
     let bagBonus = 1;
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
@@ -701,10 +702,8 @@ function activateAutopilot() {
     if(G.money >= 45 && G.lvl >= 0.15) { 
         G.money = parseFloat((G.money - 45).toFixed(2)); 
         G.lvl -= 0.15; 
-        
-        let hasPower = (G.powerbank && G.powerbank.dur > 0);
-        let timeAdd = hasPower ? 900 : 600; 
-        
+        // POWERBANK БОНУС
+        let timeAdd = G.powerbank ? 900 : 600; // 15 мин или 10 мин
         G.autoTime += timeAdd; 
         addHistory('АВТОПИЛОТ', 45, 'minus'); 
         acceptOrder(); 
@@ -717,7 +716,14 @@ function activateAutopilot() {
 
 function acceptOrder() { order.active = true; updateUI(); }
 
+// НОВАЯ ФУНКЦИЯ: Покупка обуви (С ЗАЩИТОЙ)
 function buyShoes(name, price, durability) {
+    // 1. Проверяем, есть ли уже ТАКИЕ ЖЕ кроссовки и они ЦЕЛЫЕ
+    if (G.shoes.name === name && G.shoes.dur > 0) {
+        log("👟 У вас уже есть эта обувь!", "var(--accent-gold)");
+        return; // Отменяем покупку
+    }
+
     if (G.money >= price) {
         G.money -= price;
         let bonus = 0;
@@ -733,8 +739,15 @@ function buyShoes(name, price, durability) {
     }
 }
 
+// НОВАЯ ФУНКЦИЯ: Покупка снаряжения (С ЗАЩИТОЙ)
 function buyInvest(type, p) { 
-    if(!G[type] && G.money >= p) { 
+    // 1. Проверяем, есть ли уже этот предмет
+    if (G[type]) {
+        log("🎒 У вас уже есть этот предмет!", "var(--accent-gold)");
+        return;
+    }
+
+    if(G.money >= p) { 
         G.money = parseFloat((G.money - p).toFixed(2)); 
         let maxDur = 100;
         let conf = UPGRADES.find(u => u.id === type);
@@ -744,7 +757,9 @@ function buyInvest(type, p) {
         addHistory('ИНВЕСТ', p, 'minus'); 
         save(); 
         updateUI(); 
-    } 
+    } else {
+        log("Не хватает денег!", "var(--danger)");
+    }
 }
 
 function sellInvest(type, p) {
