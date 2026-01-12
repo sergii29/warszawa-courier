@@ -17,7 +17,7 @@
             --success: #22c55e;
             --danger: #ef4444;
             --purple: #8b5cf6;
-            --repair: #f97316; /* Оранжевый для ремонта */
+            --repair: #f97316;
         }
         
         body {
@@ -189,7 +189,6 @@
         
         .section-title { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
         
-        /* Стили для сломанных вещей */
         .item-broken { opacity: 0.7; border-color: var(--danger) !important; }
         .item-broken b { color: var(--danger) !important; }
     </style>
@@ -402,7 +401,7 @@
              <div style="font-size:20px;">🔋</div>
             <div style="flex:1;">
                 <b>Энергетик</b><br>
-                <small>Заморозка энергии на 2 мин.</small>
+                <small style="color:var(--success)">Временно останавливает расход энергии (но не воды).</small>
             </div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">12.00</button>
         </div>
@@ -479,7 +478,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js"></script>
-<script src="logic.js?v=2.7" defer></script>
+<script src="logic.js?v=2.9" defer></script>
 
 </body>
 </html>
