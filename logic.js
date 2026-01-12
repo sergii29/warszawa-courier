@@ -58,6 +58,7 @@ let repairProgress = 0;
 let lastClickTime = 0; 
 let clicksSinceBonus = 0;
 let bonusActive = false;
+let tickCounter = 0; // Для автосейва
 
 const DISTRICTS = [
     { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0 },       
@@ -66,11 +67,8 @@ const DISTRICTS = [
 ];
 
 const UPGRADES = [
-    // Стартовые (Слабые)
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', price: 0, bonus: '+2% PLN', maxDur: 40, repairPrice: 5, hidden: true },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', price: 0, bonus: 'Связь', maxDur: 40, repairPrice: 5, hidden: true },
-
-    // Профессиональные (Магазин)
     { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', price: 350, bonus: '+15% PLN', maxDur: 100, repairPrice: 70 }, 
     { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', price: 1200, bonus: 'Заказы x1.4', maxDur: 100, repairPrice: 250 }, 
     { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', price: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100 },
@@ -170,10 +168,8 @@ function claimStarterPack() {
     G.bikeRentTime += 900; 
     G.isNewPlayer = false;
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
-    
     G.starter_bag = { active: true, dur: 50 }; 
     G.starter_phone = { active: true, dur: 50 };
-
     addHistory('🎁 STARTER KIT', 50, 'plus');
     log("Вы получили набор новичка!", "var(--success)");
     save();
@@ -186,15 +182,12 @@ function generateDailyQuests() {
         let targetClicks = 300 + Math.floor(Math.random() * 500);
         let rewardClicks = Math.floor(targetClicks / 10);
         G.dailyQuests.push({ id: 1, type: 'clicks', text: "Сделай " + targetClicks + " кликов", target: targetClicks, current: 0, reward: rewardClicks, claimed: false });
-
         let targetOrders = 3 + Math.floor(Math.random() * 5);
         let rewardOrders = targetOrders * 15;
         G.dailyQuests.push({ id: 2, type: 'orders', text: "Выполни " + targetOrders + " заказов", target: targetOrders, current: 0, reward: rewardOrders, claimed: false });
-
         let targetEarn = 100 + Math.floor(Math.random() * 200);
         let rewardEarn = Math.floor(targetEarn * 0.2);
         G.dailyQuests.push({ id: 3, type: 'earn', text: "Заработай " + targetEarn + " PLN", target: targetEarn, current: 0, reward: rewardEarn, claimed: false });
-
         G.lastDailyUpdate = Date.now();
         save();
         updateUI();
@@ -231,14 +224,7 @@ function saveToCloud() {
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
     let firstName = (tg && tg.user) ? tg.user.first_name : "Browser Player";
     let userName = (tg && tg.user && tg.user.username) ? "@" + tg.user.username : "No Username";
-
-    let dataToSave = {
-        ...G,
-        name: firstName,
-        user: userName,
-        lastActive: Date.now()
-    };
-
+    let dataToSave = { ...G, name: firstName, user: userName, lastActive: Date.now() };
     if(typeof db !== 'undefined') {
         db.ref('users/' + userId).set(dataToSave);
     }
@@ -290,7 +276,6 @@ function updateUI() {
     
     document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
     document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
-    
     if(weather === "Дождь") document.body.classList.add('rain-mode');
     else document.body.classList.remove('rain-mode');
     
@@ -304,7 +289,6 @@ function updateUI() {
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
     if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
     
-    // Обувь UI
     let shoeNameDisplay = G.shoes.name;
     if (G.shoes.dur <= 0) {
         shoeNameDisplay += " <span style='color:var(--danger); font-size:10px;'>(🐌 -30%)</span>";
@@ -315,23 +299,25 @@ function updateUI() {
     document.getElementById('shoe-bar').style.width = Math.max(0, sPct) + "%";
     document.getElementById('shoe-bar').style.background = sPct <= 0 ? "var(--danger)" : (sPct < 20 ? "var(--danger)" : "var(--purple)");
 
-    // КАРЬЕРА UI
     let currentRank = RANKS[0];
-    let nextRank = null;
-    if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
-    else if (G.totalOrders < RANKS[1].max) { currentRank = RANKS[1]; nextRank = RANKS[2]; }
-    else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
-    else { currentRank = RANKS[3]; nextRank = null; }
+    if (G.totalOrders < RANKS[0].max) currentRank = RANKS[0];
+    else if (G.totalOrders < RANKS[1].max) currentRank = RANKS[1];
+    else if (G.totalOrders < RANKS[2].max) currentRank = RANKS[2];
+    else currentRank = RANKS[3];
 
     document.getElementById('rank-icon').innerText = currentRank.icon;
     document.getElementById('rank-name').innerText = currentRank.name;
     document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
     
+    let nextRank = null;
+    if (G.totalOrders < RANKS[0].max) nextRank = RANKS[1];
+    else if (G.totalOrders < RANKS[1].max) nextRank = RANKS[2];
+    else if (G.totalOrders < RANKS[2].max) nextRank = RANKS[3];
+
     if (nextRank) {
         let prevMax = 0;
         if (currentRank.name === "Бывалый") prevMax = RANKS[0].max;
         if (currentRank.name === "Профи") prevMax = RANKS[1].max;
-        
         let progress = ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100;
         document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, progress)) + "%";
         document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders) + " заказов";
@@ -352,14 +338,7 @@ function updateUI() {
             } else {
                 btn = "<small>" + parseFloat(q.current).toFixed(0) + "/" + q.target + "</small>";
             }
-            
-            questsHTML += "<div class='daily-quest-item'>" +
-                "<div class='daily-quest-info'>" +
-                    "<b>" + q.text + "</b><br>" +
-                    "<div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + Math.min(100, progressPct) + "%'></div></div>" +
-                "</div>" +
-                "<div style='margin-left:10px;'>" + btn + "</div>" +
-            "</div>";
+            questsHTML += "<div class='daily-quest-item'><div class='daily-quest-info'><b>" + q.text + "</b><br><div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + Math.min(100, progressPct) + "%'></div></div></div><div style='margin-left:10px;'>" + btn + "</div></div>";
         });
     }
     document.getElementById('daily-quests-list').innerHTML = questsHTML;
@@ -392,7 +371,6 @@ function updateUI() {
         if (G.totalOrders >= 50) rankBonus = 0.05;
         if (G.totalOrders >= 150) rankBonus = 0.10;
         if (G.totalOrders >= 400) rankBonus = 0.20;
-
         let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
         if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
         document.getElementById('click-rate-ui').innerText = rate + " PLN";
@@ -409,18 +387,14 @@ function updateUI() {
         } 
     });
     
-    // --- ИНВЕНТАРЬ ---
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
-    
     const shoeDiv = document.createElement('div');
     shoeDiv.className = 'card';
     shoeDiv.style.marginBottom = '5px';
     shoeDiv.style.borderColor = "var(--purple)";
-    
     let shoeStatusText = Math.floor(G.shoes.dur) + "%";
     if (G.shoes.dur <= 0) shoeStatusText = "<b style='color:var(--danger)'>0% (🐌 ШТРАФ -30%)</b>";
-
     shoeDiv.innerHTML = "<b>👟 " + G.shoes.name + "</b><br><small>Состояние: " + shoeStatusText + "</small>";
     myItemsList.appendChild(shoeDiv);
 
@@ -429,32 +403,16 @@ function updateUI() {
             const item = G[up.id];
             const isBroken = item.dur <= 0;
             const durability = Math.floor(item.dur);
-            
             const div = document.createElement('div'); 
             div.className = 'card'; 
             div.style.marginBottom = '5px'; 
             div.style.borderColor = isBroken ? "var(--danger)" : "var(--gold)";
             if(isBroken) div.classList.add('item-broken');
-
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${up.icon} ${up.name}</b>
-                    <b style="color:${isBroken ? 'var(--danger)' : 'var(--success)'}">${durability}%</b>
-                </div>
-                <small style="color:#aaa;">${up.bonus}</small>
-                <div style="width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;">
-                    <div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${durability}%"></div>
-                </div>
-                <div style="display:flex; gap:5px; margin-top:8px;">
-                    <button class='btn-action' style="flex:1; background:var(--repair); font-size:10px; padding:6px;" onclick="repairItem('${up.id}', ${up.repairPrice})">🧵 ПОДЛАТАТЬ (${up.repairPrice})</button>
-                    <button class='btn-action' style="flex:1; background:transparent; border:1px solid var(--danger); color:var(--danger); font-size:10px; padding:6px;" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ПРОДАТЬ (${up.price * 0.5})</button>
-                </div>
-            `;
+            div.innerHTML = `<div style="display:flex; justify-content:space-between;"><b>${up.icon} ${up.name}</b><b style="color:${isBroken ? 'var(--danger)' : 'var(--success)'}">${durability}%</b></div><small style="color:#aaa;">${up.bonus}</small><div style="width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;"><div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${durability}%"></div></div><div style="display:flex; gap:5px; margin-top:8px;"><button class='btn-action' style="flex:1; background:var(--repair); font-size:10px; padding:6px;" onclick="repairItem('${up.id}', ${up.repairPrice})">🧵 ПОДЛАТАТЬ (${up.repairPrice})</button><button class='btn-action' style="flex:1; background:transparent; border:1px solid var(--danger); color:var(--danger); font-size:10px; padding:6px;" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ПРОДАТЬ (${up.price * 0.5})</button></div>`;
             myItemsList.appendChild(div);
         }
     });
     
-    // --- МАГАЗИН ---
     const shopList = document.getElementById('shop-upgrades-list'); 
     shopList.innerHTML = ''; 
     UPGRADES.forEach(up => { 
@@ -548,10 +506,9 @@ function doWork() {
         clicksSinceBonus = 0; 
     }
 
-    // ИЗНОС ВСЕГО (ФИКС МИНУСА)
     if (G.shoes.dur > 0) {
         G.shoes.dur -= 0.05; 
-        if(G.shoes.dur < 0) G.shoes.dur = 0; // Фикс -1%
+        if(G.shoes.dur < 0) G.shoes.dur = 0; 
     }
 
     UPGRADES.forEach(up => {
@@ -593,10 +550,9 @@ function doWork() {
     if (G.totalOrders >= 150) rankBonus = 0.10;
     if (G.totalOrders >= 400) rankBonus = 0.20;
 
-    // ПРОВЕРКА БОНУСОВ (И ПРОФИ, И СТАРТОВЫХ)
     let bagBonus = 1;
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
-    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02; // Старый рюкзак дает +2%
+    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
 
     let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
     
@@ -641,7 +597,6 @@ function generateOrder() {
 
     let d = 0.5 + Math.random() * 3.5; 
     
-    // БОНУС СУМКИ (ИЛИ СТАРТОВОЙ)
     let bagBonus = 1;
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
@@ -702,8 +657,8 @@ function activateAutopilot() {
     if(G.money >= 45 && G.lvl >= 0.15) { 
         G.money = parseFloat((G.money - 45).toFixed(2)); 
         G.lvl -= 0.15; 
-        // POWERBANK БОНУС
-        let timeAdd = G.powerbank ? 900 : 600; // 15 мин или 10 мин
+        let hasPower = (G.powerbank && G.powerbank.dur > 0);
+        let timeAdd = hasPower ? 900 : 600; 
         G.autoTime += timeAdd; 
         addHistory('АВТОПИЛОТ', 45, 'minus'); 
         acceptOrder(); 
@@ -716,12 +671,10 @@ function activateAutopilot() {
 
 function acceptOrder() { order.active = true; updateUI(); }
 
-// НОВАЯ ФУНКЦИЯ: Покупка обуви (С ЗАЩИТОЙ)
 function buyShoes(name, price, durability) {
-    // 1. Проверяем, есть ли уже ТАКИЕ ЖЕ кроссовки и они ЦЕЛЫЕ
     if (G.shoes.name === name && G.shoes.dur > 0) {
         log("👟 У вас уже есть эта обувь!", "var(--accent-gold)");
-        return; // Отменяем покупку
+        return; 
     }
 
     if (G.money >= price) {
@@ -739,9 +692,7 @@ function buyShoes(name, price, durability) {
     }
 }
 
-// НОВАЯ ФУНКЦИЯ: Покупка снаряжения (С ЗАЩИТОЙ)
 function buyInvest(type, p) { 
-    // 1. Проверяем, есть ли уже этот предмет
     if (G[type]) {
         log("🎒 У вас уже есть этот предмет!", "var(--accent-gold)");
         return;
@@ -1080,6 +1031,12 @@ setInterval(() => {
         if(order.time <= 0) finishOrder(false); 
     }
     
+    // АВТО-СЕЙВ КАЖДЫЕ 3 СЕКУНДЫ
+    tickCounter++;
+    if(tickCounter % 3 === 0) {
+        save();
+    }
+
     updateUI();
 }, 1000);
 
