@@ -4,15 +4,15 @@ tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// Основные данные игры
+// Основные данные
 let G = { 
     money: 10, 
     debt: 0, 
     lvl: 1.0, 
     en: 2000, 
     maxEn: 2000, 
-    tax: 300, 
-    rent: 600, 
+    tax: 300, // 5 минут
+    rent: 300, // 5 минут (БЫЛО 600, СТАЛО 300)
     waterStock: 0, 
     totalOrders: 0, 
     totalClicks: 0, 
@@ -35,12 +35,13 @@ let G = {
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0 };
 let curView = 'main', weather = "Ясно", isBroken = false;
-let lastClickTime = 0; // Переменная для антикликера
+let lastClickTime = 0; 
 
+// НАСТРОЙКИ РАЙОНОВ (ПРОЦЕНТЫ И НОВЫЙ МНОЖИТЕЛЬ)
 const DISTRICTS = [
-    { name: "Praga", minLvl: 0, rent: 50, mult: 1, price: 0 }, 
-    { name: "Mokotów", minLvl: 2.5, rent: 120, mult: 1.5, price: 150 }, 
-    { name: "Śródmieście", minLvl: 5.0, rent: 300, mult: 2.5, price: 500 }
+    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0 },       // Аренда 5%
+    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150 }, // Аренда 10%
+    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } // Аренда 15%, Доход +55% (1.55)
 ];
 
 const UPGRADES = [
@@ -195,7 +196,6 @@ function updateUI() {
     
     document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
     
-    // Блокировка дохода если висит заказ и его игнорируют
     let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2);
     if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
     
@@ -206,6 +206,14 @@ function updateUI() {
     renderBank(); 
     renderMilestones();
     updateDistrictButtons();
+    
+    // ОБНОВЛЯЕМ ТЕКСТ ТАЙМЕРОВ В UI С ПРОЦЕНТАМИ
+    const taxTimer = document.getElementById('tax-timer');
+    const rentTimer = document.getElementById('rent-timer');
+    if(taxTimer) taxTimer.innerText = `Налог (37%) через: ${Math.floor(G.tax/60)}:${(G.tax%60<10?'0':'')+G.tax%60}`;
+    // Показываем актуальный процент аренды для текущего района
+    let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
+    if(rentTimer) rentTimer.innerText = `Аренда (${rentP}%) через: ${Math.floor(G.rent/60)}:${(G.rent%60<10?'0':'')+G.rent%60}`;
 }
 
 function updateDistrictButtons() {
@@ -244,25 +252,16 @@ function updateDistrictButtons() {
 function doWork() {
     if (isBroken) return;
 
-    // --- ЗАЩИТА ОТ КЛИКЕРА ---
     let now = Date.now();
-    // 1. Лимит скорости (не быстрее 12 кликов в сек)
     if (now - lastClickTime < 80) return; 
     lastClickTime = now;
 
-    // 2. Блокировка фарма при игнорировании заказа
     if (order.visible && !order.active) {
-        // Если висит предложение заказа, а игрок кликает сферу:
-        // - Забираем энергию (наказание)
-        // - Не даем денег
-        // - Не даем опыт
-        G.en = Math.max(0, G.en - 25); // Сильный расход энергии
+        G.en = Math.max(0, G.en - 25); 
         updateUI();
-        // Вибрация ошибки
         tg.HapticFeedback.notificationOccurred('error');
         return; 
     }
-    // -------------------------
 
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
@@ -481,22 +480,28 @@ function renderBank() {
         `<button class="btn-action" style="background:var(--success)" onclick="if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}">ВЕРНУТЬ ДОЛГ (${G.debt} PLN)</button>`; 
 }
 
+// === ОБНОВЛЕННЫЙ ТАЙМЕР ===
 setInterval(() => {
     G.tax--; 
     if(G.tax <= 0) { 
-        let cost = parseFloat((G.money * 0.25).toFixed(2)); 
+        // НАЛОГ 37%
+        let cost = parseFloat((G.money * 0.37).toFixed(2)); 
         G.money = parseFloat((G.money - cost).toFixed(2)); 
         addHistory('🏛️ НАЛОГ', cost, 'minus'); 
         G.tax = 300; 
-        log("Налог 25%"); 
+        log("Налог 37% списан"); 
         save(); 
     }
     
     G.rent--; 
     if(G.rent <= 0) { 
-        G.money = parseFloat((G.money - DISTRICTS[G.district].rent).toFixed(2)); 
-        addHistory('🏠 АРЕНДА', DISTRICTS[G.district].rent, 'minus'); 
-        G.rent = 600; 
+        // АРЕНДА В ПРОЦЕНТАХ
+        let pct = DISTRICTS[G.district].rentPct;
+        let cost = parseFloat((G.money * pct).toFixed(2));
+        
+        G.money = parseFloat((G.money - cost).toFixed(2)); 
+        addHistory('🏠 АРЕНДА', cost, 'minus'); 
+        G.rent = 300; // ТЕПЕРЬ 300 (5 минут)
         save(); 
     }
 
@@ -532,7 +537,6 @@ setInterval(() => {
         }
     }
     
-    // --- ПОВЫШЕННЫЙ ШТРАФ ЗА ПРОПУСК ---
     if(order.visible && !order.active) { 
         order.offerTimer--; 
         let decay = order.isCriminal ? 0.05 : 0.03;
@@ -540,24 +544,17 @@ setInterval(() => {
         
         if(order.offerTimer <= 0) { 
             order.visible = false; 
-            G.lvl -= 0.05; // БЫЛО 0.02, СТАЛО 0.05 (БОЛЬШЕ ШТРАФ)
+            G.lvl -= 0.05; 
             log("Заказ упущен: LVL снижен!", "var(--danger)");
         } 
     }
-    // -----------------------------------
     
     if(order.active) { 
         order.time--; 
         if(order.time <= 0) finishOrder(false); 
     }
     
-    const taxTimer = document.getElementById('tax-timer');
-    const rentTimer = document.getElementById('rent-timer');
-    if(taxTimer) taxTimer.innerText = `Налог через: ${Math.floor(G.tax/60)}:${G.tax%60<10?'0':''}${G.tax%60}`;
-    if(rentTimer) rentTimer.innerText = `Аренда через: ${Math.floor(G.rent/60)}:${G.rent%60<10?'0':''}${G.rent%60}`;
-    
     updateUI();
 }, 1000);
 
 window.onload = load;
-
