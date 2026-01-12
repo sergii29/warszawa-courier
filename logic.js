@@ -26,6 +26,8 @@ let G = {
     buffTime: 0, 
     history: [], 
     usedPromos: [], 
+    // Новый флаг для Стартового Набора
+    isNewPlayer: true, 
     activeMilestones: [
         { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
@@ -33,7 +35,7 @@ let G = {
     ] 
 };
 
-let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0 };
+let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
 let curView = 'main', weather = "Ясно", isBroken = false;
 let lastClickTime = 0; 
 
@@ -136,6 +138,29 @@ function claimBonus() {
 }
 // =============================
 
+// === ЛОГИКА СТАРТОВОГО НАБОРА (НОВАЯ) ===
+function checkStarterPack() {
+    // Если флаг isNewPlayer существует и равен true, или его нет вообще (старые сохранения), но заказов 0
+    if (G.isNewPlayer === undefined) G.isNewPlayer = (G.totalOrders === 0);
+    
+    if (G.isNewPlayer) {
+        document.getElementById('starter-modal').style.display = 'flex';
+    }
+}
+
+function claimStarterPack() {
+    document.getElementById('starter-modal').style.display = 'none';
+    G.money += 50;
+    G.waterStock += 500;
+    G.bikeRentTime += 900; // 15 минут велика
+    G.isNewPlayer = false;
+    addHistory('🎁 STARTER KIT', 50, 'plus');
+    log("Вы получили набор новичка!", "var(--success)");
+    save();
+    updateUI();
+}
+// =======================================
+
 function saveToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
@@ -163,6 +188,10 @@ function load() {
     let d = localStorage.getItem(SAVE_KEY); 
     if(d) { G = {...G, ...JSON.parse(d)}; } 
     G.maxEn = 2000; 
+    
+    // Проверка стартового пака при загрузке
+    checkStarterPack();
+
     if(typeof listenToCloud === 'function') listenToCloud();
     updateUI(); 
 }
@@ -180,6 +209,10 @@ function updateUI() {
     
     document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
     document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
+    
+    // Визуализация погоды
+    if(weather === "Дождь") document.body.classList.add('rain-mode');
+    else document.body.classList.remove('rain-mode');
     
     document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
     if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = `🤖 ${Math.floor(G.autoTime/60)}:${(G.autoTime%60<10?'0':'')+G.autoTime%60}`;
@@ -223,6 +256,7 @@ function updateUI() {
             document.getElementById('quest-timer-ui').innerText = `${Math.floor(order.time/60)}:${(order.time%60<10?'0':'')+order.time%60}`; 
             document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%"; 
         } else { 
+            // Показываем кнопку выбора маршрута
             document.getElementById('quest-actions-choice').style.display = 'flex'; 
             document.getElementById('quest-active-ui').style.display = 'none'; 
             document.getElementById('quest-timer-ui').innerText = `0:${(order.offerTimer<10?'0':'')+order.offerTimer}`; 
@@ -325,7 +359,10 @@ function doWork() {
 
     if(order.active) { 
         consumeResources(true); 
-        order.steps += (G.bikeRentTime > 0 ? 2 : 1); 
+        let speed = (G.bikeRentTime > 0 ? 2 : 1);
+        if (order.isRiskyRoute) speed *= 2; // Ускорение на рисковом маршруте
+        order.steps += speed;
+        
         if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; } 
         if(order.steps >= order.target) finishOrder(true); 
         updateUI(); 
@@ -372,10 +409,35 @@ function generateOrder() {
     order.target = Math.floor(d * 160); 
     order.steps = 0; 
     order.time = Math.floor(order.target / 1.5 + 45); 
+    order.isRiskyRoute = false; // Сброс
     updateUI(); 
 }
 
+// === НОВЫЕ ФУНКЦИИ МАРШРУТА ===
+function openRouteModal() {
+    document.getElementById('route-modal').style.display = 'flex';
+}
+
+function closeRouteModal() {
+    document.getElementById('route-modal').style.display = 'none';
+}
+
+function chooseRoute(type) {
+    closeRouteModal();
+    if (type === 'safe') {
+        order.isRiskyRoute = false;
+        // Стандартное время
+    } else if (type === 'risky') {
+        order.isRiskyRoute = true;
+        // Сокращаем время доставки в 2 раза (игрок должен успеть быстрее)
+        order.time = Math.floor(order.time * 0.5); 
+    }
+    acceptOrder();
+}
+// ==============================
+
 function activateAutopilot() { 
+    closeRouteModal();
     if(G.money >= 45 && G.lvl >= 0.15) { 
         G.money = parseFloat((G.money - 45).toFixed(2)); 
         G.lvl -= 0.15; 
@@ -384,7 +446,9 @@ function activateAutopilot() {
         acceptOrder(); 
         save(); 
         updateUI(); 
-    } 
+    } else {
+        log("Не хватает денег или LVL!", "var(--danger)");
+    }
 }
 
 function acceptOrder() { order.active = true; updateUI(); }
@@ -393,6 +457,18 @@ function finishOrder(win) {
     if(!order.active) return;
     order.active = false; 
     if(win) { 
+        // Логика рискового маршрута (Шанс аварии)
+        if (order.isRiskyRoute) {
+            let riskRoll = Math.random();
+            if (riskRoll < 0.30) { // 30% шанс неудачи
+                log("💥 АВАРИЯ на срезке!", "var(--danger)");
+                G.money = parseFloat((G.money - 20).toFixed(2)); // Потеря денег на ремонт
+                addHistory('💥 АВАРИЯ', 20, 'minus');
+                order.visible = false; updateUI(); save();
+                return; // Заказ не засчитан
+            }
+        }
+
         let policeChance = order.isCriminal ? 0.35 : 0.02; 
         if(Math.random() < policeChance) { 
             G.lvl -= 1.2; G.money = parseFloat((G.money - 150).toFixed(2)); 
@@ -405,6 +481,9 @@ function finishOrder(win) {
             G.totalOrders++; 
             if(Math.random() < 0.40) { 
                 let tip = parseFloat((5 + Math.random()*15).toFixed(2)); 
+                // Двойные чаевые за риск
+                if (order.isRiskyRoute) tip *= 2; 
+                
                 G.money = parseFloat((G.money + tip).toFixed(2)); 
                 addHistory('💰 ЧАЕВЫЕ', tip, 'plus');
                 log(`💰 Чаевые: +${tip.toFixed(2)}`, "var(--success)"); 
