@@ -20,15 +20,10 @@
         .view.active { display: flex; }
         #view-main.active { justify-content: flex-start; align-items: center; height: 100%; padding-top: 10px; }
 
-        .sphere-container { margin-top: 10px; margin-bottom: 20px; position: relative; z-index: 10; }
+        .sphere-container { margin-top: 20px; margin-bottom: 20px; position: relative; z-index: 10; }
         #work-sphere { width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb, #172554); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5), inset 10px 10px 20px rgba(255,255,255,0.2), 0 20px 50px rgba(37, 99, 235, 0.4); user-select: none; touch-action: none; color: white; transition: transform 0.1s; position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         #work-sphere:active { transform: scale(0.96); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
         #work-sphere b { font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 1px;}
-
-        /* СТИЛЬ ТАЙМЕРА НОВИЧКА */
-        #newbie-container { width: 100%; text-align: center; margin-bottom: 5px; display: none; }
-        .newbie-badge { background: linear-gradient(90deg, #10b981, #059669); color: white; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); text-transform: uppercase; letter-spacing: 0.5px; animation: pulseBadge 2s infinite; }
-        @keyframes pulseBadge { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
         .bottom-controls { width: 100%; display: flex; flex-direction: column; gap: 10px; }
         .city-info-group { margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
@@ -83,8 +78,10 @@
         </div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
     </div>
-    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;"></div>
-    
+    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;">
+        <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
+        <button class="btn-action" style="background:var(--accent-gold); color: black; flex: 1.5; font-size: 10px; flex-direction: column; gap: 0px;" onclick="activateAutopilot()">АВТО<br><small style="color:black; opacity:0.7">45 PLN + 0.15 LVL</small></button>
+    </div>
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
         <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
         <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
@@ -113,8 +110,8 @@
     </div>
     <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
     <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
-        <span id="tax-timer">Налог: 05:00</span>
-        <span id="rent-timer" style="color:var(--danger)">Аренда: 05:00</span>
+        <span id="tax-timer">Налог (37%) через: 05:00</span>
+        <span id="rent-timer" style="color:var(--danger)">Аренда (%): 05:00</span>
     </div>
 </div>
 
@@ -122,9 +119,6 @@
     <div id="view-main" class="view active">
         <div style="text-align: center; margin-top: 5px;">
             <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 ...</span>
-        </div>
-        <div id="newbie-container">
-            <div class="newbie-badge" id="newbie-text">🔰 ЗАЩИТА: 30:00 (Бесплатный режим)</div>
         </div>
         <div class="sphere-container">
             <div id="work-sphere">
@@ -144,9 +138,9 @@
 
     <div id="view-districts" class="view">
         <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
-        <div class="card"><b>Praga</b> <small>Старт.</small><button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button></div>
-        <div class="card"><b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Доход: +50%.</small><button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button></div>
-        <div class="card"><b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Доход: +55%.</small><button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button></div>
+        <div class="card"><b>Praga</b> <small>Аренда: 5% от баланса. Старт.</small><button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button></div>
+        <div class="card"><b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 10% от баланса. Доход: +50%.</small><button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button></div>
+        <div class="card"><b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 15% от баланса. Доход: +55%.</small><button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button></div>
     </div>
 
     <div id="view-quests" class="view"><h3 style="margin:0; color:var(--text-primary)">🏆 Карьера</h3><div id="milestones-list"></div></div>
@@ -155,25 +149,25 @@
         <h3 style="margin:0; color:var(--text-primary)">🏪 Магазин</h3>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:20px;">💧</div>
-            <div style="flex:1;"><b>Вода (1.5л)</b><br><small>+1500 мл.</small></div>
-            <button id="btn-buy-water" class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">КУПИТЬ (1.50)</button>
+            <div style="flex:1;"><b>Вода (1.5л)</b><br><small>Восполняет энергию.</small></div>
+            <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">КУПИТЬ (1.50)</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">☕</div>
             <div style="flex:1;"><b>Кофе</b><br><small>+300 энергии.</small></div>
-            <button id="btn-buy-coffee" class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">КУПИТЬ (5.00)</button>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">КУПИТЬ (5.00)</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">🔋</div>
             <div style="flex:1;"><b>Энергетик</b><br><small>Заморозка (2м).</small></div>
-            <button id="btn-buy-energy" class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">КУПИТЬ (12.00)</button>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">КУПИТЬ (12.00)</button>
         </div>
     </div>
 
     <div id="view-invest" class="view">
         <h3 style="margin:0;">🎒 Инвентарь</h3>
         <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05);">
-            <b>🚲 Аренда Велосипеда</b><br><small>Скорость x2. Суммируется.</small>
+            <b>🚲 Аренда Электровелосипеда</b><br><small>Скорость x2. 30 PLN за 10 мин.</small>
             <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
         </div>
         <div id="upgrade-items"></div>
