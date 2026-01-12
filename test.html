@@ -3,364 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier: Gold Final</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
+    <title>Neon Courier Test</title>
     <style>
         :root {
-            --bg-main: #0f172a; 
-            --bg-card: rgba(30, 41, 59, 0.9); 
-            --accent-gold: #f59e0b; 
-            --accent-blue: #3b82f6; 
-            --text-primary: #f1f5f9; 
-            --text-secondary: #94a3b8; 
-            --success: #22c55e;
-            --danger: #ef4444;
+            --bg-color: #050510;
+            --primary: #00f3ff; /* Неоновый голубой */
+            --secondary: #ff00ff; /* Неоновый розовый */
+            --danger: #ff3333; /* Неоновый красный */
+            --gold: #ffd700;
+            --panel-bg: rgba(20, 20, 40, 0.95);
+            --grid-line: rgba(255, 255, 255, 0.05);
         }
-        
+
         body {
-            background: radial-gradient(circle at top center, #1e293b, var(--bg-main));
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
-            touch-action: manipulation;
-            font-size: 13px;
-        }
-
-        /* --- ХЕДЕР --- */
-        .header-container {
-            background: rgba(15, 23, 42, 0.98);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding: 10px 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            z-index: 100; position: relative;
-        }
-        .top-nav { display: flex; justify-content: space-between; align-items: center; }
-        .energy-track { height: 6px; background: rgba(0,0,0,0.3); margin-top: 8px; border-radius: 10px; overflow: hidden; }
-        .energy-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-blue), #60a5fa); transition: width 0.2s ease; }
-
-        /* --- КОНТЕНТ --- */
-        .content { 
-            padding: 15px; 
-            height: calc(100vh - 200px); 
-            overflow-y: auto; 
-            display: flex; 
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            touch-action: manipulation; /* Убирает задержку тапа */
+            display: flex;
             flex-direction: column;
+            height: 100vh;
+        }
+
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ (HUD) --- */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            z-index: 10;
+        }
+
+        .stat-group {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #888;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .stat-val {
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        /* --- ИГРОВОЕ ПОЛЕ (КАРТА) --- */
+        #game-map {
+            flex: 1;
             position: relative;
-        }
-        
-        .view { display: none; flex-direction: column; gap: 10px; width: 100%; }
-        .view.active { display: flex; }
-        
-        /* ГЛАВНАЯ СТРАНИЦА */
-        #view-main.active {
-            justify-content: flex-start;
-            align-items: center;
-            height: 100%;
-            padding-top: 10px;
-        }
-
-        /* --- СФЕРА --- */
-        .sphere-container {
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-
-        #work-sphere {
-            width: 160px; height: 160px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb, #172554);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5), inset 10px 10px 20px rgba(255,255,255,0.2), 0 20px 50px rgba(37, 99, 235, 0.4);
-            user-select: none; touch-action: none; color: white;
-            transition: transform 0.1s; position: relative;
-        }
-        
-        #work-sphere::after {
-            content: ''; position: absolute; top: 15%; left: 20%; width: 25px; height: 12px;
-            background: rgba(255,255,255,0.3); border-radius: 50%; transform: rotate(-45deg); filter: blur(2px);
-        }
-
-        #work-sphere:active { transform: scale(0.96); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
-        #work-sphere b { font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 1px;}
-
-        /* --- КНОПКИ --- */
-        .bottom-controls {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        /* --- НИЖНИЙ БЛОК (ГОРОД + ПОГОДА) --- */
-        .city-info-group {
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: grid;
+            /* Сетка задается через JS */
+            background: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px; /* Размер клетки фона */
+            background-position: center;
+            align-content: center;
+            justify-content: center;
             gap: 2px;
-            pointer-events: none; /* Не мешает кликам */
+            padding: 10px;
         }
 
-        .city-label {
+        .cell {
+            background: rgba(255,255,255,0.02);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        /* Игрок */
+        .player {
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary), inset 0 0 5px #fff;
+            border-radius: 50%;
+            transform: scale(0.8);
+            z-index: 2;
+        }
+
+        /* Цель (Заказ) */
+        .target {
+            background: var(--secondary);
+            box-shadow: 0 0 15px var(--secondary);
+            border-radius: 20%;
+            transform: scale(0.7);
+            animation: pulse 1.5s infinite;
+            z-index: 1;
+        }
+
+        /* Препятствие (Пробка) */
+        .wall {
+            background: var(--danger);
+            opacity: 0.4;
+            box-shadow: 0 0 5px var(--danger);
+            border-radius: 2px;
+        }
+
+        /* --- УПРАВЛЕНИЕ --- */
+        .controls {
+            background: var(--panel-bg);
+            border-top: 1px solid var(--primary);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 60px 60px;
+            gap: 10px;
+            box-shadow: 0 -5px 20px rgba(0, 243, 255, 0.2);
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: var(--primary);
             font-size: 24px;
-            font-weight: 900;
-            color: rgba(255, 255, 255, 0.05); 
-            letter-spacing: 8px;
-            text-transform: uppercase;
-        }
-        
-        /* Стиль для погоды внизу */
-        #weather-ui {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            background: rgba(255,255,255,0.05);
-            padding: 2px 8px;
-            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: 0.1s;
         }
 
-        /* --- ВСПЛЫВАЮЩЕЕ ОКНО ЗАКАЗА --- */
-        #quest-bar {
-            display: none; 
-            position: fixed;
-            bottom: 85px; 
-            left: 10px; right: 10px;
-            background: rgba(30, 41, 59, 0.98); border: 1px solid var(--accent-blue);
-            border-radius: 12px; padding: 15px; z-index: 2000;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            animation: slideUp 0.3s ease-out;
+        .btn:active {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 15px var(--primary);
         }
-        
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        #view-main.active::after {
-            content: ''; display: block; height: 80px; width: 100%; flex-shrink: 0;
-        }
-
-        /* Обычные стили */
-        .card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; }
-        .card b { font-size: 13px; font-weight: 600; color: #fff; }
-        .card small { font-size: 11px; color: var(--text-secondary); display: block; margin-top: 2px; line-height: 1.3;}
 
         .btn-action {
-            background: var(--accent-blue); color: white; border: none; padding: 12px; border-radius: 10px;
-            font-weight: 600; font-size: 12px; cursor: pointer; width: 100%;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.2s ease;
+            border-color: var(--gold);
+            color: var(--gold);
         }
-        .btn-action:active { transform: scale(0.98); }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-primary); box-shadow: none; border: 1px solid rgba(255,255,255,0.1); }
-
-        /* --- НИЖНЕЕ МЕНЮ --- */
-        .tab-bar {
-            background: rgba(15, 23, 42, 0.98); position: fixed; bottom: 0; width: 100%;
-            display: grid; grid-template-columns: repeat(5, 1fr);
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: env(safe-area-inset-bottom);
-            height: 70px;
-            z-index: 3000;
-        }
-        .tab-item {
-            padding: 12px 0; text-align: center; color: var(--text-secondary);
-            font-size: 11px; cursor: pointer; font-weight: 500;
-        }
-        .tab-item.active { color: var(--accent-gold); }
-        .tab-item.active::after { content: ''; display: block; width: 24px; height: 3px; background: var(--accent-gold); border-radius: 3px; margin: 6px auto 0 auto; }
-
-        /* Элементы UI */
-        .right-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-        .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 600; display: none; margin-bottom: 2px;}
-        #bike-status-ui { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
-        #auto-status-ui { background: rgba(245, 158, 11, 0.2); color: var(--accent-gold); }
-        #buff-status-ui { background: rgba(34, 197, 94, 0.2); color: var(--success); }
         
-        #inventory-display { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0; justify-content: flex-end; }
-        .inv-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 9px; color: var(--text-secondary); }
-        
-        .promo-input { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px; width: calc(100% - 18px); margin-bottom: 8px; border-radius: 8px; font-size: 13px; outline: none; }
-        .money-display { font-size: 18px; font-weight: 700; color: var(--accent-gold); }
-        .lvl-display { color: var(--text-secondary); font-size: 11px; font-weight: 600; }
-        .info-row { display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: var(--text-secondary); font-weight: 500; }
-        h3 { font-size: 14px; margin-bottom: 10px; }
+        /* Всплывающий текст */
+        #msg-log {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #000;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            opacity: 0;
+            z-index: 20;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.7); opacity: 0.8; }
+            50% { transform: scale(0.9); opacity: 1; }
+            100% { transform: scale(0.7); opacity: 0.8; }
+        }
     </style>
 </head>
 <body>
 
-<div id="quest-bar">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div>
-            <b id="quest-title" style="color:var(--accent-blue); font-size: 13px;">📦 ЗАКАЗ</b><br>
-            <small style="color:var(--text-secondary)">Выплата:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
+    <div class="hud">
+        <div class="stat-group">
+            <div class="stat-label">Баланс</div>
+            <div class="stat-val" style="color: var(--gold)" id="ui-balance">0.00</div>
         </div>
-        <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
+        <div class="stat-group">
+            <div class="stat-label">Заряд</div>
+            <div class="stat-val" style="color: var(--primary)" id="ui-energy">100%</div>
+        </div>
+        <div class="stat-group">
+            <div class="stat-label">Рейтинг</div>
+            <div class="stat-val" style="color: var(--secondary)" id="ui-rating">5.0</div>
+        </div>
     </div>
-    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;">
-        <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
-        <button class="btn-action" style="background:var(--accent-gold); color: black; flex: 1.5; font-size: 10px; flex-direction: column; gap: 0px;" onclick="activateAutopilot()">АВТО<br><small style="color:black; opacity:0.7">45 PLN</small></button>
-    </div>
-    <div id="quest-active-ui" style="display:none; margin-top:10px;">
-        <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
-        <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
-    </div>
-</div>
 
-<div class="header-container">
-    <div class="top-nav">
-        <div>
-            <small style="color:var(--text-secondary); font-size:10px;">Баланс</small><br>
-            <b id="money-val" class="money-display">0.00 PLN</b>
-        </div>
-        <div class="right-panel">
-            <b id="lvl-val" class="lvl-display">LVL 1.0</b>
-            <div id="inventory-display"></div>
-            <div style="display:flex; gap:3px;">
-                <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
-                <div id="auto-status-ui" class="status-badge">🤖 00:00</div>
-                <div id="buff-status-ui" class="status-badge">⚡ 00:00</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="info-row" style="margin-top:5px;">
-        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-gold)">⚡</span> <b id="en-text" style="color:var(--text-primary)">0/2000</b></span>
-        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-blue)">💧</span> <b id="water-val" style="color:var(--text-primary)">0</b> мл</span>
-    </div>
-    <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
-    
-    <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
-        <span id="tax-timer">Налог: 05:00</span>
-        <span id="rent-timer" style="color:var(--danger)">Аренда: 10:00</span>
-    </div>
-</div>
+    <div id="msg-log"></div>
 
-<div class="content">
-    
-    <div id="view-main" class="view active">
+    <div id="game-map">
+        </div>
+
+    <div class="controls">
+        <div></div>
+        <div class="btn" onclick="move(0, -1)">▲</div>
+        <div></div>
         
-        <div style="text-align: center; margin-top: 5px;">
-            <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 Praga</span>
-        </div>
-
-        <div class="sphere-container">
-            <div id="work-sphere">
-                <b>РАБОТАТЬ</b>
-                <div id="click-rate-ui" style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: 500;">0.10 PLN</div>
-            </div>
-        </div>
-
-        <div class="bottom-controls">
-            <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК (+0.02)</button>
-            <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
-        </div>
-
-        <div class="city-info-group">
-            <div class="city-label">WARSAW</div>
-            <div id="weather-ui">☀️ Ясно</div>
-        </div>
-
+        <div class="btn" onclick="move(-1, 0)">◀</div>
+        <div class="btn btn-action" onclick="actionBoost()">⚡</div>
+        <div class="btn" onclick="move(1, 0)">▶</div>
+        
+        <div></div>
+        <div class="btn" onclick="move(0, 1)">▼</div>
+        <div></div>
     </div>
 
-    <div id="view-districts" class="view">
-        <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
-        <div class="card">
-            <b>Praga</b> <small>Аренда: 50. Старт.</small>
-            <button class="btn-action" style="margin-top:8px; background:rgba(34, 197, 94, 0.1); color: var(--success); box-shadow: none; cursor: default; padding:8px;">✅ ТЕКУЩИЙ</button>
-        </div>
-        <div class="card">
-            <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 120. Доход: +50%.</small>
-            <button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
-        </div>
-        <div class="card">
-            <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 300. Доход: x2.5.</small>
-            <button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
-        </div>
-    </div>
+    <script>
+        // --- НАСТРОЙКИ ---
+        const GRID_SIZE = 9; // Размер карты 9x9
+        
+        let state = {
+            x: 4, y: 4,      // Позиция игрока (центр)
+            target: {x:0, y:0}, // Позиция заказа
+            walls: [],       // Препятствия
+            balance: 0,
+            energy: 100,
+            rating: 5.0
+        };
 
-    <div id="view-quests" class="view">
-        <h3 style="margin:0; color:var(--text-primary)">🏆 Карьера</h3>
-        <div id="milestones-list"></div>
-    </div>
+        const mapEl = document.getElementById('game-map');
 
-    <div id="view-shop" class="view">
-        <h3 style="margin:0; color:var(--text-primary)">🏪 Магазин</h3>
-        <div class="card" style="display:flex; align-items:center; gap:10px;">
-            <div style="font-size:20px;">💧</div>
-            <div style="flex:1;">
-                <b>Вода (1.5л)</b><br>
-                <small>Восполняет энергию при кликах. 1500 мл.</small>
-            </div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">1.50</button>
-        </div>
-        <div class="card" style="display:flex; align-items:center; gap:10px;">
-             <div style="font-size:20px;">☕</div>
-            <div style="flex:1;">
-                <b>Кофе</b><br>
-                <small>Мгновенно восстанавливает +300 энергии.</small>
-            </div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">5.00</button>
-        </div>
-        <div class="card" style="display:flex; align-items:center; gap:10px;">
-             <div style="font-size:20px;">🔋</div>
-            <div style="flex:1;">
-                <b>Энергетик</b><br>
-                <small>Замораживает расход энергии. Вода продолжает тратиться.</small>
-            </div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">12.00</button>
-        </div>
-    </div>
+        // --- ИНИЦИАЛИЗАЦИЯ ---
+        function initGame() {
+            // Настройка сетки CSS
+            mapEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+            mapEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
+            
+            // Создание ячеек
+            mapEl.innerHTML = '';
+            for(let i=0; i<GRID_SIZE*GRID_SIZE; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `c-${i}`;
+                mapEl.appendChild(cell);
+            }
+            
+            spawnTarget();
+            draw();
+        }
 
-    <div id="view-invest" class="view">
-        <h3 style="margin:0;">🎒 Инвентарь</h3>
-        <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05);">
-            <b>🚲 Аренда Электровелосипеда</b><br>
-            <small>Скорость выполнения заказов x2. 30 PLN за 10 минут.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
-        </div>
-        <div id="upgrade-items"></div>
-    </div>
+        // --- ЛОГИКА ---
+        function getIdx(x, y) { return y * GRID_SIZE + x; }
 
-    <div id="view-bank" class="view">
-        <h3 style="margin:0;">🏦 Банк</h3>
-        <div class="card">
-            <h4 style="margin:0 0 5px 0; font-size:12px; color:var(--accent-blue);">🎁 Секретный промокод</h4>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="promo-input" class="promo-input" placeholder="Введите слово..." style="margin:0;">
-                <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
-            </div>
-        </div>
-        <div class="card">
-             <div id="bank-actions-ui"></div>
-        </div>
-        <div class="card">
-            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
-            <div style="display:flex; gap:8px;">
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
-            </div>
-        </div>
-        <div class="card history-list" id="history-ui" style="max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
-    </div>
-</div>
+        function spawnTarget() {
+            // Случайная позиция, не на игроке
+            do {
+                state.target.x = Math.floor(Math.random() * GRID_SIZE);
+                state.target.y = Math.floor(Math.random() * GRID_SIZE);
+            } while (state.target.x === state.x && state.target.y === state.y);
 
-<div id="game-log"></div>
+            // Генерируем "пробки" (стены)
+            state.walls = [];
+            for(let i=0; i<5; i++) {
+                let wx = Math.floor(Math.random() * GRID_SIZE);
+                let wy = Math.floor(Math.random() * GRID_SIZE);
+                // Не ставим стены на игрока или цель
+                if ((wx !== state.x || wy !== state.y) && (wx !== state.target.x || wy !== state.target.y)) {
+                    state.walls.push(getIdx(wx, wy));
+                }
+            }
+        }
 
-<div class="tab-bar">
-    <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
-    <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
-    <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
-    <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
-    <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
-</div>
+        function move(dx, dy) {
+            if (state.energy <= 0) {
+                showMsg("⚡ НЕТ ЭНЕРГИИ!", "red");
+                return;
+            }
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="database.js"></script>
-<script src="logic.js" defer></script>
+            let nx = state.x + dx;
+            let ny = state.y + dy;
 
+            // Проверка границ
+            if (nx < 0 || nx >= GRID_SIZE || ny < 0 || ny >= GRID_SIZE) return;
+
+            // Проверка стен
+            let nIdx = getIdx(nx, ny);
+            if (state.walls.includes(nIdx)) {
+                showMsg("🚧 ПРОБКА! ТЕРЯЕШЬ ВРЕМЯ", "orange");
+                state.energy -= 5;
+                updateUI();
+                return; // Не идем туда
+            }
+
+            // Движение
+            state.x = nx;
+            state.y = ny;
+            state.energy -= 1; // Расход энергии на ход
+
+            // Проверка доставки
+            if (state.x === state.target.x && state.y === state.target.y) {
+                let profit = 15 + Math.floor(Math.random() * 10);
+                state.balance += profit;
+                state.rating = Math.min(5.0, state.rating + 0.01);
+                showMsg(`📦 ДОСТАВЛЕНО! +${profit} PLN`, "#00f3ff");
+                spawnTarget();
+            }
+
+            draw();
+            updateUI();
+        }
+
+        function actionBoost() {
+            if (state.balance >= 10) {
+                state.balance -= 10;
+                state.energy = Math.min(100, state.energy + 50);
+                showMsg("🔋 ЭНЕРГЕТИК ВЫПИТ!", "#00ff00");
+                updateUI();
+            } else {
+                showMsg("❌ НЕ ХВАТАЕТ ДЕНЕГ", "red");
+            }
+        }
+
+        // --- ОТРИСОВКА ---
+        function draw() {
+            // Очистка классов
+            document.querySelectorAll('.cell').forEach(c => {
+                c.className = 'cell';
+            });
+
+            // Рисуем препятствия
+            state.walls.forEach(idx => {
+                document.getElementById(`c-${idx}`).classList.add('wall');
+            });
+
+            // Рисуем цель
+            let tIdx = getIdx(state.target.x, state.target.y);
+            document.getElementById(`c-${tIdx}`).classList.add('target');
+
+            // Рисуем игрока
+            let pIdx = getIdx(state.x, state.y);
+            document.getElementById(`c-${pIdx}`).classList.add('player');
+        }
+
+        function updateUI() {
+            document.getElementById('ui-balance').innerText = state.balance.toFixed(2);
+            document.getElementById('ui-energy').innerText = state.energy + '%';
+            document.getElementById('ui-rating').innerText = state.rating.toFixed(2);
+        }
+
+        function showMsg(text, color) {
+            let el = document.getElementById('msg-log');
+            el.innerText = text;
+            el.style.color = color;
+            el.style.opacity = 1;
+            setTimeout(() => el.style.opacity = 0, 1500);
+        }
+
+        // Старт
+        initGame();
+
+    </script>
 </body>
 </html>
