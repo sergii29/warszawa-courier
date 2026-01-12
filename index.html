@@ -88,7 +88,6 @@
         #work-sphere:active { transform: scale(0.96); }
         #work-sphere b { font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 1px;}
 
-        /* Ремонтный прогресс (внутри сферы) */
         #repair-progress {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
             background: rgba(0,0,0,0.3); border-radius: 50%;
@@ -176,11 +175,20 @@
         .lvl-display { color: var(--text-secondary); font-size: 11px; font-weight: 600; }
         .info-row { display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: var(--text-secondary); font-weight: 500; }
         
-        /* Стили для обуви */
         #shoes-status-ui { font-size: 10px; color: #aaa; margin-top: 2px; }
         .shoe-bar-bg { width: 60px; height: 4px; background: #333; border-radius: 2px; display: inline-block; overflow: hidden; vertical-align: middle; margin-left: 4px; }
         .shoe-bar-fill { height: 100%; background: var(--purple); width: 100%; transition: width 0.5s; }
         h3 { font-size: 14px; margin-bottom: 10px; }
+
+        /* --- СТИЛИ ДЛЯ КАРЬЕРЫ 2.0 --- */
+        .rank-card { text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid var(--accent-blue); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1); position: relative; overflow: hidden; }
+        .rank-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%); animation: rotateGlow 10s linear infinite; pointer-events: none; }
+        @keyframes rotateGlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .daily-quest-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .daily-quest-info { flex: 1; }
+        .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
+        .stat-row:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -339,7 +347,33 @@
     </div>
 
     <div id="view-quests" class="view">
-        <h3 style="margin:0; color:var(--text-primary)">🏆 Карьера</h3>
+        
+        <div class="card rank-card">
+            <div style="font-size:40px; margin-bottom:5px;" id="rank-icon">😎</div>
+            <h2 style="margin:0; font-size:18px; color:white; text-shadow:0 0 10px var(--accent-blue);" id="rank-name">Новичок</h2>
+            <small style="color:var(--text-secondary); display:block; margin-top:5px;" id="rank-next">До следующего ранга: ...</small>
+            
+            <div class="energy-track" style="margin-top:10px; background:rgba(0,0,0,0.5);">
+                <div id="rank-progress" class="energy-fill" style="width:0%; background: linear-gradient(90deg, var(--accent-gold), #fff7ed);"></div>
+            </div>
+            <div style="font-size:10px; color:var(--accent-gold); margin-top:5px; font-weight:bold;" id="rank-bonus">Бонус ранга: 0%</div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0; display:flex; justify-content:space-between; align-items:center;">
+            📅 Ежедневные задания 
+            <small id="daily-timer" style="font-weight:normal; opacity:0.7; font-size:10px;">Обновление через...</small>
+        </h4>
+        <div id="daily-quests-list"></div>
+
+        <h4 style="margin:15px 0 5px 0;">📊 Статистика</h4>
+        <div class="card">
+            <div class="stat-row"><span>📦 Всего заказов</span> <b id="stat-orders">0</b></div>
+            <div class="stat-row"><span>⚡ Всего кликов</span> <b id="stat-clicks">0</b></div>
+            <div class="stat-row"><span>♻️ Сдано бутылок</span> <b id="stat-bottles">0</b></div>
+            <div class="stat-row"><span>💵 Заработано всего</span> <b id="stat-earned" style="color:var(--success)">0.00 PLN</b></div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0;">🏆 Достижения</h4>
         <div id="milestones-list"></div>
     </div>
 
