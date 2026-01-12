@@ -30,6 +30,9 @@ let G = {
     scooter: false, 
     bag: false, 
     phone: false, 
+    raincoat: false, // НОВОЕ
+    helmet: false, // НОВОЕ
+    powerbank: false, // НОВОЕ
     district: 0, 
     bikeRentTime: 0, 
     buffTime: 0, 
@@ -60,10 +63,14 @@ const DISTRICTS = [
     { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } 
 ];
 
+// ОБНОВЛЕННЫЙ СПИСОК ТОВАРОВ
 const UPGRADES = [
     { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', price: 350, bonus: '+15% PLN' }, 
     { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', price: 1200, bonus: 'Заказы x1.4' }, 
-    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', price: 500, bonus: '⚡ -30%' }
+    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', price: 500, bonus: '⚡ -30%' },
+    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50% (до 15%).', price: 250, bonus: '🛡️ Безопасность' },
+    { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Нет штрафа энергии в дождь.', price: 180, bonus: '☔ Сухость' },
+    { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот работает 15 минут.', price: 400, bonus: '🤖 +50% времени' }
 ];
 
 function addHistory(msg, val, type = 'plus') {
@@ -376,12 +383,9 @@ function updateUI() {
     });
     
     // --- ИНВЕНТАРЬ (ЛОМБАРД) ---
-    // 1. Мои вещи
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
-    let hasItems = false;
     
-    // Показываем обувь как предмет
     const shoeDiv = document.createElement('div');
     shoeDiv.className = 'card';
     shoeDiv.style.marginBottom = '5px';
@@ -391,7 +395,6 @@ function updateUI() {
 
     UPGRADES.forEach(up => {
         if(G[up.id]) {
-            hasItems = true;
             const div = document.createElement('div'); 
             div.className = 'card'; 
             div.style.marginBottom = '5px'; 
@@ -401,16 +404,16 @@ function updateUI() {
         }
     });
     
-    // 2. Магазин
-    const upgradeList = document.getElementById('upgrade-items'); 
-    upgradeList.innerHTML = ''; 
+    // --- МАГАЗИН: СПИСОК УЛУЧШЕНИЙ ---
+    const shopList = document.getElementById('shop-upgrades-list'); 
+    shopList.innerHTML = ''; 
     UPGRADES.forEach(up => { 
         if(!G[up.id]) { 
             const div = document.createElement('div'); 
             div.className = 'card'; 
-            div.style.marginTop = '8px'; 
+            div.style.marginBottom = '8px'; 
             div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + up.price + ")\">КУПИТЬ (" + up.price + " PLN)</button>"; 
-            upgradeList.appendChild(div); 
+            shopList.appendChild(div); 
         }
     });
     
@@ -576,7 +579,11 @@ function consumeResources(isOrder) {
     }
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
-    if (weather === "Дождь") cost *= 1.2; 
+    
+    // ДОЖДЕВИК: Если есть, дождь не увеличивает расход
+    let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
+    
+    cost *= rainMod; 
     if (isOrder) cost *= 1.5; 
     G.en = Math.max(0, G.en - cost); 
     G.waterStock = Math.max(0, G.waterStock - (isOrder ? 10 : 3));
@@ -644,7 +651,9 @@ function activateAutopilot() {
     if(G.money >= 45 && G.lvl >= 0.15) { 
         G.money = parseFloat((G.money - 45).toFixed(2)); 
         G.lvl -= 0.15; 
-        G.autoTime += 600; 
+        // POWERBANK БОНУС
+        let timeAdd = G.powerbank ? 900 : 600; // 15 мин или 10 мин
+        G.autoTime += timeAdd; 
         addHistory('АВТОПИЛОТ', 45, 'minus'); 
         acceptOrder(); 
         save(); 
@@ -682,7 +691,6 @@ function buyInvest(type, p) {
     } 
 }
 
-// НОВОЕ: ЛОМБАРД
 function sellInvest(type, p) {
     if(G[type]) {
         G.money = parseFloat((G.money + p).toFixed(2)); 
@@ -694,7 +702,6 @@ function sellInvest(type, p) {
     }
 }
 
-// НОВОЕ: ПОСОБИЕ
 function getWelfare() {
     let now = Date.now();
     if (G.money >= 0) {
@@ -735,7 +742,10 @@ function finishOrder(win) {
     if(win) { 
         if (order.isRiskyRoute) {
             let riskRoll = Math.random();
-            if (riskRoll < 0.30) { 
+            // ШЛЕМ БОНУС
+            let riskChance = G.helmet ? 0.15 : 0.30; 
+
+            if (riskRoll < riskChance) { 
                 log("💥 АВАРИЯ на срезке!", "var(--danger)");
                 isBroken = true;
                 repairProgress = 0;
