@@ -25,6 +25,8 @@
             margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
             touch-action: manipulation;
             font-size: 13px;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         /* --- ХЕДЕР --- */
@@ -62,8 +64,10 @@
 
         /* --- СФЕРА --- */
         .sphere-container {
-            margin-top: 20px;
+            margin-top: 10px;
             margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
         }
 
         #work-sphere {
@@ -74,6 +78,7 @@
             box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5), inset 10px 10px 20px rgba(255,255,255,0.2), 0 20px 50px rgba(37, 99, 235, 0.4);
             user-select: none; touch-action: none; color: white;
             transition: transform 0.1s; position: relative;
+            cursor: pointer;
         }
         
         #work-sphere::after {
@@ -84,22 +89,23 @@
         #work-sphere:active { transform: scale(0.96); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
         #work-sphere b { font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 1px;}
 
-        /* --- НОВИЧОК БАР --- */
+        /* --- НОВИЧОК СТАТУС --- */
         #newbie-container {
             width: 100%;
             text-align: center;
-            margin-bottom: 10px;
-            display: none; /* JS включит */
+            margin-bottom: 5px;
+            display: none;
         }
         .newbie-badge {
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid var(--success);
-            color: var(--success);
-            padding: 5px 12px;
-            border-radius: 8px;
+            background: linear-gradient(90deg, #10b981, #059669);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* --- КНОПКИ --- */
@@ -153,7 +159,7 @@
 
         #view-main.active::after { content: ''; display: block; height: 80px; width: 100%; flex-shrink: 0; }
 
-        /* --- БОНУС --- */
+        /* --- БОНУС (АНТИКЛИКЕР) --- */
         #bonus-overlay {
             display: none; position: fixed; inset: 0; 
             background: rgba(0,0,0,0.8); z-index: 5000;
@@ -233,7 +239,10 @@
         </div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
     </div>
-    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;"></div>
+    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;">
+        <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
+        <button class="btn-action" style="background:var(--accent-gold); color: black; flex: 1.5; font-size: 10px; flex-direction: column; gap: 0px;" onclick="activateAutopilot()">АВТО<br><small style="color:black; opacity:0.7">45 PLN</small></button>
+    </div>
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
         <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
         <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
@@ -302,14 +311,17 @@
 
     <div id="view-districts" class="view">
         <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
+        
         <div class="card">
             <b>Praga</b> <small>Аренда: 5% от баланса. Старт.</small>
             <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
         </div>
+        
         <div class="card">
             <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 10% от баланса. Доход: +50%.</small>
             <button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
         </div>
+        
         <div class="card">
             <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 15% от баланса. Доход: +55%.</small>
             <button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
@@ -325,18 +337,18 @@
         <h3 style="margin:0; color:var(--text-primary)">🏪 Магазин</h3>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:20px;">💧</div>
-            <div style="flex:1;"><b>Вода (1.5л)</b><br><small>Восполняет энергию при кликах.</small></div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">1.50</button>
+            <div style="flex:1;"><b>Вода (1.5л)</b><br><small>+1500 мл.</small></div>
+            <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">КУПИТЬ (1.50)</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">☕</div>
             <div style="flex:1;"><b>Кофе</b><br><small>+300 энергии.</small></div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">5.00</button>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">КУПИТЬ (5.00)</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">🔋</div>
-            <div style="flex:1;"><b>Энергетик</b><br><small>Заморозка энергии.</small></div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">12.00</button>
+            <div style="flex:1;"><b>Энергетик</b><br><small>Заморозка (2м).</small></div>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">КУПИТЬ (12.00)</button>
         </div>
     </div>
 
@@ -359,7 +371,9 @@
                 <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
             </div>
         </div>
-        <div class="card"><div id="bank-actions-ui"></div></div>
+        <div class="card">
+             <div id="bank-actions-ui"></div>
+        </div>
         <div class="card">
             <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
             <div style="display:flex; gap:8px;">
