@@ -4,10 +4,10 @@ tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// Флаг блокировки сохранения
+// Флаг блокировки (чтобы не сохранять во время сброса)
 let isResetting = false;
 
-// Основные данные
+// Основные данные (стартовые)
 let G = { 
     money: 10, 
     debt: 0, 
@@ -32,7 +32,7 @@ let G = {
     forceReset: false,
     lastAdminUpdate: 0,
     clicksSinceBonus: 0,
-    startTime: 0, // ВРЕМЯ НАЧАЛА ИГРЫ ДЛЯ ТАЙМЕРА НОВИЧКА
+    startTime: 0, // Время старта для песочницы
     activeMilestones: [
         { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
@@ -45,7 +45,7 @@ let curView = 'main', weather = "Ясно", isBroken = false;
 let lastClickTime = 0; 
 let bonusActive = false;
 
-// 30 МИНУТ В МИЛЛИСЕКУНДАХ
+// 30 МИНУТ ХАЛЯВЫ
 const NEWBIE_TIME = 30 * 60 * 1000;
 
 function isNewbieMode() {
@@ -75,7 +75,7 @@ function log(msg, color = "#eee") {
     if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild); 
 }
 
-// === СЛУШАТЕЛЬ ОБЛАКА ===
+// === СЛУШАТЕЛЬ ОБЛАКА (СБРОС + АДМИН АПДЕЙТ) ===
 function listenToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
@@ -85,6 +85,7 @@ function listenToCloud() {
             const remoteData = snapshot.val();
             if (!remoteData) return;
 
+            // СБРОС ПО КОМАНДЕ АДМИНА
             if(remoteData.forceReset === true) {
                 isResetting = true; 
                 localStorage.clear();
@@ -95,6 +96,7 @@ function listenToCloud() {
                 return;
             }
 
+            // ОБНОВЛЕНИЕ БАЛАНСА/УРОВНЯ АДМИНОМ
             if (remoteData.lastAdminUpdate && remoteData.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 G.money = remoteData.money;
                 G.lvl = remoteData.lvl;
@@ -132,7 +134,7 @@ function load() {
     if(d) { G = {...G, ...JSON.parse(d)}; } 
     G.maxEn = 2000; 
     
-    // Инициализация старта для новичков (или старых игроков, у кого нет поля)
+    // Инициализация стартовых переменных
     if (!G.startTime || G.startTime === 0) G.startTime = Date.now();
     if (typeof G.clicksSinceBonus === 'undefined') G.clicksSinceBonus = 0;
     
@@ -150,9 +152,11 @@ if(sphere) {
     sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
 }
 
+// --- БОНУС АНТИКЛИКЕР ---
 function showBonus() { 
     const o = document.getElementById('bonus-overlay'); 
     const b = document.getElementById('bonus-btn'); 
+    // Кнопка появляется в рандомном месте, но не за краями экрана
     const x = 50 + Math.random() * (window.innerWidth - 150);
     const y = 100 + Math.random() * (window.innerHeight - 200);
     b.style.left = x + 'px'; b.style.top = y + 'px'; 
@@ -165,7 +169,7 @@ function showBonus() {
 function claimBonus() { 
     document.getElementById('bonus-overlay').style.display='none'; 
     bonusActive = false; 
-    G.clicksSinceBonus = 0; 
+    G.clicksSinceBonus = 0; // Сбрасываем счетчик
     G.money = parseFloat((G.money + 50).toFixed(2));
     addHistory('🎁 БОНУС', 50, 'plus'); 
     log("Вы забрали бонус +50 PLN", "var(--success)"); 
@@ -226,6 +230,7 @@ function updateUI() {
             document.getElementById('quest-progress-bar').style.width=(order.steps/order.target*100)+"%";
         } else {
             document.getElementById('quest-actions-choice').style.display='flex'; document.getElementById('quest-active-ui').style.display='none';
+            
             // АВТОПИЛОТ БЕСПЛАТНЫЙ ДЛЯ НОВИЧКА
             let autoText = isNewbieMode() ? "БЕСПЛАТНО (НОВИЧОК)" : "45 PLN + 0.15 LVL";
             document.getElementById('quest-actions-choice').innerHTML = `
@@ -251,7 +256,6 @@ function updateUI() {
     
     const taxT = document.getElementById('tax-timer'); 
     if(taxT) {
-        // Если новичок - пишем "Нет налога"
         if(isNewbieMode()) taxT.innerText = `Налог: 0% (ЩИТ)`;
         else taxT.innerText=`Налог (37%) через: ${Math.floor(G.tax/60)}:${(G.tax%60<10?'0':'')+G.tax%60}`;
     }
@@ -275,9 +279,8 @@ function updateDistrictButtons() {
 }
 
 function triggerPoliceCheck() {
-    // НОВИЧКОВ НЕ ТРОГАЕМ
     if (isNewbieMode()) { log("🚔 Полиция проехала мимо (Щит)", "var(--success)"); return; }
-
+    
     log("🚔 ПРОВЕРКА!", "gold"); tg.HapticFeedback.notificationOccurred('warning');
     let fine = (G.lvl < 2.0) ? 5 : 100;
     if(Math.random()<0.4) { G.money = parseFloat((G.money - fine).toFixed(2)); addHistory('👮 ШТРАФ', fine, 'minus'); log(`Штраф -${fine} PLN`, "red"); tg.HapticFeedback.notificationOccurred('error'); }
@@ -292,7 +295,11 @@ function doWork() {
     if(Math.random()<0.008) { triggerPoliceCheck(); return; }
     if(G.waterStock>0 && G.en<G.maxEn-10) { let eff=1+(G.lvl*0.1); let d=Math.min(G.waterStock,50); G.en+=d*eff; G.waterStock-=d; save(); }
     if(G.en<1) return;
-    clicksSinceBonus++; if(clicksSinceBonus > (120 + Math.random() * 30)) { showBonus(); } // Частый бонус
+    
+    // ПРОВЕРКА БОНУСА (ЧАСТАЯ ~ 120 кликов)
+    G.clicksSinceBonus++; 
+    if (G.clicksSinceBonus > (120 + Math.random() * 30)) { showBonus(); } 
+
     if(order.active) { consumeResources(true); order.steps+=(G.bikeRentTime>0?2:1); if(G.bikeRentTime>0 && Math.random()<0.002) triggerBreakdown(); if(order.steps>=order.target) finishOrder(true); updateUI(); return; }
     if(!order.visible && Math.random()<(G.phone?0.35:0.18)) generateOrder();
     consumeResources(false);
@@ -312,7 +319,6 @@ function consumeResources(isO) {
 function generateOrder() { 
     if (order.visible || order.active) return; 
     order.visible = true; order.offerTimer = 15; 
-    // НОВИЧКИ БЕЗ КРИМИНАЛА
     order.isCriminal = !isNewbieMode() && (G.lvl >= 2.0) && (Math.random() < 0.12); 
     let d = 0.5 + Math.random() * 3.5; 
     let levelMult = 1 + (G.lvl * 0.15); 
@@ -322,7 +328,6 @@ function generateOrder() {
 }
 
 function activateAutopilot() { 
-    // БЕСПЛАТНО ДЛЯ НОВИЧКА
     let price = isNewbieMode() ? 0 : 45;
     let lvlPrice = isNewbieMode() ? 0 : 0.15;
 
@@ -340,7 +345,7 @@ function finishOrder(w) {
     if(!order.active) return; order.active=false; 
     if(w) { 
         let pC = order.isCriminal?0.40:0.02; 
-        if(Math.random()<pC && !isNewbieMode()) { // НОВИЧКОВ НЕ ЛОВЯТ НА ОБЫЧНЫХ ЗАКАЗАХ
+        if(Math.random()<pC && !isNewbieMode()) { 
             let f = (G.lvl < 2.0) ? 10 : 200; 
             if(order.isCriminal) { f=Math.max(300, Math.floor(G.money*0.25)); G.lvl-=0.5; log("АРЕСТ! Конфискация!", "red"); addHistory('АРЕСТ', f, 'minus'); } 
             else { if (G.lvl >= 2.0) G.lvl-=0.05; log("Штраф за нарушение.", "orange"); addHistory('ШТРАФ', f, 'minus'); }
@@ -361,7 +366,6 @@ function buyDrink(t,p) { if(G.money>=p) { G.money-=p; if(t==='coffee') G.en+=300
 function buyInvest(t,p) { if(!G[t] && G.money>=p) { G.money-=p; G[t]=true; addHistory('ИНВЕСТ', p, 'minus'); save(); updateUI(); } }
 
 function rentBike() { 
-    // БЕСПЛАТНО ДЛЯ НОВИЧКА
     let price = isNewbieMode() ? 0 : 30;
     if (G.money >= price) { 
         G.money -= price; 
@@ -379,24 +383,16 @@ function renderBank() { const u=document.getElementById('bank-actions-ui'); u.in
 
 setInterval(() => {
     if(isResetting) return;
-    
-    // НАЛОГИ НЕ СПИСЫВАЮТСЯ У НОВИЧКОВ
     G.tax--; 
     if(G.tax<=0) { 
-        if(!isNewbieMode()) {
-            let c=G.money*0.37; G.money-=c; addHistory('НАЛОГ', c.toFixed(2), 'minus'); log("Налог 37% списан"); 
-        }
+        if(!isNewbieMode()) { let c=G.money*0.37; G.money-=c; addHistory('НАЛОГ', c.toFixed(2), 'minus'); log("Налог 37% списан"); }
         G.tax=300; save(); 
     }
-    
     G.rent--; 
     if(G.rent<=0) { 
-        if(!isNewbieMode()) {
-            let c=G.money*DISTRICTS[G.district].rentPct; G.money-=c; addHistory('АРЕНДА', c.toFixed(2), 'minus'); 
-        }
+        if(!isNewbieMode()) { let c=G.money*DISTRICTS[G.district].rentPct; G.money-=c; addHistory('АРЕНДА', c.toFixed(2), 'minus'); }
         G.rent=300; save(); 
     }
-
     if(Math.random()<0.015) weather=Math.random()<0.35?"Дождь":"Ясно";
     if(G.bikeRentTime>0) { G.bikeRentTime--; if(G.bikeRentTime<=0 && G.money>=30) { G.money-=30; G.bikeRentTime=600; addHistory('ВЕЛИК', 30, 'minus'); } }
     if(G.buffTime>0) G.buffTime--;
