@@ -167,11 +167,18 @@
 
         function closeEditor() { document.getElementById('editor-modal').style.display = 'none'; }
 
+        // --- ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ---
         function saveUserChanges() {
             const userId = document.getElementById('edit-id').innerText;
             const newMoney = parseFloat(document.getElementById('input-money').value);
             const newLvl = parseFloat(document.getElementById('input-lvl').value);
-            db.ref('users/' + userId).update({ money: newMoney, lvl: newLvl }).then(() => closeEditor());
+            
+            // Отправляем метку времени lastAdminUpdate, чтобы игра поняла, что это ПРИКАЗ
+            db.ref('users/' + userId).update({ 
+                money: newMoney, 
+                lvl: newLvl,
+                lastAdminUpdate: Date.now() // <--- ВАЖНО
+            }).then(() => closeEditor());
         }
 
         function resetUserFull() {
@@ -209,7 +216,8 @@
                     { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
                     { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
                 ],
-                forceReset: true // <--- ВОТ ЭТА МАГИЧЕСКАЯ МЕТКА
+                forceReset: true,
+                lastAdminUpdate: Date.now() // Тоже обновляем метку
             };
 
             db.ref('users/' + userId).set(freshStart).then(() => {
