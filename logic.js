@@ -11,8 +11,8 @@ let G = {
     lvl: 1.0, 
     en: 2000, 
     maxEn: 2000, 
-    tax: 300, // 5 минут
-    rent: 300, // 5 минут (БЫЛО 600, СТАЛО 300)
+    tax: 300, 
+    rent: 300, 
     waterStock: 0, 
     totalOrders: 0, 
     totalClicks: 0, 
@@ -37,11 +37,15 @@ let order = { visible: false, active: false, steps: 0, target: 100, time: 0, rew
 let curView = 'main', weather = "Ясно", isBroken = false;
 let lastClickTime = 0; 
 
-// НАСТРОЙКИ РАЙОНОВ (ПРОЦЕНТЫ И НОВЫЙ МНОЖИТЕЛЬ)
+// --- ПЕРЕМЕННЫЕ ДЛЯ БОНУСА (АНТИКЛИКЕР) ---
+let clicksSinceBonus = 0;
+let bonusActive = false;
+// ------------------------------------------
+
 const DISTRICTS = [
-    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0 },       // Аренда 5%
-    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150 }, // Аренда 10%
-    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } // Аренда 15%, Доход +55% (1.55)
+    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0 },       
+    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150 }, 
+    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } 
 ];
 
 const UPGRADES = [
@@ -99,6 +103,38 @@ function log(msg, color = "#eee") {
     logEl.appendChild(entry); 
     if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild); 
 }
+
+// === ЛОГИКА БОНУСА (НОВАЯ) ===
+function showBonus() {
+    const overlay = document.getElementById('bonus-overlay');
+    const btn = document.getElementById('bonus-btn');
+    
+    // Рандомная позиция кнопки
+    const x = Math.random() * (window.innerWidth - 150);
+    const y = Math.random() * (window.innerHeight - 100);
+    
+    btn.style.left = x + 'px';
+    btn.style.top = y + 'px';
+    
+    overlay.style.display = 'flex';
+    bonusActive = true;
+    log("🎁 Появился БОНУС! Забери его!", "var(--gold)");
+    tg.HapticFeedback.notificationOccurred('warning');
+}
+
+function claimBonus() {
+    const overlay = document.getElementById('bonus-overlay');
+    overlay.style.display = 'none';
+    bonusActive = false;
+    clicksSinceBonus = 0;
+    
+    G.money = parseFloat((G.money + 50).toFixed(2));
+    addHistory('🎁 БОНУС', 50, 'plus');
+    log("Вы забрали бонус +50 PLN", "var(--success)");
+    tg.HapticFeedback.notificationOccurred('success');
+    save(); updateUI();
+}
+// =============================
 
 function saveToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
@@ -207,11 +243,9 @@ function updateUI() {
     renderMilestones();
     updateDistrictButtons();
     
-    // ОБНОВЛЯЕМ ТЕКСТ ТАЙМЕРОВ В UI С ПРОЦЕНТАМИ
     const taxTimer = document.getElementById('tax-timer');
     const rentTimer = document.getElementById('rent-timer');
     if(taxTimer) taxTimer.innerText = `Налог (37%) через: ${Math.floor(G.tax/60)}:${(G.tax%60<10?'0':'')+G.tax%60}`;
-    // Показываем актуальный процент аренды для текущего района
     let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
     if(rentTimer) rentTimer.innerText = `Аренда (${rentP}%) через: ${Math.floor(G.rent/60)}:${(G.rent%60<10?'0':'')+G.rent%60}`;
 }
@@ -252,6 +286,15 @@ function updateDistrictButtons() {
 function doWork() {
     if (isBroken) return;
 
+    // --- ЛОВУШКА ДЛЯ АВТОКЛИКЕРА ---
+    if (bonusActive) {
+        // Если висит кнопка бонуса, а клики идут по сфере (центру) -> это бот!
+        G.en = Math.max(0, G.en - 50); // Штраф энергии
+        tg.HapticFeedback.notificationOccurred('error');
+        return; // Клик не засчитывается
+    }
+    // ------------------------------
+
     let now = Date.now();
     if (now - lastClickTime < 80) return; 
     lastClickTime = now;
@@ -272,6 +315,14 @@ function doWork() {
     }
     if (G.en < 1) return;
     
+    // СЧЕТЧИК ДЛЯ ВЫЗОВА БОНУСА
+    clicksSinceBonus++;
+    // Каждые 300-400 кликов вызываем проверку
+    if (clicksSinceBonus > (300 + Math.random() * 100)) {
+        showBonus();
+        clicksSinceBonus = 0; // сброс только после показа
+    }
+
     if(order.active) { 
         consumeResources(true); 
         order.steps += (G.bikeRentTime > 0 ? 2 : 1); 
@@ -480,11 +531,9 @@ function renderBank() {
         `<button class="btn-action" style="background:var(--success)" onclick="if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}">ВЕРНУТЬ ДОЛГ (${G.debt} PLN)</button>`; 
 }
 
-// === ОБНОВЛЕННЫЙ ТАЙМЕР ===
 setInterval(() => {
     G.tax--; 
     if(G.tax <= 0) { 
-        // НАЛОГ 37%
         let cost = parseFloat((G.money * 0.37).toFixed(2)); 
         G.money = parseFloat((G.money - cost).toFixed(2)); 
         addHistory('🏛️ НАЛОГ', cost, 'minus'); 
@@ -495,13 +544,11 @@ setInterval(() => {
     
     G.rent--; 
     if(G.rent <= 0) { 
-        // АРЕНДА В ПРОЦЕНТАХ
         let pct = DISTRICTS[G.district].rentPct;
         let cost = parseFloat((G.money * pct).toFixed(2));
-        
         G.money = parseFloat((G.money - cost).toFixed(2)); 
         addHistory('🏠 АРЕНДА', cost, 'minus'); 
-        G.rent = 300; // ТЕПЕРЬ 300 (5 минут)
+        G.rent = 300; 
         save(); 
     }
 
