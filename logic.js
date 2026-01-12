@@ -182,15 +182,32 @@ function updateUI() {
         if(G[up.id]) { const span = document.createElement('span'); span.className = 'inv-item'; span.innerText = `${up.icon} ${up.bonus}`; invDisp.appendChild(span); } 
     });
     
+    // --- ИЗМЕНЕНО: ОТОБРАЖЕНИЕ ИНВЕНТАРЯ (КУПЛЕНО/НЕ КУПЛЕНО) ---
     const upgradeList = document.getElementById('upgrade-items'); 
     upgradeList.innerHTML = ''; 
     UPGRADES.forEach(up => { 
+        const div = document.createElement('div'); 
+        div.className = 'card'; 
+        div.style.marginTop = '8px'; 
+        
         if(!G[up.id]) { 
-            const div = document.createElement('div'); div.className = 'card'; div.style.marginTop = '8px'; 
+            // Если НЕ куплено - показываем кнопку купить
             div.innerHTML = `<b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', ${up.price})">КУПИТЬ (${up.price} PLN)</button>`; 
-            upgradeList.appendChild(div); 
-        } 
+        } else {
+            // Если КУПЛЕНО - показываем статус и описание
+            div.style.border = "1px solid var(--success)";
+            div.style.background = "rgba(34, 197, 94, 0.1)"; // Легкая зеленца
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b>${up.icon} ${up.name}</b>
+                    <span style="font-size:10px; color:var(--success); border:1px solid var(--success); padding:2px 6px; border-radius:8px;">✅ КУПЛЕНО</span>
+                </div>
+                <small style="color:#ccc; display:block; margin-top:5px;">${up.desc}</small>
+            `;
+        }
+        upgradeList.appendChild(div); 
     });
+    // -------------------------------------------------------------
     
     const qBar = document.getElementById('quest-bar'); 
     if (order.visible && curView === 'main') { 
@@ -244,11 +261,8 @@ function updateDistrictButtons() {
 }
 
 function triggerPoliceCheck() {
-    // Рандомная проверка документов во время клика
     log("🚔 ПОЛИЦИЯ! Проверка документов...", "var(--gold)");
     tg.HapticFeedback.notificationOccurred('warning');
-    
-    // Шанс 40% что найдут к чему придраться
     if (Math.random() < 0.4) {
         let fine = 100;
         G.money = parseFloat((G.money - fine).toFixed(2));
@@ -277,13 +291,7 @@ function doWork() {
         return; 
     }
 
-    // --- НОВОЕ: СЛУЧАЙНАЯ ПРОВЕРКА ПОЛИЦИИ ПРИ РАБОТЕ ---
-    // Шанс 0.8% при каждом клике (примерно раз в 120 кликов)
-    if (Math.random() < 0.008) {
-        triggerPoliceCheck();
-        return; // Клик не засчитывается, идет проверка
-    }
-    // ---------------------------------------------------
+    if (Math.random() < 0.008) { triggerPoliceCheck(); return; }
 
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
@@ -337,21 +345,10 @@ function generateOrder() {
     if (order.visible || order.active) return; 
     order.visible = true; 
     order.offerTimer = 15; 
-    
-    // ШАНС НА СОМНИТЕЛЬНЫЙ ЗАКАЗ (12%)
     order.isCriminal = Math.random() < 0.12; 
-    
     let d = 0.5 + Math.random() * 3.5; 
     let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1); 
-    
-    // Если криминал - платим в 6.5 раз больше!
-    if(order.isCriminal) { 
-        baseRew *= 6.5; 
-        order.offerTimer = 12; 
-        // Лог-подсказка
-        log("👀 Поступил странный заказ...", "var(--accent-blue)");
-    } 
-    
+    if(order.isCriminal) { baseRew *= 6.5; order.offerTimer = 12; log("👀 Поступил странный заказ...", "var(--accent-blue)"); } 
     order.baseReward = baseRew;
     order.reward = baseRew;
     order.target = Math.floor(d * 160); 
@@ -373,22 +370,15 @@ function finishOrder(win) {
     if(!order.active) return;
     order.active = false; 
     if(win) { 
-        // --- ЛОГИКА ПОЛИЦИИ ПРИ ЗАВЕРШЕНИИ ЗАКАЗА ---
-        // Если заказ криминальный - шанс проверки 40% (очень высокий)
-        // Если обычный - шанс 2%
         let policeChance = order.isCriminal ? 0.40 : 0.02; 
-        
         if(Math.random() < policeChance) { 
-            // ПОЙМАЛИ!
             let fine = 200;
-            // Если это был криминал - штраф больше и удар по репутации
             if(order.isCriminal) {
-                fine = Math.max(300, Math.floor(G.money * 0.25)); // Минимум 300 или 25% баланса
-                G.lvl -= 0.5; // Жесткое понижение
+                fine = Math.max(300, Math.floor(G.money * 0.25)); 
+                G.lvl -= 0.5; 
                 log("🚔 ПОЛИЦИЯ! Груз конфискован!", "var(--danger)");
                 addHistory('☠️ АРЕСТ', fine, 'minus');
             } else {
-                // Обычная проверка
                 G.lvl -= 0.05;
                 log("🚔 Обычная проверка. Найдены нарушения.", "orange");
                 addHistory('👮 ШТРАФ', fine, 'minus');
@@ -396,13 +386,11 @@ function finishOrder(win) {
             G.money = parseFloat((G.money - fine).toFixed(2)); 
             tg.HapticFeedback.notificationOccurred('error');
         } else { 
-            // ПРОНЕСЛО / УСПЕХ
             G.money = parseFloat((G.money + order.reward).toFixed(2)); 
             addHistory(order.isCriminal ? '📦 ТОВАР' : '📦 ЗАКАЗ', order.reward.toFixed(2), 'plus');
-            G.lvl += (order.isCriminal ? 0.15 : 0.015); // За риск больше опыта
+            G.lvl += (order.isCriminal ? 0.15 : 0.015); 
             G.totalOrders++; 
             if(order.isCriminal) log("😎 Доставка прошла чисто. +$$$", "var(--success)");
-            
             if(Math.random() < 0.40) { 
                 let tip = parseFloat((5 + Math.random()*15).toFixed(2)); 
                 G.money = parseFloat((G.money + tip).toFixed(2)); 
@@ -436,9 +424,7 @@ function renderMilestones() {
 }
 
 function collectBottles() { 
-    G.money = parseFloat((G.money + 0.02).toFixed(2)); 
-    G.totalBottles++; 
-    checkMilestones(); save(); updateUI(); 
+    G.money = parseFloat((G.money + 0.02).toFixed(2)); G.totalBottles++; checkMilestones(); save(); updateUI(); 
 }
 
 function buyWater() { 
