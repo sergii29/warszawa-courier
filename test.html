@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Courier Test V2</title>
+    <title>Neon Courier V3</title>
     <style>
         :root {
             --bg-color: #050510;
-            --primary: #00f3ff; /* Неон голубой */
-            --secondary: #ff00ff; /* Неон розовый (Доставка) */
-            --pickup: #ffff00; /* Неон желтый (Забор) */
-            --danger: #ff3333; /* Неон красный */
+            --primary: #00f3ff;
+            --secondary: #ff00ff;
+            --pickup: #ffff00;
+            --danger: #ff3333;
             --gold: #ffd700;
-            --panel-bg: rgba(20, 20, 40, 0.98);
-            --grid-line: rgba(255, 255, 255, 0.04);
+            --panel-bg: rgba(10, 10, 30, 0.95);
+            --grid-line: rgba(255, 255, 255, 0.03);
         }
 
         body {
@@ -27,123 +27,131 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            width: 100vw;
         }
 
-        /* --- HUD --- */
+        /* --- ВЕРХНЕЕ МЕНЮ --- */
         .hud {
             display: flex;
             justify-content: space-between;
-            padding: 10px 15px;
-            background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 100%);
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.8);
             border-bottom: 1px solid #333;
             z-index: 10;
+            flex-shrink: 0; /* Чтобы не сжималось */
         }
 
-        .stat-group { text-align: center; }
-        .stat-label { font-size: 9px; color: #888; text-transform: uppercase; }
-        .stat-val { font-size: 18px; font-weight: bold; text-shadow: 0 0 8px currentColor; }
+        .stat-group { text-align: center; min-width: 60px; }
+        .stat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 2px; }
+        .stat-val { font-size: 16px; font-weight: bold; text-shadow: 0 0 5px currentColor; }
 
-        /* --- КАРТА --- */
-        #game-map {
-            flex: 1;
+        /* --- КАРТА (Адаптивная) --- */
+        #game-container {
+            flex: 1; /* Занимает все свободное место */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
             position: relative;
+        }
+
+        #game-map {
             display: grid;
+            /* Сетка задается в JS */
             background: 
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 11.1% 11.1%; /* Для сетки 9x9 */
-            align-content: center;
-            justify-content: center;
+            background-size: 100% 100%; /* Растягиваем паттерн */
             gap: 1px;
-            padding: 5px;
+            padding: 2px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            
+            /* Размеры карты: делаем квадрат, который влезает в экран */
+            width: 90vmin;
+            height: 90vmin;
+            max-width: 500px;
+            max-height: 500px;
         }
 
         .cell {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px; /* Размер смайликов */
+            font-size: 16px; /* Меньше иконки */
             position: relative;
-            transition: all 0.1s ease;
+            border-radius: 2px;
         }
         
-        /* Эффекты для объектов */
-        .player-glow {
-            filter: drop-shadow(0 0 5px var(--primary));
-            z-index: 3;
+        /* Эффекты */
+        .player-glow { filter: drop-shadow(0 0 4px var(--primary)); z-index: 5; font-size: 18px; }
+        .pickup-glow { filter: drop-shadow(0 0 6px var(--pickup)); animation: pulse 1s infinite; z-index: 4; }
+        .delivery-glow { filter: drop-shadow(0 0 6px var(--secondary)); animation: pulse 1s infinite; z-index: 4; }
+        .wall-glow { opacity: 0.5; filter: drop-shadow(0 0 2px var(--danger)); font-size: 14px; }
+
+        /* --- ПЛАВАЮЩЕЕ УПРАВЛЕНИЕ --- */
+        .controls-wrapper {
+            position: absolute;
+            bottom: 40px; /* СИЛЬНО ПОДНЯЛ ОТ НИЗА */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            pointer-events: none; /* Чтобы клики проходили сквозь пустые места */
         }
 
-        .pickup-glow {
-            filter: drop-shadow(0 0 8px var(--pickup));
-            animation: pulse-yellow 1.2s infinite;
-            z-index: 2;
-        }
-
-        .delivery-glow {
-            filter: drop-shadow(0 0 8px var(--secondary));
-            animation: pulse-pink 1.2s infinite;
-            z-index: 2;
-        }
-
-        .wall-glow {
-            opacity: 0.6;
-            filter: drop-shadow(0 0 2px var(--danger));
-            font-size: 20px;
-        }
-
-        /* --- УПРАВЛЕНИЕ --- */
-        .controls-container {
-             background: var(--panel-bg);
-             border-top: 2px solid var(--primary);
-             padding: 15px 20px 35px 20px; /* Добавил отступ снизу (35px) */
-             box-shadow: 0 -5px 25px rgba(0, 243, 255, 0.15);
-        }
-
-        .controls-grid {
+        .controls-pad {
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 25px;
+            border: 1px solid var(--primary);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8), 0 0 15px rgba(0, 243, 255, 0.2);
+            pointer-events: auto; /* Включаем клики для кнопок */
+            
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 55px 55px;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 50px 50px;
             gap: 8px;
-            max-width: 400px;
-            margin: 0 auto;
         }
 
         .btn {
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
             color: var(--primary);
-            font-size: 22px;
+            font-size: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            user-select: none;
+            transition: 0.1s;
         }
-        .btn:active { background: var(--primary); color: #000; }
+        .btn:active { background: var(--primary); color: #000; transform: scale(0.95); }
         .btn-action { border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.1); }
         
         /* Сообщения */
         #msg-log {
             position: absolute;
-            top: 40%; left: 50%;
+            top: 20%; left: 50%; /* Чуть выше центра */
             transform: translate(-50%, -50%);
-            font-size: 16px; font-weight: bold;
-            background: rgba(0,0,0,0.8);
-            padding: 10px 20px; border-radius: 20px;
+            font-size: 14px; font-weight: bold;
+            background: rgba(0,0,0,0.85);
+            padding: 8px 16px; border-radius: 15px;
             border: 1px solid #fff;
-            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 20; text-align: center;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 200; text-align: center;
+            white-space: nowrap;
         }
 
-        @keyframes pulse-yellow { 0% {transform: scale(0.9);} 50% {transform: scale(1.1);} 100% {transform: scale(0.9);} }
-        @keyframes pulse-pink { 0% {transform: scale(0.9);} 50% {transform: scale(1.1);} 100% {transform: scale(0.9);} }
+        @keyframes pulse { 0% {transform: scale(0.9);} 50% {transform: scale(1.2);} 100% {transform: scale(0.9);} }
     </style>
 </head>
 <body>
 
     <div class="hud">
         <div class="stat-group">
-            <div class="stat-label">Баланс PLN</div>
+            <div class="stat-label">PLN</div>
             <div class="stat-val" style="color: var(--gold)" id="ui-balance">0.00</div>
         </div>
         <div class="stat-group">
@@ -151,18 +159,18 @@
             <div class="stat-val" style="color: var(--primary)" id="ui-energy">100%</div>
         </div>
         <div class="stat-group">
-            <div class="stat-label">Статус</div>
-            <div class="stat-val" style="font-size: 14px" id="ui-status">Поиск...</div>
+            <div class="stat-label">Цель</div>
+            <div class="stat-val" style="font-size: 12px" id="ui-status">Поиск...</div>
         </div>
     </div>
 
-    <div id="msg-log"></div>
+    <div id="game-container">
+        <div id="msg-log"></div>
+        <div id="game-map"></div>
+    </div>
 
-    <div id="game-map">
-        </div>
-
-    <div class="controls-container">
-        <div class="controls-grid">
+    <div class="controls-wrapper">
+        <div class="controls-pad">
             <div></div>
             <div class="btn" onclick="move(0, -1)">▲</div>
             <div></div>
@@ -178,24 +186,26 @@
     </div>
 
     <script>
-        const GRID_SIZE = 9; 
+        // --- КОНФИГ ---
+        const GRID_SIZE = 13; // БЫЛО 9, СТАЛО 13 (Клетки меньше)
         
         let state = {
-            x: 4, y: 4,        // Игрок
-            objective: {x:0, y:0}, // Цель
-            hasPackage: false, // Везем ли мы пакет сейчас?
-            walls: [],         // Препятствия
+            x: 6, y: 6,        // Центр для 13x13
+            objective: {x:0, y:0},
+            hasPackage: false,
+            walls: [],
             balance: 0,
-            energy: 100,
-            rating: 5.0
+            energy: 100
         };
 
         const mapEl = document.getElementById('game-map');
 
         function initGame() {
+            // Настройка CSS Grid
             mapEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
             mapEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
             
+            // Создаем клетки
             mapEl.innerHTML = '';
             for(let i=0; i<GRID_SIZE*GRID_SIZE; i++) {
                 let cell = document.createElement('div');
@@ -204,8 +214,8 @@
                 mapEl.appendChild(cell);
             }
             
-            spawnObjective(); // Спавним первую цель (Ресторан)
-            generateWalls();  // Создаем пробки
+            spawnObjective();
+            generateWalls();
             draw();
             updateUI();
         }
@@ -214,13 +224,12 @@
 
         function generateWalls() {
             state.walls = [];
-            // Генерируем 14 препятствий для плотности
-            for(let i=0; i<14; i++) {
+            // Больше стен для большой карты (около 30)
+            for(let i=0; i<30; i++) {
                 let wx, wy;
                 do {
                     wx = Math.floor(Math.random() * GRID_SIZE);
                     wy = Math.floor(Math.random() * GRID_SIZE);
-                // Не ставим стены на игрока или цель
                 } while ((wx === state.x && wy === state.y) || (wx === state.objective.x && wy === state.objective.y));
                 
                 state.walls.push(getIdx(wx, wy));
@@ -233,14 +242,13 @@
                 state.objective.y = Math.floor(Math.random() * GRID_SIZE);
             } while (state.objective.x === state.x && state.objective.y === state.y);
             
-            // Если забрали пакет, перегенерируем стены для нового маршрута
             if(state.hasPackage) generateWalls(); 
             draw();
             updateUI();
         }
 
         function move(dx, dy) {
-            if (state.energy <= 0) { showMsg("🪫 БАТАРЕЯ СЕЛА! Нужна зарядка!", "red"); return; }
+            if (state.energy <= 0) { showMsg("🪫 СЕЛА БАТАРЕЯ!", "red"); return; }
 
             let nx = state.x + dx;
             let ny = state.y + dy;
@@ -249,32 +257,28 @@
 
             let nIdx = getIdx(nx, ny);
             if (state.walls.includes(nIdx)) {
-                showMsg("🚧 Пробка! Объезжай!", "#ff9900");
-                state.energy -= 3;
+                showMsg("🚧 ТУПИК!", "#ff9900");
+                state.energy -= 2;
                 updateUI();
                 return;
             }
 
-            // Движение
             state.x = nx;
             state.y = ny;
-            state.energy -= 1.5;
+            state.energy -= 1;
 
-            // Проверка цели
             if (state.x === state.objective.x && state.y === state.objective.y) {
                 if (!state.hasPackage) {
-                    // ЭТАП 1: Забрали из ресторана
                     state.hasPackage = true;
-                    showMsg("🎒 ЗАКАЗ У ТЕБЯ! Вези клиенту (🏠)!", "#ffff00");
-                    spawnObjective(); // Теперь спавним Клиента
+                    showMsg("🎒 ЗАБРАЛ! ВЕЗИ КЛИЕНТУ", "#ffff00");
+                    spawnObjective();
                 } else {
-                    // ЭТАП 2: Отдали клиенту
                     state.hasPackage = false;
                     let profit = 20 + Math.floor(Math.random() * 15);
                     state.balance += profit;
-                    showMsg(`✅ ДОСТАВЛЕНО! +${profit} PLN`, "#00f3ff");
-                    generateWalls(); // Новые пробки для нового заказа
-                    spawnObjective(); // Теперь спавним Ресторан
+                    showMsg(`✅ +${profit} PLN`, "#00f3ff");
+                    generateWalls();
+                    spawnObjective();
                 }
             }
             draw();
@@ -284,38 +288,34 @@
         function actionBoost() {
             if (state.balance >= 15) {
                 state.balance -= 15;
-                state.energy = Math.min(100, state.energy + 40);
-                showMsg("⚡ Быстрая зарядка! (-15 PLN)", "#00ff00");
+                state.energy = Math.min(100, state.energy + 50);
+                showMsg("⚡ ЗАРЯЖЕНО! (-15)", "#00ff00");
                 updateUI();
-            } else { showMsg("❌ Не хватает денег (15 PLN)", "red"); }
+            } else { showMsg("❌ НЕТ ДЕНЕГ", "red"); }
         }
 
         function draw() {
-            // Очистка
             document.querySelectorAll('.cell').forEach(c => {
                 c.className = 'cell';
                 c.innerText = '';
             });
 
-            // Стены 🚧
             state.walls.forEach(idx => {
                 let c = document.getElementById(`c-${idx}`);
                 c.innerText = '🚧';
                 c.classList.add('wall-glow');
             });
 
-            // Цель (Ресторан 🏪 или Клиент 🏠)
             let tIdx = getIdx(state.objective.x, state.objective.y);
             let tCell = document.getElementById(`c-${tIdx}`);
             if (!state.hasPackage) {
-                tCell.innerText = '🏪'; // Едем в ресторан
+                tCell.innerText = '🏪';
                 tCell.classList.add('pickup-glow');
             } else {
-                tCell.innerText = '🏠'; // Едем к клиенту
+                tCell.innerText = '🏠';
                 tCell.classList.add('delivery-glow');
             }
 
-            // Игрок 🛵
             let pIdx = getIdx(state.x, state.y);
             let pCell = document.getElementById(`c-${pIdx}`);
             pCell.innerText = '🛵';
@@ -323,18 +323,17 @@
         }
 
         function updateUI() {
-            document.getElementById('ui-balance').innerText = state.balance.toFixed(2);
-            
+            document.getElementById('ui-balance').innerText = state.balance.toFixed(0);
             let enEl = document.getElementById('ui-energy');
             enEl.innerText = Math.floor(state.energy) + '%';
             enEl.style.color = state.energy < 30 ? 'red' : 'var(--primary)';
 
             let statusEl = document.getElementById('ui-status');
             if(!state.hasPackage) {
-                 statusEl.innerText = "Еду в ресторан 🏪";
+                 statusEl.innerText = "В РЕСТОРАН";
                  statusEl.style.color = "var(--pickup)";
             } else {
-                 statusEl.innerText = "Везу клиенту 🏠";
+                 statusEl.innerText = "К КЛИЕНТУ";
                  statusEl.style.color = "var(--secondary)";
             }
         }
@@ -345,7 +344,7 @@
             el.style.color = color;
             el.style.borderColor = color;
             el.style.opacity = 1;
-            setTimeout(() => el.style.opacity = 0, 2000);
+            setTimeout(() => el.style.opacity = 0, 1500);
         }
 
         initGame();
