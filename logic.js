@@ -27,6 +27,8 @@ let G = {
     history: [], 
     usedPromos: [], 
     isNewPlayer: true, 
+    // НОВОЕ: ОБУВЬ
+    shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
     activeMilestones: [
         { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
@@ -36,6 +38,7 @@ let G = {
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
 let curView = 'main', weather = "Ясно", isBroken = false;
+let repairProgress = 0; // Прогресс починки
 let lastClickTime = 0; 
 let clicksSinceBonus = 0;
 let bonusActive = false;
@@ -140,6 +143,8 @@ function claimStarterPack() {
     G.waterStock += 500;
     G.bikeRentTime += 900; 
     G.isNewPlayer = false;
+    // Даем шлепки
+    G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
     addHistory('🎁 STARTER KIT', 50, 'plus');
     log("Вы получили набор новичка!", "var(--success)");
     save();
@@ -173,6 +178,8 @@ function load() {
     let d = localStorage.getItem(SAVE_KEY); 
     if(d) { G = {...G, ...JSON.parse(d)}; } 
     G.maxEn = 2000; 
+    if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; // Фикс для старых сейвов
+
     checkStarterPack();
     if(typeof listenToCloud === 'function') listenToCloud();
     updateUI(); 
@@ -205,6 +212,32 @@ function updateUI() {
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
     if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
     
+    // --- ОБУВЬ UI ---
+    document.getElementById('shoe-name').innerText = G.shoes.name;
+    const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
+    document.getElementById('shoe-bar').style.width = sPct + "%";
+    document.getElementById('shoe-bar').style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
+    // ---------------
+
+    // --- РЕМОНТ UI ---
+    const sphere = document.getElementById('work-sphere');
+    if (isBroken) {
+        sphere.classList.add('broken');
+        document.getElementById('sphere-text').innerText = "ЧИНИТЬ";
+        document.getElementById('repair-express-btn').style.display = 'block';
+        document.getElementById('click-rate-ui').innerText = repairProgress + " / 50";
+        document.getElementById('repair-progress').style.height = (repairProgress * 2) + "%";
+    } else {
+        sphere.classList.remove('broken');
+        document.getElementById('sphere-text').innerText = "РАБОТАТЬ";
+        document.getElementById('repair-express-btn').style.display = 'none';
+        document.getElementById('repair-progress').style.height = "0%";
+        
+        let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2);
+        if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
+        document.getElementById('click-rate-ui').innerText = rate + " PLN";
+    }
+
     const invDisp = document.getElementById('inventory-display'); 
     invDisp.innerHTML = ''; 
     UPGRADES.forEach(up => { 
@@ -246,11 +279,6 @@ function updateUI() {
     
     document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
     
-    let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2);
-    if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
-    
-    document.getElementById('click-rate-ui').innerText = rate + " PLN";
-
     document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + h.val + "</b></div>").join('');
     
     renderBank(); 
@@ -298,7 +326,22 @@ function updateDistrictButtons() {
 }
 
 function doWork() {
-    if (isBroken) return;
+    // --- РЕЖИМ РЕМОНТА ---
+    if (isBroken) {
+        repairProgress++;
+        G.en = Math.max(0, G.en - 5); // Ремонт утомляет
+        tg.HapticFeedback.impactOccurred('heavy');
+        if (repairProgress >= 50) {
+            isBroken = false;
+            repairProgress = 0;
+            log("🔧 Вы починили транспорт!", "var(--success)");
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        updateUI();
+        return;
+    }
+    // ---------------------
+
     if (bonusActive) {
         G.en = Math.max(0, G.en - 50); 
         tg.HapticFeedback.notificationOccurred('error');
@@ -326,10 +369,21 @@ function doWork() {
         showBonus();
         clicksSinceBonus = 0; 
     }
+
+    // --- ИЗНОС ОБУВИ ---
+    if (G.shoes.dur > 0) {
+        G.shoes.dur -= 0.05; // По чуть-чуть стираются
+    }
+    // -------------------
+
     if(order.active) { 
         consumeResources(true); 
         let speed = (G.bikeRentTime > 0 ? 2 : 1);
         if (order.isRiskyRoute) speed *= 2; 
+        
+        // ШТРАФ ЗА ДРЯВУЮ ОБУВЬ
+        if (G.shoes.dur <= 0) speed *= 0.7; // Медленнее ходим
+
         order.steps += speed;
         if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; } 
         if(order.steps >= order.target) finishOrder(true); 
@@ -436,6 +490,39 @@ function activateAutopilot() {
 
 function acceptOrder() { order.active = true; updateUI(); }
 
+// НОВАЯ ФУНКЦИЯ: Покупка обуви
+function buyShoes(name, price, durability) {
+    if (G.money >= price) {
+        G.money -= price;
+        // Расчет бонуса за крутость
+        let bonus = 0;
+        if (name === "Jorban") bonus = 0.2; // 20%
+        
+        G.shoes = { name: name, maxDur: durability, dur: durability, bonus: bonus };
+        addHistory('👟 ' + name.toUpperCase(), price, 'minus');
+        log("Куплены " + name + "!", "var(--purple)");
+        save();
+        updateUI();
+    } else {
+        log("Не хватает денег!", "var(--danger)");
+    }
+}
+
+// НОВАЯ ФУНКЦИЯ: Платный ремонт
+function repairBikeInstant() {
+    if (G.money >= 15) {
+        G.money = parseFloat((G.money - 15).toFixed(2));
+        isBroken = false;
+        repairProgress = 0;
+        addHistory('🔧 РЕМОНТ', 15, 'minus');
+        log("Велик починен за деньги!", "var(--success)");
+        save();
+        updateUI();
+    } else {
+        log("Нет денег (15 PLN)!", "var(--danger)");
+    }
+}
+
 function finishOrder(win) { 
     if(!order.active) return;
     order.active = false; 
@@ -444,6 +531,10 @@ function finishOrder(win) {
             let riskRoll = Math.random();
             if (riskRoll < 0.30) { 
                 log("💥 АВАРИЯ на срезке!", "var(--danger)");
+                // Ломаем велик!
+                isBroken = true;
+                repairProgress = 0;
+                
                 G.money = parseFloat((G.money - 20).toFixed(2)); 
                 addHistory('💥 АВАРИЯ', 20, 'minus');
                 order.visible = false; updateUI(); save();
@@ -463,6 +554,12 @@ function finishOrder(win) {
             if(Math.random() < 0.40) { 
                 let tip = parseFloat((5 + Math.random()*15).toFixed(2)); 
                 if (order.isRiskyRoute) tip *= 2; 
+                
+                // БОНУС ОТ ОБУВИ
+                if (G.shoes && G.shoes.bonus > 0) {
+                    tip *= (1 + G.shoes.bonus);
+                }
+
                 G.money = parseFloat((G.money + tip).toFixed(2)); 
                 addHistory('💰 ЧАЕВЫЕ', tip, 'plus');
                 log("💰 Чаевые: +" + tip.toFixed(2), "var(--success)"); 
@@ -576,10 +673,11 @@ function moveDistrict(id) {
 
 function triggerBreakdown() { 
     isBroken = true; 
+    repairProgress = 0; // Сброс прогресса ремонта
     log("🚲 ПОЛОМКА!", "var(--danger)"); 
-    G.money = parseFloat((G.money - 7).toFixed(2)); 
-    addHistory('🛠️ РЕМОНТ', 7, 'minus'); 
-    setTimeout(() => { isBroken = false; updateUI(); }, 3000); 
+    tg.HapticFeedback.notificationOccurred('error');
+    // G.money больше не списывается сразу, нужно чинить!
+    updateUI(); 
 }
 
 function renderBank() { 
@@ -592,6 +690,10 @@ function renderBank() {
 }
 
 setInterval(() => {
+    // --- ФИКС ЭНЕРГИИ ---
+    if (G.en > G.maxEn) G.en = G.maxEn;
+    // --------------------
+
     G.tax--; 
     if(G.tax <= 0) { 
         let cost = parseFloat((G.money * 0.37).toFixed(2)); 
@@ -637,6 +739,10 @@ setInterval(() => {
                 }
                 if (G.en > 5) { 
                     consumeResources(true); 
+                    
+                    // У автопилота обувь тоже стирается, но медленнее
+                    if (G.shoes.dur > 0) G.shoes.dur -= 0.01;
+
                     order.steps += (G.bikeRentTime > 0 ? 3 : 2); 
                     if (order.steps >= order.target) { finishOrder(true); break; } 
                 }
