@@ -110,7 +110,6 @@
             text-transform: uppercase;
         }
         
-        /* Стиль для погоды внизу */
         #weather-ui {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.3);
@@ -243,7 +242,7 @@
     <div id="view-main" class="view active">
         
         <div style="text-align: center; margin-top: 5px;">
-            <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 Praga</span>
+            <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 ...</span>
         </div>
 
         <div class="sphere-container">
@@ -267,17 +266,20 @@
 
     <div id="view-districts" class="view">
         <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
+        
         <div class="card">
             <b>Praga</b> <small>Аренда: 50. Старт.</small>
-            <button class="btn-action" style="margin-top:8px; background:rgba(34, 197, 94, 0.1); color: var(--success); box-shadow: none; cursor: default; padding:8px;">✅ ТЕКУЩИЙ</button>
+            <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
         </div>
+        
         <div class="card">
             <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 120. Доход: +50%.</small>
-            <button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
+            <button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
         </div>
+        
         <div class="card">
             <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 300. Доход: x2.5.</small>
-            <button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
+            <button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
         </div>
     </div>
 
