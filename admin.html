@@ -93,7 +93,7 @@
             <div class="danger-zone">
                 <h4 style="margin:0 0 10px 0; color:var(--danger)">💀 ОПАСНАЯ ЗОНА</h4>
                 <button class="btn-reset" onclick="resetUserFull()">♻️ ПОЛНОЕ ОБНУЛЕНИЕ</button>
-                <small style="display:block; margin-top:5px; color:#666;">Удалит всё: вещи, район, деньги.</small>
+                <small style="display:block; margin-top:5px; color:#666;">Сброс в "Новичка" (таймер защиты 30 мин).</small>
             </div>
         </div>
     </div>
@@ -167,30 +167,32 @@
 
         function closeEditor() { document.getElementById('editor-modal').style.display = 'none'; }
 
-        // --- ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ---
         function saveUserChanges() {
             const userId = document.getElementById('edit-id').innerText;
             const newMoney = parseFloat(document.getElementById('input-money').value);
             const newLvl = parseFloat(document.getElementById('input-lvl').value);
-            
-            // Отправляем метку времени lastAdminUpdate, чтобы игра поняла, что это ПРИКАЗ
             db.ref('users/' + userId).update({ 
                 money: newMoney, 
                 lvl: newLvl,
-                lastAdminUpdate: Date.now() // <--- ВАЖНО
+                lastAdminUpdate: Date.now() 
             }).then(() => closeEditor());
         }
 
+        // --- ОБНОВЛЕННАЯ ФУНКЦИЯ СБРОСА (ДОБАВЛЕН startTime) ---
         function resetUserFull() {
             const userId = document.getElementById('edit-id').innerText;
             const userName = document.getElementById('edit-name').innerText;
-            if(!confirm(`⚠️ ТЫ УВЕРЕН?\n\nИгрок ${userName} потеряет ВСЁ (инвентарь, район, достижения).`)) return;
+            if(!confirm(`⚠️ ТЫ УВЕРЕН?\n\nИгрок ${userName} потеряет ВСЁ (инвентарь, район, достижения).\nВключится режим НОВИЧКА (30 мин).`)) return;
 
             const currentUser = allUsersData[userId] || {};
             const freshStart = {
                 name: currentUser.name || "Reset Player",
                 user: currentUser.user || "@unknown",
+                
+                // ВАЖНО: Обновляем время старта на "СЕЙЧАС"
+                startTime: Date.now(), 
                 lastActive: Date.now(),
+                
                 money: 10,
                 lvl: 1.0,
                 en: 2000,
@@ -217,11 +219,11 @@
                     { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
                 ],
                 forceReset: true,
-                lastAdminUpdate: Date.now() // Тоже обновляем метку
+                lastAdminUpdate: Date.now()
             };
 
             db.ref('users/' + userId).set(freshStart).then(() => {
-                alert(`Игрок ${userName} обнулен!`);
+                alert(`Игрок ${userName} успешно обнулен и стал Новичком!`);
                 closeEditor();
             });
         }
