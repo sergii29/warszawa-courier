@@ -98,7 +98,6 @@ function log(msg, color = "#eee") {
     if (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild); 
 }
 
-// === ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ (С ОНЛАЙНОМ) ===
 function saveToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
@@ -109,14 +108,13 @@ function saveToCloud() {
         ...G,
         name: firstName,
         user: userName,
-        lastActive: Date.now() // <--- Добавили время для статуса ОНЛАЙН
+        lastActive: Date.now()
     };
 
     if(typeof db !== 'undefined') {
         db.ref('users/' + userId).set(dataToSave);
     }
 }
-// ====================================================
 
 function save() { 
     localStorage.setItem(SAVE_KEY, JSON.stringify(G)); 
@@ -141,18 +139,21 @@ function updateUI() {
     document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
     document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
     document.getElementById('water-val').innerText = Math.floor(G.waterStock);
-    document.getElementById('district-ui').innerText = "Район: " + DISTRICTS[G.district].name;
-    document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️" : "☀️");
+    
+    // ИСПРАВЛЕНИЕ: ПРАВИЛЬНОЕ ОТОБРАЖЕНИЕ РАЙОНА
+    document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
+    
+    document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
     
     document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
-    if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = `АВТО ${Math.floor(G.autoTime/60)}:${(G.autoTime%60<10?'0':'')+G.autoTime%60}`;
+    if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = `🤖 ${Math.floor(G.autoTime/60)}:${(G.autoTime%60<10?'0':'')+G.autoTime%60}`;
     
     document.getElementById('bike-status-ui').style.display = G.bikeRentTime > 0 ? 'block' : 'none';
     if(G.bikeRentTime > 0) document.getElementById('bike-status-ui').innerText = `🚲 ${Math.floor(G.bikeRentTime/60)}:${(G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60}`;
     
     const buffUI = document.getElementById('buff-status-ui'); 
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
-    if(G.buffTime > 0) buffUI.innerText = `⚡ BOOST ${Math.floor(G.buffTime/60)}:${(G.buffTime%60<10?'0':'')+G.buffTime%60}`;
+    if(G.buffTime > 0) buffUI.innerText = `⚡ ${Math.floor(G.buffTime/60)}:${(G.buffTime%60<10?'0':'')+G.buffTime%60}`;
     
     const invDisp = document.getElementById('inventory-display'); 
     invDisp.innerHTML = ''; 
@@ -200,6 +201,44 @@ function updateUI() {
     
     renderBank(); 
     renderMilestones();
+    updateDistrictButtons(); // Обновляем состояние кнопок районов
+}
+
+// НОВАЯ ФУНКЦИЯ: Обновление кнопок районов
+function updateDistrictButtons() {
+    DISTRICTS.forEach((d, i) => {
+        const btn = document.getElementById(`btn-dist-${i}`);
+        if(!btn) return;
+
+        if (G.district === i) {
+            // Если мы уже тут
+            btn.innerText = "✅ ТЕКУЩИЙ";
+            btn.style.background = "rgba(34, 197, 94, 0.2)";
+            btn.style.color = "var(--success)";
+            btn.style.cursor = "default";
+            btn.onclick = null; // Отключаем клик
+        } else {
+            // Если это другой район
+            let canAfford = G.money >= d.price;
+            let levelOk = G.lvl >= d.minLvl;
+            
+            if (canAfford && levelOk) {
+                btn.innerText = `ПЕРЕЕХАТЬ (${d.price} PLN)`;
+                btn.style.background = "var(--accent-blue)";
+                btn.style.color = "white";
+                btn.style.cursor = "pointer";
+                btn.onclick = () => moveDistrict(i);
+            } else {
+                if(!levelOk) btn.innerText = `НУЖЕН LVL ${d.minLvl}`;
+                else btn.innerText = `НЕТ ДЕНЕГ (${d.price} PLN)`;
+                
+                btn.style.background = "rgba(255,255,255,0.1)";
+                btn.style.color = "#777";
+                btn.style.cursor = "not-allowed";
+                btn.onclick = null;
+            }
+        }
+    });
 }
 
 function doWork() {
@@ -390,14 +429,23 @@ function switchTab(v, el) {
     updateUI(); 
 }
 
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕРЕЕЗДА (С ПРОВЕРКОЙ)
 function moveDistrict(id) { 
-    if (G.lvl >= DISTRICTS[id].minLvl && G.money >= DISTRICTS[id].price) { 
-        G.money = parseFloat((G.money - DISTRICTS[id].price).toFixed(2)); 
-        addHistory('🏙️ ПЕРЕЕЗД', DISTRICTS[id].price, 'minus'); 
-        G.district = id; 
-        save(); 
-        updateUI(); 
-    } 
+    // Защита: Если мы уже тут, ничего не делаем
+    if (G.district === id) return;
+    
+    // Защита: Если нет денег или уровня
+    if (G.money < DISTRICTS[id].price || G.lvl < DISTRICTS[id].minLvl) {
+        log("Недостаточно ресурсов!", "var(--danger)");
+        return;
+    }
+
+    // Списываем деньги и переезжаем
+    G.money = parseFloat((G.money - DISTRICTS[id].price).toFixed(2)); 
+    addHistory('🏙️ ПЕРЕЕЗД', DISTRICTS[id].price, 'minus'); 
+    G.district = id; 
+    save(); 
+    updateUI(); 
 }
 
 function triggerBreakdown() { 
