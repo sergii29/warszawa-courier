@@ -167,10 +167,13 @@
 
         function closeEditor() { document.getElementById('editor-modal').style.display = 'none'; }
 
+        // --- УМНОЕ СОХРАНЕНИЕ ---
         function saveUserChanges() {
             const userId = document.getElementById('edit-id').innerText;
             const newMoney = parseFloat(document.getElementById('input-money').value);
             const newLvl = parseFloat(document.getElementById('input-lvl').value);
+            
+            // Отправляем метку времени, чтобы игра приняла изменения
             db.ref('users/' + userId).update({ 
                 money: newMoney, 
                 lvl: newLvl,
@@ -178,19 +181,19 @@
             }).then(() => closeEditor());
         }
 
-        // --- ОБНОВЛЕННАЯ ФУНКЦИЯ СБРОСА (ДОБАВЛЕН startTime) ---
+        // --- ПРАВИЛЬНЫЙ СБРОС НОВИЧКА ---
         function resetUserFull() {
             const userId = document.getElementById('edit-id').innerText;
             const userName = document.getElementById('edit-name').innerText;
-            if(!confirm(`⚠️ ТЫ УВЕРЕН?\n\nИгрок ${userName} потеряет ВСЁ (инвентарь, район, достижения).\nВключится режим НОВИЧКА (30 мин).`)) return;
+            if(!confirm(`⚠️ ТЫ УВЕРЕН?\n\nИгрок ${userName} потеряет ВСЁ и станет новичком.`)) return;
 
             const currentUser = allUsersData[userId] || {};
             const freshStart = {
                 name: currentUser.name || "Reset Player",
                 user: currentUser.user || "@unknown",
                 
-                // ВАЖНО: Обновляем время старта на "СЕЙЧАС"
-                startTime: Date.now(), 
+                // ОБНОВЛЯЕМ ВРЕМЯ СТАРТА НА "СЕЙЧАС"
+                startTime: Date.now(),
                 lastActive: Date.now(),
                 
                 money: 10,
@@ -218,12 +221,12 @@
                     { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
                     { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
                 ],
-                forceReset: true,
+                forceReset: true, // Команда на перезагрузку телефона
                 lastAdminUpdate: Date.now()
             };
 
             db.ref('users/' + userId).set(freshStart).then(() => {
-                alert(`Игрок ${userName} успешно обнулен и стал Новичком!`);
+                alert(`Игрок ${userName} обнулен!`);
                 closeEditor();
             });
         }
