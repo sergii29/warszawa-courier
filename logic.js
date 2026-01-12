@@ -49,7 +49,6 @@ let bonusActive = false;
 const NEWBIE_TIME = 30 * 60 * 1000;
 
 function isNewbieMode() {
-    // Если startTime нет, считаем что игрок старый (не новичок), если только не был сброс
     if (!G.startTime) return false; 
     return (Date.now() - G.startTime) < NEWBIE_TIME;
 }
@@ -66,13 +65,17 @@ const UPGRADES = [
     { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Снижает расход энергии на 30% навсегда.', price: 500, bonus: '⚡ -30%' }
 ];
 
-// --- БЕЗОПАСНЫЕ ФУНКЦИИ (чтобы не ломался клик) ---
-function safeHaptic(type) {
-    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(type); } catch(e) {}
+// --- ЗВУКИ (Base64 Beeps для надежности) ---
+// Простой "пик"
+const audioClick = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
+// Если звука нет - ничего страшного, код не сломается.
+
+function playSound() {
+    // В реальном проекте тут лучше подключить нормальные файлы
+    // tg.HapticFeedback заменяет звук в вебе
+    try { if(tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e){}
 }
-function safeHapticImpact(style) {
-    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style); } catch(e) {}
-}
+
 function log(msg, color = "#eee") { 
     const logEl = document.getElementById('game-log'); 
     if(!logEl) return;
@@ -98,7 +101,7 @@ function listenToCloud() {
             }
             if (remoteData.lastAdminUpdate && remoteData.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 G.money = remoteData.money; G.lvl = remoteData.lvl; G.lastAdminUpdate = remoteData.lastAdminUpdate;
-                save(); updateUI(); log("🔄 Данные обновлены админом", "var(--accent-blue)"); safeHaptic('success');
+                save(); updateUI(); log("🔄 Данные обновлены админом", "var(--accent-blue)"); playSound();
             }
         });
     }
@@ -126,11 +129,11 @@ function load() {
     if(d) { G = {...G, ...JSON.parse(d)}; } 
     G.maxEn = 2000; 
     
-    // Если был сброс или новая игра, ставим время
+    // Инициализация времени старта
     if (!G.startTime || G.startTime === 0) G.startTime = Date.now();
     if (typeof G.clicksSinceBonus === 'undefined') G.clicksSinceBonus = 0;
     
-    // Сброс зависшего заказа при загрузке
+    // Очистка зависших состояний
     if (order.visible && !order.active) order.visible = false;
 
     listenToCloud(); updateUI(); 
@@ -141,7 +144,7 @@ async function usePromo() { const i = document.getElementById('promo-input'); co
 
 const sphere = document.getElementById('work-sphere');
 if(sphere) {
-    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); safeHapticImpact('medium'); doWork(); }, {passive: false});
+    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); playSound(); doWork(); }, {passive: false});
     sphere.addEventListener('mousedown', (e) => { doWork(); });
 }
 
@@ -149,11 +152,11 @@ function showBonus() {
     const o = document.getElementById('bonus-overlay'); const b = document.getElementById('bonus-btn'); 
     const x = 50 + Math.random() * (window.innerWidth - 150); const y = 100 + Math.random() * (window.innerHeight - 200);
     b.style.left = x + 'px'; b.style.top = y + 'px'; o.style.display = 'flex'; bonusActive = true; 
-    log("🎁 Появился БОНУС! Забери его!", "var(--gold)"); safeHaptic('warning'); 
+    log("🎁 Появился БОНУС! Забери его!", "var(--gold)"); playSound();
 }
 function claimBonus() { 
     document.getElementById('bonus-overlay').style.display='none'; bonusActive = false; G.clicksSinceBonus = 0; 
-    G.money = parseFloat((G.money + 50).toFixed(2)); addHistory('🎁 БОНУС', 50, 'plus'); log("Вы забрали бонус +50 PLN", "var(--success)"); safeHaptic('success'); save(); updateUI(); 
+    G.money = parseFloat((G.money + 50).toFixed(2)); addHistory('🎁 БОНУС', 50, 'plus'); log("Вы забрали бонус +50 PLN", "var(--success)"); playSound(); save(); updateUI(); 
 }
 
 function updateUI() {
@@ -171,14 +174,25 @@ function updateUI() {
     // ТАЙМЕР НОВИЧКА
     const newbieEl = document.getElementById('newbie-container');
     const newbieText = document.getElementById('newbie-text');
+    let isFree = isNewbieMode();
+
     if (newbieEl && newbieText) {
-        if (isNewbieMode()) {
+        if (isFree) {
             let left = NEWBIE_TIME - (Date.now() - G.startTime);
             let m = Math.floor(left / 60000); let s = Math.floor((left % 60000) / 1000);
             newbieEl.style.display = 'block';
-            newbieText.innerText = `🔰 ЩИТ: ${m}:${s<10?'0':''}${s} (Всё бесплатно)`;
+            newbieText.innerText = `🔰 ЩИТ: ${m}:${s<10?'0':''}${s} (Бесплатно всё)`;
         } else { newbieEl.style.display = 'none'; }
     }
+
+    // ОБНОВЛЕНИЕ КНОПОК МАГАЗИНА (ЦЕНЫ)
+    const btnWater = document.getElementById('btn-buy-water');
+    const btnCoffee = document.getElementById('btn-buy-coffee');
+    const btnEnergy = document.getElementById('btn-buy-energy');
+    
+    if(btnWater) btnWater.innerText = isFree ? "БЕСПЛАТНО (НОВИЧОК)" : "КУПИТЬ (1.50)";
+    if(btnCoffee) btnCoffee.innerText = isFree ? "БЕСПЛАТНО (НОВИЧОК)" : "КУПИТЬ (5.00)";
+    if(btnEnergy) btnEnergy.innerText = isFree ? "БЕСПЛАТНО (НОВИЧОК)" : "КУПИТЬ (12.00)";
 
     const setStatus = (id, val, icon) => { const el = document.getElementById(id); el.style.display = val > 0 ? 'block' : 'none'; if(val>0) el.innerText = `${icon} ${Math.floor(val/60)}:${(val%60<10?'0':'')+val%60}`; };
     setStatus('auto-status-ui', G.autoTime, '🤖'); setStatus('bike-status-ui', G.bikeRentTime, '🚲'); setStatus('buff-status-ui', G.buffTime, '⚡');
@@ -207,7 +221,7 @@ function updateUI() {
         } else {
             document.getElementById('quest-actions-choice').style.display='flex'; document.getElementById('quest-active-ui').style.display='none';
             // ТЕКСТ АВТОПИЛОТА
-            let autoPrice = isNewbieMode() ? "0 PLN (НОВИЧОК)" : "45 PLN + 0.15 LVL";
+            let autoPrice = isFree ? "БЕСПЛАТНО" : "45 PLN + 0.15 LVL";
             document.getElementById('quest-actions-choice').innerHTML = `
                 <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
                 <button class="btn-action" style="background:var(--accent-gold); color: black; flex: 1.5; font-size: 10px; flex-direction: column; gap: 0px;" onclick="activateAutopilot()">АВТО<br><small style="color:black; opacity:0.7">${autoPrice}</small></button>
@@ -218,8 +232,8 @@ function updateUI() {
     } else { qBar.style.display='none'; }
 
     // АРЕНДА ВЕЛИКА
-    let bikeText = isNewbieMode() ? "0 PLN (НОВИЧОК)" : "АРЕНДОВАТЬ (30 PLN)";
-    document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "ПРОДЛИТЬ" : bikeText;
+    let bikeText = isFree ? "БЕСПЛАТНО (НОВИЧОК)" : "АРЕНДОВАТЬ (30 PLN)";
+    document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ (ПРОДЛИТЬ)" : bikeText;
     
     let clickRate = (0.10 * (1 + G.lvl*0.1) * DISTRICTS[G.district].mult).toFixed(2);
     if(order.visible && !order.active) clickRate = "0.00 (ПРИМИ ЗАКАЗ!)";
@@ -230,9 +244,9 @@ function updateUI() {
     renderBank(); renderMilestones(); updateDistrictButtons();
     
     const taxT = document.getElementById('tax-timer'); 
-    if(taxT) { if(isNewbieMode()) taxT.innerText=`Налог: 0% (ЩИТ)`; else taxT.innerText=`Налог (37%) через: ${Math.floor(G.tax/60)}:${(G.tax%60<10?'0':'')+G.tax%60}`; }
+    if(taxT) { if(isFree) taxT.innerText=`Налог: 0% (ЩИТ)`; else taxT.innerText=`Налог (37%) через: ${Math.floor(G.tax/60)}:${(G.tax%60<10?'0':'')+G.tax%60}`; }
     const rentT = document.getElementById('rent-timer'); 
-    if(rentT) { if(isNewbieMode()) rentT.innerText=`Аренда: 0% (ЩИТ)`; else rentT.innerText=`Аренда (${(DISTRICTS[G.district].rentPct*100).toFixed(0)}%) через: ${Math.floor(G.rent/60)}:${(G.rent%60<10?'0':'')+G.rent%60}`; }
+    if(rentT) { if(isFree) rentT.innerText=`Аренда: 0% (ЩИТ)`; else rentT.innerText=`Аренда (${(DISTRICTS[G.district].rentPct*100).toFixed(0)}%) через: ${Math.floor(G.rent/60)}:${(G.rent%60<10?'0':'')+G.rent%60}`; }
 }
 
 function updateDistrictButtons() {
@@ -248,39 +262,32 @@ function updateDistrictButtons() {
 }
 
 function triggerPoliceCheck() {
-    if (isNewbieMode()) { log("🚔 Полиция: Новичок, проезжай.", "var(--success)"); return; }
-    log("🚔 ПРОВЕРКА!", "gold"); safeHaptic('warning');
+    if (isNewbieMode()) { log("🚔 Полиция проехала мимо (Щит)", "var(--success)"); return; }
+    log("🚔 ПРОВЕРКА!", "gold"); playSound();
     let fine = (G.lvl < 2.0) ? 5 : 100;
-    if(Math.random()<0.4) { G.money = parseFloat((G.money - fine).toFixed(2)); addHistory('👮 ШТРАФ', fine, 'minus'); log(`Штраф -${fine} PLN`, "red"); safeHaptic('error'); }
+    if(Math.random()<0.4) { G.money = parseFloat((G.money - fine).toFixed(2)); addHistory('👮 ШТРАФ', fine, 'minus'); log(`Штраф -${fine} PLN`, "red"); playSound(); }
     else { log("Чисто.", "green"); } save(); updateUI();
 }
 
 function doWork() {
     try {
         if(isBroken || isResetting) return;
-        if(bonusActive) { G.en=Math.max(0,G.en-50); safeHaptic('error'); return; }
+        if(bonusActive) { G.en=Math.max(0,G.en-50); playSound(); return; }
         
         let now=Date.now(); 
         if(now-lastClickTime<80) return; 
         lastClickTime=now;
 
-        if(order.visible && !order.active) { G.en=Math.max(0,G.en-25); updateUI(); safeHaptic('error'); return; }
+        if(order.visible && !order.active) { G.en=Math.max(0,G.en-25); updateUI(); playSound(); return; }
         if(Math.random()<0.008) { triggerPoliceCheck(); return; }
 
-        // --- ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ---
         if(G.waterStock>0 && G.en<G.maxEn-10) { 
             let eff=1+(G.lvl*0.1); let d=Math.min(G.waterStock,50); G.en+=d*eff; G.waterStock-=d; save(); 
         }
         
-        // --- ГЕНЕРАЦИЯ ЗАКАЗОВ (ПРИНУДИТЕЛЬНАЯ ПРОВЕРКА) ---
-        if(!order.visible && Math.random()<(G.phone?0.35:0.18)) {
-            generateOrder();
-        }
+        if(!order.visible && Math.random()<(G.phone?0.35:0.18)) { generateOrder(); }
 
-        if(G.en<1) {
-            // Если энергии нет, ничего не делаем
-            return;
-        }
+        if(G.en<1) return;
         
         clicksSinceBonus++; 
         if(clicksSinceBonus > (120 + Math.random() * 30)) { showBonus(); }
@@ -296,13 +303,11 @@ function doWork() {
         consumeResources(false);
         let gain = 0.10 * (1 + G.lvl*0.1) * DISTRICTS[G.district].mult;
         G.money+=gain; G.lvl+=0.00025; G.totalClicks++; checkMilestones(); updateUI(); save();
-    } catch (err) {
-        console.error("Work Error:", err);
-    }
+    } catch (err) { console.error("Work Error:", err); }
 }
 
 function consumeResources(isO) {
-    if (isNewbieMode()) return; // НОВИЧОК НЕ ТРАТИТ
+    if (isNewbieMode()) return; 
     let waterCost = isO ? 10 : 3;
     if (G.buffTime > 0) { waterCost = isO ? 8 : 2; G.waterStock = Math.max(0, G.waterStock - waterCost); return; }
     let c=(G.scooter?7:10); if(G.bikeRentTime>0) c*=0.5; if(weather==="Дождь") c*=1.2; if(isO) c*=1.5;
@@ -312,7 +317,6 @@ function consumeResources(isO) {
 function generateOrder() { 
     if (order.visible || order.active) return; 
     order.visible = true; order.offerTimer = 15; 
-    // НОВИЧОК = БЕЗ КРИМИНАЛА
     order.isCriminal = !isNewbieMode() && (G.lvl >= 2.0) && (Math.random() < 0.12); 
     let d = 0.5 + Math.random() * 3.5; 
     let levelMult = 1 + (G.lvl * 0.15); 
@@ -321,7 +325,7 @@ function generateOrder() {
     order.baseReward = baseRew; order.reward = baseRew; order.target = Math.floor(d * 160); order.steps = 0; order.time = Math.floor(order.target / 1.5 + 45); updateUI(); 
 }
 
-// --- ФУНКЦИИ МАГАЗИНА (БЕСПЛАТНО ДЛЯ НОВИЧКА) ---
+// --- ИСПРАВЛЕННЫЕ ФУНКЦИИ МАГАЗИНА (БЕСПЛАТНО ДЛЯ НОВИЧКА) ---
 function collectBottles() { G.money+=0.02; G.totalBottles++; checkMilestones(); save(); updateUI(); }
 
 function buyWater() { 
@@ -340,7 +344,7 @@ function buyDrink(t, p) {
         G.money = parseFloat((G.money - price).toFixed(2)); 
         addHistory(t.toUpperCase(), price, 'minus'); 
         if(t==='coffee') G.en = Math.min(G.maxEn, G.en + 300); 
-        else G.buffTime += 120; // 2 минуты
+        else G.buffTime += 120; 
         save(); updateUI(); 
     } 
 }
@@ -375,6 +379,27 @@ function activateAutopilot() {
     } 
 }
 
+function acceptOrder() { order.active=true; playSound(); updateUI(); }
+
+function finishOrder(w) { 
+    if(!order.active) return; order.active=false; 
+    if(w) { 
+        let pC = order.isCriminal?0.40:0.02; 
+        if(Math.random()<pC && !isNewbieMode()) { 
+            let f = (G.lvl < 2.0) ? 10 : 200; 
+            if(order.isCriminal) { f=Math.max(300, Math.floor(G.money*0.25)); G.lvl-=0.5; log("АРЕСТ! Конфискация!", "red"); addHistory('АРЕСТ', f, 'minus'); } 
+            else { if (G.lvl >= 2.0) G.lvl-=0.05; log("Штраф за нарушение.", "orange"); addHistory('ШТРАФ', f, 'minus'); }
+            G.money-=f; playSound();
+        } else {
+            G.money+=order.reward; addHistory('ДОХОД', order.reward.toFixed(2)); G.lvl+=(order.isCriminal?0.15:0.015); G.totalOrders++;
+            if(Math.random()<0.4) { let t=5+Math.random()*15; G.money+=t; addHistory('ЧАЕВЫЕ', t.toFixed(2)); }
+        }
+    }
+    order.visible=false; updateUI(); save(); 
+}
+
+function checkMilestones() { G.activeMilestones.forEach((m,i)=>{ let c=m.type==='orders'?G.totalOrders:m.type==='clicks'?G.totalClicks:G.totalBottles; if(c>=m.goal){ G.money+=m.reward; addHistory('ЦЕЛЬ', m.reward); G.lvl+=0.01; log(`🏆 ${m.name}`, "gold"); G.activeMilestones[i]={...m, goal:Math.floor(m.goal*1.6), reward:m.reward+20}; save(); } }); }
+function renderMilestones() { document.getElementById('milestones-list').innerHTML=G.activeMilestones.map(m=>`<div class="card" style="margin-top:8px;"><b>${m.name}</b><br><small style="color:gold;">+${m.reward} PLN</small><div class="career-progress"><div class="career-fill" style="width:${Math.min(100,( (m.type==='orders'?G.totalOrders:m.type==='clicks'?G.totalClicks:G.totalBottles)/m.goal*100 ))}%"></div></div></div>`).join(''); }
 function exchangeLvl(l,m) { if(G.lvl>=l) { G.lvl-=l; G.money+=m; addHistory('ОБМЕН', m); save(); updateUI(); } }
 function switchTab(v,e) { curView=v; document.querySelectorAll('.view').forEach(x=>x.classList.remove('active')); document.getElementById('view-'+v).classList.add('active'); document.querySelectorAll('.tab-item').forEach(x=>x.classList.remove('active')); e.classList.add('active'); updateUI(); }
 function moveDistrict(i) { if(G.district===i) return; if(G.money<DISTRICTS[i].price || G.lvl<DISTRICTS[i].minLvl) { log("Нет доступа!", "red"); return; } G.money-=DISTRICTS[i].price; addHistory('ПЕРЕЕЗД', DISTRICTS[i].price, 'minus'); G.district=i; save(); updateUI(); }
