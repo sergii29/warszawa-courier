@@ -17,6 +17,7 @@
             --success: #22c55e;
             --danger: #ef4444;
             --purple: #8b5cf6;
+            --repair: #f97316; /* Оранжевый для ремонта */
         }
         
         body {
@@ -172,8 +173,9 @@
         .info-row { display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: var(--text-secondary); font-weight: 500; }
         
         #shoes-status-ui { font-size: 10px; color: #aaa; margin-top: 2px; }
-        .shoe-bar-bg { width: 60px; height: 4px; background: #333; border-radius: 2px; display: inline-block; overflow: hidden; vertical-align: middle; margin-left: 4px; }
-        .shoe-bar-fill { height: 100%; background: var(--purple); width: 100%; transition: width 0.5s; }
+        .durability-bar { width: 40px; height: 3px; background: #333; border-radius: 2px; display: inline-block; overflow: hidden; vertical-align: middle; margin-left: 4px; }
+        .durability-fill { height: 100%; background: var(--success); width: 100%; transition: width 0.5s; }
+        
         h3 { font-size: 14px; margin-bottom: 10px; }
 
         .rank-card { text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid var(--accent-blue); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1); position: relative; overflow: hidden; }
@@ -186,6 +188,10 @@
         .stat-row:last-child { border-bottom: none; }
         
         .section-title { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        
+        /* Стили для сломанных вещей */
+        .item-broken { opacity: 0.7; border-color: var(--danger) !important; }
+        .item-broken b { color: var(--danger) !important; }
     </style>
 </head>
 <body>
@@ -207,6 +213,7 @@
             <div style="margin-top:5px;">💧 <b>+500 мл</b> <small>Вода</small></div>
             <div style="margin-top:5px;">🚲 <b>Велосипед</b> <small>Аренда на 15 мин</small></div>
             <div style="margin-top:5px;">👟 <b>Шлепки "Bazuka"</b> <small>Временная обувь</small></div>
+            <div style="margin-top:5px;">🎒 <b>Пакет с логотипом</b> <small>Слабый, но свой</small></div>
         </div>
         <button class="btn-action" style="background:var(--success)" onclick="claimStarterPack()">ЗАБРАТЬ И НАЧАТЬ</button>
     </div>
@@ -269,7 +276,7 @@
         <div>
             <small style="color:var(--text-secondary); font-size:10px;">Баланс</small><br>
             <b id="money-val" class="money-display">0.00 PLN</b>
-            <div id="shoes-status-ui">👟 <span id="shoe-name">...</span> <div class="shoe-bar-bg"><div id="shoe-bar" class="shoe-bar-fill"></div></div></div>
+            <div id="shoes-status-ui">👟 <span id="shoe-name">...</span> <div class="durability-bar"><div id="shoe-bar" class="durability-fill"></div></div></div>
         </div>
         <div class="right-panel">
             <b id="lvl-val" class="lvl-display">LVL 1.0</b>
@@ -428,9 +435,9 @@
     </div>
 
     <div id="view-invest" class="view">
-        <h3 style="margin:0;">🎒 Рюкзак (Инвентарь)</h3>
+        <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
         
-        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
+        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи (Следи за состоянием!)</h4>
         <div id="my-items-list" style="margin-bottom:15px;">
             <div style="text-align:center; padding:10px; color:#555; font-size:11px;">Пусто...</div>
         </div>
@@ -472,7 +479,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js"></script>
-<script src="logic.js?v=2.6" defer></script>
+<script src="logic.js?v=2.7" defer></script>
 
 </body>
 </html>
