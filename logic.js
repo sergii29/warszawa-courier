@@ -35,6 +35,7 @@ let G = {
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0 };
 let curView = 'main', weather = "Ясно", isBroken = false;
+let lastClickTime = 0; // Переменная для антикликера
 
 const DISTRICTS = [
     { name: "Praga", minLvl: 0, rent: 50, mult: 1, price: 0 }, 
@@ -140,9 +141,7 @@ function updateUI() {
     document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
     document.getElementById('water-val').innerText = Math.floor(G.waterStock);
     
-    // ИСПРАВЛЕНИЕ: ПРАВИЛЬНОЕ ОТОБРАЖЕНИЕ РАЙОНА
     document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
-    
     document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
     
     document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
@@ -195,30 +194,32 @@ function updateUI() {
     } else { qBar.style.display = 'none'; }
     
     document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
-    document.getElementById('click-rate-ui').innerText = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2) + " PLN";
+    
+    // Блокировка дохода если висит заказ и его игнорируют
+    let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2);
+    if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
+    
+    document.getElementById('click-rate-ui').innerText = rate + " PLN";
 
     document.getElementById('history-ui').innerHTML = G.history.map(h => `<div class="history-item"><span>${h.time} ${h.msg}</span><b style="color:${h.type==='plus'?'var(--success)':'var(--danger)'}">${h.type==='plus'?'+':'-'}${h.val}</b></div>`).join('');
     
     renderBank(); 
     renderMilestones();
-    updateDistrictButtons(); // Обновляем состояние кнопок районов
+    updateDistrictButtons();
 }
 
-// НОВАЯ ФУНКЦИЯ: Обновление кнопок районов
 function updateDistrictButtons() {
     DISTRICTS.forEach((d, i) => {
         const btn = document.getElementById(`btn-dist-${i}`);
         if(!btn) return;
 
         if (G.district === i) {
-            // Если мы уже тут
             btn.innerText = "✅ ТЕКУЩИЙ";
             btn.style.background = "rgba(34, 197, 94, 0.2)";
             btn.style.color = "var(--success)";
             btn.style.cursor = "default";
-            btn.onclick = null; // Отключаем клик
+            btn.onclick = null;
         } else {
-            // Если это другой район
             let canAfford = G.money >= d.price;
             let levelOk = G.lvl >= d.minLvl;
             
@@ -231,7 +232,6 @@ function updateDistrictButtons() {
             } else {
                 if(!levelOk) btn.innerText = `НУЖЕН LVL ${d.minLvl}`;
                 else btn.innerText = `НЕТ ДЕНЕГ (${d.price} PLN)`;
-                
                 btn.style.background = "rgba(255,255,255,0.1)";
                 btn.style.color = "#777";
                 btn.style.cursor = "not-allowed";
@@ -243,6 +243,27 @@ function updateDistrictButtons() {
 
 function doWork() {
     if (isBroken) return;
+
+    // --- ЗАЩИТА ОТ КЛИКЕРА ---
+    let now = Date.now();
+    // 1. Лимит скорости (не быстрее 12 кликов в сек)
+    if (now - lastClickTime < 80) return; 
+    lastClickTime = now;
+
+    // 2. Блокировка фарма при игнорировании заказа
+    if (order.visible && !order.active) {
+        // Если висит предложение заказа, а игрок кликает сферу:
+        // - Забираем энергию (наказание)
+        // - Не даем денег
+        // - Не даем опыт
+        G.en = Math.max(0, G.en - 25); // Сильный расход энергии
+        updateUI();
+        // Вибрация ошибки
+        tg.HapticFeedback.notificationOccurred('error');
+        return; 
+    }
+    // -------------------------
+
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
         let drink = Math.min(G.waterStock, 50); 
@@ -251,6 +272,7 @@ function doWork() {
         save(); 
     }
     if (G.en < 1) return;
+    
     if(order.active) { 
         consumeResources(true); 
         order.steps += (G.bikeRentTime > 0 ? 2 : 1); 
@@ -259,9 +281,11 @@ function doWork() {
         updateUI(); 
         return; 
     }
+    
     if(!order.visible) { 
         if(Math.random() < (G.phone ? 0.35 : 0.18)) generateOrder(); 
     }
+    
     consumeResources(false);
     let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult;
     G.money = parseFloat((G.money + gain).toFixed(2));
@@ -429,18 +453,12 @@ function switchTab(v, el) {
     updateUI(); 
 }
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕРЕЕЗДА (С ПРОВЕРКОЙ)
 function moveDistrict(id) { 
-    // Защита: Если мы уже тут, ничего не делаем
     if (G.district === id) return;
-    
-    // Защита: Если нет денег или уровня
     if (G.money < DISTRICTS[id].price || G.lvl < DISTRICTS[id].minLvl) {
         log("Недостаточно ресурсов!", "var(--danger)");
         return;
     }
-
-    // Списываем деньги и переезжаем
     G.money = parseFloat((G.money - DISTRICTS[id].price).toFixed(2)); 
     addHistory('🏙️ ПЕРЕЕЗД', DISTRICTS[id].price, 'minus'); 
     G.district = id; 
@@ -514,12 +532,19 @@ setInterval(() => {
         }
     }
     
+    // --- ПОВЫШЕННЫЙ ШТРАФ ЗА ПРОПУСК ---
     if(order.visible && !order.active) { 
         order.offerTimer--; 
         let decay = order.isCriminal ? 0.05 : 0.03;
         order.reward = parseFloat((order.reward * (1 - decay)).toFixed(2));
-        if(order.offerTimer <= 0) { order.visible = false; G.lvl -= 0.02; } 
+        
+        if(order.offerTimer <= 0) { 
+            order.visible = false; 
+            G.lvl -= 0.05; // БЫЛО 0.02, СТАЛО 0.05 (БОЛЬШЕ ШТРАФ)
+            log("Заказ упущен: LVL снижен!", "var(--danger)");
+        } 
     }
+    // -----------------------------------
     
     if(order.active) { 
         order.time--; 
@@ -535,3 +560,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
