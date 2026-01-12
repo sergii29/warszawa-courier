@@ -4,7 +4,7 @@ tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// НОВАЯ КОНФИГУРАЦИЯ РАНГОВ
+// КОНФИГУРАЦИЯ РАНГОВ
 const RANKS = [
     { name: "Новичок", max: 50, bonus: 0, icon: "👶" },
     { name: "Бывалый", max: 150, bonus: 0.05, icon: "🦊" }, // +5%
@@ -25,8 +25,7 @@ let G = {
     totalOrders: 0, 
     totalClicks: 0, 
     totalBottles: 0, 
-    // НОВОЕ: СТАТИСТИКА ЗАРАБОТКА
-    totalEarned: 0, 
+    totalEarned: 0, // Статистика заработка
     autoTime: 0, 
     scooter: false, 
     bag: false, 
@@ -38,7 +37,6 @@ let G = {
     usedPromos: [], 
     isNewPlayer: true, 
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
-    // НОВОЕ: ДАННЫЕ ЕЖЕДНЕВНЫХ ЗАДАНИЙ
     dailyQuests: [],
     lastDailyUpdate: 0,
     activeMilestones: [
@@ -87,7 +85,7 @@ async function usePromo() {
             let reward = promoData[code].reward;
             let msg = promoData[code].msg;
             G.money = parseFloat((G.money + reward).toFixed(2));
-            G.totalEarned += reward; // Статистика
+            G.totalEarned += reward;
             G.usedPromos.push(code);
             addHistory('🎁 ПРОМО', reward, 'plus');
             log("🎁 " + msg + " +" + reward + " PLN", "var(--gold)");
@@ -137,7 +135,7 @@ function claimBonus() {
     bonusActive = false;
     clicksSinceBonus = 0;
     G.money = parseFloat((G.money + 50).toFixed(2));
-    G.totalEarned += 50; // Статистика
+    G.totalEarned += 50;
     addHistory('🎁 БОНУС', 50, 'plus');
     log("Вы забрали бонус +50 PLN", "var(--success)");
     tg.HapticFeedback.notificationOccurred('success');
@@ -164,31 +162,27 @@ function claimStarterPack() {
     updateUI();
 }
 
-// === ЛОГИКА ЕЖЕДНЕВНЫХ ЗАДАНИЙ (НОВАЯ) ===
+// === ЛОГИКА ЕЖЕДНЕВНЫХ ЗАДАНИЙ ===
 function generateDailyQuests() {
-    // Если прошло больше 24 часов (86400000 мс)
-    if (Date.now() - G.lastDailyUpdate > 86400000) {
+    // Генерируем, если списка нет или прошло 24 часа
+    if (!G.dailyQuests || G.dailyQuests.length === 0 || (Date.now() - G.lastDailyUpdate > 86400000)) {
         G.dailyQuests = [];
-        // Генерируем 3 случайных
-        const types = ['clicks', 'orders', 'earn'];
         
-        // Квест 1: Клики
         let targetClicks = 300 + Math.floor(Math.random() * 500);
         let rewardClicks = Math.floor(targetClicks / 10);
         G.dailyQuests.push({ id: 1, type: 'clicks', text: "Сделай " + targetClicks + " кликов", target: targetClicks, current: 0, reward: rewardClicks, claimed: false });
 
-        // Квест 2: Заказы
         let targetOrders = 3 + Math.floor(Math.random() * 5);
         let rewardOrders = targetOrders * 15;
         G.dailyQuests.push({ id: 2, type: 'orders', text: "Выполни " + targetOrders + " заказов", target: targetOrders, current: 0, reward: rewardOrders, claimed: false });
 
-        // Квест 3: Заработок
         let targetEarn = 100 + Math.floor(Math.random() * 200);
         let rewardEarn = Math.floor(targetEarn * 0.2);
         G.dailyQuests.push({ id: 3, type: 'earn', text: "Заработай " + targetEarn + " PLN", target: targetEarn, current: 0, reward: rewardEarn, claimed: false });
 
         G.lastDailyUpdate = Date.now();
         save();
+        updateUI();
     }
 }
 
@@ -241,17 +235,27 @@ function save() {
     if(typeof saveToCloud === 'function') saveToCloud(); 
 }
 
+// === УМНАЯ ЗАГРУЗКА (FIX) ===
 function load() { 
     let d = localStorage.getItem(SAVE_KEY); 
     if(d) { G = {...G, ...JSON.parse(d)}; } 
+    
     G.maxEn = 2000; 
+    
+    // Инициализация недостающих данных (если старый сейв)
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
-    if(!G.totalEarned) G.totalEarned = G.money; // Инициализация
+    
+    // Фикс статистики: если undefined или NaN, ставим стартовое значение
+    if(isNaN(G.totalEarned)) G.totalEarned = G.money;
+    if(isNaN(G.totalOrders)) G.totalOrders = 0;
+    if(isNaN(G.totalClicks)) G.totalClicks = 0;
+    if(isNaN(G.totalBottles)) G.totalBottles = 0;
+
     if(!G.dailyQuests) G.dailyQuests = [];
     if(!G.lastDailyUpdate) G.lastDailyUpdate = 0;
 
     checkStarterPack();
-    generateDailyQuests(); // Проверка на новые задания
+    generateDailyQuests(); // Генерируем задания сразу!
     if(typeof listenToCloud === 'function') listenToCloud();
     updateUI(); 
 }
@@ -288,16 +292,10 @@ function updateUI() {
     document.getElementById('shoe-bar').style.width = sPct + "%";
     document.getElementById('shoe-bar').style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
 
-    // --- ОБНОВЛЕНИЕ КАРЬЕРЫ (РАНГИ И ЗАДАНИЯ) ---
+    // --- ОБНОВЛЕНИЕ КАРЬЕРЫ ---
     // 1. Ранг
     let currentRank = RANKS[0];
     let nextRank = null;
-    for(let i=0; i<RANKS.length; i++) {
-        if (G.totalOrders >= RANKS[i].max && i < RANKS.length - 1) continue;
-        // Мы нашли текущий ранг (либо мы не дотягиваем до макса этого ранга, значит мы в нем)
-        // Немного упростим:
-    }
-    // Проще:
     if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
     else if (G.totalOrders < RANKS[1].max) { currentRank = RANKS[1]; nextRank = RANKS[2]; }
     else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
@@ -308,53 +306,55 @@ function updateUI() {
     document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
     
     if (nextRank) {
-        let prevMax = 0; // Для расчета прогресса от предыдущего ранга
+        let prevMax = 0;
         if (currentRank.name === "Бывалый") prevMax = RANKS[0].max;
         if (currentRank.name === "Профи") prevMax = RANKS[1].max;
         
         let progress = ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100;
-        document.getElementById('rank-progress').style.width = progress + "%";
+        document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, progress)) + "%";
         document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders) + " заказов";
     } else {
         document.getElementById('rank-progress').style.width = "100%";
         document.getElementById('rank-next').innerText = "Вы достигли вершины!";
     }
 
-    // 2. Ежедневные задания
+    // 2. Ежедневные задания (Защита от ошибок)
     let questsHTML = "";
-    G.dailyQuests.forEach(q => {
-        let btn = "";
-        if (q.claimed) {
-            btn = "<span style='color:var(--success)'>✅</span>";
-        } else if (q.current >= q.target) {
-            btn = "<button class='btn-action' style='width:auto; padding:4px 8px; font-size:10px; background:var(--gold); color:black;' onclick='claimDaily(" + q.id + ")'>ЗАБРАТЬ " + q.reward + "</button>";
-        } else {
-            btn = "<small>" + q.current + "/" + q.target + "</small>";
-        }
-        
-        let progressPct = (q.current / q.target) * 100;
-        
-        questsHTML += "<div class='daily-quest-item'>" +
-            "<div class='daily-quest-info'>" +
-                "<b>" + q.text + "</b><br>" +
-                "<div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + progressPct + "%'></div></div>" +
-            "</div>" +
-            "<div style='margin-left:10px;'>" + btn + "</div>" +
-        "</div>";
-    });
+    if(G.dailyQuests) {
+        G.dailyQuests.forEach(q => {
+            let btn = "";
+            let progressPct = (q.current / q.target) * 100;
+            if (q.claimed) {
+                btn = "<span style='color:var(--success)'>✅</span>";
+            } else if (q.current >= q.target) {
+                btn = "<button class='btn-action' style='width:auto; padding:4px 8px; font-size:10px; background:var(--gold); color:black;' onclick='claimDaily(" + q.id + ")'>ЗАБРАТЬ " + q.reward + "</button>";
+            } else {
+                btn = "<small>" + parseFloat(q.current).toFixed(0) + "/" + q.target + "</small>";
+            }
+            
+            questsHTML += "<div class='daily-quest-item'>" +
+                "<div class='daily-quest-info'>" +
+                    "<b>" + q.text + "</b><br>" +
+                    "<div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + Math.min(100, progressPct) + "%'></div></div>" +
+                "</div>" +
+                "<div style='margin-left:10px;'>" + btn + "</div>" +
+            "</div>";
+        });
+    }
     document.getElementById('daily-quests-list').innerHTML = questsHTML;
 
-    // 3. Статистика
-    document.getElementById('stat-orders').innerText = G.totalOrders;
-    document.getElementById('stat-clicks').innerText = G.totalClicks;
-    document.getElementById('stat-bottles').innerText = G.totalBottles;
-    document.getElementById('stat-earned').innerText = G.totalEarned.toFixed(2) + " PLN";
+    // 3. Статистика (с проверкой на NaN)
+    document.getElementById('stat-orders').innerText = G.totalOrders || 0;
+    document.getElementById('stat-clicks').innerText = G.totalClicks || 0;
+    document.getElementById('stat-bottles').innerText = G.totalBottles || 0;
+    document.getElementById('stat-earned').innerText = (G.totalEarned || 0).toFixed(2) + " PLN";
     
-    // Таймер обновления
+    // Таймер
     let timeLeft = (G.lastDailyUpdate + 86400000) - Date.now();
+    if(timeLeft < 0) timeLeft = 0;
     let hours = Math.floor(timeLeft / (1000 * 60 * 60));
     let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-    document.getElementById('daily-timer').innerText = "Обновление через: " + hours + "ч " + mins + "м";
+    document.getElementById('daily-timer').innerText = "Обновление: " + hours + "ч " + mins + "м";
     // ----------------------------------------
 
     const sphere = document.getElementById('work-sphere');
@@ -370,9 +370,7 @@ function updateUI() {
         document.getElementById('repair-express-btn').style.display = 'none';
         document.getElementById('repair-progress').style.height = "0%";
         
-        // РАСЧЕТ ДОХОДА С УЧЕТОМ РАНГА
         let rankBonus = 0;
-        // Простая проверка бонуса ранга для UI
         if (G.totalOrders >= 50) rankBonus = 0.05;
         if (G.totalOrders >= 150) rankBonus = 0.10;
         if (G.totalOrders >= 400) rankBonus = 0.20;
@@ -470,6 +468,10 @@ function updateDistrictButtons() {
 }
 
 function doWork() {
+    // 1. Статистика кликов: Считаем ВСЕГДА (даже если сломан или доставка)
+    G.totalClicks++; 
+    checkDailyQuests('clicks', 1);
+
     if (isBroken) {
         repairProgress++;
         G.en = Math.max(0, G.en - 5); 
@@ -481,17 +483,21 @@ function doWork() {
             tg.HapticFeedback.notificationOccurred('success');
         }
         updateUI();
+        save(); // Сохраняем клик
         return;
     }
 
     if (bonusActive) {
         G.en = Math.max(0, G.en - 50); 
         tg.HapticFeedback.notificationOccurred('error');
+        updateUI();
         return; 
     }
+    
     let now = Date.now();
     if (now - lastClickTime < 80) return; 
     lastClickTime = now;
+    
     if (order.visible && !order.active) {
         G.en = Math.max(0, G.en - 25); 
         updateUI();
@@ -503,9 +509,9 @@ function doWork() {
         let drink = Math.min(G.waterStock, 50); 
         G.en = Math.min(G.maxEn, G.en + (drink * eff)); 
         G.waterStock -= drink; 
-        save(); 
     }
     if (G.en < 1) return;
+    
     clicksSinceBonus++;
     if (clicksSinceBonus > (300 + Math.random() * 100)) {
         showBonus();
@@ -527,18 +533,15 @@ function doWork() {
         if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; } 
         if(order.steps >= order.target) finishOrder(true); 
         updateUI(); 
+        save();
         return; 
     }
     
-    // ТРЕКЕР: КЛИКИ
-    checkDailyQuests('clicks', 1);
-
     if(!order.visible) { 
         if(Math.random() < (G.phone ? 0.35 : 0.18)) generateOrder(); 
     }
     consumeResources(false);
     
-    // БОНУС РАНГА К КЛИКУ
     let rankBonus = 0;
     if (G.totalOrders >= 50) rankBonus = 0.05;
     if (G.totalOrders >= 150) rankBonus = 0.10;
@@ -546,14 +549,14 @@ function doWork() {
 
     let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus);
     G.money = parseFloat((G.money + gain).toFixed(2));
-    G.totalEarned += gain; // Статистика
+    G.totalEarned += gain; // Статистика заработка
+    checkDailyQuests('earn', gain); // Квест на заработок
+
     G.lvl += 0.00025; 
-    G.totalClicks++; 
+    
+    // checkMilestones здесь, т.к. клик может завершить веху
     checkMilestones(); 
     
-    // ТРЕКЕР: ЗАРАБОТОК
-    checkDailyQuests('earn', gain);
-
     updateUI(); 
     save();
 }
@@ -699,14 +702,13 @@ function finishOrder(win) {
             log("🚔 ПОЛИЦИЯ! Штраф -150", "var(--danger)"); 
         } else { 
             G.money = parseFloat((G.money + order.reward).toFixed(2)); 
-            G.totalEarned += order.reward; // Статистика
+            G.totalEarned += order.reward; // Статистика заработка
             addHistory(order.isCriminal ? '☠️ КРИМИНАЛ' : '📦 ЗАКАЗ', order.reward.toFixed(2), 'plus');
             G.lvl += (order.isCriminal ? 0.12 : 0.015); 
             G.totalOrders++; 
             
-            // ТРЕКЕР: ЗАКАЗЫ И ЗАРАБОТОК
-            checkDailyQuests('orders', 1);
-            checkDailyQuests('earn', order.reward);
+            checkDailyQuests('orders', 1); // Квест на заказы
+            checkDailyQuests('earn', order.reward); // Квест на заработок
 
             if(Math.random() < 0.40) { 
                 let tip = parseFloat((5 + Math.random()*15).toFixed(2)); 
@@ -888,8 +890,7 @@ setInterval(() => {
     
     if (G.buffTime > 0) G.buffTime--;
     
-    // ПРОВЕРКА ОБНОВЛЕНИЯ ЕЖЕДНЕВНЫХ ЗАДАНИЙ (Каждую секунду таймер)
-    generateDailyQuests();
+    generateDailyQuests(); // Проверка квестов
 
     if (G.autoTime > 0) { 
         G.autoTime--;
