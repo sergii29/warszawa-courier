@@ -34,7 +34,9 @@ let G = {
     isNewPlayer: true, 
     lastWelfare: 0, 
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
-    // НОВАЯ СИСТЕМА ВЕЩЕЙ (теперь это объекты с прочностью)
+    // Предметы (изначально null)
+    starter_bag: null,
+    starter_phone: null,
     bag: null, 
     phone: null,
     scooter: null,
@@ -63,12 +65,17 @@ const DISTRICTS = [
     { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } 
 ];
 
-// ТЕПЕРЬ С ПРОЧНОСТЬЮ И ЦЕНОЙ РЕМОНТА
+// СПИСОК ВСЕХ ВЕЩЕЙ (hidden = скрыто из магазина, дается на старте)
 const UPGRADES = [
+    // Стартовые (Слабые)
+    { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', price: 0, bonus: '+2% PLN', maxDur: 40, repairPrice: 5, hidden: true },
+    { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', price: 0, bonus: 'Связь', maxDur: 40, repairPrice: 5, hidden: true },
+
+    // Профессиональные (Магазин)
     { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', price: 350, bonus: '+15% PLN', maxDur: 100, repairPrice: 70 }, 
     { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', price: 1200, bonus: 'Заказы x1.4', maxDur: 100, repairPrice: 250 }, 
     { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', price: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100 },
-    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', price: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50 }, // Шлем ломается быстрее
+    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', price: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50 },
     { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', price: 180, bonus: '☔ Сухость', maxDur: 80, repairPrice: 40 },
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', price: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80 }
 ];
@@ -165,10 +172,10 @@ function claimStarterPack() {
     G.isNewPlayer = false;
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
     
-    // БОМЖ-ПАКЕТ (Слабые версии предметов)
-    // Мы даем их как "сломанные" версии нормальных или просто создаем видимость
-    // Для простоты: даем обычную сумку но с 20% прочности
-    G.bag = { active: true, dur: 20 }; 
+    // ВЫДАЕМ СТАРТОВЫЙ ШМОТ
+    G.starter_bag = { active: true, dur: 50 }; // 50% прочности для антуража
+    G.starter_phone = { active: true, dur: 50 };
+
     addHistory('🎁 STARTER KIT', 50, 'plus');
     log("Вы получили набор новичка!", "var(--success)");
     save();
@@ -244,7 +251,7 @@ function save() {
     if(typeof saveToCloud === 'function') saveToCloud(); 
 }
 
-// === УМНАЯ ЗАГРУЗКА И МИГРАЦИЯ ДАННЫХ ===
+// === УМНАЯ ЗАГРУЗКА: ФИКС ДЛЯ СТАРЫХ ИГРОКОВ ===
 function load() { 
     let d = localStorage.getItem(SAVE_KEY); 
     if(d) { G = {...G, ...JSON.parse(d)}; } 
@@ -254,13 +261,20 @@ function load() {
     if(isNaN(G.totalOrders)) G.totalOrders = 0;
     if(!G.lastWelfare) G.lastWelfare = 0; 
 
-    // МИГРАЦИЯ: Если у игрока старая версия сохранения (где bag = true), превращаем в объект
-    const itemsToCheck = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'];
-    itemsToCheck.forEach(item => {
-        if (G[item] === true) { // Если старый формат
-            G[item] = { active: true, dur: 100 }; // Даем полную прочность
-        }
+    // 1. Миграция старых вещей (true -> object)
+    ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
+        if (G[item] === true) G[item] = { active: true, dur: 100 };
     });
+
+    // 2. ВЫДАЧА СТАРТОВОГО ШМОТА (Если у тебя нет ни крутой сумки, ни стартовой)
+    if (!G.bag && !G.starter_bag) {
+        G.starter_bag = { active: true, dur: 50 };
+        log("🎒 Вы нашли на чердаке Старый Рюкзак!", "var(--success)");
+    }
+    if (!G.phone && !G.starter_phone) {
+        G.starter_phone = { active: true, dur: 50 };
+        log("📱 Вы откопали Древний Телефон!", "var(--success)");
+    }
 
     checkStarterPack();
     generateDailyQuests();
@@ -386,7 +400,7 @@ function updateUI() {
     const invDisp = document.getElementById('inventory-display'); 
     invDisp.innerHTML = ''; 
     UPGRADES.forEach(up => { 
-        if(G[up.id] && G[up.id].dur > 0) { // Показываем в шапке только если не сломано
+        if(G[up.id] && G[up.id].dur > 0) { 
             const span = document.createElement('span'); 
             span.className = 'inv-item'; 
             span.innerText = up.icon + " " + up.bonus; 
@@ -394,11 +408,10 @@ function updateUI() {
         } 
     });
     
-    // --- ИНВЕНТАРЬ (ОБНОВЛЕННЫЙ) ---
+    // --- ИНВЕНТАРЬ (ЛОМБАРД + РЕМОНТ) ---
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
     
-    // Обувь (отдельно)
     const shoeDiv = document.createElement('div');
     shoeDiv.className = 'card';
     shoeDiv.style.marginBottom = '5px';
@@ -428,7 +441,7 @@ function updateUI() {
                     <div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${durability}%"></div>
                 </div>
                 <div style="display:flex; gap:5px; margin-top:8px;">
-                    <button class='btn-action' style="flex:1; background:var(--repair); font-size:10px; padding:6px;" onclick="repairItem('${up.id}', ${up.repairPrice})">🛠️ ПОЧИНИТЬ (${up.repairPrice})</button>
+                    <button class='btn-action' style="flex:1; background:var(--repair); font-size:10px; padding:6px;" onclick="repairItem('${up.id}', ${up.repairPrice})">🧵 ПОДЛАТАТЬ (${up.repairPrice})</button>
                     <button class='btn-action' style="flex:1; background:transparent; border:1px solid var(--danger); color:var(--danger); font-size:10px; padding:6px;" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ПРОДАТЬ (${up.price * 0.5})</button>
                 </div>
             `;
@@ -440,7 +453,7 @@ function updateUI() {
     const shopList = document.getElementById('shop-upgrades-list'); 
     shopList.innerHTML = ''; 
     UPGRADES.forEach(up => { 
-        if(!G[up.id]) { 
+        if(!G[up.id] && !up.hidden) { 
             const div = document.createElement('div'); 
             div.className = 'card'; 
             div.style.marginBottom = '8px'; 
@@ -534,16 +547,15 @@ function doWork() {
     if (G.shoes.dur > 0) G.shoes.dur -= 0.05; 
     UPGRADES.forEach(up => {
         if (G[up.id] && G[up.id].dur > 0) {
-            // Разные вещи изнашиваются с разной скоростью
-            let wear = 0.02; // Базовый износ
-            if (up.id === 'helmet' && order.isRiskyRoute) wear = 0.5; // Шлем бьется на рисках
-            if (up.id === 'scooter') wear = 0.05; // Самокат быстрее
+            let wear = 0.02; 
+            if (up.id === 'helmet' && order.isRiskyRoute) wear = 0.5; 
+            if (up.id === 'scooter') wear = 0.05; 
             
             G[up.id].dur -= wear;
             if (G[up.id].dur <= 0) {
                 G[up.id].dur = 0;
-                // Уведомление о поломке (один раз)
-                if (Math.random() < 0.05) log("⚠️ " + up.name + " сломан!", "var(--danger)");
+                // УВЕДОМЛЕНИЕ О ПОЛОМКЕ
+                if (Math.random() < 0.05) log("⚠️ " + up.name + " сломан! Зашей его!", "var(--danger)");
             }
         }
     });
@@ -573,8 +585,10 @@ function doWork() {
     if (G.totalOrders >= 150) rankBonus = 0.10;
     if (G.totalOrders >= 400) rankBonus = 0.20;
 
-    // ПРОВЕРКА БОНУСОВ ОТ ВЕЩЕЙ (Если сломано - бонуса нет)
-    let bagBonus = (G.bag && G.bag.dur > 0) ? 1.15 : 1;
+    // ПРОВЕРКА БОНУСОВ (И ПРОФИ, И СТАРТОВЫХ)
+    let bagBonus = 1;
+    if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
+    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02; // Старый рюкзак дает +2%
 
     let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
     
@@ -594,16 +608,10 @@ function consumeResources(isOrder) {
         if (isOrder || Math.random() < 0.2) G.waterStock = Math.max(0, G.waterStock - (isOrder ? 8 : 2)); 
         return; 
     }
-    
-    // ПРОВЕРКА САМОКАТА
-    let hasScooter = (G.scooter && G.scooter.dur > 0);
-    let cost = (hasScooter ? 7 : 10); 
-    
+    let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
     
-    // ПРОВЕРКА ДОЖДЕВИКА
-    let hasRaincoat = (G.raincoat && G.raincoat.dur > 0);
-    let rainMod = (weather === "Дождь" && !hasRaincoat) ? 1.2 : 1;
+    let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
     
     cost *= rainMod; 
     if (isOrder) cost *= 1.5; 
@@ -618,9 +626,11 @@ function generateOrder() {
     order.isCriminal = Math.random() < 0.12; 
     let d = 0.5 + Math.random() * 3.5; 
     
-    // ПРОВЕРКА СУМКИ
-    let bagBonus = (G.bag && G.bag.dur > 0) ? 1.15 : 1;
-    
+    // БОНУС СУМКИ (ИЛИ СТАРТОВОЙ)
+    let bagBonus = 1;
+    if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
+    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
+
     let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * bagBonus * (weather === "Дождь" ? 1.5 : 1); 
     if(order.isCriminal) { baseRew *= 6.5; order.offerTimer = 12; } 
     order.baseReward = baseRew;
@@ -678,7 +688,6 @@ function activateAutopilot() {
         G.money = parseFloat((G.money - 45).toFixed(2)); 
         G.lvl -= 0.15; 
         
-        // ПРОВЕРКА ПОВЕРБАНКА
         let hasPower = (G.powerbank && G.powerbank.dur > 0);
         let timeAdd = hasPower ? 900 : 600; 
         
@@ -713,9 +722,7 @@ function buyShoes(name, price, durability) {
 function buyInvest(type, p) { 
     if(!G[type] && G.money >= p) { 
         G.money = parseFloat((G.money - p).toFixed(2)); 
-        // При покупке создаем ОБЪЕКТ с прочностью
         let maxDur = 100;
-        // Находим макс прочность из конфига
         let conf = UPGRADES.find(u => u.id === type);
         if(conf && conf.maxDur) maxDur = conf.maxDur;
 
@@ -729,7 +736,7 @@ function buyInvest(type, p) {
 function sellInvest(type, p) {
     if(G[type]) {
         G.money = parseFloat((G.money + p).toFixed(2)); 
-        G[type] = null; // Удаляем объект
+        G[type] = null; 
         addHistory('💸 ЛОМБАРД', p, 'plus'); 
         log("Вы продали предмет в ломбард", "var(--gold)");
         save();
@@ -737,12 +744,10 @@ function sellInvest(type, p) {
     }
 }
 
-// НОВОЕ: ПОЧИНКА
 function repairItem(type, cost) {
     if (G.money >= cost) {
         if (G[type] && G[type].dur < 100) {
             G.money = parseFloat((G.money - cost).toFixed(2));
-            // Восстанавливаем макс прочность из конфига
             let conf = UPGRADES.find(u => u.id === type);
             let max = conf ? conf.maxDur : 100;
             G[type].dur = max;
@@ -798,7 +803,6 @@ function finishOrder(win) {
     if(win) { 
         if (order.isRiskyRoute) {
             let riskRoll = Math.random();
-            // ПРОВЕРКА ШЛЕМА
             let hasHelmet = (G.helmet && G.helmet.dur > 0);
             let riskChance = hasHelmet ? 0.15 : 0.30; 
 
@@ -1048,3 +1052,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
