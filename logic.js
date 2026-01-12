@@ -36,7 +36,7 @@ let G = {
     history: [], 
     usedPromos: [], 
     isNewPlayer: true, 
-    lastWelfare: 0, // Таймер помощи
+    lastWelfare: 0, 
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
     dailyQuests: [],
     lastDailyUpdate: 0,
@@ -241,7 +241,7 @@ function load() {
     if(isNaN(G.totalOrders)) G.totalOrders = 0;
     if(isNaN(G.totalClicks)) G.totalClicks = 0;
     if(isNaN(G.totalBottles)) G.totalBottles = 0;
-    if(!G.lastWelfare) G.lastWelfare = 0; // Инициализация велфера
+    if(!G.lastWelfare) G.lastWelfare = 0; 
 
     checkStarterPack();
     generateDailyQuests();
@@ -375,25 +375,42 @@ function updateUI() {
         } 
     });
     
-    // --- ЛОМБАРД: Кнопка продажи ---
+    // --- ИНВЕНТАРЬ (ЛОМБАРД) ---
+    // 1. Мои вещи
+    const myItemsList = document.getElementById('my-items-list');
+    myItemsList.innerHTML = '';
+    let hasItems = false;
+    
+    // Показываем обувь как предмет
+    const shoeDiv = document.createElement('div');
+    shoeDiv.className = 'card';
+    shoeDiv.style.marginBottom = '5px';
+    shoeDiv.style.borderColor = "var(--purple)";
+    shoeDiv.innerHTML = "<b>👟 " + G.shoes.name + "</b><br><small>Состояние: " + Math.floor(G.shoes.dur) + "%</small>";
+    myItemsList.appendChild(shoeDiv);
+
+    UPGRADES.forEach(up => {
+        if(G[up.id]) {
+            hasItems = true;
+            const div = document.createElement('div'); 
+            div.className = 'card'; 
+            div.style.marginBottom = '5px'; 
+            div.style.borderColor = "var(--gold)";
+            div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.bonus + "</small><br><button class='btn-action' style='margin-top:8px; background:transparent; border:1px solid var(--danger); color:var(--danger); font-size:10px; padding:6px;' onclick=\"sellInvest('" + up.id + "', " + (up.price * 0.5) + ")\">💸 ПРОДАТЬ (+ " + (up.price * 0.5) + " PLN)</button>"; 
+            myItemsList.appendChild(div);
+        }
+    });
+    
+    // 2. Магазин
     const upgradeList = document.getElementById('upgrade-items'); 
     upgradeList.innerHTML = ''; 
     UPGRADES.forEach(up => { 
         if(!G[up.id]) { 
-            // Кнопка покупки
             const div = document.createElement('div'); 
             div.className = 'card'; 
             div.style.marginTop = '8px'; 
             div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + up.price + ")\">КУПИТЬ (" + up.price + " PLN)</button>"; 
             upgradeList.appendChild(div); 
-        } else {
-            // Кнопка продажи (ЛОМБАРД)
-            const div = document.createElement('div'); 
-            div.className = 'card'; 
-            div.style.marginTop = '8px'; 
-            div.style.borderColor = "var(--gold)";
-            div.innerHTML = "<b>" + up.icon + " " + up.name + " (Куплено)</b><br><small style='color:#aaa;'>Можно продать в ломбард.</small><br><button class='btn-action' style='margin-top:8px; background:transparent; border:1px solid var(--danger); color:var(--danger);' onclick=\"sellInvest('" + up.id + "', " + (up.price * 0.5) + ")\">💸 ПРОДАТЬ (+ " + (up.price * 0.5) + " PLN)</button>"; 
-            upgradeList.appendChild(div);
         }
     });
     
@@ -684,7 +701,7 @@ function getWelfare() {
         log("Пособие только для должников!", "var(--danger)");
         return;
     }
-    if (now - G.lastWelfare < 600000) { // 10 минут (600,000 мс)
+    if (now - G.lastWelfare < 600000) { 
         let wait = Math.ceil((600000 - (now - G.lastWelfare)) / 60000);
         log("Жди еще " + wait + " мин.", "var(--danger)");
         return;
@@ -731,9 +748,7 @@ function finishOrder(win) {
         }
         let policeChance = order.isCriminal ? 0.35 : 0.02; 
         if(Math.random() < policeChance) { 
-            // НОВОЕ: МЯГКИЙ ШТРАФ
             let fine = (G.lvl < 2) ? 50 : 150;
-            
             G.lvl -= 1.2; G.money = parseFloat((G.money - fine).toFixed(2)); 
             addHistory('👮 ШТРАФ', fine, 'minus');
             log("🚔 ПОЛИЦИЯ! Штраф -" + fine, "var(--danger)"); 
@@ -875,7 +890,6 @@ function triggerBreakdown() {
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
     if (G.money < 0) {
-        // НОВАЯ КНОПКА: ПОСОБИЕ
         ui.innerHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+30 PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
     } else if (G.debt <= 0) {
         ui.innerHTML = "<button class='btn-action' onclick=\"G.money=parseFloat((G.money+50).toFixed(2));G.debt=50;addHistory('🏦 КРЕДИТ', 50, 'plus');updateUI();save();\">ВЗЯТЬ КРЕДИТ (50 PLN)</button>";
@@ -887,7 +901,6 @@ function renderBank() {
 setInterval(() => {
     if (G.en > G.maxEn) G.en = G.maxEn;
 
-    // НОВОЕ: НАЛОГИ НЕ СПИСЫВАЮТСЯ В ДОЛГАХ
     if (G.money > 0) {
         G.tax--; 
         if(G.tax <= 0) { 
