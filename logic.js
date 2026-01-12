@@ -415,6 +415,34 @@ function generateOrder() {
 
 // === НОВЫЕ ФУНКЦИИ МАРШРУТА ===
 function openRouteModal() {
+    const autoBtn = document.getElementById('btn-auto-route');
+    const autoLabel = document.getElementById('lbl-auto-route');
+    const autoDesc = document.getElementById('desc-auto-route');
+
+    // ПРОВЕРЯЕМ: ЕСТЬ ЛИ УЖЕ КУПЛЕННОЕ ВРЕМЯ?
+    if (G.autoTime > 0) {
+        // Если робот уже активен -> Кнопка просто запускает заказ
+        autoLabel.innerHTML = "<b>🤖 ПОРУЧИТЬ РОБОТУ</b>";
+        autoDesc.innerHTML = `<small style="color:var(--success)">Активно: ${Math.floor(G.autoTime/60)} мин</small>`;
+        
+        autoBtn.onclick = function() {
+             closeRouteModal();
+             acceptOrder(); // Просто принимаем, цикл сам всё сделает
+             log("🤖 Робот принял заказ", "var(--accent-gold)");
+        };
+        autoBtn.style.borderColor = "var(--success)";
+        autoBtn.style.background = "rgba(34, 197, 94, 0.1)";
+        
+    } else {
+        // Если времени нет -> Предлагаем купить
+        autoLabel.innerHTML = "<b>🤖 КУПИТЬ АВТО (45 PLN)</b>";
+        autoDesc.innerHTML = `<small style="color:var(--accent-gold)">Робот сделает всё сам (+10 мин)</small>`;
+        
+        autoBtn.onclick = function() { activateAutopilot(); };
+        autoBtn.style.borderColor = "var(--accent-gold)";
+        autoBtn.style.background = "rgba(245, 158, 11, 0.1)";
+    }
+
     document.getElementById('route-modal').style.display = 'flex';
 }
 
