@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Courier V3</title>
+    <title>Neon Courier V4</title>
     <style>
         :root {
             --bg-color: #050510;
@@ -12,8 +12,8 @@
             --pickup: #ffff00;
             --danger: #ff3333;
             --gold: #ffd700;
-            --panel-bg: rgba(10, 10, 30, 0.95);
-            --grid-line: rgba(255, 255, 255, 0.03);
+            --panel-bg: rgba(15, 15, 35, 1);
+            --grid-line: rgba(255, 255, 255, 0.04);
         }
 
         body {
@@ -22,63 +22,69 @@
             background-color: var(--bg-color);
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
+            overflow: hidden; /* Убираем скролл */
             touch-action: manipulation;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100vh; /* Ровно высота экрана */
             width: 100vw;
         }
 
-        /* --- ВЕРХНЕЕ МЕНЮ --- */
+        /* --- 1. ВЕРХНЕЕ МЕНЮ (HUD) --- */
         .hud {
+            flex-shrink: 0; /* Не сжимать */
             display: flex;
             justify-content: space-between;
-            padding: 12px 15px;
-            background: rgba(0,0,0,0.8);
+            padding: 10px 15px;
+            background: #000;
             border-bottom: 1px solid #333;
             z-index: 10;
-            flex-shrink: 0; /* Чтобы не сжималось */
+            height: 50px; /* Фиксированная высота */
+            box-sizing: border-box;
         }
 
         .stat-group { text-align: center; min-width: 60px; }
         .stat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 2px; }
         .stat-val { font-size: 16px; font-weight: bold; text-shadow: 0 0 5px currentColor; }
 
-        /* --- КАРТА (Адаптивная) --- */
+        /* --- 2. КОНТЕЙНЕР КАРТЫ (СЕРЕДИНА) --- */
         #game-container {
-            flex: 1; /* Занимает все свободное место */
+            flex: 1; /* Занимает ВСЕ свободное место между верхом и низом */
             display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            align-items: center;     /* Центр по вертикали */
+            justify-content: center; /* Центр по горизонтали */
             position: relative;
+            overflow: hidden;
+            width: 100%;
         }
 
         #game-map {
             display: grid;
-            /* Сетка задается в JS */
             background: 
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 100% 100%; /* Растягиваем паттерн */
+            background-size: 100% 100%;
             gap: 1px;
             padding: 2px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
             
-            /* Размеры карты: делаем квадрат, который влезает в экран */
+            /* АДАПТИВНЫЙ РАЗМЕР: 
+               Карта будет квадратной. 
+               Она займет максимум 95% ширины экрана 
+               ИЛИ 60% высоты экрана (чтобы оставить место кнопкам).
+            */
             width: 90vmin;
             height: 90vmin;
-            max-width: 500px;
-            max-height: 500px;
+            max-width: 95vw;
+            max-height: 55vh; /* Ограничение высоты, чтобы не лезть на кнопки */
+            aspect-ratio: 1/1; /* Всегда квадрат */
         }
 
         .cell {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px; /* Меньше иконки */
+            font-size: 14px; 
             position: relative;
             border-radius: 2px;
         }
@@ -89,31 +95,29 @@
         .delivery-glow { filter: drop-shadow(0 0 6px var(--secondary)); animation: pulse 1s infinite; z-index: 4; }
         .wall-glow { opacity: 0.5; filter: drop-shadow(0 0 2px var(--danger)); font-size: 14px; }
 
-        /* --- ПЛАВАЮЩЕЕ УПРАВЛЕНИЕ --- */
+        /* --- 3. НИЖНЯЯ ПАНЕЛЬ (КНОПКИ) --- */
         .controls-wrapper {
-            position: absolute;
-            bottom: 40px; /* СИЛЬНО ПОДНЯЛ ОТ НИЗА */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
+            flex-shrink: 0; /* Не сжимать */
+            background: var(--bg-color); /* Фон, чтобы перекрыть карту если что */
             width: 100%;
             display: flex;
             justify-content: center;
-            pointer-events: none; /* Чтобы клики проходили сквозь пустые места */
+            padding-bottom: 20px; /* Отступ от самого низа экрана */
+            padding-top: 10px;
+            z-index: 20;
         }
 
         .controls-pad {
             background: var(--panel-bg);
-            padding: 15px;
-            border-radius: 25px;
+            padding: 10px;
+            border-radius: 20px;
             border: 1px solid var(--primary);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.8), 0 0 15px rgba(0, 243, 255, 0.2);
-            pointer-events: auto; /* Включаем клики для кнопок */
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
             
             display: grid;
-            grid-template-columns: 60px 60px 60px;
-            grid-template-rows: 50px 50px;
-            gap: 8px;
+            grid-template-columns: 65px 65px 65px; /* Кнопки пошире */
+            grid-template-rows: 55px 55px;
+            gap: 6px;
         }
 
         .btn {
@@ -126,7 +130,6 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: 0.1s;
         }
         .btn:active { background: var(--primary); color: #000; transform: scale(0.95); }
         .btn-action { border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.1); }
@@ -134,13 +137,13 @@
         /* Сообщения */
         #msg-log {
             position: absolute;
-            top: 20%; left: 50%; /* Чуть выше центра */
+            top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
             font-size: 14px; font-weight: bold;
-            background: rgba(0,0,0,0.85);
-            padding: 8px 16px; border-radius: 15px;
+            background: rgba(0,0,0,0.9);
+            padding: 8px 16px; border-radius: 10px;
             border: 1px solid #fff;
-            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 200; text-align: center;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 100; text-align: center;
             white-space: nowrap;
         }
 
@@ -151,8 +154,8 @@
 
     <div class="hud">
         <div class="stat-group">
-            <div class="stat-label">PLN</div>
-            <div class="stat-val" style="color: var(--gold)" id="ui-balance">0.00</div>
+            <div class="stat-label">Баланс</div>
+            <div class="stat-val" style="color: var(--gold)" id="ui-balance">0</div>
         </div>
         <div class="stat-group">
             <div class="stat-label">Заряд</div>
@@ -160,7 +163,7 @@
         </div>
         <div class="stat-group">
             <div class="stat-label">Цель</div>
-            <div class="stat-val" style="font-size: 12px" id="ui-status">Поиск...</div>
+            <div class="stat-val" style="font-size: 12px; color: var(--pickup)" id="ui-status">ПОИСК</div>
         </div>
     </div>
 
@@ -187,10 +190,10 @@
 
     <script>
         // --- КОНФИГ ---
-        const GRID_SIZE = 13; // БЫЛО 9, СТАЛО 13 (Клетки меньше)
+        const GRID_SIZE = 13; 
         
         let state = {
-            x: 6, y: 6,        // Центр для 13x13
+            x: 6, y: 6,        
             objective: {x:0, y:0},
             hasPackage: false,
             walls: [],
@@ -201,11 +204,9 @@
         const mapEl = document.getElementById('game-map');
 
         function initGame() {
-            // Настройка CSS Grid
             mapEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
             mapEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
             
-            // Создаем клетки
             mapEl.innerHTML = '';
             for(let i=0; i<GRID_SIZE*GRID_SIZE; i++) {
                 let cell = document.createElement('div');
@@ -224,14 +225,12 @@
 
         function generateWalls() {
             state.walls = [];
-            // Больше стен для большой карты (около 30)
-            for(let i=0; i<30; i++) {
+            for(let i=0; i<25; i++) {
                 let wx, wy;
                 do {
                     wx = Math.floor(Math.random() * GRID_SIZE);
                     wy = Math.floor(Math.random() * GRID_SIZE);
                 } while ((wx === state.x && wy === state.y) || (wx === state.objective.x && wy === state.objective.y));
-                
                 state.walls.push(getIdx(wx, wy));
             }
         }
@@ -270,7 +269,7 @@
             if (state.x === state.objective.x && state.y === state.objective.y) {
                 if (!state.hasPackage) {
                     state.hasPackage = true;
-                    showMsg("🎒 ЗАБРАЛ! ВЕЗИ КЛИЕНТУ", "#ffff00");
+                    showMsg("🎒 ВЕЗИ КЛИЕНТУ", "#ffff00");
                     spawnObjective();
                 } else {
                     state.hasPackage = false;
@@ -289,7 +288,7 @@
             if (state.balance >= 15) {
                 state.balance -= 15;
                 state.energy = Math.min(100, state.energy + 50);
-                showMsg("⚡ ЗАРЯЖЕНО! (-15)", "#00ff00");
+                showMsg("⚡ ЗАРЯЖЕНО!", "#00ff00");
                 updateUI();
             } else { showMsg("❌ НЕТ ДЕНЕГ", "red"); }
         }
