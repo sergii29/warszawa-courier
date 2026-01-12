@@ -9,7 +9,7 @@
     <style>
         :root {
             --bg-main: #0f172a; 
-            --bg-card: rgba(30, 41, 59, 0.9); 
+            --bg-card: rgba(30, 41, 59, 0.95); 
             --accent-gold: #f59e0b; 
             --accent-blue: #3b82f6; 
             --text-primary: #f1f5f9; 
@@ -25,6 +25,12 @@
             margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
             touch-action: manipulation;
             font-size: 13px;
+            transition: background 1s ease; /* Плавная смена погоды */
+        }
+        
+        /* Эффект дождя */
+        body.rain-mode {
+            background: radial-gradient(circle at top center, #1e293b, #050505);
         }
 
         /* --- ХЕДЕР --- */
@@ -120,7 +126,7 @@
             border-radius: 10px;
         }
 
-        /* --- ВСПЛЫВАЮЩЕЕ ОКНО ЗАКАЗА --- */
+        /* --- ВСПЛЫВАЮЩЕЕ ОКНО ЗАКАЗА (СНИЗУ) --- */
         #quest-bar {
             display: none; 
             position: fixed;
@@ -160,6 +166,31 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+        /* --- МОДАЛЬНОЕ ОКНО (МАРШРУТ / СТАРТ) --- */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); z-index: 4000;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(8px);
+            padding: 20px;
+        }
+        .modal-card {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 16px; padding: 20px; width: 100%; max-width: 320px;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .route-option {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 12px; margin-bottom: 10px;
+            text-align: left; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .route-option:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
+        .route-icon { font-size: 24px; }
+        
         /* Обычные стили */
         .card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; }
         .card b { font-size: 13px; font-weight: 600; color: #fff; }
@@ -213,18 +244,69 @@
     <button id="bonus-btn" onclick="claimBonus()">🎁 +50 PLN</button>
 </div>
 
+<div id="starter-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="font-size: 40px; margin-bottom: 10px;">👋</div>
+        <h3 style="margin-top:0; color:white;">Добро пожаловать!</h3>
+        <p style="color:var(--text-secondary); font-size:12px; margin-bottom:20px;">
+            Варшава не прощает ошибок. Но мы своих не бросаем.<br>
+            Держи <b>"Набор Выживальщика"</b> от профсоюза:
+        </p>
+        <div class="card" style="margin-bottom:15px; text-align:left;">
+            <div>💵 <b>+50.00 PLN</b> <small>На еду и штрафы</small></div>
+            <div style="margin-top:5px;">💧 <b>+500 мл</b> <small>Вода</small></div>
+            <div style="margin-top:5px;">🚲 <b>Велосипед</b> <small>Аренда на 15 мин</small></div>
+        </div>
+        <button class="btn-action" style="background:var(--success)" onclick="claimStarterPack()">ЗАБРАТЬ И НАЧАТЬ</button>
+    </div>
+</div>
+
+<div id="route-modal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 style="margin-top:0; color:white; margin-bottom: 5px;">📍 Выбор маршрута</h3>
+        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:15px;">Как поедем к клиенту?</p>
+        
+        <div class="route-option" onclick="chooseRoute('safe')">
+            <div class="route-icon">🐢</div>
+            <div>
+                <b>Спокойный путь</b><br>
+                <small style="color:var(--success)">100% оплата • Нет рисков</small>
+            </div>
+        </div>
+
+        <div class="route-option" onclick="chooseRoute('risky')">
+            <div class="route-icon">😈</div>
+            <div>
+                <b>Срезать дворами (-50% времени)</b><br>
+                <small style="color:var(--danger)">Риск аварии 30% или двойные чаевые</small>
+            </div>
+        </div>
+
+        <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" onclick="activateAutopilot()">
+            <div class="route-icon">🤖</div>
+            <div>
+                <b>Автопилот (45 PLN)</b><br>
+                <small style="color:var(--accent-gold)">Робот сделает всё сам</small>
+            </div>
+        </div>
+
+        <button class="btn-action btn-secondary" style="padding:8px;" onclick="closeRouteModal()">ОТМЕНА</button>
+    </div>
+</div>
+
 <div id="quest-bar">
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
-            <b id="quest-title" style="color:var(--accent-blue); font-size: 13px;">📦 ЗАКАЗ</b><br>
-            <small style="color:var(--text-secondary)">Выплата:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
+            <b id="quest-title" style="color:var(--accent-blue); font-size: 13px;">📦 НОВЫЙ ЗАКАЗ</b><br>
+            <small style="color:var(--text-secondary)">Предложение:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
         </div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
     </div>
-    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;">
-        <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
-        <button class="btn-action" style="background:var(--accent-gold); color: black; flex: 1.5; font-size: 10px; flex-direction: column; gap: 0px;" onclick="activateAutopilot()">АВТО<br><small style="color:black; opacity:0.7">45 PLN</small></button>
+    
+    <div id="quest-actions-choice" style="margin-top:10px;">
+        <button class="btn-action" style="background:var(--accent-blue);" onclick="openRouteModal()">🗺️ ВЫБРАТЬ МАРШРУТ</button>
     </div>
+
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
         <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
         <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
