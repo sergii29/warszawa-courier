@@ -93,13 +93,12 @@
             <div class="danger-zone">
                 <h4 style="margin:0 0 10px 0; color:var(--danger)">💀 ОПАСНАЯ ЗОНА</h4>
                 <button class="btn-reset" onclick="resetUserFull()">♻️ ПОЛНОЕ ОБНУЛЕНИЕ</button>
-                <small style="display:block; margin-top:5px; color:#666;">Сброс до новичка (10 PLN, 1.0 LVL, без вещей)</small>
+                <small style="display:block; margin-top:5px; color:#666;">Удалит всё: вещи, район, деньги.</small>
             </div>
         </div>
     </div>
 
     <script>
-        // ТВОИ КЛЮЧИ
         const firebaseConfig = {
           apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
           authDomain: "warszawa-courier.firebaseapp.com",
@@ -117,10 +116,7 @@
 
         db.ref('users').on('value', (snapshot) => {
             const users = snapshot.val();
-            if (!users) {
-                document.getElementById('players-list').innerHTML = "<tr><td colspan='5' style='text-align:center'>База пуста 🌑</td></tr>";
-                return;
-            }
+            if (!users) { document.getElementById('players-list').innerHTML = "<tr><td colspan='5' style='text-align:center'>База пуста 🌑</td></tr>"; return; }
             allUsersData = users;
             renderTable(users);
         });
@@ -132,7 +128,6 @@
             let totalCounter = 0;
             const now = Date.now();
             const usersArray = Object.entries(users).map(([id, data]) => ({ id, ...data }));
-            
             usersArray.sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
 
             usersArray.forEach(user => {
@@ -151,10 +146,7 @@
                     </td>
                     <td style="color:var(--green)">${(user.money || 0).toFixed(2)} PLN</td>
                     <td style="color:#ffcc00">${(user.lvl || 1).toFixed(2)}</td>
-                    <td>
-                        <span class="status-badge ${isOnline ? 'status-on' : 'status-off'}">${isOnline ? '🟢 ON' : '⚫ OFF'}</span>
-                        <div style="font-size:10px; color:#666; margin-top:3px;">${timeString}</div>
-                    </td>
+                    <td><span class="status-badge ${isOnline ? 'status-on' : 'status-off'}">${isOnline ? '🟢 ON' : '⚫ OFF'}</span><div style="font-size:10px; color:#666; margin-top:3px;">${timeString}</div></td>
                     <td><button class="btn-edit" onclick="openEditor('${user.id}')">✏️ Edit</button></td>
                 `;
                 tbody.appendChild(row);
@@ -182,23 +174,16 @@
             db.ref('users/' + userId).update({ money: newMoney, lvl: newLvl }).then(() => closeEditor());
         }
 
-        // --- ФУНКЦИЯ ПОЛНОГО ОБНУЛЕНИЯ ---
         function resetUserFull() {
             const userId = document.getElementById('edit-id').innerText;
             const userName = document.getElementById('edit-name').innerText;
-            
-            // Подтверждение, чтобы случайно не стереть
-            if(!confirm(`⚠️ ТЫ УВЕРЕН?\n\nИгрок ${userName} потеряет ВСЁ (инвентарь, район, достижения). \nЭто действие нельзя отменить.`)) return;
+            if(!confirm(`⚠️ ТЫ УВЕРЕН?\n\nИгрок ${userName} потеряет ВСЁ (инвентарь, район, достижения).`)) return;
 
-            // Берем старые данные (чтобы сохранить ник и id), но перезаписываем стату
             const currentUser = allUsersData[userId] || {};
-
             const freshStart = {
                 name: currentUser.name || "Reset Player",
                 user: currentUser.user || "@unknown",
                 lastActive: Date.now(),
-                
-                // Сброшенные параметры (как у новичка)
                 money: 10,
                 lvl: 1.0,
                 en: 2000,
@@ -211,32 +196,24 @@
                 totalClicks: 0,
                 totalBottles: 0,
                 autoTime: 0,
-                
-                // Сброс инвентаря
                 scooter: false,
                 bag: false,
                 phone: false,
-                
-                // Сброс района
                 district: 0,
-                
-                // Сброс таймеров и истории
                 bikeRentTime: 0,
                 buffTime: 0,
                 history: [],
                 usedPromos: [],
-                
-                // Сброс достижений
                 activeMilestones: [
                     { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
                     { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
                     { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
-                ]
+                ],
+                forceReset: true // <--- ВОТ ЭТА МАГИЧЕСКАЯ МЕТКА
             };
 
-            // Перезаписываем данные в базе
             db.ref('users/' + userId).set(freshStart).then(() => {
-                alert(`Игрок ${userName} успешно обнулен!`);
+                alert(`Игрок ${userName} обнулен!`);
                 closeEditor();
             });
         }
