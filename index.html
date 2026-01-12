@@ -31,7 +31,6 @@
         
         body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #050505); }
 
-        /* --- ХЕДЕР --- */
         .header-container {
             background: rgba(15, 23, 42, 0.98);
             border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -43,7 +42,6 @@
         .energy-track { height: 6px; background: rgba(0,0,0,0.3); margin-top: 8px; border-radius: 10px; overflow: hidden; }
         .energy-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-blue), #60a5fa); transition: width 0.2s ease; }
 
-        /* --- КОНТЕНТ --- */
         .content { 
             padding: 15px; 
             height: calc(100vh - 200px); 
@@ -58,7 +56,6 @@
         
         #view-main.active { justify-content: flex-start; align-items: center; height: 100%; padding-top: 10px; }
 
-        /* --- СФЕРА --- */
         .sphere-container { margin-top: 20px; margin-bottom: 20px; position: relative; }
 
         #work-sphere {
@@ -72,7 +69,6 @@
             position: relative; z-index: 10;
         }
         
-        /* Стиль сферы при поломке */
         #work-sphere.broken {
             background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b, #450a0a);
             box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
@@ -180,7 +176,6 @@
         .shoe-bar-fill { height: 100%; background: var(--purple); width: 100%; transition: width 0.5s; }
         h3 { font-size: 14px; margin-bottom: 10px; }
 
-        /* --- СТИЛИ ДЛЯ КАРЬЕРЫ 2.0 --- */
         .rank-card { text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid var(--accent-blue); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1); position: relative; overflow: hidden; }
         .rank-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%); animation: rotateGlow 10s linear infinite; pointer-events: none; }
         @keyframes rotateGlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -300,7 +295,6 @@
 <div class="content">
     
     <div id="view-main" class="view active">
-        
         <div style="text-align: center; margin-top: 5px;">
             <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 ...</span>
         </div>
@@ -327,7 +321,6 @@
             <div class="city-label">WARSAW</div>
             <div id="weather-ui">☀️ Ясно</div>
         </div>
-
     </div>
 
     <div id="view-districts" class="view">
@@ -347,7 +340,6 @@
     </div>
 
     <div id="view-quests" class="view">
-        
         <div class="card rank-card">
             <div style="font-size:40px; margin-bottom:5px;" id="rank-icon">😎</div>
             <h2 style="margin:0; font-size:18px; color:white; text-shadow:0 0 10px var(--accent-blue);" id="rank-name">Новичок</h2>
@@ -427,6 +419,15 @@
 
     <div id="view-invest" class="view">
         <h3 style="margin:0;">🎒 Инвентарь</h3>
+        
+        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
+        <div id="my-items-list" style="margin-bottom:15px;">
+            <div style="text-align:center; padding:10px; color:#555; font-size:11px;">Пусто...</div>
+        </div>
+
+        <div style="height:1px; background:rgba(255,255,255,0.1); margin:10px 0;"></div>
+
+        <h4 style="margin:10px 0 8px 0; color:var(--text-secondary);">🛒 Доступные улучшения</h4>
         <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05);">
             <b>🚲 Аренда Электровелосипеда</b><br>
             <small>Скорость выполнения заказов x2. 30 PLN за 10 минут.</small>
@@ -471,7 +472,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js"></script>
-<script src="logic.js" defer></script>
+<script src="logic.js?v=2.5" defer></script>
 
 </body>
 </html>
