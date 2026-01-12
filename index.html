@@ -84,6 +84,24 @@
         #work-sphere:active { transform: scale(0.96); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
         #work-sphere b { font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: 1px;}
 
+        /* --- НОВИЧОК БАР --- */
+        #newbie-container {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+            display: none; /* JS включит */
+        }
+        .newbie-badge {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
         /* --- КНОПКИ --- */
         .bottom-controls {
             width: 100%;
@@ -92,14 +110,14 @@
             gap: 10px;
         }
 
-        /* --- НИЖНИЙ БЛОК (ГОРОД + ПОГОДА) --- */
+        /* --- НИЖНИЙ БЛОК --- */
         .city-info-group {
             margin-top: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 2px;
-            pointer-events: none; /* Не мешает кликам */
+            pointer-events: none; 
         }
 
         .city-label {
@@ -131,17 +149,11 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
             animation: slideUp 0.3s ease-out;
         }
-        
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        #view-main.active::after {
-            content: ''; display: block; height: 80px; width: 100%; flex-shrink: 0;
-        }
+        #view-main.active::after { content: ''; display: block; height: 80px; width: 100%; flex-shrink: 0; }
 
-        /* --- БОНУСНОЕ ОКНО (АНТИКЛИКЕР) --- */
+        /* --- БОНУС --- */
         #bonus-overlay {
             display: none; position: fixed; inset: 0; 
             background: rgba(0,0,0,0.8); z-index: 5000;
@@ -149,7 +161,7 @@
             backdrop-filter: blur(5px);
         }
         #bonus-btn {
-            position: absolute; /* Позиция будет меняться JS */
+            position: absolute; 
             padding: 20px 40px;
             background: linear-gradient(45deg, #f59e0b, #d97706);
             color: black; font-weight: bold; font-size: 18px;
@@ -221,10 +233,7 @@
         </div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
     </div>
-    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;">
-        <button class="btn-action" style="background:var(--success); flex: 2;" onclick="acceptOrder()">ПРИНЯТЬ</button>
-        <button class="btn-action" style="background:var(--accent-gold); color: black; flex: 1.5; font-size: 10px; flex-direction: column; gap: 0px;" onclick="activateAutopilot()">АВТО<br><small style="color:black; opacity:0.7">45 PLN</small></button>
-    </div>
+    <div id="quest-actions-choice" style="margin-top:10px; display: flex; gap: 8px;"></div>
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
         <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
         <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
@@ -255,8 +264,8 @@
     <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
     
     <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
-        <span id="tax-timer">Налог (37%) через: 05:00</span>
-        <span id="rent-timer" style="color:var(--danger)">Аренда (%): 05:00</span>
+        <span id="tax-timer">Налог: 05:00</span>
+        <span id="rent-timer" style="color:var(--danger)">Аренда: 05:00</span>
     </div>
 </div>
 
@@ -266,6 +275,10 @@
         
         <div style="text-align: center; margin-top: 5px;">
             <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 ...</span>
+        </div>
+
+        <div id="newbie-container">
+            <div class="newbie-badge" id="newbie-text">🔰 ЗАЩИТА: 30:00 (Бесплатный режим)</div>
         </div>
 
         <div class="sphere-container">
@@ -289,17 +302,14 @@
 
     <div id="view-districts" class="view">
         <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
-        
         <div class="card">
             <b>Praga</b> <small>Аренда: 5% от баланса. Старт.</small>
             <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
         </div>
-        
         <div class="card">
             <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 10% от баланса. Доход: +50%.</small>
             <button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
         </div>
-        
         <div class="card">
             <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 15% от баланса. Доход: +55%.</small>
             <button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
@@ -315,26 +325,17 @@
         <h3 style="margin:0; color:var(--text-primary)">🏪 Магазин</h3>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:20px;">💧</div>
-            <div style="flex:1;">
-                <b>Вода (1.5л)</b><br>
-                <small>Восполняет энергию при кликах. 1500 мл.</small>
-            </div>
+            <div style="flex:1;"><b>Вода (1.5л)</b><br><small>Восполняет энергию при кликах.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">1.50</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">☕</div>
-            <div style="flex:1;">
-                <b>Кофе</b><br>
-                <small>Мгновенно восстанавливает +300 энергии.</small>
-            </div>
+            <div style="flex:1;"><b>Кофе</b><br><small>+300 энергии.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">5.00</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">🔋</div>
-            <div style="flex:1;">
-                <b>Энергетик</b><br>
-                <small>Замораживает расход энергии. Вода продолжает тратиться.</small>
-            </div>
+            <div style="flex:1;"><b>Энергетик</b><br><small>Заморозка энергии.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">12.00</button>
         </div>
     </div>
@@ -343,7 +344,7 @@
         <h3 style="margin:0;">🎒 Инвентарь</h3>
         <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05);">
             <b>🚲 Аренда Электровелосипеда</b><br>
-            <small>Скорость выполнения заказов x2. 30 PLN за 10 минут.</small>
+            <small>Скорость выполнения заказов x2.</small>
             <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
         </div>
         <div id="upgrade-items"></div>
@@ -358,9 +359,7 @@
                 <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
             </div>
         </div>
-        <div class="card">
-             <div id="bank-actions-ui"></div>
-        </div>
+        <div class="card"><div id="bank-actions-ui"></div></div>
         <div class="card">
             <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
             <div style="display:flex; gap:8px;">
