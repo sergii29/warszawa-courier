@@ -182,7 +182,7 @@ function updateUI() {
         if(G[up.id]) { const span = document.createElement('span'); span.className = 'inv-item'; span.innerText = `${up.icon} ${up.bonus}`; invDisp.appendChild(span); } 
     });
     
-    // --- ИЗМЕНЕНО: ОТОБРАЖЕНИЕ ИНВЕНТАРЯ (КУПЛЕНО/НЕ КУПЛЕНО) ---
+    // --- ОТОБРАЖЕНИЕ ИНВЕНТАРЯ ---
     const upgradeList = document.getElementById('upgrade-items'); 
     upgradeList.innerHTML = ''; 
     UPGRADES.forEach(up => { 
@@ -191,12 +191,10 @@ function updateUI() {
         div.style.marginTop = '8px'; 
         
         if(!G[up.id]) { 
-            // Если НЕ куплено - показываем кнопку купить
             div.innerHTML = `<b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', ${up.price})">КУПИТЬ (${up.price} PLN)</button>`; 
         } else {
-            // Если КУПЛЕНО - показываем статус и описание
             div.style.border = "1px solid var(--success)";
-            div.style.background = "rgba(34, 197, 94, 0.1)"; // Легкая зеленца
+            div.style.background = "rgba(34, 197, 94, 0.1)"; 
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <b>${up.icon} ${up.name}</b>
@@ -207,7 +205,7 @@ function updateUI() {
         }
         upgradeList.appendChild(div); 
     });
-    // -------------------------------------------------------------
+    // ----------------------------
     
     const qBar = document.getElementById('quest-bar'); 
     if (order.visible && curView === 'main') { 
@@ -227,10 +225,16 @@ function updateUI() {
     
     document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
     
-    let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult).toFixed(2);
-    if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
+    // --- ОБНОВЛЕННАЯ ФОРМУЛА ОТОБРАЖЕНИЯ ДОХОДА ---
+    // Формула: База(0.10) * (1 + Уровень * 0.1) * Район
+    let gainPerClick = 0.10 * (1 + (G.lvl * 0.1)) * DISTRICTS[G.district].mult;
+    let rateText = gainPerClick.toFixed(2);
     
-    document.getElementById('click-rate-ui').innerText = rate + " PLN";
+    if(order.visible && !order.active) rateText = "0.00 (ПРИМИ ЗАКАЗ!)"; 
+    
+    document.getElementById('click-rate-ui').innerText = rateText + " PLN";
+    // ----------------------------------------------
+
     document.getElementById('history-ui').innerHTML = G.history.map(h => `<div class="history-item"><span>${h.time} ${h.msg}</span><b style="color:${h.type==='plus'?'var(--success)':'var(--danger)'}">${h.type==='plus'?'+':'-'}${h.val}</b></div>`).join('');
     
     renderBank(); renderMilestones(); updateDistrictButtons();
@@ -294,7 +298,7 @@ function doWork() {
     if (Math.random() < 0.008) { triggerPoliceCheck(); return; }
 
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
-        let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
+        let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); // Эффективность воды растет немного с уровнем (10% за уровень)
         let drink = Math.min(G.waterStock, 50); 
         G.en = Math.min(G.maxEn, G.en + (drink * eff)); 
         G.waterStock -= drink; 
@@ -319,7 +323,12 @@ function doWork() {
     }
     
     consumeResources(false);
-    let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult;
+    
+    // --- НОВАЯ ФОРМУЛА ДОХОДА (СГЛАЖЕННАЯ) ---
+    // Доход = 0.10 * (1 + 10% за уровень) * Множитель района
+    let gain = 0.10 * (1 + (G.lvl * 0.1)) * DISTRICTS[G.district].mult;
+    // ------------------------------------------
+    
     G.money = parseFloat((G.money + gain).toFixed(2));
     G.lvl += 0.00025; 
     G.totalClicks++; 
@@ -347,7 +356,13 @@ function generateOrder() {
     order.offerTimer = 15; 
     order.isCriminal = Math.random() < 0.12; 
     let d = 0.5 + Math.random() * 3.5; 
-    let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1); 
+    
+    // --- НОВАЯ ФОРМУЛА ЗАКАЗОВ (СГЛАЖЕННАЯ) ---
+    // База * (1 + 15% за уровень) * Район * Сумка * Погода
+    let levelMult = 1 + (G.lvl * 0.15); 
+    let baseRew = (3.80 + d * 2.2) * levelMult * DISTRICTS[G.district].mult * (G.bag ? 1.15 : 1) * (weather === "Дождь" ? 1.5 : 1); 
+    // ------------------------------------------
+    
     if(order.isCriminal) { baseRew *= 6.5; order.offerTimer = 12; log("👀 Поступил странный заказ...", "var(--accent-blue)"); } 
     order.baseReward = baseRew;
     order.reward = baseRew;
@@ -388,6 +403,8 @@ function finishOrder(win) {
         } else { 
             G.money = parseFloat((G.money + order.reward).toFixed(2)); 
             addHistory(order.isCriminal ? '📦 ТОВАР' : '📦 ЗАКАЗ', order.reward.toFixed(2), 'plus');
+            
+            // За риск (криминал) даем 0.15 уровня, за обычный заказ 0.015
             G.lvl += (order.isCriminal ? 0.15 : 0.015); 
             G.totalOrders++; 
             if(order.isCriminal) log("😎 Доставка прошла чисто. +$$$", "var(--success)");
