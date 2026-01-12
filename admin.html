@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warszawa Admin Center 🚁</title>
     <style>
-        :root { --bg: #0f0f13; --card: #1e1e24; --accent: #007aff; --green: #34c759; --text: #eee; }
+        :root { --bg: #0f0f13; --card: #1e1e24; --accent: #007aff; --green: #34c759; --danger: #ff3b30; --text: #eee; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, monospace; margin: 0; padding: 20px; }
         
         .stats-bar { display: flex; gap: 20px; margin-bottom: 20px; }
@@ -32,6 +32,10 @@
         .editor-content { background: #222; padding: 25px; border-radius: 16px; width: 90%; max-width: 400px; border: 1px solid #444; position: relative; }
         input { background: #111; border: 1px solid #444; color: white; padding: 10px; width: 100%; margin: 5px 0 15px 0; border-radius: 6px; box-sizing: border-box; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #777; }
+        
+        .danger-zone { margin-top: 25px; padding-top: 20px; border-top: 1px solid #444; text-align: center; }
+        .btn-reset { background: rgba(255, 59, 48, 0.15); color: var(--danger); border: 1px solid var(--danger); width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-reset:hover { background: var(--danger); color: white; }
     </style>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -84,12 +88,18 @@
             <label>⭐ Уровень (LVL)</label>
             <input type="number" id="input-lvl">
 
-            <button class="btn-edit" style="width:100%; background:#34c759; padding:12px; font-size:16px;" onclick="saveUserChanges()">СОХРАНИТЬ</button>
+            <button class="btn-edit" style="width:100%; background:#34c759; padding:12px; font-size:16px;" onclick="saveUserChanges()">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+
+            <div class="danger-zone">
+                <h4 style="margin:0 0 10px 0; color:var(--danger)">💀 ОПАСНАЯ ЗОНА</h4>
+                <button class="btn-reset" onclick="resetUserFull()">♻️ ПОЛНОЕ ОБНУЛЕНИЕ</button>
+                <small style="display:block; margin-top:5px; color:#666;">Сброс до новичка (10 PLN, 1.0 LVL, без вещей)</small>
+            </div>
         </div>
     </div>
 
     <script>
-        // ТВОИ КЛЮЧИ (Я ВСТАВИЛ ИХ ИЗ ТВОЕГО СООБЩЕНИЯ ВЫШЕ)
+        // ТВОИ КЛЮЧИ
         const firebaseConfig = {
           apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
           authDomain: "warszawa-courier.firebaseapp.com",
@@ -170,6 +180,65 @@
             const newMoney = parseFloat(document.getElementById('input-money').value);
             const newLvl = parseFloat(document.getElementById('input-lvl').value);
             db.ref('users/' + userId).update({ money: newMoney, lvl: newLvl }).then(() => closeEditor());
+        }
+
+        // --- ФУНКЦИЯ ПОЛНОГО ОБНУЛЕНИЯ ---
+        function resetUserFull() {
+            const userId = document.getElementById('edit-id').innerText;
+            const userName = document.getElementById('edit-name').innerText;
+            
+            // Подтверждение, чтобы случайно не стереть
+            if(!confirm(`⚠️ ТЫ УВЕРЕН?\n\nИгрок ${userName} потеряет ВСЁ (инвентарь, район, достижения). \nЭто действие нельзя отменить.`)) return;
+
+            // Берем старые данные (чтобы сохранить ник и id), но перезаписываем стату
+            const currentUser = allUsersData[userId] || {};
+
+            const freshStart = {
+                name: currentUser.name || "Reset Player",
+                user: currentUser.user || "@unknown",
+                lastActive: Date.now(),
+                
+                // Сброшенные параметры (как у новичка)
+                money: 10,
+                lvl: 1.0,
+                en: 2000,
+                maxEn: 2000,
+                debt: 0,
+                tax: 300,
+                rent: 300,
+                waterStock: 0,
+                totalOrders: 0,
+                totalClicks: 0,
+                totalBottles: 0,
+                autoTime: 0,
+                
+                // Сброс инвентаря
+                scooter: false,
+                bag: false,
+                phone: false,
+                
+                // Сброс района
+                district: 0,
+                
+                // Сброс таймеров и истории
+                bikeRentTime: 0,
+                buffTime: 0,
+                history: [],
+                usedPromos: [],
+                
+                // Сброс достижений
+                activeMilestones: [
+                    { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
+                    { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
+                    { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
+                ]
+            };
+
+            // Перезаписываем данные в базе
+            db.ref('users/' + userId).set(freshStart).then(() => {
+                alert(`Игрок ${userName} успешно обнулен!`);
+                closeEditor();
+            });
         }
 
         window.onclick = function(event) { if (event.target == document.getElementById('editor-modal')) closeEditor(); }
