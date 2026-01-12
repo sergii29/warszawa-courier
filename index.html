@@ -141,6 +141,25 @@
             content: ''; display: block; height: 80px; width: 100%; flex-shrink: 0;
         }
 
+        /* --- БОНУСНОЕ ОКНО (АНТИКЛИКЕР) --- */
+        #bonus-overlay {
+            display: none; position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.8); z-index: 5000;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        #bonus-btn {
+            position: absolute; /* Позиция будет меняться JS */
+            padding: 20px 40px;
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            color: black; font-weight: bold; font-size: 18px;
+            border: 2px solid #fff; border-radius: 50px;
+            box-shadow: 0 0 30px #f59e0b;
+            cursor: pointer;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
         /* Обычные стили */
         .card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; }
         .card b { font-size: 13px; font-weight: 600; color: #fff; }
@@ -190,6 +209,10 @@
 </head>
 <body>
 
+<div id="bonus-overlay">
+    <button id="bonus-btn" onclick="claimBonus()">🎁 +50 PLN</button>
+</div>
+
 <div id="quest-bar">
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
@@ -232,8 +255,8 @@
     <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
     
     <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
-        <span id="tax-timer">Налог: 05:00</span>
-        <span id="rent-timer" style="color:var(--danger)">Аренда: 10:00</span>
+        <span id="tax-timer">Налог (37%) через: 05:00</span>
+        <span id="rent-timer" style="color:var(--danger)">Аренда (%): 05:00</span>
     </div>
 </div>
 
