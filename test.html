@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier: Compact</title>
+    <title>Warszawa Courier: 3D Layout</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
@@ -24,110 +24,137 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
             touch-action: manipulation;
-            font-size: 13px; /* Базовый шрифт меньше */
+            font-size: 13px;
         }
 
-        /* Хедер - стал компактнее */
+        /* --- ХЕДЕР --- */
         .header-container {
             background: rgba(15, 23, 42, 0.98);
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding: 10px 15px; /* Меньше отступы */
+            padding: 10px 15px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            z-index: 100;
+            z-index: 100; position: relative;
         }
         .top-nav { display: flex; justify-content: space-between; align-items: center; }
         
-        /* Полоска энергии */
         .energy-track { height: 6px; background: rgba(0,0,0,0.3); margin-top: 8px; border-radius: 10px; overflow: hidden; }
         .energy-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-blue), #60a5fa); transition: width 0.2s ease; }
 
-        /* Контент */
-        .content { padding: 12px; height: calc(100vh - 200px); overflow-y: auto; padding-bottom: 90px; }
-        .view { display: none; flex-direction: column; gap: 10px; } /* Меньше расстояние между карточками */
+        /* --- КОНТЕНТ (Настройка высоты для прижатия кнопок) --- */
+        .content { 
+            padding: 15px; 
+            /* Вычисляем высоту, чтобы контент занимал весь экран между хедером и меню */
+            height: calc(100vh - 180px); 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column;
+        }
+        
+        /* Стили для вкладок, чтобы они растягивались */
+        .view { display: none; flex-direction: column; gap: 10px; width: 100%; }
         .view.active { display: flex; }
-
-        /* Карточки - компактные */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px; /* Скругление меньше */
-            padding: 12px; /* Внутри меньше воздуха */
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        
+        /* Спец. стиль для ГЛАВНОЙ вкладки (растягиваем на всю высоту) */
+        #view-main.active {
+            height: 100%;
+            justify-content: space-between; /* Распределяем: верх, центр, низ */
         }
 
-        /* Заголовки внутри карточек */
-        .card b { font-size: 13px; font-weight: 600; color: #fff; }
-        .card small { font-size: 11px; color: var(--text-secondary); line-height: 1.2; display: block; margin-top: 2px;}
-
-        /* Кнопки - аккуратные */
-        .btn-action {
-            background: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 10px; /* Тоньше */
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 12px; /* Шрифт меньше */
-            cursor: pointer;
-            width: 100%;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
-            transition: all 0.2s ease;
+        /* --- НОВЫЙ 3D ШАР --- */
+        .sphere-container {
+            flex: 1; /* Занимает всё свободное место в центре */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 20px; /* Сдвигаем чуть ниже визуально */
         }
-        .btn-action:active { transform: scale(0.98); box-shadow: none; }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-primary); box-shadow: none; }
 
-        /* Шар работы */
         #work-sphere {
-            width: 120px; height: 120px; /* Чуть меньше */
+            width: 150px; height: 150px;
             border-radius: 50%;
-            background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+            /* 3D ГРАДИЕНТ: Свет сверху слева, тень снизу справа */
+            background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb, #172554);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            margin: 15px auto;
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+            margin: 0 auto;
+            /* Объемные тени */
+            box-shadow: 
+                inset -10px -10px 20px rgba(0,0,0,0.5), /* Внутренняя тень */
+                inset 10px 10px 20px rgba(255,255,255,0.2), /* Блик сверху */
+                0 20px 50px rgba(37, 99, 235, 0.4); /* Внешнее свечение */
+            
             user-select: none; touch-action: none; color: white;
+            transition: transform 0.1s;
+            position: relative;
         }
-        #work-sphere:active { transform: scale(0.95); }
-        #work-sphere b { font-size: 16px; }
+        
+        #work-sphere::after {
+            content: ''; position: absolute; top: 15%; left: 20%;
+            width: 20px; height: 10px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: rotate(-45deg);
+            filter: blur(2px);
+        }
+
+        #work-sphere:active { transform: scale(0.96); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
+        #work-sphere b { font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+        /* --- НИЖНИЕ КНОПКИ --- */
+        .bottom-controls {
+            margin-top: auto; /* Прижимаем к низу */
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 10px;
+        }
+
+        /* Карточки и Кнопки (Остальное без изменений стиля) */
+        .card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; }
+        .card b { font-size: 13px; font-weight: 600; color: #fff; }
+        .card small { font-size: 11px; color: var(--text-secondary); display: block; margin-top: 2px;}
+
+        .btn-action {
+            background: var(--accent-blue); color: white; border: none; padding: 12px; border-radius: 10px;
+            font-weight: 600; font-size: 12px; cursor: pointer; width: 100%;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.2s ease;
+        }
+        .btn-action:active { transform: scale(0.98); }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-primary); box-shadow: none; border: 1px solid rgba(255,255,255,0.1); }
 
         /* Нижнее меню */
         .tab-bar {
-            background: rgba(15, 23, 42, 0.98);
-            position: fixed; bottom: 0; width: 100%;
+            background: rgba(15, 23, 42, 0.98); position: fixed; bottom: 0; width: 100%;
             display: grid; grid-template-columns: repeat(5, 1fr);
             border-top: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom); height: 55px;
         }
         .tab-item { padding: 10px 0; text-align: center; color: var(--text-secondary); font-size: 9px; cursor: pointer; font-weight: 500; }
         .tab-item.active { color: var(--accent-gold); }
         .tab-item.active::after { content: ''; display: block; width: 20px; height: 2px; background: var(--accent-gold); border-radius: 3px; margin: 4px auto 0 auto; }
 
-        /* Элементы интерфейса */
+        /* Элементы UI */
         .right-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
         .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 600; display: none; margin-bottom: 2px;}
         #bike-status-ui { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
         #auto-status-ui { background: rgba(245, 158, 11, 0.2); color: var(--accent-gold); }
         #buff-status-ui { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-        
         .weather-badge { font-size: 9px; padding: 2px 8px; background: rgba(255,255,255,0.1); border-radius: 10px; }
-        
         #inventory-display { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0; justify-content: flex-end; }
         .inv-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 9px; color: var(--text-secondary); }
         
         /* Квесты */
         #quest-bar {
-            display: none; position: fixed; bottom: 60px; left: 10px; right: 10px;
+            display: none; position: fixed; bottom: 65px; left: 10px; right: 10px;
             background: rgba(30, 41, 59, 0.98); border: 1px solid var(--accent-blue);
             border-radius: 12px; padding: 15px; z-index: 2000;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
         }
         .promo-input { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px; width: calc(100% - 18px); margin-bottom: 8px; border-radius: 8px; font-size: 13px; outline: none; }
-        
-        /* Тексты баланса */
         .money-display { font-size: 18px; font-weight: 700; color: var(--accent-gold); }
         .lvl-display { color: var(--text-secondary); font-size: 11px; font-weight: 600; }
         .info-row { display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: var(--text-secondary); font-weight: 500; }
-        
         h3 { font-size: 14px; margin-bottom: 10px; }
     </style>
 </head>
@@ -184,15 +211,23 @@
 <div class="content">
     
     <div id="view-main" class="view active">
-        <div style="text-align: center;">
-            <span style="background:rgba(255,255,255,0.05); padding: 3px 10px; border-radius: 15px; font-size: 10px; color: var(--text-secondary);" id="district-ui">📍 Praga</span>
+        
+        <div style="text-align: center; margin-top: 5px;">
+            <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 Praga</span>
         </div>
-        <div id="work-sphere">
-            <b>РАБОТАТЬ</b>
-            <div id="click-rate-ui" style="font-size: 10px; opacity: 0.8; margin-top: 2px;">0.10 PLN</div>
+
+        <div class="sphere-container">
+            <div id="work-sphere">
+                <b>РАБОТАТЬ</b>
+                <div id="click-rate-ui" style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: 500;">0.10 PLN</div>
+            </div>
         </div>
-        <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК (+0.02)</button>
-        <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА</button>
+
+        <div class="bottom-controls">
+            <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК (+0.02)</button>
+            <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
+        </div>
+
     </div>
 
     <div id="view-districts" class="view">
@@ -218,19 +253,16 @@
 
     <div id="view-shop" class="view">
         <h3 style="margin:0; color:var(--text-primary)">🏪 Магазин</h3>
-        
         <div class="card" style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:20px;">💧</div>
             <div style="flex:1;"><b>Вода (1.5л)</b><br><small>+1500 мл.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">1.50</button>
         </div>
-        
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">☕</div>
             <div style="flex:1;"><b>Кофе</b><br><small>+300 энергии.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">5.00</button>
         </div>
-        
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">🔋</div>
             <div style="flex:1;"><b>Энергетик</b><br><small>Заморозка (2м).</small></div>
@@ -257,11 +289,9 @@
                 <button class="btn-action" style="width:auto;" onclick="usePromo()">OK</button>
             </div>
         </div>
-        
         <div class="card">
              <div id="bank-actions-ui"></div>
         </div>
-
         <div class="card">
             <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Обмен LVL</h4>
             <div style="display:flex; gap:8px;">
@@ -269,8 +299,6 @@
                  <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, 300)">1.00 LVL<br>⮕ 300 PLN</button>
             </div>
         </div>
-        
-        <h4 style="margin:10px 0 5px 0; font-size:11px; color:var(--text-secondary);">📜 История</h4>
         <div class="card history-list" id="history-ui" style="max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
     </div>
 </div>
