@@ -1,6 +1,8 @@
 const tg = window.Telegram.WebApp; 
-tg.expand(); 
-tg.ready();
+if(tg) {
+    tg.expand(); 
+    tg.ready();
+}
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
@@ -115,7 +117,7 @@ async function usePromo() {
 
 const sphere = document.getElementById('work-sphere');
 if(sphere) {
-    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
+    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); if(tg) tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
     sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
 }
 
@@ -140,7 +142,7 @@ function showBonus() {
     overlay.style.display = 'flex';
     bonusActive = true;
     log("🎁 Появился БОНУС! Забери его!", "var(--gold)");
-    tg.HapticFeedback.notificationOccurred('warning');
+    if(tg) tg.HapticFeedback.notificationOccurred('warning');
 }
 
 function claimBonus() {
@@ -152,7 +154,7 @@ function claimBonus() {
     G.totalEarned += 50;
     addHistory('🎁 БОНУС', 50, 'plus');
     log("Вы забрали бонус +50 PLN", "var(--success)");
-    tg.HapticFeedback.notificationOccurred('success');
+    if(tg) tg.HapticFeedback.notificationOccurred('success');
     save(); updateUI();
 }
 
@@ -319,7 +321,7 @@ function listenToCloud() {
             }
 
             if (remote.adminMessage) {
-                if(tg.showPopup) {
+                if(tg && tg.showPopup) {
                     tg.showPopup({
                         title: 'Сообщение от Системы',
                         message: remote.adminMessage,
@@ -354,7 +356,7 @@ function listenToCloud() {
                 save();
                 updateUI();
                 
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
         });
     }
@@ -540,7 +542,6 @@ function updateUI() {
     
     // --- МАГАЗИН: ГРУЗИМ ТОВАРЫ В НОВЫЙ СПИСОК (В МОДАЛКЕ) ---
     const shopList = document.getElementById('shop-upgrades-list'); 
-    // Проверка, существует ли элемент, т.к. он теперь в модалке
     if(shopList) {
         shopList.innerHTML = ''; 
         UPGRADES.forEach(up => { 
