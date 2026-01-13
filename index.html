@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.7">
+    <link rel="stylesheet" href="style.css?v=4.0">
 </head>
 <body>
 
@@ -13,7 +13,9 @@
     <source src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_c8c8a73467.mp3" type="audio/mpeg">
 </audio>
 
-<div id="rain-overlay"></div>
+<div id="rain-container">
+    <div class="rain-layer"></div>
+</div>
 
 <div id="bonus-overlay">
     <button id="bonus-btn" onclick="claimBonus()">🎁 +50 PLN</button>
@@ -85,8 +87,7 @@
         </div>
         
         <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
-        <div id="shop-upgrades-list">
-            </div>
+        <div id="shop-upgrades-list"></div>
 
         <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
     </div>
@@ -318,7 +319,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js"></script>
-<script src="logic.js?v=3.1" defer></script>
+<script src="logic.js?v=4.0" defer></script>
 
 </body>
 </html>
