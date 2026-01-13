@@ -34,6 +34,7 @@ let G = {
     usedPromos: [], 
     isNewPlayer: true, 
     lastWelfare: 0, 
+    lastAdminUpdate: 0, // Важно для синхронизации
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
     // Предметы
     starter_bag: null,
@@ -292,6 +293,7 @@ function load() {
     checkStarterPack();
     generateDailyQuests();
     
+    // Включаем слушатель облака СРАЗУ
     if(typeof listenToCloud === 'function') listenToCloud();
     
     updateUI(); 
@@ -306,6 +308,7 @@ function listenToCloud() {
             const remote = snapshot.val();
             if (!remote) return;
 
+            // 1. ПРОВЕРКА БАНА
             if (remote.isBanned) {
                 document.body.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:black; color:red; text-align:center; font-family:sans-serif;">
@@ -318,6 +321,7 @@ function listenToCloud() {
                 return;
             }
 
+            // 2. СООБЩЕНИЯ АДМИНА
             if (remote.adminMessage) {
                 if(tg.showPopup) {
                     tg.showPopup({
@@ -331,30 +335,36 @@ function listenToCloud() {
                 db.ref('users/' + userId + '/adminMessage').remove();
             }
 
-            if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastActive || 0)) {
-                console.log("Admin update detected! Syncing...");
+            // 3. СИНХРОНИЗАЦИЯ ПОСЛЕ СБРОСА / РЕДАКТИРОВАНИЯ
+            // Если дата изменения админом новее, чем та, которую мы помним -> ПРИНУДИТЕЛЬНО ОБНОВИТЬСЯ
+            if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
+                console.log("⚠️ ОБНАРУЖЕНО ВМЕШАТЕЛЬСТВО АДМИНА. ПРИМЕНЯЮ...");
                 
-                G.money = remote.money;
-                G.lvl = remote.lvl;
+                // Перезаписываем локальные данные удаленными
+                G = { ...G, ...remote };
                 
-                const items = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'];
-                items.forEach(item => {
-                    G[item] = remote[item] || null;
-                });
-
-                validateInventory(); 
-
+                // Важно: сразу сохраняем локально, чтобы таймер не переписал обратно
+                localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+                
+                // Если это был полный сброс, перезагружаем страницу для надежности
                 if (remote.isNewPlayer && !G.isNewPlayer) {
-                    localStorage.setItem(SAVE_KEY, JSON.stringify(remote));
                     location.reload();
                     return;
                 }
                 
-                G.lastActive = Date.now(); 
-                save();
                 updateUI();
-                
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+            }
+
+            // 4. ВОССТАНОВЛЕНИЕ ПОСЛЕ ОЧИСТКИ КЕША
+            // Если мы "Новичок" (isNewPlayer=true), а в облаке НЕ новичок -> Загружаем облако
+            if (G.isNewPlayer && remote.isNewPlayer === false) {
+                 console.log("📥 ВОССТАНОВЛЕНИЕ ИЗ ОБЛАКА...");
+                 G = { ...G, ...remote };
+                 // Убираем окно "Приветствия", если оно вылезло
+                 document.getElementById('starter-modal').style.display = 'none';
+                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+                 updateUI();
             }
         });
     }
