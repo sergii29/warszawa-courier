@@ -594,7 +594,14 @@ function updateUI() {
     if(rentTimer) rentTimer.innerText = "Аренда (" + rentP + "%) через: " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
 }
 
-// === ИСПРАВЛЕННЫЙ БАНК С ПРЕДУПРЕЖДЕНИЕМ ===
+// === НОВЫЕ ФУНКЦИИ ДЛЯ МАГАЗИНА ===
+function openProShop() {
+    document.getElementById('pro-shop-modal').style.display = 'flex';
+}
+function closeProShop() {
+    document.getElementById('pro-shop-modal').style.display = 'none';
+}
+
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
     
@@ -618,39 +625,6 @@ function renderBank() {
     `;
 
     ui.innerHTML = creditHTML + buyLvlHTML;
-    
-    // ДОБАВЛЯЕМ ПРЕДУПРЕЖДЕНИЕ О "СЛЕПОТЕ"
-    // Находим блок "Биржа Репутации" в HTML (он в index.html, но мы можем его перезаписать через JS или просто вставить Warning в саму функцию обмена? 
-    // Нет, лучше найти элемент и добавить текст.
-    // Но так как "Биржа" захардкожена в HTML, давай сделаем проще: найдем карточку биржи и вставим туда текст.
-    
-    // ВАРИАНТ ЛУЧШЕ: В index.html блок Биржи статический. Давай я обновлю его через JS при загрузке или просто добавим этот Warning в HTML?
-    // Ты просил "в банке". У нас есть renderBank() который рисует КРЕДИТ и ПОКУПКУ LVL.
-    // А ОБМЕН LVL (Биржа) нарисован в index.html.
-    
-    // ЧТОБЫ ТЕБЕ БЫЛО ПРОЩЕ, я добавлю скрипт, который найдет этот блок и вставит предупреждение.
-    const exchangeCard = document.querySelectorAll('.card')[2]; // Это третья карточка в банке (Промо, Кредит/Купить, Обмен)
-    if(exchangeCard && !document.getElementById('blind-warning')) {
-        const title = exchangeCard.querySelector('h4');
-        if(title && title.innerText.includes('Биржа')) {
-            const warning = document.createElement('div');
-            warning.id = 'blind-warning';
-            warning.style.fontSize = '10px';
-            warning.style.color = 'var(--danger)';
-            warning.style.marginBottom = '10px';
-            warning.style.lineHeight = '1.3';
-            warning.innerHTML = "⚠️ <b>ОСТОРОЖНО:</b> При обмене >200 PLN есть шанс 30%, что банк скроет баланс на 10 минут (проверка счетов)!";
-            title.parentNode.insertBefore(warning, title.nextSibling);
-        }
-    }
-}
-
-// === НОВЫЕ ФУНКЦИИ ДЛЯ МАГАЗИНА ===
-function openProShop() {
-    document.getElementById('pro-shop-modal').style.display = 'flex';
-}
-function closeProShop() {
-    document.getElementById('pro-shop-modal').style.display = 'none';
 }
 
 setInterval(() => {
