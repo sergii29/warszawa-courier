@@ -437,7 +437,12 @@ function updateUI() {
         if(G[up.id]) {
             const item = G[up.id];
             const isBroken = item.dur <= 0;
-            const durability = Math.floor(item.dur);
+            
+            // ФИКС ОТОБРАЖЕНИЯ ПРОЦЕНТОВ ДЛЯ СТАРТОВЫХ ВЕЩЕЙ
+            let conf = UPGRADES.find(u => u.id === up.id);
+            let max = conf ? conf.maxDur : 100;
+            // Считаем процент от максимального значения предмета
+            const pct = Math.floor((item.dur / max) * 100);
             
             const div = document.createElement('div'); 
             div.className = 'card'; 
@@ -448,11 +453,11 @@ function updateUI() {
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between;">
                     <b>${up.icon} ${up.name}</b>
-                    <b style="color:${isBroken ? 'var(--danger)' : 'var(--success)'}">${durability}%</b>
+                    <b style="color:${isBroken ? 'var(--danger)' : 'var(--success)'}">${pct}%</b>
                 </div>
                 <small style="color:#aaa;">${up.bonus}</small>
                 <div style="width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;">
-                    <div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${durability}%"></div>
+                    <div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${pct}%"></div>
                 </div>
                 <div style="display:flex; gap:5px; margin-top:8px;">
                     <button class='btn-action' style="flex:1; background:var(--repair); font-size:10px; padding:6px;" onclick="repairItem('${up.id}', ${up.repairPrice})">🧵 ПОДЛАТАТЬ (${up.repairPrice})</button>
@@ -527,8 +532,6 @@ function doWork() {
         return;
     }
 
-    // Если буст активен, клик стоит меньше энергии, но все равно тратит чуть-чуть (визуальный эффект)
-    // Либо вообще 0 по запросу, но оставим минималку чтобы не было спама бесконечного
     if (bonusActive) {
         G.en = Math.max(0, G.en - 50); 
         tg.HapticFeedback.notificationOccurred('error');
@@ -622,17 +625,14 @@ function doWork() {
 }
 
 function consumeResources(isOrder) {
-    // 1. ЛОГИКА ВОДЫ (Тратится всегда, но чуть меньше под энергетиком)
     let waterCost = isOrder ? 10 : 3;
-    if (G.buffTime > 0) waterCost = isOrder ? 8 : 2; // Чуть снижаем, но не до нуля
+    if (G.buffTime > 0) waterCost = isOrder ? 8 : 2; 
     G.waterStock = Math.max(0, G.waterStock - waterCost);
 
-    // 2. ЛОГИКА ЭНЕРГИИ (Если энергетик активен - НЕ тратим)
     if (G.buffTime > 0) {
-        return; // Выходим, энергию не трогаем
+        return; 
     }
 
-    // Если энергетика нет, тратим энергию штатно
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
     
@@ -734,6 +734,13 @@ function activateAutopilot() {
 function acceptOrder() { order.active = true; updateUI(); }
 
 function buyShoes(name, price, durability) {
+    // ЗАЩИТА ОТ ПОВТОРНОЙ ПОКУПКИ
+    if (G.shoes.name === name && G.shoes.dur > 0) {
+        log("У вас уже есть эти кроссовки!", "var(--danger)");
+        tg.HapticFeedback.notificationOccurred('error');
+        return;
+    }
+
     if (G.money >= price) {
         G.money -= price;
         let bonus = 0;
@@ -775,19 +782,24 @@ function sellInvest(type, p) {
 }
 
 function repairItem(type, cost) {
+    if (!G[type]) return;
+
+    // Проверяем, не цел ли предмет уже
+    let conf = UPGRADES.find(u => u.id === type);
+    let max = conf ? conf.maxDur : 100;
+    
+    if (G[type].dur >= max) {
+        log("Предмет полностью цел!", "var(--accent-blue)");
+        return;
+    }
+
     if (G.money >= cost) {
-        if (G[type] && G[type].dur < 100) {
-            G.money = parseFloat((G.money - cost).toFixed(2));
-            let conf = UPGRADES.find(u => u.id === type);
-            let max = conf ? conf.maxDur : 100;
-            G[type].dur = max;
-            addHistory('🛠️ РЕМОНТ', cost, 'minus');
-            log("Предмет отремонтирован!", "var(--success)");
-            save();
-            updateUI();
-        } else {
-            log("Нечего чинить или предмет цел.", "var(--accent-blue)");
-        }
+        G.money = parseFloat((G.money - cost).toFixed(2));
+        G[type].dur = max;
+        addHistory('🛠️ РЕМОНТ', cost, 'minus');
+        log("Предмет отремонтирован!", "var(--success)");
+        save();
+        updateUI();
     } else {
         log("Нет денег на ремонт (" + cost + ")", "var(--danger)");
     }
@@ -950,13 +962,8 @@ function rentBike() {
 
 function exchangeLvl(l, m) { 
     if(G.lvl >= l) { 
-        // Хитрый триггер (из твоего запроса): если мне на халяву (в теории) что-то пришло,
-        // но здесь обмен честный. Добавим "Проклятие" рандомно или как "чистый" режим?
-        // Реализуем "Слепой режим" как наказание за частый обмен, или просто рандомный ивент.
-        // Или если это обмен "бесплатного" (симуляция), то включаем слепоту.
-        // Сделаем так: если выигрыш > 200, есть шанс 30% на "Слепоту" (Банк скрывает счета)
         if (m > 200 && Math.random() < 0.3) {
-            G.blindTime = 600; // 10 минут
+            G.blindTime = 600; 
             log("👁️ БАНК СКРЫЛ СЧЕТА НА 10 МИН!", "var(--danger)");
         }
 
@@ -1068,7 +1075,7 @@ setInterval(() => {
     }
     
     if (G.buffTime > 0) G.buffTime--;
-    if (G.blindTime > 0) G.blindTime--; // Таймер слепоты
+    if (G.blindTime > 0) G.blindTime--; 
     
     generateDailyQuests(); 
 
