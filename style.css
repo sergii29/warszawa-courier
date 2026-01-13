@@ -1,6 +1,6 @@
 :root {
     --bg-main: #0f172a; 
-    --bg-card: rgba(30, 41, 59, 0.7);
+    --bg-card: rgba(30, 41, 59, 0.7); 
     --accent-gold: #fbbf24; 
     --accent-blue: #3b82f6; 
     --text-primary: #f8fafc; 
@@ -13,7 +13,6 @@
     --glass-border: rgba(255, 255, 255, 0.1);
 }
 
-/* === ЖИВОЙ ФОН === */
 body {
     background: linear-gradient(-45deg, #020617, #1e1b4b, #172554, #0f172a);
     background-size: 400% 400%;
@@ -31,71 +30,40 @@ body {
     100% { background-position: 0% 50%; }
 }
 
-/* --- РЕАЛИСТИЧНЫЙ ДОЖДЬ (ОБНОВЛЕНО) --- */
-#rain-overlay {
+/* --- ЧИСТЫЙ ДОЖДЬ (БЕЗ ШУМА, КЛИКИ РАБОТАЮТ) --- */
+#rain-container {
     display: none;
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none;
+    pointer-events: none; /* ГЛАВНОЕ: ПРОПУСКАЕТ КЛИКИ */
     z-index: 50;
+    background: rgba(0,0,0,0.3); /* Легкое затемнение */
 }
 
-body.rain-mode #rain-overlay {
+body.rain-mode #rain-container {
     display: block;
 }
 
-/* 1. Эффект запотевшего стекла и затемнения */
-body.rain-mode::before {
-    content: "";
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    backdrop-filter: blur(3px) brightness(0.7); /* Размытие и темнота */
-    pointer-events: none;
-    z-index: 40;
+.rain-layer {
+    position: absolute;
+    width: 100%; height: 100%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 100%);
+    background-size: 2px 30px; /* Тонкие струи */
+    animation: rainFall 0.4s linear infinite;
+    opacity: 0.4;
 }
 
-/* 2. Капли на стекле (CSS-паттерн) */
-#rain-overlay::before {
-    content: "";
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    /* Создаем круглые капли с помощью градиентов */
-    background-image: 
-        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 90px 40px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.6), rgba(0,0,0,0));
-    background-repeat: repeat;
-    background-size: 200px 200px; 
-    opacity: 0.6;
-    z-index: 51;
-}
-
-/* 3. Стекающие струи (Анимация) */
-#rain-overlay::after {
-    content: "";
-    position: absolute; top: -100%; left: 0; width: 100%; height: 200%;
-    background: repeating-linear-gradient(
-        transparent 0%,
-        rgba(255, 255, 255, 0.1) 0.5%, 
-        transparent 1%
-    );
-    opacity: 0.5;
-    animation: rainDrop 0.6s linear infinite;
-    z-index: 52;
-}
-
-@keyframes rainDrop {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(50%); }
+@keyframes rainFall {
+    0% { background-position: 0 0; }
+    100% { background-position: 10px 100vh; }
 }
 
 .header-container {
-    background: rgba(15, 23, 42, 0.85); /* Чуть темнее */
-    backdrop-filter: blur(15px);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--glass-border);
     padding: 10px 15px;
-    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
     z-index: 100; position: relative;
 }
 
@@ -194,7 +162,6 @@ body.rain-mode::before {
 }
 #weather-ui { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px; backdrop-filter: blur(4px); }
 
-/* === КАРТОЧКИ И КНОПКИ (GLASSMORPHISM) === */
 .card { 
     background: var(--bg-card); 
     backdrop-filter: blur(12px); 
@@ -326,3 +293,4 @@ h3 { font-size: 16px; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.
 
 .item-broken { opacity: 0.6; border-color: var(--danger) !important; background: rgba(239, 68, 68, 0.05) !important;}
 .item-broken b { color: var(--danger) !important; }
+
