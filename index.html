@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.0">
+    <link rel="stylesheet" href="style.css?v=5.0">
 </head>
 <body>
 
@@ -236,6 +236,11 @@
         <div class="card"><div id="bank-actions-ui"></div></div>
         <div class="card">
             <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
+            
+            <div style="font-size:10px; color:var(--danger); margin-bottom:8px; line-height:1.4;">
+                ⚠️ <b>ОСТОРОЖНО:</b> При обмене суммы >200 PLN есть шанс 30%, что банк скроет баланс на 10 минут (проверка счетов)!
+            </div>
+
             <div style="display:flex; gap:8px;">
                  <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
                  <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
@@ -258,7 +263,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js"></script>
-<script src="logic.js?v=4.0" defer></script>
+<script src="logic.js?v=5.0" defer></script>
 
 </body>
 </html>
