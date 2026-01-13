@@ -595,7 +595,6 @@ function updateUI() {
     const taxTimer = document.getElementById('tax-timer');
     const rentTimer = document.getElementById('rent-timer');
     
-    // Вычисляем, какой будет налог, чтобы показать это игроку
     let currentTaxRate = 0;
     if (G.money > 200) currentTaxRate = 15;
     
@@ -1012,11 +1011,35 @@ function renderMilestones() {
     }).join(''); 
 }
 
+// === НОВАЯ ФУНКЦИЯ ДЛЯ БАНКА: ПОКУПКА LVL ===
+function buyLvl(cost, amount) {
+    if (G.money >= cost) {
+        G.money = parseFloat((G.money - cost).toFixed(2));
+        G.lvl += amount;
+        addHistory('📈 PR-ХОД', cost, 'minus');
+        log("Вы купили рекламу: +" + amount + " LVL", "var(--accent-blue)");
+        save();
+        updateUI();
+    } else {
+        log("Не хватает денег (" + cost + " PLN)!", "var(--danger)");
+    }
+}
+
+// === ОБНОВЛЕННАЯ ЛОГИКА БУТЫЛОК (ХАЛЯВА) ===
 function collectBottles() { 
     G.money = parseFloat((G.money + 0.02).toFixed(2)); 
     G.totalEarned += 0.02;
     checkDailyQuests('earn', 0.02);
     G.totalBottles++; 
+    
+    // ЭКО-КАРМА: 15% шанс получить респект улиц
+    if (Math.random() < 0.15) {
+        let bonusRep = 0.005;
+        G.lvl += bonusRep;
+        // Не пишем в лог каждый раз, чтобы не спамить, но изредка радуем игрока
+        if(Math.random() < 0.3) log("♻️ Город стал чище! Респект +0.005 LVL", "var(--success)");
+    }
+
     checkMilestones(); 
     save(); 
     updateUI(); 
@@ -1115,15 +1138,32 @@ function updateDistrictButtons() {
     });
 }
 
+// === ОБНОВЛЕННЫЙ БАНК С ПОКУПКОЙ LVL ===
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
+    
+    // Секция Кредитов
+    let creditHTML = "";
     if (G.money < 0) {
-        ui.innerHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+30 PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
+        creditHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+30 PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
     } else if (G.debt <= 0) {
-        ui.innerHTML = "<button class='btn-action' onclick=\"G.money=parseFloat((G.money+50).toFixed(2));G.debt=50;addHistory('🏦 КРЕДИТ', 50, 'plus');updateUI();save();\">ВЗЯТЬ КРЕДИТ (50 PLN)</button>";
+        creditHTML = "<button class='btn-action' onclick=\"G.money=parseFloat((G.money+50).toFixed(2));G.debt=50;addHistory('🏦 КРЕДИТ', 50, 'plus');updateUI();save();\">ВЗЯТЬ КРЕДИТ (50 PLN)</button>";
     } else {
-        ui.innerHTML = "<button class='btn-action' style='background:var(--success)' onclick=\"if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}\">ВЕРНУТЬ ДОЛГ (" + G.debt + " PLN)</button>";
+        creditHTML = "<button class='btn-action' style='background:var(--success)' onclick=\"if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}\">ВЕРНУТЬ ДОЛГ (" + G.debt + " PLN)</button>";
     }
+
+    // Секция Покупки Рейтинга
+    let buyLvlHTML = `
+        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-blue);">📈 Инвестиции в себя (Купить LVL)</h4>
+            <div style="display:flex; gap:8px;">
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="buyLvl(75, 0.10)">КУПИТЬ +0.1 LVL<br>🔴 75 PLN</button>
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="buyLvl(350, 0.50)">КУПИТЬ +0.5 LVL<br>🔴 350 PLN</button>
+            </div>
+        </div>
+    `;
+
+    ui.innerHTML = creditHTML + buyLvlHTML;
 }
 
 // ОСНОВНОЙ ЦИКЛ
@@ -1137,9 +1177,7 @@ setInterval(() => {
     if (G.money > 0) {
         G.tax--; 
         if(G.tax <= 0) { 
-            // НОВАЯ НАЛОГОВАЯ СИСТЕМА
-            // 0% если баланс <= 200
-            // 15% на сумму, которая ПРЕВЫШАЕТ 200
+            // НАЛОГОВАЯ СИСТЕМА v2.0
             let cost = 0;
             if (G.money > 200) {
                 cost = parseFloat(((G.money - 200) * 0.15).toFixed(2));
