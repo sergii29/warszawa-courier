@@ -366,7 +366,6 @@ function updateUI() {
 
     if(moneyEl) {
         if (isBlind) {
-            // ИЗМЕНЕНИЕ: Таймер вместо вопросов
             let bMin = Math.floor(G.blindTime / 60);
             let bSec = G.blindTime % 60;
             let timerText = bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
@@ -486,14 +485,8 @@ function updateUI() {
 
     const invDisp = document.getElementById('inventory-display'); 
     invDisp.innerHTML = ''; 
-    UPGRADES.forEach(up => { 
-        if(G[up.id] && G[up.id].dur > 0) { 
-            const span = document.createElement('span'); 
-            span.className = 'inv-item'; 
-            span.innerText = up.icon + " " + up.bonus; 
-            invDisp.appendChild(span); 
-        } 
-    });
+    // Я УДАЛИЛ ГЕНЕРАЦИЮ ИКОНОК ЗДЕСЬ, ЧТОБЫ ОСВОБОДИТЬ МЕСТО НА ГЛАВНОМ ЭКРАНЕ.
+    // ТЕПЕРЬ ПОЛЬЗОВАТЕЛЬ СМОТРИТ ИНВЕНТАРЬ ВО ВКЛАДКЕ "ИНВЕСТ".
     
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
