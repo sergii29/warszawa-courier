@@ -51,7 +51,7 @@ let G = {
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
     ],
-    lastActive: Date.now() // Важно для синхронизации
+    lastActive: Date.now()
 };
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
@@ -249,6 +249,16 @@ function save() {
     if(typeof saveToCloud === 'function') saveToCloud(); 
 }
 
+// НОВАЯ ФУНКЦИЯ ДЛЯ ВАЛИДАЦИИ (ЧТОБЫ НЕ БЫЛО 191%)
+function validateInventory() {
+    UPGRADES.forEach(up => {
+        if(G[up.id] && G[up.id].dur > up.maxDur) {
+            // Срезаем излишек, который дала админка
+            G[up.id].dur = up.maxDur;
+        }
+    });
+}
+
 function load() { 
     let d = localStorage.getItem(SAVE_KEY); 
     if(d) { 
@@ -270,9 +280,7 @@ function load() {
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
 
-    // Инициализация предметов (чтобы не было ошибок при чтении)
     ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
-        // Если прилетел старый формат "true", конвертируем
         if (G[item] === true) G[item] = { active: true, dur: 100 };
     });
 
@@ -283,18 +291,18 @@ function load() {
         G.starter_phone = { active: true, dur: 50 };
     }
 
+    validateInventory(); // <--- СРЕЗАЕМ ЛИШНЮЮ ПРОЧНОСТЬ ПРИ ЗАГРУЗКЕ
+
     checkStarterPack();
     generateDailyQuests();
     
-    // !!! ВАЖНО: ЗАПУСКАЕМ СЛУШАТЕЛЬ ИЗ LOGIC.JS !!!
-    listenToCloud();
+    if(typeof listenToCloud === 'function') listenToCloud();
     
     updateUI(); 
 }
 
 // ------------------------------------------------------------------
 // ГЛАВНЫЙ МОЗГ СИНХРОНИЗАЦИИ (RECEIVER)
-// Этот код слушает изменения в Firebase, которые делает Админка.
 // ------------------------------------------------------------------
 function listenToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
@@ -329,40 +337,35 @@ function listenToCloud() {
                 } else {
                     alert("🔔 СИСТЕМА: " + remote.adminMessage);
                 }
-                // Удаляем сообщение, чтобы не спамило
                 db.ref('users/' + userId + '/adminMessage').remove();
             }
 
-            // 3. СИНХРОНИЗАЦИЯ ИНВЕНТАРЯ И ДЕНЕГ
-            // Проверяем метку времени: если админ обновил данные позже, чем мы их загрузили
-            // lastAdminUpdate ставит админка.
+            // 3. СИНХРОНИЗАЦИЯ ИНВЕНТАРЯ
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastActive || 0)) {
                 console.log("Admin update detected! Syncing...");
                 
-                // Принудительно обновляем критические данные
                 G.money = remote.money;
                 G.lvl = remote.lvl;
                 
-                // Синхронизируем предметы (сумки, самокаты и т.д.)
                 const items = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'];
                 items.forEach(item => {
-                    // Если админ забрал предмет (null), забираем. Если выдал - выдаем.
                     G[item] = remote[item] || null;
                 });
 
-                // Если это был полный сброс (WIPE), перезагружаем страницу для чистого старта
+                // ВАЖНО: Сразу после получения предметов от админа (которые по 100),
+                // проверяем их лимиты и срезаем лишнее.
+                validateInventory(); 
+
                 if (remote.isNewPlayer && !G.isNewPlayer) {
                     localStorage.setItem(SAVE_KEY, JSON.stringify(remote));
                     location.reload();
                     return;
                 }
                 
-                // Обновляем локальное время, чтобы не зациклилось
                 G.lastActive = Date.now(); 
                 save();
                 updateUI();
                 
-                // Вибрация, чтобы игрок заметил
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
         });
@@ -410,7 +413,7 @@ function updateUI() {
     document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
     
     const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
-    document.getElementById('shoe-bar').style.width = Math.max(0, sPct) + "%";
+    document.getElementById('shoe-bar').style.width = Math.min(100, Math.max(0, sPct)) + "%";
     document.getElementById('shoe-bar').style.background = sPct <= 0 ? "var(--danger)" : (sPct < 20 ? "var(--danger)" : "var(--purple)");
 
     // КАРЬЕРА UI
@@ -521,10 +524,9 @@ function updateUI() {
             const item = G[up.id];
             const isBroken = item.dur <= 0;
             
-            // ФИКС ОТОБРАЖЕНИЯ ПРОЦЕНТОВ ДЛЯ СТАРТОВЫХ ВЕЩЕЙ
+            // ФИКС ОТОБРАЖЕНИЯ ПРОЦЕНТОВ
             let conf = UPGRADES.find(u => u.id === up.id);
             let max = conf ? conf.maxDur : 100;
-            // Считаем процент от максимального значения предмета
             const pct = Math.floor((item.dur / max) * 100);
             
             const div = document.createElement('div'); 
@@ -540,7 +542,7 @@ function updateUI() {
                 </div>
                 <small style="color:#aaa;">${up.bonus}</small>
                 <div style="width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;">
-                    <div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${pct}%"></div>
+                    <div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${Math.min(100, pct)}%"></div>
                 </div>
                 <div style="display:flex; gap:5px; margin-top:8px;">
                     <button class='btn-action' style="flex:1; background:var(--repair); font-size:10px; padding:6px;" onclick="repairItem('${up.id}', ${up.repairPrice})">🧵 ПОДЛАТАТЬ (${up.repairPrice})</button>
