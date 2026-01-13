@@ -29,7 +29,7 @@ let G = {
     district: 0, 
     bikeRentTime: 0, 
     buffTime: 0,
-    blindTime: 0, // Таймер скрытия баланса
+    blindTime: 0, 
     history: [], 
     usedPromos: [], 
     isNewPlayer: true, 
@@ -50,7 +50,8 @@ let G = {
         { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
-    ] 
+    ],
+    lastActive: Date.now() // Важно для синхронизации
 };
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
@@ -269,7 +270,9 @@ function load() {
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
 
+    // Инициализация предметов (чтобы не было ошибок при чтении)
     ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
+        // Если прилетел старый формат "true", конвертируем
         if (G[item] === true) G[item] = { active: true, dur: 100 };
     });
 
@@ -282,13 +285,93 @@ function load() {
 
     checkStarterPack();
     generateDailyQuests();
-    if(typeof listenToCloud === 'function') listenToCloud();
+    
+    // !!! ВАЖНО: ЗАПУСКАЕМ СЛУШАТЕЛЬ ИЗ LOGIC.JS !!!
+    listenToCloud();
+    
     updateUI(); 
+}
+
+// ------------------------------------------------------------------
+// ГЛАВНЫЙ МОЗГ СИНХРОНИЗАЦИИ (RECEIVER)
+// Этот код слушает изменения в Firebase, которые делает Админка.
+// ------------------------------------------------------------------
+function listenToCloud() {
+    const tg = window.Telegram.WebApp.initDataUnsafe;
+    let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
+
+    if(typeof db !== 'undefined') {
+        db.ref('users/' + userId).on('value', (snapshot) => {
+            const remote = snapshot.val();
+            if (!remote) return;
+
+            // 1. ПРОВЕРКА НА БАН
+            if (remote.isBanned) {
+                document.body.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:black; color:red; text-align:center; font-family:sans-serif;">
+                        <div style="font-size:60px;">⛔</div>
+                        <h2 style="margin:10px 0;">ACCESS DENIED</h2>
+                        <p>Ваш аккаунт заблокирован администратором.</p>
+                        <p style="font-size:10px; color:#555; margin-top:20px;">ID: ${userId}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 2. ПРОВЕРКА СООБЩЕНИЙ
+            if (remote.adminMessage) {
+                if(tg.showPopup) {
+                    tg.showPopup({
+                        title: 'Сообщение от Системы',
+                        message: remote.adminMessage,
+                        buttons: [{type: 'ok'}]
+                    });
+                } else {
+                    alert("🔔 СИСТЕМА: " + remote.adminMessage);
+                }
+                // Удаляем сообщение, чтобы не спамило
+                db.ref('users/' + userId + '/adminMessage').remove();
+            }
+
+            // 3. СИНХРОНИЗАЦИЯ ИНВЕНТАРЯ И ДЕНЕГ
+            // Проверяем метку времени: если админ обновил данные позже, чем мы их загрузили
+            // lastAdminUpdate ставит админка.
+            if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastActive || 0)) {
+                console.log("Admin update detected! Syncing...");
+                
+                // Принудительно обновляем критические данные
+                G.money = remote.money;
+                G.lvl = remote.lvl;
+                
+                // Синхронизируем предметы (сумки, самокаты и т.д.)
+                const items = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'];
+                items.forEach(item => {
+                    // Если админ забрал предмет (null), забираем. Если выдал - выдаем.
+                    G[item] = remote[item] || null;
+                });
+
+                // Если это был полный сброс (WIPE), перезагружаем страницу для чистого старта
+                if (remote.isNewPlayer && !G.isNewPlayer) {
+                    localStorage.setItem(SAVE_KEY, JSON.stringify(remote));
+                    location.reload();
+                    return;
+                }
+                
+                // Обновляем локальное время, чтобы не зациклилось
+                G.lastActive = Date.now(); 
+                save();
+                updateUI();
+                
+                // Вибрация, чтобы игрок заметил
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
+        });
+    }
 }
 
 function updateUI() {
     const moneyEl = document.getElementById('money-val');
-    const isBlind = G.blindTime > 0; // СЛЕПОЙ РЕЖИМ
+    const isBlind = G.blindTime > 0; 
 
     if(moneyEl) {
         if (isBlind) {
@@ -734,7 +817,6 @@ function activateAutopilot() {
 function acceptOrder() { order.active = true; updateUI(); }
 
 function buyShoes(name, price, durability) {
-    // ЗАЩИТА ОТ ПОВТОРНОЙ ПОКУПКИ
     if (G.shoes.name === name && G.shoes.dur > 0) {
         log("У вас уже есть эти кроссовки!", "var(--danger)");
         tg.HapticFeedback.notificationOccurred('error');
@@ -784,7 +866,6 @@ function sellInvest(type, p) {
 function repairItem(type, cost) {
     if (!G[type]) return;
 
-    // Проверяем, не цел ли предмет уже
     let conf = UPGRADES.find(u => u.id === type);
     let max = conf ? conf.maxDur : 100;
     
