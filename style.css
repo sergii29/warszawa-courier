@@ -31,7 +31,35 @@ body {
     100% { background-position: 0% 50%; }
 }
 
-body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000000); }
+/* --- РЕАЛИСТИЧНЫЙ ДОЖДЬ И КАПЛИ НА СТЕКЛЕ --- */
+#rain-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* Чтобы можно было кликать сквозь дождь */
+    z-index: 50;
+    background: 
+        linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%),
+        radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%);
+    background-size: 2px 20px, 100% 100%;
+    backdrop-filter: blur(1.5px); /* Эффект запотевшего стекла */
+}
+
+/* Эффект, когда идет дождь */
+body.rain-mode #rain-overlay {
+    display: block;
+    animation: rainFall 0.3s linear infinite;
+}
+
+/* Анимация падающих струй */
+@keyframes rainFall {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 0 100px, 0 0; }
+}
+
+body.rain-mode { 
+    background: radial-gradient(circle at top center, #0f172a, #000000); 
+}
 
 .header-container {
     background: rgba(15, 23, 42, 0.8);
@@ -275,169 +303,3 @@ h3 { font-size: 16px; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.
 
 .item-broken { opacity: 0.6; border-color: var(--danger) !important; background: rgba(239, 68, 68, 0.05) !important;}
 .item-broken b { color: var(--danger) !important; }
-Enter:root {
-    --bg-main: #0f172a; 
-    --bg-card: rgba(30, 41, 59, 0.7); /* Более прозрачные карточки */
-    --accent-gold: #fbbf24; 
-    --accent-blue: #3b82f6; 
-    --text-primary: #f8fafc; 
-    --text-secondary: #94a3b8; 
-    --success: #4ade80;
-    --danger: #f87171;
-    --purple: #a78bfa;
-    --repair: #fb923c;
-    --glass: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-}
-
-/* === ЖИВОЙ ФОН === */
-body {
-    background: linear-gradient(-45deg, #020617, #1e1b4b, #172554, #0f172a);
-    background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
-    touch-action: manipulation;
-    font-size: 13px;
-}
-
-@keyframes gradientBG {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000000); }
-
-.header-container {
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(10px); /* Размытие фона под хедером */
-    border-bottom: 1px solid var(--glass-border);
-    padding: 10px 15px;
-    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
-    z-index: 100; position: relative;
-}
-
-.top-nav { display: flex; justify-content: space-between; align-items: flex-start; }
-
-.energy-track { 
-    height: 6px; background: rgba(255,255,255,0.1); 
-    margin-top: 8px; border-radius: 10px; overflow: hidden; 
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
-}
-.energy-fill { 
-    height: 100%; width: 0%; 
-    background: linear-gradient(90deg, var(--accent-blue), #60a5fa); 
-    box-shadow: 0 0 10px var(--accent-blue); /* Свечение полоски */
-ransition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-}
-
-.content { 
-    padding: 15px; 
-    height: calc(100vh - 200px); 
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column;
-    position: relative;
-}
-
-/* Скроллбар (скрытый, но функциональный) */
-.content::-webkit-scrollbar { width: 4px; }
-.content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-.view { display: none; flex-direction: column; gap: 12px; width: 100%; animation: fadeIn 0.3s ease; }
-.view.active { display: flex; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-#view-main.active { justify-content: flex-start; align-items: center; height: 100%; padding-top: 10px; }
-
-/* === МАГИЧЕСКАЯ СФЕРА === */
-.sphere-container { margin-top: 30px; margin-bottom: 30px; position: relative; }
-
-#work-sphere {
-    width: 170px; height: 170px;
-    border-radius: 50%;
-    /* Более глубокий и насыщенный градиент */
-    background: radial-gradient(circle at 35% 35%, #60a5fa, #2563eb, #1e3a8a);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    /* Мощное свечение */
-    box-shadow: 
-        inset -10px -10px 20px rgba(0,0,0,0.5), 
-        inset 10px 10px 20px rgba(255,255,255,0.4), 
-        0 0 30px rgba(37, 99, 235, 0.6),
-        0 0 60px rgba(37, 99, 235, 0.3);
-    user-select: none; touch-action: none; color: white;
-    transition: transform 0.1s, box-shadow 0.3s; 
-    position: relative; z-index: 10;
-    border: 1px solid rgba(255,255,255,0.1);
-    animation: floatSphere 4s ease-in-out infinite; /* Левитация */
-}
-
-@keyframes floatSphere {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-}
-
-/* Пульсация (волны от сферы) */
-#work-sphere::before {
-    content: ''; position: absolute; inset: -5px; border-radius: 50%;
-    border: 2px solid var(--accent-blue); opacity: 0;
-    animation: pulseWave 2s infinite; pointer-events: none;
-}
-
-@keyframes pulseWave {
-    0% { transform: scale(1); opacity: 0.6; }
-    100% { transform: scale(1.4); opacity: 0; }
-}
-
-#work-sphere.broken {
-    background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b, #450a0a);
-    box-shadow: 0 0 40px rgba(239, 68, 68, 0.8);
-    animation: shake 0.5s infinite;
-}
-
-@keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
-
-#work-sphere:active { transform: scale(0.95); box-shadow: 0 0 15px rgba(37, 99, 235, 0.8); }
-#work-sphere b { font-size: 22px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); letter-spacing: 1.5px; font-weight: 800; }
-
-#repair-progress {
-    position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
-    background: rgba(0,0,0,0.5); border-radius: 50%;
-    pointer-events: none; transition: height 0.1s;
-}
-
-.bottom-controls { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
-.city-info-group { margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
-.city-label { 
-    font-size: 28px; font-weight: 900; 
-    color: transparent; 
-    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1); 
-    letter-spacing: 10px; text-transform: uppercase; 
-}
-#weather-ui { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px; backdrop-filter: blur(4px); }
-
-/* === КАРТОЧКИ И КНОПКИ (GLASSMORPHISM) === */
-.card { 
-    background: var(--bg-card); 
-    backdrop-filter: blur(12px); /* Эффект стекла */
-    border: 1px solid var(--glass-border); 
-    border-radius: 16px; 
-    padding: 15px; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-.card b { font-size: 13px; font-weight: 700; color: #fff; }
-.card small { font-size: 11px; color: var(--text-secondary); display: block; margin-top: 3px; line-height: 1.4;}
-
-.btn-action {
-    background: linear-gradient(135deg, var(--accent-blue), #2563eb); 
-    color: white; border: none; padding: 14px; border-radius: 12px;
-    font-weight: 700; font-size: 13px; cursor: pointer; width: 100%;
-    display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); /* Цветная тень */
-    transition: all 0.2s ease;
-    border: 1px solid rgba(255,255,255,0.1);
-    text-transform: uppercase; letter-spacing: 0.5px;
-}
-.btn-action:active { transform: scale(0.97); filter: brightness(0.9); }
