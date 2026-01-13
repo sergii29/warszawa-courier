@@ -591,9 +591,19 @@ function updateUI() {
     renderMilestones();
     updateDistrictButtons();
     
+    // --- ОБНОВЛЕННАЯ ЛОГИКА ОТОБРАЖЕНИЯ НАЛОГА ---
     const taxTimer = document.getElementById('tax-timer');
     const rentTimer = document.getElementById('rent-timer');
-    if(taxTimer) taxTimer.innerText = "Налог (37%) через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
+    
+    // Вычисляем, какой будет налог, чтобы показать это игроку
+    let currentTaxRate = 0;
+    if (G.money > 200) currentTaxRate = 15;
+    
+    if(taxTimer) {
+        let taxText = currentTaxRate > 0 ? currentTaxRate + "%" : "FREE";
+        taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
+    }
+    
     let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
     if(rentTimer) rentTimer.innerText = "Аренда (" + rentP + "%) через: " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
 }
@@ -1127,11 +1137,23 @@ setInterval(() => {
     if (G.money > 0) {
         G.tax--; 
         if(G.tax <= 0) { 
-            let cost = parseFloat((G.money * 0.37).toFixed(2)); 
-            G.money = parseFloat((G.money - cost).toFixed(2)); 
-            addHistory('🏛️ НАЛОГ', cost, 'minus'); 
+            // НОВАЯ НАЛОГОВАЯ СИСТЕМА
+            // 0% если баланс <= 200
+            // 15% на сумму, которая ПРЕВЫШАЕТ 200
+            let cost = 0;
+            if (G.money > 200) {
+                cost = parseFloat(((G.money - 200) * 0.15).toFixed(2));
+            }
+
+            if (cost > 0) {
+                G.money = parseFloat((G.money - cost).toFixed(2)); 
+                addHistory('🏛️ НАЛОГ', cost, 'minus'); 
+                log("Списан налог 15% с сверхдоходов: -" + cost + " PLN"); 
+            } else {
+                log("Доход ниже минимума. Налог: 0 PLN", "var(--success)");
+            }
+            
             G.tax = 300; 
-            log("Налог 37% списан"); 
             save(); 
         }
         
