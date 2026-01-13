@@ -361,6 +361,24 @@ function listenToCloud() {
 }
 
 function updateUI() {
+    // --- АУДИО И ВИЗУАЛ ДОЖДЯ ---
+    const rainAudio = document.getElementById('rain-sound');
+    if(weather === "Дождь") {
+        document.body.classList.add('rain-mode');
+        if(rainAudio && rainAudio.paused) {
+            rainAudio.volume = 0.4; // Громкость 40%
+            // Пробуем запустить. Браузер может блокировать автоплей до клика.
+            // Но так как пользователь уже кликал в игре, должно сработать.
+            rainAudio.play().catch(e => console.log("Audio waiting for interact"));
+        }
+    } else {
+        document.body.classList.remove('rain-mode');
+        if(rainAudio && !rainAudio.paused) {
+            rainAudio.pause();
+            rainAudio.currentTime = 0;
+        }
+    }
+
     const moneyEl = document.getElementById('money-val');
     const isBlind = G.blindTime > 0; 
 
@@ -383,9 +401,6 @@ function updateUI() {
     
     document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
     document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
-    
-    if(weather === "Дождь") document.body.classList.add('rain-mode');
-    else document.body.classList.remove('rain-mode');
     
     document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
     if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
