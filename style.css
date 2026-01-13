@@ -149,3 +149,4 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 .section-title { font-size: 10px; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; font-weight: 800; opacity: 0.8; }
 .item-broken { opacity: 0.6; border-color: var(--danger) !important; background: rgba(239, 68, 68, 0.05) !important;}
 .item-broken b { color: var(--danger) !important; }
+
