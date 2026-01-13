@@ -162,10 +162,12 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #050
 #inventory-display { 
     display: flex; 
     flex-wrap: wrap; 
-    gap: 2px; /* Меньше отступ */
+    gap: 2px; 
     margin: 2px 0; 
     justify-content: flex-end;
-    max-width: 200px; /* Ограничиваем ширину */
+    max-width: 160px; /* Ограничиваем ширину */
+    max-height: 28px; /* Максимум 2 строки */
+    overflow: hidden; /* Обрезаем лишнее */
 }
 .inv-item { 
     background: rgba(255,255,255,0.05); 
@@ -174,7 +176,7 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #050
     border-radius: 4px; 
     font-size: 8px; /* Чуть меньше шрифт */
     color: var(--text-secondary); 
-    white-space: nowrap; /* Не переносить текст внутри плашки */
+    white-space: nowrap; 
 }
 
 .promo-input { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px; width: calc(100% - 18px); margin-bottom: 8px; border-radius: 8px; font-size: 13px; outline: none; }
