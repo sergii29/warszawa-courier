@@ -366,7 +366,11 @@ function updateUI() {
 
     if(moneyEl) {
         if (isBlind) {
-            moneyEl.innerText = "???.?? PLN";
+            // ИЗМЕНЕНИЕ: Таймер вместо вопросов
+            let bMin = Math.floor(G.blindTime / 60);
+            let bSec = G.blindTime % 60;
+            let timerText = bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
+            moneyEl.innerText = "🔒 " + timerText;
             moneyEl.style.color = "#aaa";
         } else {
             moneyEl.innerText = G.money.toFixed(2) + " PLN";
