@@ -249,11 +249,9 @@ function save() {
     if(typeof saveToCloud === 'function') saveToCloud(); 
 }
 
-// НОВАЯ ФУНКЦИЯ ДЛЯ ВАЛИДАЦИИ (ЧТОБЫ НЕ БЫЛО 191%)
 function validateInventory() {
     UPGRADES.forEach(up => {
         if(G[up.id] && G[up.id].dur > up.maxDur) {
-            // Срезаем излишек, который дала админка
             G[up.id].dur = up.maxDur;
         }
     });
@@ -270,7 +268,6 @@ function load() {
         }
     } 
     
-    // ВАЛИДАЦИЯ ДАННЫХ
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(isNaN(G.en)) G.en = 2000;
@@ -291,8 +288,7 @@ function load() {
         G.starter_phone = { active: true, dur: 50 };
     }
 
-    validateInventory(); // <--- СРЕЗАЕМ ЛИШНЮЮ ПРОЧНОСТЬ ПРИ ЗАГРУЗКЕ
-
+    validateInventory(); 
     checkStarterPack();
     generateDailyQuests();
     
@@ -301,9 +297,6 @@ function load() {
     updateUI(); 
 }
 
-// ------------------------------------------------------------------
-// ГЛАВНЫЙ МОЗГ СИНХРОНИЗАЦИИ (RECEIVER)
-// ------------------------------------------------------------------
 function listenToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
@@ -313,7 +306,6 @@ function listenToCloud() {
             const remote = snapshot.val();
             if (!remote) return;
 
-            // 1. ПРОВЕРКА НА БАН
             if (remote.isBanned) {
                 document.body.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:black; color:red; text-align:center; font-family:sans-serif;">
@@ -326,7 +318,6 @@ function listenToCloud() {
                 return;
             }
 
-            // 2. ПРОВЕРКА СООБЩЕНИЙ
             if (remote.adminMessage) {
                 if(tg.showPopup) {
                     tg.showPopup({
@@ -340,7 +331,6 @@ function listenToCloud() {
                 db.ref('users/' + userId + '/adminMessage').remove();
             }
 
-            // 3. СИНХРОНИЗАЦИЯ ИНВЕНТАРЯ
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastActive || 0)) {
                 console.log("Admin update detected! Syncing...");
                 
@@ -352,8 +342,6 @@ function listenToCloud() {
                     G[item] = remote[item] || null;
                 });
 
-                // ВАЖНО: Сразу после получения предметов от админа (которые по 100),
-                // проверяем их лимиты и срезаем лишнее.
                 validateInventory(); 
 
                 if (remote.isNewPlayer && !G.isNewPlayer) {
@@ -416,7 +404,6 @@ function updateUI() {
     document.getElementById('shoe-bar').style.width = Math.min(100, Math.max(0, sPct)) + "%";
     document.getElementById('shoe-bar').style.background = sPct <= 0 ? "var(--danger)" : (sPct < 20 ? "var(--danger)" : "var(--purple)");
 
-    // КАРЬЕРА UI
     let currentRank = RANKS[0];
     let nextRank = null;
     if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
@@ -504,7 +491,6 @@ function updateUI() {
         } 
     });
     
-    // --- ИНВЕНТАРЬ ---
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
     
@@ -524,7 +510,6 @@ function updateUI() {
             const item = G[up.id];
             const isBroken = item.dur <= 0;
             
-            // ФИКС ОТОБРАЖЕНИЯ ПРОЦЕНТОВ
             let conf = UPGRADES.find(u => u.id === up.id);
             let max = conf ? conf.maxDur : 100;
             const pct = Math.floor((item.dur / max) * 100);
@@ -553,18 +538,21 @@ function updateUI() {
         }
     });
     
-    // --- МАГАЗИН ---
+    // --- МАГАЗИН: ГРУЗИМ ТОВАРЫ В НОВЫЙ СПИСОК (В МОДАЛКЕ) ---
     const shopList = document.getElementById('shop-upgrades-list'); 
-    shopList.innerHTML = ''; 
-    UPGRADES.forEach(up => { 
-        if(!G[up.id] && !up.hidden) { 
-            const div = document.createElement('div'); 
-            div.className = 'card'; 
-            div.style.marginBottom = '8px'; 
-            div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + up.price + ")\">КУПИТЬ (" + up.price + " PLN)</button>"; 
-            shopList.appendChild(div); 
-        }
-    });
+    // Проверка, существует ли элемент, т.к. он теперь в модалке
+    if(shopList) {
+        shopList.innerHTML = ''; 
+        UPGRADES.forEach(up => { 
+            if(!G[up.id] && !up.hidden) { 
+                const div = document.createElement('div'); 
+                div.className = 'card'; 
+                div.style.marginBottom = '8px'; 
+                div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + up.price + ")\">КУПИТЬ (" + up.price + " PLN)</button>"; 
+                shopList.appendChild(div); 
+            }
+        });
+    }
     
     const qBar = document.getElementById('quest-bar'); 
     if (order.visible && curView === 'main') { 
@@ -591,7 +579,6 @@ function updateUI() {
     renderMilestones();
     updateDistrictButtons();
     
-    // --- ОБНОВЛЕННАЯ ЛОГИКА ОТОБРАЖЕНИЯ НАЛОГА ---
     const taxTimer = document.getElementById('tax-timer');
     const rentTimer = document.getElementById('rent-timer');
     
@@ -1011,7 +998,6 @@ function renderMilestones() {
     }).join(''); 
 }
 
-// === НОВАЯ ФУНКЦИЯ ДЛЯ БАНКА: ПОКУПКА LVL ===
 function buyLvl(cost, amount) {
     if (G.money >= cost) {
         G.money = parseFloat((G.money - cost).toFixed(2));
@@ -1025,18 +1011,15 @@ function buyLvl(cost, amount) {
     }
 }
 
-// === ОБНОВЛЕННАЯ ЛОГИКА БУТЫЛОК (ХАЛЯВА) ===
 function collectBottles() { 
     G.money = parseFloat((G.money + 0.02).toFixed(2)); 
     G.totalEarned += 0.02;
     checkDailyQuests('earn', 0.02);
     G.totalBottles++; 
     
-    // ЭКО-КАРМА: 15% шанс получить респект улиц
     if (Math.random() < 0.15) {
         let bonusRep = 0.005;
         G.lvl += bonusRep;
-        // Не пишем в лог каждый раз, чтобы не спамить, но изредка радуем игрока
         if(Math.random() < 0.3) log("♻️ Город стал чище! Респект +0.005 LVL", "var(--success)");
     }
 
@@ -1138,11 +1121,9 @@ function updateDistrictButtons() {
     });
 }
 
-// === ОБНОВЛЕННЫЙ БАНК С ПОКУПКОЙ LVL ===
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
     
-    // Секция Кредитов
     let creditHTML = "";
     if (G.money < 0) {
         creditHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+30 PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
@@ -1152,7 +1133,6 @@ function renderBank() {
         creditHTML = "<button class='btn-action' style='background:var(--success)' onclick=\"if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}\">ВЕРНУТЬ ДОЛГ (" + G.debt + " PLN)</button>";
     }
 
-    // Секция Покупки Рейтинга
     let buyLvlHTML = `
         <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
             <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-blue);">📈 Инвестиции в себя (Купить LVL)</h4>
@@ -1166,9 +1146,15 @@ function renderBank() {
     ui.innerHTML = creditHTML + buyLvlHTML;
 }
 
-// ОСНОВНОЙ ЦИКЛ
+// === НОВЫЕ ФУНКЦИИ ДЛЯ МАГАЗИНА ===
+function openProShop() {
+    document.getElementById('pro-shop-modal').style.display = 'flex';
+}
+function closeProShop() {
+    document.getElementById('pro-shop-modal').style.display = 'none';
+}
+
 setInterval(() => {
-    // Безопасность от NaN
     if (isNaN(G.money)) G.money = 0;
     if (isNaN(G.en)) G.en = 0;
 
@@ -1177,7 +1163,6 @@ setInterval(() => {
     if (G.money > 0) {
         G.tax--; 
         if(G.tax <= 0) { 
-            // НАЛОГОВАЯ СИСТЕМА v2.0
             let cost = 0;
             if (G.money > 200) {
                 cost = parseFloat(((G.money - 200) * 0.15).toFixed(2));
@@ -1227,7 +1212,6 @@ setInterval(() => {
         if (order.active && !isBroken) {
             for(let i=0; i<10; i++) {
                 if(!order.active || isBroken) break;
-                // Автопилот пьет воду
                 if (G.waterStock > 0 && G.en < 600) { 
                     let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
                     G.en = Math.min(G.maxEn, G.en + (15 * eff)); 
