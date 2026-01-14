@@ -1,4 +1,4 @@
-// --- logic.js v5.1 (Fixed Shop + Dynamic Prices) ---
+// --- logic.js v5.2 (Garage & Tuning) ---
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
@@ -37,6 +37,22 @@ const UPGRADES = [
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', basePrice: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80 }
 ];
 
+// ГАРАЖ КОНФИГ
+const GARAGE_COLORS = [
+    { id: 'blue', name: 'Classic Blue', hex: '#3b82f6', price: 0 },
+    { id: 'red', name: 'Street Red', hex: '#ef4444', price: 200 },
+    { id: 'green', name: 'Toxic Green', hex: '#22c55e', price: 500 },
+    { id: 'gold', name: 'Royal Gold', hex: '#fbbf24', price: 2000 },
+    { id: 'purple', name: 'Cyber Purple', hex: '#a855f7', price: 1000 },
+    { id: 'orange', name: 'Sunset Orange', hex: '#f97316', price: 300 }
+];
+
+const GARAGE_PARTS = [
+    { id: 'engine', name: 'Двигатель', icon: '🔧', basePrice: 150, bonusDesc: '+Энергия', stat: 'maxEn' },
+    { id: 'suspension', name: 'Подвеска', icon: '🔩', basePrice: 100, bonusDesc: 'Меньше штрафы', stat: 'resilience' },
+    { id: 'nitro', name: 'Нитро', icon: '🚀', basePrice: 500, bonusDesc: '+Доход', stat: 'earnMult' }
+];
+
 let G = { 
     money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, 
     tax: 300, rent: 300, waterStock: 0, 
@@ -47,6 +63,7 @@ let G = {
     starter_bag: null, starter_phone: null,
     bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
     dailyQuests: [], lastDailyUpdate: 0,
+    garage: { color: 'blue', upgrades: { engine: 0, suspension: 0, nitro: 0 }, unlockedColors: ['blue'] },
     activeMilestones: [
         { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
@@ -62,10 +79,8 @@ let isSearching = false, spamCounter = 0;
 
 // --- UTILS ---
 
-// ГЛАВНАЯ ФУНКЦИЯ ЭКОНОМИКИ: ЦЕНА ЗАВИСИТ ОТ УРОВНЯ
 function getPrice(base) {
     if (base === 0) return 0;
-    // Формула: Цена растет на 40% за каждый уровень
     let mult = 1 + (G.lvl * 0.4); 
     return Math.ceil(base * mult);
 }
@@ -126,6 +141,12 @@ function doWork() {
         G.en = Math.max(0, G.en - 25); 
         updateUI(); tg.HapticFeedback.notificationOccurred('error'); return; 
     }
+    
+    // MaxEn зависит от тюнинга двигателя
+    let baseMaxEn = 2000;
+    if (G.garage && G.garage.upgrades) baseMaxEn += (G.garage.upgrades.engine * 200);
+    G.maxEn = baseMaxEn;
+
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
         let drink = Math.min(G.waterStock, 50); 
@@ -180,8 +201,11 @@ function doWork() {
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
 
     let distMult = DISTRICTS[G.district] ? DISTRICTS[G.district].mult : 1;
+    
+    // Тюнинг Нитро дает +1% к доходу за уровень
+    let nitroBonus = 1 + (G.garage.upgrades.nitro * 0.01);
 
-    let gain = 0.10 * Math.max(0.1, G.lvl) * distMult * (1 + rankBonus) * bagBonus;
+    let gain = 0.10 * Math.max(0.1, G.lvl) * distMult * (1 + rankBonus) * bagBonus * nitroBonus;
     
     G.money = parseFloat((G.money + gain).toFixed(2));
     G.totalEarned += gain; 
@@ -202,7 +226,7 @@ function consumeResources(isOrder) {
     let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
     cost *= rainMod; 
     if (isOrder) cost *= 1.5; 
-    if (G.district === 3) cost *= 0.9; // Wola perk
+    if (G.district === 3) cost *= 0.9; 
     G.en = Math.max(0, G.en - cost); 
 }
 
@@ -227,7 +251,115 @@ function generateOrder() {
     updateUI(); 
 }
 
-// --- SHOPS & SERVICES (UPDATED PRICES) ---
+// --- GARAGE LOGIC ---
+
+function openGarage() {
+    document.getElementById('garage-modal').style.display = 'flex';
+    renderGarage();
+}
+
+function closeGarage() {
+    document.getElementById('garage-modal').style.display = 'none';
+}
+
+function renderGarage() {
+    // 1. Colors
+    const colorList = document.getElementById('garage-colors-list');
+    colorList.innerHTML = GARAGE_COLORS.map(c => {
+        let isUnlocked = G.garage.unlockedColors.includes(c.id);
+        let isActive = G.garage.color === c.id;
+        let p = getPrice(c.price);
+        
+        let label = isActive ? "ВЫБРАНО" : (isUnlocked ? "ВЫБРАТЬ" : p + " PLN");
+        let clickFn = isUnlocked ? `setNeon('${c.id}')` : `buyColor('${c.id}', ${p})`;
+        
+        return `
+        <div class="color-item" onclick="${clickFn}" style="display:flex; flex-direction:column; align-items:center; cursor:pointer;">
+            <div style="width:40px; height:40px; border-radius:50%; background:${c.hex}; border: 2px solid ${isActive ? '#fff' : 'transparent'}; box-shadow:0 0 10px ${c.hex}; margin-bottom:5px;"></div>
+            <span style="font-size:9px; color:${isActive ? '#fff' : '#777'};">${label}</span>
+        </div>`;
+    }).join('');
+
+    // Preview Sphere
+    let currentColorObj = GARAGE_COLORS.find(c => c.id === G.garage.color);
+    let hex = currentColorObj ? currentColorObj.hex : '#3b82f6';
+    const prev = document.getElementById('garage-sphere-preview');
+    prev.style.background = `radial-gradient(circle at 35% 35%, ${hex}, #000)`;
+    prev.style.boxShadow = `0 0 30px ${hex}`;
+
+    // 2. Upgrades
+    const partsList = document.getElementById('garage-parts-list');
+    partsList.innerHTML = GARAGE_PARTS.map(part => {
+        let lvl = G.garage.upgrades[part.id] || 0;
+        // Цена растет экспоненциально от уровня предмета + инфляция от уровня игрока
+        let nextPrice = Math.floor(getPrice(part.basePrice) * Math.pow(1.3, lvl));
+        
+        return `
+        <div class="card" style="padding:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="text-align:left;">
+                <div style="font-weight:bold;">${part.icon} ${part.name} <span style="color:var(--accent-gold)">LVL ${lvl}</span></div>
+                <div style="font-size:10px; color:#aaa;">${part.bonusDesc}</div>
+            </div>
+            <button class="btn-action" style="width:auto; font-size:10px; padding:6px 12px;" onclick="buyGarageUpgrade('${part.id}', ${nextPrice})">UPGRADE<br>${nextPrice} PLN</button>
+        </div>`;
+    }).join('');
+}
+
+function buyColor(id, price) {
+    if (G.money >= price) {
+        G.money = parseFloat((G.money - price).toFixed(2));
+        G.garage.unlockedColors.push(id);
+        addHistory('🎨 ЦВЕТ', price, 'minus');
+        log("Новый цвет разблокирован!", "var(--success)");
+        setNeon(id); // Сразу применяем
+        save();
+    } else {
+        log("Не хватает денег!", "var(--danger)");
+    }
+}
+
+function setNeon(id) {
+    G.garage.color = id;
+    renderGarage();
+    updateUI(); // Обновит сферу на главной
+    save();
+}
+
+function buyGarageUpgrade(type, price) {
+    if (G.money >= price) {
+        G.money = parseFloat((G.money - price).toFixed(2));
+        G.garage.upgrades[type]++;
+        addHistory('🔧 ТЮНИНГ', price, 'minus');
+        log("Деталь улучшена!", "var(--success)");
+        tg.HapticFeedback.notificationOccurred('success');
+        
+        // Обновляем статы (например макс энергию)
+        if (type === 'engine') {
+            // maxEn пересчитается в loop
+        }
+        
+        save();
+        renderGarage();
+        updateUI();
+    } else {
+        log("Не хватает денег!", "var(--danger)");
+    }
+}
+
+function applySphereColor() {
+    const s = document.getElementById('work-sphere');
+    if (!s) return;
+    
+    let cObj = GARAGE_COLORS.find(c => c.id === G.garage.color) || GARAGE_COLORS[0];
+    let hex = cObj.hex;
+    
+    // Меняем градиент и тень
+    s.style.background = `radial-gradient(circle at 35% 35%, ${hex}, #1e3a8a, #000)`;
+    s.style.boxShadow = `inset -10px -10px 20px rgba(0,0,0,0.5), inset 10px 10px 20px rgba(255,255,255,0.4), 0 0 30px ${hex}, 0 0 60px rgba(0,0,0,0.5)`;
+    s.style.borderColor = hex;
+}
+
+// --- STANDARD SHOP & ACTIONS ---
 
 function buyWater() { 
     let price = getPrice(1.50);
@@ -329,10 +461,17 @@ function repairItem(type) {
     let max = conf ? conf.maxDur : 100;
     if (G[type].dur >= max) { log("Целое!", "var(--accent-blue)"); return; }
 
-    let price = getPrice(conf.repairPrice);
+    let repairBase = conf.repairPrice;
+    // Снижаем цену ремонта если прокачана подвеска
+    if (G.garage && G.garage.upgrades.suspension > 0) {
+        repairBase = repairBase * (1 - (G.garage.upgrades.suspension * 0.05));
+        if (repairBase < 1) repairBase = 1;
+    }
+
+    let price = getPrice(repairBase);
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
-        G[type].dur = max;
+        G.type.dur = max;
         addHistory('🛠️ РЕМОНТ', price, 'minus');
         save(); updateUI();
     } else {
@@ -343,7 +482,6 @@ function repairItem(type) {
 function sellInvest(type) {
     if(!G[type]) return;
     let conf = UPGRADES.find(u => u.id === type);
-    // Продаем за 40% от ТЕКУЩЕЙ рыночной цены (инфляция помогает и тут)
     let sellPrice = Math.floor(getPrice(conf.basePrice) * 0.4);
     
     G.money = parseFloat((G.money + sellPrice).toFixed(2)); 
@@ -368,10 +506,7 @@ function moveDistrict(id) {
     save(); updateUI(); 
 }
 
-// --- RENDERING ---
-
 function updateShopPrices() {
-    // Эта функция обновляет только цифры на кнопках, не ломая верстку
     const btnWater = document.getElementById('btn-water');
     if(btnWater) btnWater.innerText = getPrice(1.50) + " PLN";
 
@@ -380,20 +515,13 @@ function updateShopPrices() {
 
     const btnEnergy = document.getElementById('btn-energy');
     if(btnEnergy) btnEnergy.innerText = getPrice(12.00) + " PLN";
-
-    const btnAbibas = document.getElementById('btn-abibas');
-    if(btnAbibas) btnAbibas.innerText = getPrice(50) + " PLN";
-
-    const btnJorban = document.getElementById('btn-jorban');
-    if(btnJorban) btnJorban.innerText = getPrice(250) + " PLN";
 }
 
-// ОСТАЛЬНЫЕ ФУНКЦИИ
 function openRouteModal() {
     const autoBtn = document.getElementById('btn-auto-route');
     const autoLabel = document.getElementById('lbl-auto-route');
     const autoDesc = document.getElementById('desc-auto-route');
-    let cost = getPrice(45); // Динамическая цена
+    let cost = getPrice(45); 
 
     if (G.autoTime > 0) {
         autoLabel.innerHTML = "<b>🤖 ПОРУЧИТЬ РОБОТУ</b>";
@@ -443,6 +571,10 @@ function claimStarterPack() {
     G.money += 50; G.waterStock += 500; G.bikeRentTime += 900; G.isNewPlayer = false;
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
     G.starter_bag = { active: true, dur: 50 }; G.starter_phone = { active: true, dur: 50 };
+    
+    // Инит гаража для новичков
+    if(!G.garage) G.garage = { color: 'blue', upgrades: { engine: 0, suspension: 0, nitro: 0 }, unlockedColors: ['blue'] };
+
     addHistory('🎁 STARTER', 50, 'plus'); save(); updateUI();
 }
 function finishOrder(win) { 
@@ -453,6 +585,11 @@ function finishOrder(win) {
             let riskRoll = Math.random();
             let hasHelmet = (G.helmet && G.helmet.dur > 0);
             let riskChance = hasHelmet ? 0.15 : 0.30; 
+            
+            // Бонус подвески снижает риск
+            if (G.garage && G.garage.upgrades.suspension) riskChance -= (G.garage.upgrades.suspension * 0.02);
+            if (riskChance < 0.05) riskChance = 0.05;
+
             if (riskRoll < riskChance) { 
                 log("💥 АВАРИЯ!", "var(--danger)"); isBroken = true; repairProgress = 0;
                 G.money = parseFloat((G.money - 20).toFixed(2)); addHistory('💥 АВАРИЯ', 20, 'minus');
@@ -567,12 +704,10 @@ function usePromo() {
     if (!G.usedPromos) G.usedPromos = [];
     if (G.usedPromos.includes(code)) { log("Уже использовано!", "var(--danger)"); return; }
 
-    // Простая проверка (можно через fetch, но оставим локально для надежности)
     if(code === "WARSZAWA2025") {
         G.money += 2025; G.totalEarned += 2025; G.usedPromos.push(code);
         addHistory('🎁 PROMO', 2025, 'plus'); save(); updateUI();
     } else {
-        // Попытка загрузить из файла (как было)
         fetch('promos.json?nocache=' + Date.now()).then(r => r.json()).then(data => {
             if (data[code]) {
                 let reward = data[code].reward;
@@ -670,22 +805,25 @@ function updateUI() {
         document.getElementById('shoe-name').innerText = G.shoes.dur <= 0 ? "⚠️ БОСИКОМ" : G.shoes.name;
     }
 
-    // ОБНОВЛЯЕМ ЦЕНЫ НА КНОПКАХ (ЕСЛИ ОНИ ЕСТЬ)
-    updateShopPrices();
-
-    // Обновление цен в Pro Shop (всплывашка)
-    const proList = document.getElementById('shop-upgrades-list'); 
-    if(proList) {
-        proList.innerHTML = ''; 
-        UPGRADES.forEach(up => { 
-            if(!G[up.id] && !up.hidden) { 
-                let p = getPrice(up.basePrice);
-                let div = document.createElement('div'); div.className = 'card'; div.style.marginBottom = '8px'; 
-                div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "')\">КУПИТЬ (" + p + " PLN)</button>"; 
-                proList.appendChild(div); 
-            }
-        });
+    if (curView === 'shop') {
+        updateShopPrices();
+        // Всплывашка Pro Shop
+        const proList = document.getElementById('shop-upgrades-list'); 
+        if(proList) {
+            proList.innerHTML = ''; 
+            UPGRADES.forEach(up => { 
+                if(!G[up.id] && !up.hidden) { 
+                    let p = getPrice(up.basePrice);
+                    let div = document.createElement('div'); div.className = 'card'; div.style.marginBottom = '8px'; 
+                    div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "')\">КУПИТЬ (" + p + " PLN)</button>"; 
+                    proList.appendChild(div); 
+                }
+            });
+        }
     }
+    
+    // ПРИМЕНЯЕМ ЦВЕТ ГАРАЖА
+    applySphereColor();
     
     let rentP = getPrice(30);
     document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ ("+rentP+" PLN)";
@@ -703,7 +841,10 @@ function updateUI() {
         document.getElementById('repair-express-btn').style.display = 'none';
         document.getElementById('repair-progress').style.height = "0%";
         let distMult = DISTRICTS[G.district] ? DISTRICTS[G.district].mult : 1;
-        let rate = (0.10 * Math.max(0.1, G.lvl) * distMult).toFixed(2);
+        
+        let nitroBonus = 1 + ((G.garage?.upgrades?.nitro || 0) * 0.01);
+        let rate = (0.10 * Math.max(0.1, G.lvl) * distMult * nitroBonus).toFixed(2);
+        
         if(order.visible && !order.active) rate = "ПРИМИ ЗАКАЗ!"; 
         document.getElementById('click-rate-ui').innerText = isBlind ? "?.??" : rate + " PLN";
     }
@@ -727,7 +868,13 @@ function updateUI() {
             if(G[up.id]) {
                 const item = G[up.id];
                 let conf = UPGRADES.find(u => u.id === up.id);
-                let repairP = getPrice(conf.repairPrice);
+                
+                // Цена ремонта зависит от подвески
+                let repairBase = conf.repairPrice;
+                if(G.garage && G.garage.upgrades.suspension) repairBase = repairBase * (1 - (G.garage.upgrades.suspension * 0.05));
+                if(repairBase < 1) repairBase = 1;
+                
+                let repairP = getPrice(repairBase);
                 let sellP = Math.floor(getPrice(conf.basePrice) * 0.4);
                 const pct = Math.floor((item.dur / conf.maxDur) * 100);
                 const div = document.createElement('div'); div.className = 'shop-item';
@@ -791,20 +938,6 @@ function updateUI() {
     }
 }
 
-function renderDistricts() {
-    const container = document.getElementById('districts-list-container');
-    if (!container) return;
-    container.innerHTML = DISTRICTS.map((d, i) => {
-        const isCurrent = G.district === i;
-        const isLocked = G.lvl < d.minLvl;
-        let p = getPrice(d.basePrice);
-        let btnHTML = isCurrent ? `<button class="btn-action btn-secondary" style="cursor:default;">ВЫ ЗДЕСЬ</button>` : 
-                      isLocked ? `<button class="btn-action btn-secondary" style="opacity:0.5;">🔒 НУЖЕН LVL ${d.minLvl}</button>` : 
-                      `<button class="btn-action" onclick="moveDistrict(${i})">ПЕРЕЕХАТЬ (${p} PLN)</button>`;
-        return `<div class="card" style="margin-bottom:10px;"><b>${d.name}</b><br><small>${d.desc}</small><br>${btnHTML}</div>`;
-    }).join('');
-}
-
 function switchTab(v, el) { 
     curView = v; 
     document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); 
@@ -820,6 +953,10 @@ function load() {
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 };
+    
+    // ИНИЦИАЛИЗАЦИЯ ГАРАЖА ДЛЯ СТАРЫХ ИГРОКОВ
+    if(!G.garage) G.garage = { color: 'blue', upgrades: { engine: 0, suspension: 0, nitro: 0 }, unlockedColors: ['blue'] };
+    
     updateUI();
 }
 
@@ -838,3 +975,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
