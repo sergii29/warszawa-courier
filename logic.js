@@ -12,6 +12,55 @@ const RANKS = [
     { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
 ];
 
+// ОБНОВЛЕННЫЙ СПИСОК РАЙОНОВ
+const DISTRICTS = [
+    { 
+        name: "Praga", 
+        desc: "Район контрастов. Дешево и сердито.",
+        minLvl: 0, 
+        rentPct: 0.05, 
+        mult: 1, 
+        price: 0,
+        perk: "Нет бонусов" 
+    },       
+    { 
+        name: "Mokotów", 
+        desc: "Спальный район для среднего класса.",
+        minLvl: 2.5, 
+        rentPct: 0.10, 
+        mult: 1.5, 
+        price: 150,
+        perk: "💰 Доход х1.5" 
+    }, 
+    { 
+        name: "Śródmieście", 
+        desc: "Центр. Туристы, пробки и деньги.",
+        minLvl: 5.0, 
+        rentPct: 0.15, 
+        mult: 1.6, 
+        price: 500,
+        perk: "🔥 Доход х1.6" 
+    },
+    { 
+        name: "Wola", 
+        desc: "Стеклянные небоскребы. Ровный асфальт.",
+        minLvl: 8.0, 
+        rentPct: 0.18, 
+        mult: 1.8, 
+        price: 1200,
+        perk: "⚡ Энергия -10%" // Бонус: Экономия энергии
+    },
+    { 
+        name: "Wilanów", 
+        desc: "Королевский район. Элита и мажоры.",
+        minLvl: 15.0, 
+        rentPct: 0.25, // Очень высокая аренда
+        mult: 2.2,     // Огромный множитель
+        price: 5000,
+        perk: "💎 Чаевые х2" // Бонус: Двойные чаевые
+    }
+];
+
 // Основные данные
 let G = { 
     money: 10, 
@@ -64,12 +113,6 @@ let bonusActive = false;
 
 let isSearching = false; 
 let spamCounter = 0;
-
-const DISTRICTS = [
-    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0 },       
-    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150 }, 
-    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } 
-];
 
 const UPGRADES = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', price: 0, bonus: '+2% PLN', maxDur: 40, repairPrice: 5, hidden: true },
@@ -321,11 +364,56 @@ function load() {
     if (!G.bag && !G.starter_bag) G.starter_bag = { active: true, dur: 50 };
     if (!G.phone && !G.starter_phone) G.starter_phone = { active: true, dur: 50 };
 
+    // Защита: если игрок застрял в районе с несуществующим ID
+    if (!DISTRICTS[G.district]) G.district = 0;
+
     validateInventory(); 
     checkStarterPack();
     generateDailyQuests();
     listenToCloud();
     updateUI(); 
+}
+
+// НОВАЯ ФУНКЦИЯ ОТРИСОВКИ РАЙОНОВ
+function renderDistricts() {
+    const container = document.getElementById('districts-list-container');
+    if (!container) return;
+    
+    container.innerHTML = DISTRICTS.map((d, i) => {
+        const isCurrent = G.district === i;
+        const isLocked = G.lvl < d.minLvl;
+        
+        let btnHTML = "";
+        if (isCurrent) {
+            btnHTML = `<button class="btn-action btn-secondary" style="cursor:default;">ВЫ ЗДЕСЬ</button>`;
+        } else if (isLocked) {
+             btnHTML = `<button class="btn-action btn-secondary" style="opacity:0.5;">🔒 НУЖЕН LVL ${d.minLvl}</button>`;
+        } else {
+             btnHTML = `<button class="btn-action" onclick="moveDistrict(${i})">ПЕРЕЕХАТЬ (${d.price} PLN)</button>`;
+        }
+
+        // Цвет рамки для элитных районов
+        let borderStyle = "";
+        if (i === 3) borderStyle = "border: 1px solid var(--accent-blue);"; // Wola
+        if (i === 4) borderStyle = "border: 1px solid var(--accent-gold); box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);"; // Wilanów
+
+        return `
+        <div class="card" style="margin-bottom:10px; ${borderStyle} position:relative; overflow:hidden;">
+            ${i === 4 ? '<div style="position:absolute; top:0; right:0; background:var(--accent-gold); color:black; font-size:9px; padding:2px 6px; font-weight:bold;">ELITE</div>' : ''}
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <b style="font-size:14px;">${d.name}</b>
+                <span style="font-size:10px; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">Налог: ${(d.rentPct*100).toFixed(0)}%</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">${d.desc}</div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:10px; font-size:10px;">
+                <div style="color:var(--success);">💵 ${d.mult}x Ставка</div>
+                <div style="color:var(--accent-blue);">✨ ${d.perk}</div>
+            </div>
+            
+            ${btnHTML}
+        </div>`;
+    }).join('');
 }
 
 function updateUI() {
@@ -350,7 +438,10 @@ function updateUI() {
     document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
     document.getElementById('water-val').innerText = Math.floor(G.waterStock);
     
-    document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
+    // Защита от ошибок при отображении района
+    let distName = DISTRICTS[G.district] ? DISTRICTS[G.district].name : "Неизвестно";
+    document.getElementById('district-ui').innerText = "📍 " + distName;
+
     document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
     
     if(weather === "Дождь") document.body.classList.add('rain-mode');
@@ -463,8 +554,11 @@ function updateUI() {
         if (G.totalOrders >= 50) rankBonus = 0.05;
         if (G.totalOrders >= 150) rankBonus = 0.10;
         if (G.totalOrders >= 400) rankBonus = 0.20;
+        
+        // Защита от ошибок при расчете мультипликатора
+        let distMult = DISTRICTS[G.district] ? DISTRICTS[G.district].mult : 1;
 
-        let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
+        let rate = (0.10 * Math.max(0.1, G.lvl) * distMult * (1 + rankBonus)).toFixed(2);
         if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
         
         if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
@@ -543,7 +637,7 @@ function updateUI() {
     
     renderBank(); 
     renderMilestones();
-    updateDistrictButtons();
+    renderDistricts(); // <--- ВАЖНО: Новая функция отрисовки районов
     
     const taxTimer = document.getElementById('tax-timer');
     const rentTimer = document.getElementById('rent-timer');
@@ -556,7 +650,8 @@ function updateUI() {
         taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
     }
     
-    let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
+    let distRent = DISTRICTS[G.district] ? DISTRICTS[G.district].rentPct : 0.05;
+    let rentP = (distRent * 100).toFixed(0);
     if(rentTimer) rentTimer.innerText = "Аренда (" + rentP + "%) через: " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
 }
 
@@ -658,7 +753,9 @@ function doWork() {
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
 
-    let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
+    let distMult = DISTRICTS[G.district] ? DISTRICTS[G.district].mult : 1;
+
+    let gain = 0.10 * Math.max(0.1, G.lvl) * distMult * (1 + rankBonus) * bagBonus;
     
     G.money = parseFloat((G.money + gain).toFixed(2));
     G.totalEarned += gain; 
@@ -687,6 +784,9 @@ function consumeResources(isOrder) {
     cost *= rainMod; 
     if (isOrder) cost *= 1.5; 
     
+    // БОНУС РАЙОНА: WOLA (id 3) экономит 10% энергии
+    if (G.district === 3) cost *= 0.9;
+
     G.en = Math.max(0, G.en - cost); 
 }
 
@@ -708,7 +808,9 @@ function generateOrder() {
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
 
-    let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * bagBonus * (weather === "Дождь" ? 1.5 : 1); 
+    let distMult = DISTRICTS[G.district] ? DISTRICTS[G.district].mult : 1;
+
+    let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * distMult * bagBonus * (weather === "Дождь" ? 1.5 : 1); 
     if(order.isCriminal) { baseRew *= 6.5; order.offerTimer = 12; } 
     order.baseReward = baseRew;
     order.reward = baseRew;
@@ -924,6 +1026,9 @@ function finishOrder(win) {
                 let tip = parseFloat((5 + Math.random()*15).toFixed(2)); 
                 if (order.isRiskyRoute) tip *= 2; 
                 
+                // БОНУС РАЙОНА: WILANÓW (id 4) удваивает чаевые
+                if (G.district === 4) tip *= 2; 
+
                 if (G.shoes && G.shoes.bonus > 0) {
                     tip *= (1 + G.shoes.bonus);
                 }
@@ -1109,21 +1214,6 @@ function triggerBreakdown() {
     updateUI(); 
 }
 
-function updateDistrictButtons() {
-    DISTRICTS.forEach((d, i) => {
-        const btn = document.getElementById('btn-dist-' + i);
-        if(btn) {
-            if(G.district === i) {
-                btn.innerText = "ВЫ ЗДЕСЬ";
-                btn.classList.add('btn-secondary');
-            } else {
-                btn.innerText = "ПЕРЕЕХАТЬ" + (d.price > 0 ? " (" + d.price + " PLN)" : "");
-                btn.classList.remove('btn-secondary');
-            }
-        }
-    });
-}
-
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
     if(!ui) return;
@@ -1187,7 +1277,7 @@ setInterval(() => {
         
         G.rent--; 
         if(G.rent <= 0) { 
-            let pct = DISTRICTS[G.district].rentPct;
+            let pct = DISTRICTS[G.district] ? DISTRICTS[G.district].rentPct : 0.05;
             let cost = parseFloat((G.money * pct).toFixed(2));
             G.money = parseFloat((G.money - cost).toFixed(2)); 
             addHistory('🏠 АРЕНДА', cost, 'minus'); 
