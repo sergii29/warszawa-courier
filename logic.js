@@ -1,3 +1,4 @@
+// --- logic.js ---
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
@@ -226,7 +227,7 @@ function claimDaily(id) {
     }
 }
 
-// === CLOUD SYNC LOGIC (MOVED HERE TO FIX BUGS) ===
+// === CLOUD SYNC LOGIC ===
 
 function saveToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
@@ -267,19 +268,34 @@ function listenToCloud() {
                 window.db.ref('users/' + userId + '/adminMessage').remove();
             }
 
-            // 3. ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ АДМИНОМ (СБРОС ИЛИ НАЧИСЛЕНИЕ)
+            // 3. ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ АДМИНОМ (СБРОС ИЛИ ИЗМЕНЕНИЕ ИНВЕНТАРЯ)
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 console.log("⚠️ АДМИН ОБНОВИЛ ДАННЫЕ");
+                
                 let wasNew = G.isNewPlayer;
+
+                // ИСПРАВЛЕНИЕ: Принудительное удаление вещей, если их нет в обновлении
+                // Firebase удаляет ключ, если значение null, поэтому обычный merge не сработает
+                const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone'];
+                
+                invKeys.forEach(key => {
+                    if (!remote[key]) {
+                        G[key] = null; // Если в облаке пусто, удаляем у себя
+                    }
+                });
+
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
                 
-                // Если админ сделал вайп (сброс в новичка), перезагружаем страницу, чтобы выдать старт-пак
+                // Если админ сделал вайп (сброс в новичка), перезагружаем страницу
                 if (G.isNewPlayer && !wasNew) {
                     location.reload();
                     return;
                 }
                 updateUI();
+                
+                // Уведомление игроку, чтобы он понял, что произошло
+                log("⚡ Данные синхронизированы с сервером", "var(--accent-blue)");
             }
 
             // 4. ВОССТАНОВЛЕНИЕ ПОСЛЕ ОЧИСТКИ КЕША
