@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.2">
+    <link rel="stylesheet" href="style.css?v=4.5">
 </head>
 <body>
 
@@ -145,3 +145,185 @@
         <div class="sphere-container">
             <div id="work-sphere">
                 <b id="sphere-text">РАБОТАТЬ</b>
+                <div id="repair-progress"></div>
+                <div id="click-rate-ui" style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: 500; position:relative; z-index:2;">0.10 PLN</div>
+            </div>
+            
+            <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
+                <button class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ (15 PLN)</button>
+                <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
+            </div>
+        </div>
+
+        <div class="bottom-controls">
+            <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК (+0.05)</button>
+            <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
+        </div>
+
+        <div class="city-info-group">
+            <div class="city-label">WARSAW</div>
+            <div id="weather-ui">☀️ Ясно</div>
+        </div>
+    </div>
+
+    <div id="view-districts" class="view">
+        <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
+        <div class="card">
+            <b>Praga</b> <small>Аренда: 5% от баланса. Старт.</small>
+            <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
+        </div>
+        <div class="card">
+            <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 10% от баланса. Доход: +50%.</small>
+            <button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
+        </div>
+        <div class="card">
+            <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 15% от баланса. Доход: +55%.</small>
+            <button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
+        </div>
+    </div>
+
+    <div id="view-quests" class="view">
+        <div class="card rank-card">
+            <div style="font-size:40px; margin-bottom:5px;" id="rank-icon">😎</div>
+            <h2 style="margin:0; font-size:18px; color:white; text-shadow:0 0 10px var(--accent-blue);" id="rank-name">Новичок</h2>
+            <small style="color:var(--text-secondary); display:block; margin-top:5px;" id="rank-next">До следующего ранга: ...</small>
+            
+            <div class="energy-track" style="margin-top:10px; background:rgba(0,0,0,0.5);">
+                <div id="rank-progress" class="energy-fill" style="width:0%; background: linear-gradient(90deg, var(--accent-gold), #fff7ed);"></div>
+            </div>
+            <div style="font-size:10px; color:var(--accent-gold); margin-top:5px; font-weight:bold;" id="rank-bonus">Бонус ранга: 0%</div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0; display:flex; justify-content:space-between; align-items:center;">
+            📅 Ежедневные задания 
+            <small id="daily-timer" style="font-weight:normal; opacity:0.7; font-size:10px;">Обновление через...</small>
+        </h4>
+        <div id="daily-quests-list"></div>
+
+        <h4 style="margin:15px 0 5px 0;">📊 Статистика</h4>
+        <div class="card">
+            <div class="stat-row"><span>📦 Всего заказов</span> <b id="stat-orders">0</b></div>
+            <div class="stat-row"><span>⚡ Всего кликов</span> <b id="stat-clicks">0</b></div>
+            <div class="stat-row"><span>♻️ Сдано бутылок</span> <b id="stat-bottles">0</b></div>
+            <div class="stat-row"><span>💵 Заработано всего</span> <b id="stat-earned" style="color:var(--success)">0.00 PLN</b></div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0;">🏆 Достижения</h4>
+        <div id="milestones-list"></div>
+    </div>
+
+    <div id="view-shop" class="view">
+        <h3 style="margin:0; margin-bottom: 15px;">🏪 Маркет</h3>
+        
+        <div class="tech-banner" onclick="openProShop()">
+            <div style="z-index: 1;">
+                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">PRO GEAR</div>
+                <h2 style="margin: 5px 0; font-size: 18px;">Техника & Транспорт</h2>
+                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Телефоны, сумки, самокаты</small>
+                <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">ОТКРЫТЬ КАТАЛОГ</button>
+            </div>
+            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); z-index: 1;">🛵</div>
+        </div>
+
+        <div class="section-title">⚡ Энергия и Восстановление</div>
+        <div class="shop-grid">
+            <div class="shop-item item-food">
+                <div class="shop-icon">💧</div>
+                <div class="shop-title">Вода (1.5л)</div>
+                <div class="shop-desc">Восстанавливает силы при кликах.<br><b>+1500 мл</b></div>
+                <button class="btn-price" onclick="buyWater()">1.50 PLN</button>
+            </div>
+            <div class="shop-item item-food">
+                <div class="shop-icon">☕</div>
+                <div class="shop-title">Эспрессо</div>
+                <div class="shop-desc">Мгновенный заряд бодрости.<br><b>+300 Energy</b></div>
+                <button class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
+            </div>
+            <div class="shop-item item-energy" style="grid-column: span 2;">
+                <div style="display:flex; align-items:center; width:100%; gap:15px;">
+                    <div class="shop-icon" style="margin:0;">🔋</div>
+                    <div style="text-align:left; flex:1;">
+                        <div class="shop-title">Red Bull Power</div>
+                        <div class="shop-desc" style="margin:0; color:#fff;">
+                            <span style="color:var(--success)">Пауза расхода энергии на 2 мин.</span><br>
+                            <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
+                        </div>
+                    </div>
+                    <button class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">👟 Сникерхед</div>
+        <div class="shop-item item-shoes" style="margin-bottom: 8px;">
+            <div class="shop-icon">🐼</div>
+            <div style="flex:1;">
+                <div class="shop-title">Abibas Ultra</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Классика района.</div>
+                <div style="background:rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Прочность: <b>5000 шагов</b>
+                </div>
+            </div>
+            <button class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas', 50, 100)">50 PLN</button>
+        </div>
+        <div class="shop-item item-shoes" style="border-color: var(--gold);">
+            <div class="shop-icon">🔥</div>
+            <div style="flex:1;">
+                <div class="shop-title" style="color:var(--gold)">Jorban Air</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Премиум стиль.</div>
+                <div style="background:rgba(253, 186, 116, 0.2); color:var(--accent-gold); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Бонус: <b>+20% к чаевым</b>
+                </div>
+            </div>
+            <button class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban', 250, 150)">250 PLN</button>
+        </div>
+        
+        <div style="height: 20px;"></div>
+    </div>
+
+    <div id="view-invest" class="view">
+        <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
+        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
+        <div id="my-items-list" class="shop-grid" style="margin-bottom:15px;"></div>
+    </div>
+
+    <div id="view-bank" class="view">
+        <h3 style="margin:0;">🏦 Банк</h3>
+        <div class="card">
+            <h4 style="margin:0 0 5px 0; font-size:12px; color:var(--accent-blue);">🎁 Секретный промокод</h4>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="promo-input" class="promo-input" placeholder="Введите слово..." style="margin:0;">
+                <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
+            </div>
+        </div>
+        <div class="card">
+             <div id="bank-actions-ui"></div>
+        </div>
+        <div class="card">
+            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
+            <div style="display:flex; gap:8px;">
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
+            </div>
+        </div>
+        <div class="card history-list" id="history-ui" style="max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
+    </div>
+</div>
+
+<div id="game-log"></div>
+
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
+    <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
+    <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
+    <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
+    <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="database.js?v=4.0"></script>
+<script src="logic.js?v=4.5" defer></script>
+
+</body>
+</html>
