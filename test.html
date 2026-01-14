@@ -3,217 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical UI</title>
+    <title>Garage Tuning System</title>
     <style>
         :root {
-            --bg: #09090b;
-            --surface: #18181b;
-            --surface-highlight: #27272a;
-            --accent: #D4FF00; /* Acid Lime - Очень модный сейчас */
-            --text-main: #f4f4f5;
-            --text-dim: #71717a;
-            --border: rgba(255,255,255,0.08);
-            --font-mono: "Courier New", Courier, monospace;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #3b82f6; /* Дефолтный синий */
+            --text-main: #fff;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
         }
 
         body {
-            background-color: var(--bg);
-            /* Тонкая сетка на фоне для техничности */
-            background-image: 
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 40px 40px;
+            background: var(--bg);
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0; padding: 0;
-            height: 100vh;
-            display: flex; flex-direction: column;
-            overflow: hidden;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; gap: 20px;
+            min-height: 100vh;
         }
 
-        /* === HEADER === */
-        .header {
-            padding: 24px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            background: linear-gradient(180deg, var(--bg) 0%, rgba(9,9,11,0) 100%);
+        /* Хедер с деньгами */
+        .garage-header {
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .balance-label { 
-            font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .balance-val { 
-            font-size: 36px; font-weight: 900; letter-spacing: -1px; line-height: 1;
-        }
-        .balance-val span { font-size: 14px; color: var(--accent); font-weight: 400; font-family: var(--font-mono); }
-
-        .user-tag {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 4px 8px;
-            font-family: var(--font-mono);
-            font-size: 10px; color: var(--accent);
-            text-transform: uppercase;
+        .money-badge {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 16px; border-radius: 20px; font-weight: 700; font-family: monospace; font-size: 16px;
+            color: #fbbf24;
         }
 
-        /* === MIDDLE AREA === */
-        .main-stage {
-            flex: 1;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            position: relative;
-        }
-
-        /* КНОПКА ЗАПУСКА (Industrial Style) */
-        .start-btn-container {
-            width: 220px; height: 220px;
-            position: relative;
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        /* Вращающаяся техническая обводка */
-        .tech-ring {
-            position: absolute; inset: -20px;
-            border: 1px dashed var(--surface-highlight);
-            border-radius: 50%;
-            animation: slowSpin 60s linear infinite;
-        }
-        
-        .main-btn {
-            width: 180px; height: 180px;
-            background: linear-gradient(145deg, #2a2a2e, #1c1c1f);
-            border-radius: 50%;
+        /* ПРЕВЬЮ БАЙКА / СФЕРЫ */
+        .preview-stage {
+            height: 200px;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 70%);
+            border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 
-                20px 20px 60px #050506, 
-                -20px -20px 60px #1f1f24,
-                inset 0 0 0 4px var(--bg); /* Канавка */
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer;
-            transition: 0.1s;
+            display: flex; justify-content: center; align-items: center;
             position: relative;
         }
-        
-        /* Индикатор активности */
-        .btn-status-light {
-            width: 8px; height: 8px; background: var(--surface-highlight);
-            border-radius: 50%; margin-bottom: 15px;
-            box-shadow: 0 0 0 0 rgba(212, 255, 0, 0);
-            transition: 0.3s;
-        }
-        
-        .btn-label { font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #fff; }
-        .btn-sub { font-size: 10px; font-family: var(--font-mono); color: var(--text-dim); margin-top: 4px; }
 
-        /* Эффект нажатия */
-        .main-btn:active {
-            transform: scale(0.96);
-            background: linear-gradient(145deg, #1c1c1f, #2a2a2e);
+        /* Тюнингуемая Сфера */
+        .tuning-sphere {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: #000;
+            /* Самое важное: тень берет цвет из переменной --accent */
             box-shadow: 
-                5px 5px 10px #050506, 
-                -5px -5px 10px #1f1f24,
-                inset 0 0 0 4px var(--bg);
+                inset 0 0 20px var(--accent),
+                0 0 30px var(--accent),
+                0 20px 50px rgba(0,0,0,0.8);
+            border: 2px solid var(--accent);
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.3s ease;
         }
-        .main-btn:active .btn-status-light {
-            background: var(--accent);
-            box-shadow: 0 0 10px var(--accent);
-        }
-        .main-btn:active .btn-label { color: var(--accent); }
+        .tuning-sphere b { font-size: 20px; z-index: 2; text-shadow: 0 0 10px black; }
 
-        /* === INFO CARDS (Снизу) === */
-        .info-deck {
-            width: 100%;
-            padding: 0 24px 30px 24px;
-            box-sizing: border-box;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        /* Характеристики */
+        .stats-row {
+            display: flex; gap: 10px; margin-top: -10px;
         }
+        .stat-card {
+            flex: 1; background: var(--card-bg); padding: 10px; border-radius: 12px;
+            display: flex; flex-direction: column; gap: 5px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .stat-name { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-bar { height: 4px; background: rgba(0,0,0,0.5); border-radius: 2px; overflow: hidden; }
+        .stat-fill { height: 100%; background: var(--text-main); width: 10%; transition: 0.3s; }
 
-        .data-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
+        /* СПИСОК УЛУЧШЕНИЙ */
+        .section-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 10px; }
+        
+        .upgrade-item {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
             padding: 15px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            height: 70px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
         }
-        .data-head { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between;}
-        .data-val { font-size: 18px; font-family: var(--font-mono); font-weight: bold; margin-top: auto; color: var(--text-main); }
-        .data-icon { opacity: 0.3; }
+        .upg-info h4 { margin: 0; font-size: 14px; }
+        .upg-lvl { font-size: 10px; color: var(--accent); font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .upg-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
-        /* === BOTTOM NAV (Minimal) === */
-        .nav-bar {
-            border-top: 1px solid var(--border);
-            background: var(--bg);
-            padding: 15px 0 25px 0;
-            display: flex; justify-content: space-evenly;
+        .btn-buy {
+            background: var(--success);
+            color: black; border: none;
+            padding: 8px 16px; border-radius: 8px;
+            font-weight: 700; font-size: 12px;
+            cursor: pointer;
+            min-width: 80px;
         }
-        .nav-btn {
-            font-size: 10px; font-weight: 700; color: var(--text-dim);
-            text-transform: uppercase; letter-spacing: 1px;
-            padding: 10px 15px;
-            border: 1px solid transparent;
-            transition: 0.2s;
-        }
-        .nav-btn.active {
-            color: var(--accent);
-            border: 1px solid var(--accent);
-            background: rgba(212, 255, 0, 0.05);
-        }
+        .btn-buy:active { transform: scale(0.95); }
 
-        @keyframes slowSpin { to { transform: rotate(360deg); } }
+        /* СЕЛЕКТОР ЦВЕТА */
+        .color-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .color-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+            cursor: pointer; flex-shrink: 0;
+        }
+        .color-btn.active { border-color: white; transform: scale(1.1); }
 
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div>
-            <div class="balance-label">Total Balance</div>
-            <div class="balance-val">1,240.50 <span>PLN</span></div>
-        </div>
-        <div class="user-tag">ID: 8842</div>
+    <div class="garage-header">
+        <h2 style="margin:0;">⚙️ GARAGE</h2>
+        <div class="money-badge" id="money-display">5000 PLN</div>
     </div>
 
-    <div class="main-stage">
-        <div class="start-btn-container">
-            <div class="tech-ring"></div>
-            <div class="main-btn" onclick="vibrate()">
-                <div class="btn-status-light"></div>
-                <div class="btn-label">ENGAGE</div>
-                <div class="btn-sub">TAP TO WORK</div>
-            </div>
+    <div class="preview-stage">
+        <div class="tuning-sphere" id="sphere-preview">
+            <b>TAP</b>
         </div>
     </div>
 
-    <div class="info-deck">
-        <div class="data-card">
-            <div class="data-head">Energy <span class="data-icon">⚡</span></div>
-            <div class="data-val" style="color: #fff">94%</div>
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-name">Скорость</div>
+            <div class="stat-bar"><div class="stat-fill" id="bar-speed" style="width: 10%"></div></div>
+            <div id="val-speed" style="font-size:10px; text-align:right;">10 km/h</div>
         </div>
-        <div class="data-card">
-            <div class="data-head">District <span class="data-icon">📍</span></div>
-            <div class="data-val" style="color: var(--text-dim)">PRAGA</div>
-        </div>
-        <div class="data-card" style="grid-column: span 2; height: auto; flex-direction: row; align-items: center;">
-            <div style="flex:1">
-                <div class="data-head" style="margin-bottom: 4px;">Current Objective</div>
-                <div style="font-size: 12px; color: var(--accent);">Collect 5 Bottles</div>
-            </div>
-            <button style="background: var(--text-main); color:black; border:none; padding: 8px 16px; font-weight:bold; font-size:10px; cursor:pointer;">ACTION</button>
+        <div class="stat-card">
+            <div class="stat-name">Экономия</div>
+            <div class="stat-bar"><div class="stat-fill" id="bar-eco" style="width: 0%"></div></div>
+            <div id="val-eco" style="font-size:10px; text-align:right;">0%</div>
         </div>
     </div>
 
-    <div class="nav-bar">
-        <div class="nav-btn active">City</div>
-        <div class="nav-btn">Career</div>
-        <div class="nav-btn">Shop</div>
-        <div class="nav-btn">Bank</div>
+    <div class="section-title">🔧 Технический Тюнинг</div>
+    
+    <div class="upgrade-item">
+        <div class="upg-info">
+            <h4>Двигатель <span class="upg-lvl" id="lvl-motor">LVL 1</span></h4>
+            <div class="upg-desc">Расход энергии -5% за уровень</div>
+        </div>
+        <button class="btn-buy" id="btn-motor" onclick="upgradePart('motor')">
+            500 PLN
+        </button>
     </div>
+
+    <div class="upgrade-item">
+        <div class="upg-info">
+            <h4>Колеса <span class="upg-lvl" id="lvl-wheels">LVL 1</span></h4>
+            <div class="upg-desc">Скорость +2 km/h за уровень</div>
+        </div>
+        <button class="btn-buy" id="btn-wheels" onclick="upgradePart('wheels')">
+            350 PLN
+        </button>
+    </div>
+
+    <div class="section-title">🎨 Неоновая подсветка (200 PLN)</div>
+    <div class="color-grid">
+        <div class="color-btn active" style="background:#3b82f6" onclick="setNeon('#3b82f6', this)"></div> <div class="color-btn" style="background:#ef4444" onclick="setNeon('#ef4444', this)"></div> <div class="color-btn" style="background:#22c55e" onclick="setNeon('#22c55e', this)"></div> <div class="color-btn" style="background:#a855f7" onclick="setNeon('#a855f7', this)"></div> <div class="color-btn" style="background:#D4FF00" onclick="setNeon('#D4FF00', this)"></div> <div class="color-btn" style="background:#f97316" onclick="setNeon('#f97316', this)"></div> </div>
 
     <script>
-        function vibrate() {
-            if(window.navigator && window.navigator.vibrate) {
-                window.navigator.vibrate([10, 30, 10]);
+        // Имитация данных игрока
+        let money = 5000;
+        let upgrades = {
+            motor: { lvl: 1, basePrice: 500, stat: 0 },
+            wheels: { lvl: 1, basePrice: 350, stat: 10 }
+        };
+
+        function updateUI() {
+            document.getElementById('money-display').innerText = Math.floor(money) + " PLN";
+
+            // Обновляем кнопки и цены
+            updatePartUI('motor', 5); // 5% за уровень
+            updatePartUI('wheels', 2); // 2 km/h за уровень
+        }
+
+        function updatePartUI(type, statStep) {
+            let part = upgrades[type];
+            // ФОРМУЛА РОСТА ЦЕНЫ: База * (1.5 в степени уровня)
+            let nextPrice = Math.floor(part.basePrice * Math.pow(1.5, part.lvl - 1));
+            
+            document.getElementById('lvl-' + type).innerText = "LVL " + part.lvl;
+            document.getElementById('btn-' + type).innerText = nextPrice + " PLN";
+            
+            // Обновляем полоски статов
+            if(type === 'wheels') {
+                let val = 10 + (part.lvl - 1) * statStep;
+                document.getElementById('val-speed').innerText = val + " km/h";
+                document.getElementById('bar-speed').style.width = Math.min(100, val * 2) + "%";
+            }
+            if(type === 'motor') {
+                let val = (part.lvl - 1) * statStep;
+                document.getElementById('val-eco').innerText = val + "%";
+                document.getElementById('bar-eco').style.width = Math.min(100, val * 2) + "%";
             }
         }
+
+        function upgradePart(type) {
+            let part = upgrades[type];
+            let price = Math.floor(part.basePrice * Math.pow(1.5, part.lvl - 1));
+
+            if (money >= price) {
+                money -= price;
+                part.lvl++;
+                
+                // Вибрация для кайфа
+                if(window.navigator.vibrate) window.navigator.vibrate(50);
+                
+                updateUI();
+            } else {
+                alert("Не хватает денег! Нужно " + price);
+            }
+        }
+
+        function setNeon(color, el) {
+            // Эмуляция покупки цвета
+            if (money >= 200 || el.classList.contains('unlocked')) { 
+                if(!el.classList.contains('unlocked')) {
+                    if(confirm("Купить этот цвет за 200 PLN?")) {
+                        money -= 200;
+                        el.classList.add('unlocked');
+                        updateUI();
+                    } else return;
+                }
+                
+                // Меняем CSS переменную --accent
+                document.documentElement.style.setProperty('--accent', color);
+                
+                // Переключаем активный класс
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                el.classList.add('active');
+                
+                if(window.navigator.vibrate) window.navigator.vibrate(20);
+            } else {
+                alert("Нет денег на покраску!");
+            }
+        }
+        
+        // Помечаем первый цвет как купленный
+        document.querySelector('.color-btn').classList.add('unlocked');
+
+        updateUI();
     </script>
+
 </body>
 </html>
