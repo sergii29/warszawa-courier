@@ -1,4 +1,4 @@
-// --- logic.js (v5.2 SPRAY FIX) ---
+// --- logic.js (v5.4 SMART WEATHER & SAFETY) ---
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
@@ -55,7 +55,7 @@ let G = {
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
     ],
     lastActive: Date.now(),
-    gameTime: 720 // 12:00
+    gameTime: 720 // 12:00 (Полдень старт)
 };
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
@@ -342,7 +342,6 @@ function load() {
     } 
     
     // --- ПОЧИНКА СПРЕЯ ---
-    // Если переменной нет вообще или она сломана - создаем null, чтобы товар появился в магазине
     if(G.spray === undefined || (G.spray && typeof G.spray !== 'object')) {
         G.spray = null;
     }
@@ -372,14 +371,38 @@ function load() {
     try { updateUI(); } catch(e) { console.error(e); }
 }
 
+// УЛУЧШЕННАЯ ПОКУПКА (РАЗРЕШАЕТ ПЕРЕПОКУПКУ ПУСТОГО СПРЕЯ)
+function buyInvest(type, p) { 
+    // Разрешаем покупать, если нет предмета ИЛИ если это спрей и он пустой
+    let canBuy = !G[type] || (type === 'spray' && G[type].dur <= 0);
+
+    if(canBuy && G.money >= p) { 
+        G.money = parseFloat((G.money - p).toFixed(2)); 
+        let maxDur = 100;
+        let conf = UPGRADES.find(u => u.id === type);
+        if(conf && conf.maxDur) maxDur = conf.maxDur;
+
+        // Перезаписываем новым (полным)
+        G[type] = { active: true, dur: maxDur };
+        addHistory('ИНВЕСТ', p, 'minus'); 
+        save(); 
+        updateUI(); 
+    } 
+}
+
 function updateUI() {
     try {
         const moneyEl = document.getElementById('money-val');
         const isBlind = G.blindTime > 0; 
         
-        isNight = (G.gameTime < 360 || G.gameTime >= 1320); 
-        if (isNight) document.body.classList.add('night-mode');
-        else document.body.classList.remove('night-mode');
+        // --- ДЕНЬ / НОЧЬ (ИСПРАВЛЕНО 21:00 - 06:00) ---
+        isNight = (G.gameTime < 360 || G.gameTime >= 1260); 
+        
+        if (isNight) {
+            document.body.classList.add('night-mode');
+        } else {
+            document.body.classList.remove('night-mode');
+        }
 
         if(moneyEl) {
             if (isBlind) {
@@ -397,12 +420,20 @@ function updateUI() {
         document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
         document.getElementById('water-val').innerText = Math.floor(G.waterStock);
         
+        // --- УМНАЯ ПОГОДА (НИЖНИЙ ИНДИКАТОР) ---
         let timeIcon = isNight ? "🌙" : "☀️";
         document.getElementById('district-ui').innerHTML = `📍 ${DISTRICTS[G.district].name} | ${timeIcon} ${formatGameTime(G.gameTime)}`;
         
-        let weatherText = weather === "Дождь" ? "🌧️ Дождь" : (isNight ? "✨ Ясно" : "☀️ Ясно");
-        if(isNight) weatherText += " (Тариф +20%)";
+        let weatherText = "";
+        if (weather === "Дождь") {
+            weatherText = isNight ? "⛈️ Гроза" : "🌧️ Дождь";
+        } else {
+            weatherText = isNight ? "🌙 Ясно" : "☀️ Ясно";
+        }
+        
+        if(isNight) weatherText += " (+20%)";
         document.getElementById('weather-ui').innerText = weatherText;
+        // --- КОНЕЦ УМНОЙ ПОГОДЫ ---
         
         if(weather === "Дождь") document.body.classList.add('rain-mode');
         else document.body.classList.remove('rain-mode');
@@ -583,7 +614,6 @@ function updateUI() {
         if(shopList) {
             shopList.innerHTML = ''; 
             
-            // КАТЕГОРИИ: БЕЗОПАСНОСТЬ ТЕПЕРЬ ПЕРВАЯ
             const categories = {
                 'safety': '🛡️ Безопасность (ВАЖНО!)',
                 'transport': '🚴 Транспорт',
@@ -592,8 +622,17 @@ function updateUI() {
             };
 
             for (const [catKey, catName] of Object.entries(categories)) {
-                // ФИКС: Строгая проверка G[u.id]
-                const items = UPGRADES.filter(u => u.cat === catKey && !u.hidden && !G[u.id]);
+                // ФИКС МАГАЗИНА: Если спрей есть, но пуст (dur <= 0), он ДОЛЖЕН появиться
+                const items = UPGRADES.filter(u => {
+                    if (u.hidden) return false;
+                    if (u.cat !== catKey) return false;
+                    
+                    if (u.id === 'spray') {
+                        return !G[u.id] || G[u.id].dur <= 0;
+                    }
+                    
+                    return !G[u.id];
+                });
                 
                 if (items.length > 0) {
                     const catHeader = document.createElement('div');
@@ -823,103 +862,6 @@ function generateOrder() {
     updateUI(); 
 }
 
-function openRouteModal() {
-    const autoBtn = document.getElementById('btn-auto-route');
-    const autoLabel = document.getElementById('lbl-auto-route');
-    const autoDesc = document.getElementById('desc-auto-route');
-
-    if (G.autoTime > 0) {
-        autoLabel.innerHTML = "<b>🤖 ПОРУЧИТЬ РОБОТУ</b>";
-        autoDesc.innerHTML = "<small style='color:var(--success)'>Активно: " + Math.floor(G.autoTime/60) + " мин</small>";
-        autoBtn.onclick = function() {
-             closeRouteModal();
-             acceptOrder(); 
-             log("🤖 Робот принял заказ", "var(--accent-gold)");
-        };
-        autoBtn.style.borderColor = "var(--success)";
-        autoBtn.style.background = "rgba(34, 197, 94, 0.1)";
-    } else {
-        autoLabel.innerHTML = "<b>🤖 КУПИТЬ АВТО (45 PLN)</b>";
-        autoDesc.innerHTML = "<small style='color:var(--accent-gold)'>Робот сделает всё сам (+10 мин)</small>";
-        autoBtn.onclick = function() { activateAutopilot(); };
-        autoBtn.style.borderColor = "var(--accent-gold)";
-        autoBtn.style.background = "rgba(245, 158, 11, 0.1)";
-    }
-    document.getElementById('route-modal').style.display = 'flex';
-}
-
-function closeRouteModal() {
-    document.getElementById('route-modal').style.display = 'none';
-}
-
-function chooseRoute(type) {
-    closeRouteModal();
-    if (type === 'safe') {
-        order.isRiskyRoute = false;
-    } else if (type === 'risky') {
-        order.isRiskyRoute = true;
-        order.time = Math.floor(order.time * 0.5); 
-    }
-    acceptOrder();
-}
-
-function activateAutopilot() { 
-    closeRouteModal();
-    if(G.money >= 45 && G.lvl >= 0.15) { 
-        G.money = parseFloat((G.money - 45).toFixed(2)); 
-        G.lvl -= 0.15; 
-        
-        let hasPower = (G.powerbank && G.powerbank.dur > 0);
-        let timeAdd = hasPower ? 900 : 600; 
-        
-        G.autoTime += timeAdd; 
-        addHistory('АВТОПИЛОТ', 45, 'minus'); 
-        acceptOrder(); 
-        save(); 
-        updateUI(); 
-    } else {
-        log("Не хватает денег или LVL!", "var(--danger)");
-    }
-}
-
-function acceptOrder() { order.active = true; updateUI(); }
-
-function buyShoes(name, price, durability) {
-    if (G.shoes.name === name && G.shoes.dur > 0) {
-        log("У вас уже есть эти кроссовки!", "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
-        return;
-    }
-
-    if (G.money >= price) {
-        G.money -= price;
-        let bonus = 0;
-        if (name === "Jorban") bonus = 0.2; 
-        
-        G.shoes = { name: name, maxDur: durability, dur: durability, bonus: bonus };
-        addHistory('👟 ' + name.toUpperCase(), price, 'minus');
-        log("Куплены " + name + "!", "var(--purple)");
-        save();
-        updateUI();
-    } else {
-        log("Не хватает денег!", "var(--danger)");
-    }
-}
-
-function buyInvest(type, p) { 
-    if(!G[type] && G.money >= p) { 
-        G.money = parseFloat((G.money - p).toFixed(2)); 
-        let maxDur = 100;
-        let conf = UPGRADES.find(u => u.id === type);
-        if(conf && conf.maxDur) maxDur = conf.maxDur;
-
-        G[type] = { active: true, dur: maxDur };
-        addHistory('ИНВЕСТ', p, 'minus'); 
-        save(); 
-        updateUI(); 
-    } 
-}
-
 function sellInvest(type, p) {
     if(G[type]) {
         G.money = parseFloat((G.money + p).toFixed(2)); 
@@ -952,331 +894,6 @@ function repairItem(type, cost) {
     } else {
         log("Нет денег на ремонт (" + cost + ")", "var(--danger)");
     }
-}
-
-function getWelfare() {
-    let now = Date.now();
-    if (G.money >= 0) {
-        log("Пособие только для должников!", "var(--danger)");
-        return;
-    }
-    if (now - G.lastWelfare < 600000) { 
-        let wait = Math.ceil((600000 - (now - G.lastWelfare)) / 60000);
-        log("Жди еще " + wait + " мин.", "var(--danger)");
-        return;
-    }
-    
-    G.money = parseFloat((G.money + 30).toFixed(2));
-    G.lastWelfare = now;
-    addHistory('👵 БАБУШКА', 30, 'plus');
-    log("Бабушка прислала 30 PLN на еду!", "var(--success)");
-    save();
-    updateUI();
-}
-
-function repairBikeInstant() {
-    if (G.money >= 15) {
-        G.money = parseFloat((G.money - 15).toFixed(2));
-        isBroken = false;
-        repairProgress = 0;
-        addHistory('🔧 РЕМОНТ', 15, 'minus');
-        log("Велик починен за деньги!", "var(--success)");
-        save();
-        updateUI();
-    } else {
-        log("Нет денег (15 PLN)!", "var(--danger)");
-    }
-}
-
-function finishOrder(win) { 
-    if(!order.active) return;
-    order.active = false; 
-    if(win) { 
-        // Логика НОЧНОГО ГОП-СТОПА
-        if (isNight && G.district === 0) {
-            if (Math.random() < 0.05) {
-                 if (G.spray && G.spray.dur > 0) {
-                     log("🌶️ ГОПНИК! Вы залили его перцем!", "var(--success)");
-                     G.spray.dur = Math.max(0, G.spray.dur - 34); 
-                     if(G.spray.dur === 0) log("⚠️ Баллончик пуст!", "var(--danger)");
-                 } else {
-                     let stolen = parseFloat((G.money * 0.2).toFixed(2)); 
-                     if (stolen > 0) {
-                         G.money -= stolen;
-                         log("🔪 ГОП-СТОП! Украли " + stolen + " PLN", "var(--danger)");
-                         addHistory('🔪 ОГРАБЛЕНИЕ', stolen, 'minus');
-                     } else {
-                         log("🔪 Гопники обыскали, но денег нет.", "#aaa");
-                     }
-                 }
-            }
-        }
-
-        if (order.isRiskyRoute) {
-            let riskRoll = Math.random();
-            let hasHelmet = (G.helmet && G.helmet.dur > 0);
-            let riskChance = hasHelmet ? 0.15 : 0.30; 
-
-            if (riskRoll < riskChance) { 
-                log("💥 АВАРИЯ на срезке!", "var(--danger)");
-                isBroken = true;
-                repairProgress = 0;
-                
-                G.money = parseFloat((G.money - 20).toFixed(2)); 
-                addHistory('💥 АВАРИЯ', 20, 'minus');
-                order.visible = false; updateUI(); save();
-                return; 
-            }
-        }
-        let policeChance = order.isCriminal ? 0.35 : 0.02; 
-        if(Math.random() < policeChance) { 
-            let fine = (G.lvl < 2) ? 50 : 150;
-            G.lvl -= 1.2; G.money = parseFloat((G.money - fine).toFixed(2)); 
-            addHistory('👮 ШТРАФ', fine, 'minus');
-            log("🚔 ПОЛИЦИЯ! Штраф -" + fine, "var(--danger)"); 
-        } else { 
-            G.money = parseFloat((G.money + order.reward).toFixed(2)); 
-            G.totalEarned += order.reward; 
-            addHistory(order.isCriminal ? '☠️ КРИМИНАЛ' : '📦 ЗАКАЗ', order.reward.toFixed(2), 'plus');
-            G.lvl += (order.isCriminal ? 0.12 : 0.015); 
-            G.totalOrders++; 
-            
-            checkDailyQuests('orders', 1); 
-            checkDailyQuests('earn', order.reward); 
-
-            if(Math.random() < 0.40) { 
-                let tip = parseFloat((5 + Math.random()*15).toFixed(2)); 
-                if (order.isRiskyRoute) tip *= 2; 
-                
-                if (G.shoes && G.shoes.bonus > 0) {
-                    tip *= (1 + G.shoes.bonus);
-                }
-
-                G.money = parseFloat((G.money + tip).toFixed(2)); 
-                G.totalEarned += tip; 
-                checkDailyQuests('earn', tip);
-
-                addHistory('💰 ЧАЕВЫЕ', tip, 'plus');
-                log("💰 Чаевые: +" + tip.toFixed(2), "var(--success)"); 
-            } 
-        } 
-    } 
-    order.visible = false; updateUI(); save(); 
-}
-
-function checkMilestones() { 
-    if(!G.activeMilestones) return;
-    G.activeMilestones.forEach((m, i) => { 
-        let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; 
-        if(cur >= m.goal) { 
-            G.money = parseFloat((G.money + m.reward).toFixed(2)); 
-            G.totalEarned += m.reward;
-            addHistory('🏆 ЦЕЛЬ', m.reward, 'plus'); 
-            G.lvl += 0.01; 
-            log("🏆 ДОСТИЖЕНИЕ: " + m.name, "var(--gold)"); 
-            G.activeMilestones[i] = { id: Date.now()+i, name: m.name, goal: cur + Math.floor(m.goal*0.6), type: m.type, reward: m.reward + 20 }; 
-            save(); 
-        } 
-    }); 
-}
-
-function renderMilestones() { 
-    if(!G.activeMilestones) return;
-    document.getElementById('milestones-list').innerHTML = G.activeMilestones.map(m => { 
-        let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; 
-        return "<div class='card' style='margin-top:8px;'><b>" + m.name + "</b><br><small style='color:var(--gold);'>Награда: " + m.reward + " PLN</small><div class='career-progress'><div class='career-fill' style='width:" + Math.min(100,(cur/m.goal*100)) + "%'></div></div><small>" + cur + "/" + m.goal + "</small></div>"; 
-    }).join(''); 
-}
-
-function buyLvl(cost, amount) {
-    if (G.money >= cost) {
-        G.money = parseFloat((G.money - cost).toFixed(2));
-        G.lvl += amount;
-        addHistory('📈 PR-ХОД', cost, 'minus');
-        log("Вы купили рекламу: +" + amount + " LVL", "var(--accent-blue)");
-        save();
-        updateUI();
-    } else {
-        log("Не хватает денег (" + cost + " PLN)!", "var(--danger)");
-    }
-}
-
-function collectBottles() { 
-    if (isSearching) {
-        spamCounter++;
-        if (spamCounter > 15) {
-            log("🤖 Слишком быстро! Руки не мельница!", "var(--danger)");
-            tg.HapticFeedback.notificationOccurred('error');
-            G.money = Math.max(0, G.money - 100); 
-            G.lvl -= 0.1; 
-            spamCounter = 0;
-            updateUI();
-        }
-        return; 
-    }
-
-    isSearching = true;
-    spamCounter = 0;
-    
-    const btn = document.querySelector("button[onclick='collectBottles()']");
-    const originalText = btn ? btn.innerText : "♻️ СБОР БУТЫЛОК";
-    
-    if(btn) {
-        btn.innerText = "⏳ Роемся..."; 
-        btn.style.opacity = "0.6";
-    }
-
-    setTimeout(() => {
-        G.money = parseFloat((G.money + 0.05).toFixed(2)); 
-        G.totalEarned += 0.05;
-        checkDailyQuests('earn', 0.05);
-        G.totalBottles++; 
-        
-        let repGain = 0;
-        if (G.lvl < 1.0) repGain = 0.02; 
-        else repGain = 0.002; 
-
-        if (Math.random() < 0.10) { 
-            repGain *= 3; 
-            log("💎 Нашел стеклотару! Респект x3", "var(--success)");
-        }
-
-        G.lvl += repGain;
-        checkMilestones(); 
-        save(); 
-        updateUI(); 
-
-        isSearching = false;
-        if(btn) {
-            btn.innerText = originalText;
-            btn.style.opacity = "1";
-        }
-    }, 1200); 
-}
-
-function buyWater() { 
-    if(G.money >= 1.50) { 
-        G.money = parseFloat((G.money - 1.50).toFixed(2)); 
-        G.waterStock += 1500; 
-        addHistory('🧴 ВОДА', 1.50, 'minus'); 
-        save(); 
-        updateUI(); 
-    } 
-}
-
-function buyDrink(type, p) { 
-    if(G.money >= p) { 
-        G.money = parseFloat((G.money - p).toFixed(2)); 
-        addHistory(type.toUpperCase(), p, 'minus'); 
-        if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300); 
-        else G.buffTime += 120; 
-        save(); 
-        updateUI(); 
-    } 
-}
-
-function rentBike() { 
-    if (G.money >= 30) { 
-        G.money = parseFloat((G.money - 30).toFixed(2)); 
-        addHistory('🚲 ВЕЛИК', 30, 'minus'); 
-        G.bikeRentTime += 600; 
-        save(); 
-        updateUI(); 
-    } 
-}
-
-function exchangeLvl(l, m) { 
-    if(G.lvl >= l) { 
-        if (m > 200 && Math.random() < 0.3) {
-            G.blindTime = 600; 
-            log("👁️ БАНК СКРЫЛ СЧЕТА НА 10 МИН!", "var(--danger)");
-        }
-
-        G.lvl -= l; 
-        G.money = parseFloat((G.money + m).toFixed(2)); 
-        G.totalEarned += m;
-        checkDailyQuests('earn', m);
-        addHistory('💎 ОБМЕН', m, 'plus'); 
-        save(); 
-        updateUI(); 
-    } 
-}
-
-function switchTab(v, el) { 
-    curView = v; 
-    document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); 
-    document.getElementById('view-'+v).classList.add('active'); 
-    document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active')); 
-    el.classList.add('active'); 
-    updateUI(); 
-}
-
-function moveDistrict(id) { 
-    if (G.district === id) return;
-    if (G.money < DISTRICTS[id].price || G.lvl < DISTRICTS[id].minLvl) {
-        log("Недостаточно ресурсов!", "var(--danger)");
-        return;
-    }
-    G.money = parseFloat((G.money - DISTRICTS[id].price).toFixed(2)); 
-    addHistory('🏙️ ПЕРЕЕЗД', DISTRICTS[id].price, 'minus'); 
-    G.district = id; 
-    save(); 
-    updateUI(); 
-}
-
-function triggerBreakdown() { 
-    isBroken = true; 
-    repairProgress = 0; 
-    log("🚲 ПОЛОМКА!", "var(--danger)"); 
-    tg.HapticFeedback.notificationOccurred('error');
-    updateUI(); 
-}
-
-function updateDistrictButtons() {
-    DISTRICTS.forEach((d, i) => {
-        const btn = document.getElementById('btn-dist-' + i);
-        if(btn) {
-            if(G.district === i) {
-                btn.innerText = "ВЫ ЗДЕСЬ";
-                btn.classList.add('btn-secondary');
-            } else {
-                btn.innerText = "ПЕРЕЕХАТЬ" + (d.price > 0 ? " (" + d.price + " PLN)" : "");
-                btn.classList.remove('btn-secondary');
-            }
-        }
-    });
-}
-
-function renderBank() { 
-    const ui = document.getElementById('bank-actions-ui'); 
-    
-    let creditHTML = "";
-    if (G.money < 0) {
-        creditHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+30 PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
-    } else if (G.debt <= 0) {
-        creditHTML = "<button class='btn-action' onclick=\"G.money=parseFloat((G.money+50).toFixed(2));G.debt=50;addHistory('🏦 КРЕДИТ', 50, 'plus');updateUI();save();\">ВЗЯТЬ КРЕДИТ (50 PLN)</button>";
-    } else {
-        creditHTML = "<button class='btn-action' style='background:var(--success)' onclick=\"if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}\">ВЕРНУТЬ ДОЛГ (" + G.debt + " PLN)</button>";
-    }
-
-    let buyLvlHTML = `
-        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
-            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-blue);">📈 Инвестиции в себя (Купить LVL)</h4>
-            <div style="display:flex; gap:8px;">
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="buyLvl(75, 0.10)">КУПИТЬ +0.1 LVL<br>🔴 75 PLN</button>
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="buyLvl(350, 0.50)">КУПИТЬ +0.5 LVL<br>🔴 350 PLN</button>
-            </div>
-        </div>
-    `;
-
-    ui.innerHTML = creditHTML + buyLvlHTML;
-}
-
-function openProShop() {
-    document.getElementById('pro-shop-modal').style.display = 'flex';
-}
-function closeProShop() {
-    document.getElementById('pro-shop-modal').style.display = 'none';
 }
 
 setInterval(() => {
@@ -1381,11 +998,9 @@ setInterval(() => {
         
         updateUI();
     } catch(e) {
-        // Если ошибка - выводим в лог, чтобы не гадать
         log("СБОЙ ИГРЫ: " + e.message, "red");
         console.error(e);
     }
 }, 1000);
 
 window.onload = load;
-
