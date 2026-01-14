@@ -62,7 +62,6 @@ let lastClickTime = 0;
 let clicksSinceBonus = 0;
 let bonusActive = false;
 
-// Глобальные переменные для анти-бота
 let isSearching = false; 
 let spamCounter = 0;
 
@@ -231,8 +230,6 @@ function claimDaily(id) {
     }
 }
 
-// === CLOUD SYNC LOGIC ===
-
 function saveToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
@@ -259,49 +256,25 @@ function listenToCloud() {
         window.db.ref('users/' + userId).on('value', (snapshot) => {
             const remote = snapshot.val();
             if (!remote) return;
-
-            // 1. БАН
             if (remote.isBanned) {
                 document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:black;color:red;text-align:center;"><div style="font-size:60px;">⛔</div><h2>ACCESS DENIED</h2><p>Ваш аккаунт заблокирован.</p></div>';
                 return;
             }
-
-            // 2. СООБЩЕНИЯ
             if (remote.adminMessage) {
                 alert("🔔 СИСТЕМА: " + remote.adminMessage);
                 window.db.ref('users/' + userId + '/adminMessage').remove();
             }
-
-            // 3. ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ АДМИНОМ (СБРОС ИЛИ ИЗМЕНЕНИЕ ИНВЕНТАРЯ)
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
-                console.log("⚠️ АДМИН ОБНОВИЛ ДАННЫЕ");
-                
                 let wasNew = G.isNewPlayer;
-
-                // Принудительное удаление вещей, если их нет в обновлении
                 const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone'];
-                
-                invKeys.forEach(key => {
-                    if (!remote[key]) {
-                        G[key] = null; // Если в облаке пусто, удаляем у себя
-                    }
-                });
-
+                invKeys.forEach(key => { if (!remote[key]) G[key] = null; });
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
-                
-                // Если админ сделал вайп (сброс в новичка), перезагружаем страницу
-                if (G.isNewPlayer && !wasNew) {
-                    location.reload();
-                    return;
-                }
+                if (G.isNewPlayer && !wasNew) { location.reload(); return; }
                 updateUI();
                 log("⚡ Данные синхронизированы с сервером", "var(--accent-blue)");
             }
-
-            // 4. ВОССТАНОВЛЕНИЕ ПОСЛЕ ОЧИСТКИ КЕША
             if (G.isNewPlayer && remote.isNewPlayer === false) {
-                 console.log("📥 ВОССТАНОВЛЕНИЕ ИЗ ОБЛАКА");
                  G = { ...G, ...remote };
                  document.getElementById('starter-modal').style.display = 'none';
                  localStorage.setItem(SAVE_KEY, JSON.stringify(G));
@@ -333,7 +306,6 @@ function load() {
         } catch(e) { console.error(e); }
     } 
     
-    // Инициализация дефолтных значений
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(isNaN(G.en)) G.en = 2000;
@@ -352,30 +324,28 @@ function load() {
     validateInventory(); 
     checkStarterPack();
     generateDailyQuests();
-    
-    // Запускаем слушатель облака
     listenToCloud();
-    
     updateUI(); 
 }
 
 function updateUI() {
     const moneyEl = document.getElementById('money-val');
-    const isBlind = G.blindTime > 0; 
+    if(!moneyEl) return; // ЗАЩИТА ОТ КРАША
 
-    if(moneyEl) {
-        if (isBlind) {
-            let bMin = Math.floor(G.blindTime / 60);
-            let bSec = G.blindTime % 60;
-            let timerText = bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
-            moneyEl.innerText = "🔒 " + timerText;
-            moneyEl.style.color = "#aaa";
-        } else {
-            moneyEl.innerText = G.money.toFixed(2) + " PLN";
-            moneyEl.style.color = G.money < 0 ? "var(--danger)" : "var(--success)";
-        }
+    const isBlind = G.blindTime > 0; 
+    if (isBlind) {
+        let bMin = Math.floor(G.blindTime / 60);
+        let bSec = G.blindTime % 60;
+        moneyEl.innerText = "🔒 " + bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
+        moneyEl.style.color = "#aaa";
+    } else {
+        moneyEl.innerText = G.money.toFixed(2) + " PLN";
+        moneyEl.style.color = G.money < 0 ? "var(--danger)" : "var(--success)";
     }
-    document.getElementById('lvl-val').innerText = "LVL " + G.lvl.toFixed(6);
+
+    const lvlEl = document.getElementById('lvl-val');
+    if(lvlEl) lvlEl.innerText = "LVL " + G.lvl.toFixed(6);
+
     document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
     document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
     document.getElementById('water-val').innerText = Math.floor(G.waterStock);
@@ -386,34 +356,41 @@ function updateUI() {
     if(weather === "Дождь") document.body.classList.add('rain-mode');
     else document.body.classList.remove('rain-mode');
     
-    document.getElementById('auto-status-ui').style.display = G.autoTime > 0 ? 'block' : 'none';
-    if(G.autoTime > 0) document.getElementById('auto-status-ui').innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
+    const autoStatus = document.getElementById('auto-status-ui');
+    if(autoStatus) {
+        autoStatus.style.display = G.autoTime > 0 ? 'block' : 'none';
+        if(G.autoTime > 0) autoStatus.innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
+    }
     
-    document.getElementById('bike-status-ui').style.display = G.bikeRentTime > 0 ? 'block' : 'none';
-    if(G.bikeRentTime > 0) document.getElementById('bike-status-ui').innerText = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60);
-    
+    const bikeStatus = document.getElementById('bike-status-ui');
+    if(bikeStatus) {
+        bikeStatus.style.display = G.bikeRentTime > 0 ? 'block' : 'none';
+        if(G.bikeRentTime > 0) bikeStatus.innerText = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60);
+    }
+
     const buffUI = document.getElementById('buff-status-ui'); 
-    buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
-    if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
+    if(buffUI) {
+        buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
+        if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
+    }
     
-    // --- Обувь в Хедере ---
     let shoeNameDisplay = G.shoes.name;
     let shoeBar = document.getElementById('shoe-bar');
-    
-    if (G.shoes.dur <= 0) {
-        shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
-        shoeBar.style.width = "100%";
-        shoeBar.style.background = "var(--danger)";
-        shoeBar.style.opacity = "0.3"; 
-    } else {
-        const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
-        shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
-        shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
-        shoeBar.style.opacity = "1";
+    if(shoeBar) {
+        if (G.shoes.dur <= 0) {
+            shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
+            shoeBar.style.width = "100%";
+            shoeBar.style.background = "var(--danger)";
+            shoeBar.style.opacity = "0.3"; 
+        } else {
+            const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
+            shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
+            shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
+            shoeBar.style.opacity = "1";
+        }
+        document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
     }
-    document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
 
-    // --- Ранги ---
     let currentRank = RANKS[0];
     let nextRank = null;
     if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
@@ -421,24 +398,26 @@ function updateUI() {
     else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
     else { currentRank = RANKS[3]; nextRank = null; }
 
-    document.getElementById('rank-icon').innerText = currentRank.icon;
-    document.getElementById('rank-name').innerText = currentRank.name;
-    document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
-    
-    if (nextRank) {
-        let prevMax = 0;
-        if (currentRank.name === "Бывалый") prevMax = RANKS[0].max;
-        if (currentRank.name === "Профи") prevMax = RANKS[1].max;
+    const rIcon = document.getElementById('rank-icon');
+    if(rIcon) {
+        rIcon.innerText = currentRank.icon;
+        document.getElementById('rank-name').innerText = currentRank.name;
+        document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
         
-        let progress = ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100;
-        document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, progress)) + "%";
-        document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders) + " заказов";
-    } else {
-        document.getElementById('rank-progress').style.width = "100%";
-        document.getElementById('rank-next').innerText = "Вы достигли вершины!";
+        if (nextRank) {
+            let prevMax = 0;
+            if (currentRank.name === "Бывалый") prevMax = RANKS[0].max;
+            if (currentRank.name === "Профи") prevMax = RANKS[1].max;
+            let progress = ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100;
+            document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, progress)) + "%";
+            document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders) + " заказов";
+        } else {
+            document.getElementById('rank-progress').style.width = "100%";
+            document.getElementById('rank-next').innerText = "Вы достигли вершины!";
+        }
     }
 
-    // --- Квесты ---
+    // КВЕСТЫ
     let questsHTML = "";
     if(G.dailyQuests) {
         G.dailyQuests.forEach(q => {
@@ -454,7 +433,8 @@ function updateUI() {
             questsHTML += "<div class='daily-quest-item'><div class='daily-quest-info'><b>" + q.text + "</b><br><div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + Math.min(100, progressPct) + "%'></div></div></div><div style='margin-left:10px;'>" + btn + "</div></div>";
         });
     }
-    document.getElementById('daily-quests-list').innerHTML = questsHTML;
+    const qList = document.getElementById('daily-quests-list');
+    if(qList) qList.innerHTML = questsHTML;
 
     document.getElementById('stat-orders').innerText = G.totalOrders || 0;
     document.getElementById('stat-clicks').innerText = G.totalClicks || 0;
@@ -467,7 +447,6 @@ function updateUI() {
     let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
     document.getElementById('daily-timer').innerText = "Обновление: " + hours + "ч " + mins + "м";
 
-    // --- Сфера ---
     if (isBroken) {
         sphere.classList.add('broken');
         document.getElementById('sphere-text').innerText = "ЧИНИТЬ";
@@ -492,73 +471,41 @@ function updateUI() {
         else document.getElementById('click-rate-ui').innerText = rate + " PLN";
     }
 
-    const invDisp = document.getElementById('inventory-display'); 
-    invDisp.innerHTML = ''; 
+    // ИНВЕНТАРЬ (С ЗАЩИТОЙ)
     const myItemsList = document.getElementById('my-items-list');
-    myItemsList.innerHTML = '';
-    
-    // --- ОТРИСОВКА ИНВЕНТАРЯ (НОВЫЙ ПЛИТОЧНЫЙ ДИЗАЙН) ---
-    
-    // 1. ОБУВЬ
-    const shoeDiv = document.createElement('div');
-    shoeDiv.className = 'shop-item item-shoes'; // Используем стиль карточки из магазина
-    
-    let shoeStatusText = Math.floor(G.shoes.dur) + "%";
-    let isShoesBroken = G.shoes.dur <= 0;
-    
-    if (isShoesBroken) {
-        shoeDiv.classList.add('item-broken');
-        shoeStatusText = "0%";
-    }
-    
-    shoeDiv.innerHTML = `
-        <div class="shop-icon">👟</div>
-        <div style="flex:1;">
-            <div class="shop-title">${G.shoes.name}</div>
-            <div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div>
-            <div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div>
-        </div>
-    `;
-    // Добавляем кнопку купить если сломаны
-    if(isShoesBroken) {
-        shoeDiv.onclick = function() { switchTab('shop', document.querySelectorAll('.tab-item')[2]); };
-    }
-    myItemsList.appendChild(shoeDiv);
-
-    // 2. ОСТАЛЬНЫЕ ВЕЩИ
-    UPGRADES.forEach(up => {
-        if(G[up.id]) {
-            const item = G[up.id];
-            const isBroken = item.dur <= 0;
-            let conf = UPGRADES.find(u => u.id === up.id);
-            let max = conf ? conf.maxDur : 100;
-            const pct = Math.floor((item.dur / max) * 100);
-            
-            const div = document.createElement('div'); 
-            div.className = 'shop-item'; // Стиль плитки
-            if(isBroken) div.classList.add('item-broken');
-
-            div.innerHTML = `
-                <div class="shop-icon">${up.icon}</div>
-                <div class="shop-title">${up.name}</div>
-                <div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">
-                    ${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}
-                </div>
-                
-                <div class="inv-dur-track">
-                    <div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div>
-                </div>
-
-                <div class="inv-action-row">
-                    <button class="inv-btn-repair" onclick="repairItem('${up.id}', ${up.repairPrice})">🛠️ ${up.repairPrice}</button>
-                    <button class="inv-btn-sell" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ${up.price * 0.5}</button>
-                </div>
-            `;
-            myItemsList.appendChild(div);
+    if (myItemsList) {
+        myItemsList.innerHTML = '';
+        const shoeDiv = document.createElement('div');
+        shoeDiv.className = 'shop-item item-shoes';
+        let shoeStatusText = Math.floor(G.shoes.dur) + "%";
+        let isShoesBroken = G.shoes.dur <= 0;
+        if (isShoesBroken) {
+            shoeDiv.classList.add('item-broken');
+            shoeStatusText = "0%";
         }
-    });
-    
-    // --- Магазин (Заполнение списка улучшений) ---
+        shoeDiv.innerHTML = `<div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div>`;
+        if(isShoesBroken) {
+            shoeDiv.onclick = function() { switchTab('shop', document.querySelectorAll('.tab-item')[2]); };
+        }
+        myItemsList.appendChild(shoeDiv);
+
+        UPGRADES.forEach(up => {
+            if(G[up.id]) {
+                const item = G[up.id];
+                const isBroken = item.dur <= 0;
+                let conf = UPGRADES.find(u => u.id === up.id);
+                let max = conf ? conf.maxDur : 100;
+                const pct = Math.floor((item.dur / max) * 100);
+                
+                const div = document.createElement('div'); 
+                div.className = 'shop-item';
+                if(isBroken) div.classList.add('item-broken');
+                div.innerHTML = `<div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${up.repairPrice})">🛠️ ${up.repairPrice}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ${up.price * 0.5}</button></div>`;
+                myItemsList.appendChild(div);
+            }
+        });
+    }
+
     const shopList = document.getElementById('shop-upgrades-list'); 
     if(shopList) {
         shopList.innerHTML = ''; 
@@ -573,7 +520,6 @@ function updateUI() {
         });
     }
     
-    // --- Квест бар ---
     const qBar = document.getElementById('quest-bar'); 
     if (order.visible && curView === 'main') { 
         qBar.style.display = 'block'; 
@@ -1032,57 +978,40 @@ function buyLvl(cost, amount) {
 }
 
 function collectBottles() { 
-    // 1. ЛОВУШКА ДЛЯ БОТА
     if (isSearching) {
         spamCounter++;
-        // Если 15 кликов за секунду ожидания - это точно бот
         if (spamCounter > 15) {
             log("🤖 Слишком быстро! Руки не мельница!", "var(--danger)");
             tg.HapticFeedback.notificationOccurred('error');
-            
-            // Наказание боту
             G.money = Math.max(0, G.money - 100); 
-            G.lvl -= 0.1; // Откидываем рейтинг
-            
+            G.lvl -= 0.1; 
             spamCounter = 0;
             updateUI();
         }
         return; 
     }
 
-    // 2. БЛОКИРОВКА КНОПКИ (Имитация поиска)
     isSearching = true;
     spamCounter = 0;
     
     const btn = document.querySelector("button[onclick='collectBottles()']");
     const originalText = btn ? btn.innerText : "♻️ СБОР БУТЫЛОК";
     
-    // Визуально показываем игроку, что надо подождать
     if(btn) {
         btn.innerText = "⏳ Роемся..."; 
         btn.style.opacity = "0.6";
     }
 
-    // 3. ВЫДАЧА НАГРАДЫ (Через 1.2 секунды)
     setTimeout(() => {
-        // Деньги
         G.money = parseFloat((G.money + 0.05).toFixed(2)); 
         G.totalEarned += 0.05;
         checkDailyQuests('earn', 0.05);
         G.totalBottles++; 
         
-        // РЕЙТИНГ (СОЦИАЛЬНЫЙ ЛИФТ)
         let repGain = 0;
-        
-        if (G.lvl < 1.0) {
-            // Если игрок на дне - помогаем выбраться БЫСТРО (+0.02)
-            repGain = 0.02; 
-        } else {
-            // Если игрок уже крутой - халявы нет (+0.002)
-            repGain = 0.002; 
-        }
+        if (G.lvl < 1.0) repGain = 0.02; 
+        else repGain = 0.002; 
 
-        // Шанс на крит (редкая бутылка)
         if (Math.random() < 0.10) { 
             repGain *= 3; 
             log("💎 Нашел стеклотару! Респект x3", "var(--success)");
@@ -1093,13 +1022,12 @@ function collectBottles() {
         save(); 
         updateUI(); 
 
-        // Разблокировка
         isSearching = false;
         if(btn) {
             btn.innerText = originalText;
             btn.style.opacity = "1";
         }
-    }, 1200); // 1.2 секунды задержка
+    }, 1200); 
 }
 
 function buyWater() { 
@@ -1153,9 +1081,10 @@ function exchangeLvl(l, m) {
 function switchTab(v, el) { 
     curView = v; 
     document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); 
-    document.getElementById('view-'+v).classList.add('active'); 
+    const target = document.getElementById('view-'+v);
+    if(target) target.classList.add('active'); 
     document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active')); 
-    el.classList.add('active'); 
+    if(el) el.classList.add('active'); 
     updateUI(); 
 }
 
@@ -1197,6 +1126,7 @@ function updateDistrictButtons() {
 
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
+    if(!ui) return;
     
     let creditHTML = "";
     if (G.money < 0) {
@@ -1221,10 +1151,12 @@ function renderBank() {
 }
 
 function openProShop() {
-    document.getElementById('pro-shop-modal').style.display = 'flex';
+    const el = document.getElementById('pro-shop-modal');
+    if(el) el.style.display = 'flex';
 }
 function closeProShop() {
-    document.getElementById('pro-shop-modal').style.display = 'none';
+    const el = document.getElementById('pro-shop-modal');
+    if(el) el.style.display = 'none';
 }
 
 setInterval(() => {
