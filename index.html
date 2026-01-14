@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.4">
+    <link rel="stylesheet" href="style.css?v=6.0">
 </head>
 <body>
-
-<div id="float-area"></div>
 
 <div id="bonus-overlay">
     <button id="bonus-btn" onclick="claimBonus()">🎁 +50 PLN</button>
@@ -67,29 +65,6 @@
     </div>
 </div>
 
-<div id="garage-modal" class="modal-overlay" style="z-index: 3600;">
-    <div class="modal-card" style="max-height: 85vh; overflow-y: auto; width: 95%; max-width: 380px; padding: 20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="margin:0; color:white; display:flex; align-items:center; gap:8px;">🔧 Garage <span style="font-size:10px; background:var(--accent-gold); color:black; padding:2px 6px; border-radius:4px;">TUNING</span></h3>
-            <button onclick="closeGarage()" style="background:transparent; border:none; color:#aaa; font-size:24px; cursor:pointer;">✕</button>
-        </div>
-
-        <div style="background:rgba(0,0,0,0.3); border-radius:16px; padding:20px; text-align:center; margin-bottom:15px; position:relative; overflow:hidden;">
-            <div id="garage-sphere-preview" style="width:80px; height:80px; border-radius:50%; margin:0 auto; background:var(--accent-blue); box-shadow:0 0 30px var(--accent-blue);"></div>
-            <div style="margin-top:10px; font-size:11px; color:#aaa;">Цвет твоей сферы</div>
-        </div>
-
-        <div class="section-title" style="margin-top:0;">🎨 СТАЙЛИНГ (НЕОН)</div>
-        <div class="color-grid" id="garage-colors-list"></div>
-
-        <div class="section-title">🛠️ ТЕХНИЧЕСКИЙ ТЮНИНГ</div>
-        <p style="font-size:10px; color:#777; margin-bottom:10px;">Прокачка активного транспорта.</p>
-        <div id="garage-parts-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-
-        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeGarage()">В ГОРОД</button>
-    </div>
-</div>
-
 <div id="pro-shop-modal" class="modal-overlay" style="z-index: 3500;">
     <div class="modal-card" style="max-height: 80vh; overflow-y: auto; text-align: left; width: 90%; max-width: 360px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -98,7 +73,7 @@
         </div>
 
         <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05); margin-bottom:15px;">
-            <b>🚲 Аренда Велосипеда</b><br>
+            <b>🚲 Аренда Электровелосипеда</b><br>
             <small>Скорость x2. Цена зависит от LVL.</small>
             <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
         </div>
@@ -229,23 +204,10 @@
     <div id="view-shop" class="view">
         <h3 style="margin:0; margin-bottom: 15px;">🏪 Маркет</h3>
         
-        <div class="garage-banner" onclick="openGarage()">
-            <div style="z-index: 1;">
-                <div style="font-size: 10px; color: var(--danger); font-weight: 800; letter-spacing: 1px;">TUNING & CUSTOM</div>
-                <h2 style="margin: 5px 0; font-size: 18px;">Гараж Курьера</h2>
-                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Твой транспорт и стиль</small>
-                <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px; background: var(--danger); box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);">ЗАЕХАТЬ В ГАРАЖ</button>
-            </div>
-            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.6)); z-index: 1;">🔧</div>
-        </div>
-
-        <div class="section-title">🏍️ АВТОСАЛОН (E-BIKES & MOTO)</div>
-        <div id="shop-vehicles-list" style="display:flex; flex-direction:column; gap:10px;"></div>
-
         <div class="tech-banner" onclick="openProShop()">
             <div style="z-index: 1;">
                 <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">PRO GEAR</div>
-                <h2 style="margin: 5px 0; font-size: 18px;">Техника & Экипировка</h2>
+                <h2 style="margin: 5px 0; font-size: 18px;">Техника & Улучшения</h2>
                 <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Телефоны, сумки, гаджеты</small>
                 <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">ОТКРЫТЬ КАТАЛОГ</button>
             </div>
@@ -282,14 +244,86 @@
         </div>
 
         <div class="section-title">👟 Сникерхед</div>
-        <div id="shop-shoes-list"></div>
+        <div class="shop-item item-shoes" style="margin-bottom: 8px;">
+            <div class="shop-icon">🐼</div>
+            <div style="flex:1;">
+                <div class="shop-title">Abibas Ultra</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Классика района.</div>
+                <div style="background:rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Прочность: <b>100</b>
+                </div>
+            </div>
+            <button id="btn-abibas" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas')">50 PLN</button>
+        </div>
+        <div class="shop-item item-shoes" style="border-color: var(--gold);">
+            <div class="shop-icon">🔥</div>
+            <div style="flex:1;">
+                <div class="shop-title" style="color:var(--gold)">Jorban Air</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Премиум стиль.</div>
+                <div style="background:rgba(253, 186, 116, 0.2); color:var(--accent-gold); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Бонус: <b>+20% к чаевым</b>
+                </div>
+            </div>
+            <button id="btn-jorban" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban')">250 PLN</button>
+        </div>
         
         <div style="height: 20px;"></div>
     </div>
 
-    <div id="view-invest" class="view">
-        <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
-        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
+    <div id="view-garage" class="view">
+        <h3 style="margin:0;">⚙️ Гараж & Инвентарь</h3>
+        
+        <div class="preview-stage">
+            <div class="tuning-sphere" id="garage-sphere-preview">
+                <b>MOTO</b>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-name">Скорость</div>
+                <div class="stat-bar"><div class="stat-fill" id="bar-speed" style="width: 10%"></div></div>
+                <div id="val-speed" style="font-size:10px; text-align:right;">10 km/h</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-name">Экономия</div>
+                <div class="stat-bar"><div class="stat-fill" id="bar-eco" style="width: 0%"></div></div>
+                <div id="val-eco" style="font-size:10px; text-align:right;">0%</div>
+            </div>
+        </div>
+
+        <div class="section-title">🔧 Технический Тюнинг</div>
+        
+        <div class="upgrade-item">
+            <div class="upg-info">
+                <h4>Двигатель <span class="upg-lvl" id="lvl-motor">LVL 1</span></h4>
+                <div class="upg-desc">Расход энергии -3% за уровень</div>
+            </div>
+            <button class="btn-buy" id="btn-motor" onclick="upgradeGarage('motor')">...</button>
+        </div>
+
+        <div class="upgrade-item">
+            <div class="upg-info">
+                <h4>Колеса <span class="upg-lvl" id="lvl-wheels">LVL 1</span></h4>
+                <div class="upg-desc">Скорость доставки +5%</div>
+            </div>
+            <button class="btn-buy" id="btn-wheels" onclick="upgradeGarage('wheels')">...</button>
+        </div>
+
+        <div class="section-title">🎨 Неоновая подсветка (200 PLN)</div>
+        <div class="color-grid">
+            <div class="color-btn active" style="background:#3b82f6" onclick="setNeon('#3b82f6', this)"></div> 
+            <div class="color-btn" style="background:#ef4444" onclick="setNeon('#ef4444', this)"></div> 
+            <div class="color-btn" style="background:#22c55e" onclick="setNeon('#22c55e', this)"></div> 
+            <div class="color-btn" style="background:#a855f7" onclick="setNeon('#a855f7', this)"></div> 
+            <div class="color-btn" style="background:#D4FF00" onclick="setNeon('#D4FF00', this)"></div> 
+            <div class="color-btn" style="background:#f97316" onclick="setNeon('#f97316', this)"></div> 
+        </div>
+
+        <div class="section-title">🛵 Автопарк (Покупка)</div>
+        <div id="vehicles-list-container" class="shop-grid"></div>
+
+        <div class="section-title" style="margin-top:20px;">🎒 Мои Вещи</div>
         <div id="my-items-list" class="shop-grid" style="margin-bottom:15px;"></div>
     </div>
 
@@ -322,14 +356,14 @@
     <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
     <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
     <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
-    <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
+    <div class="tab-item" onclick="switchTab('garage', this)">Гараж</div>
     <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=5.4" defer></script>
+<script src="logic.js?v=6.0" defer></script>
 
 </body>
 </html>
