@@ -1,6 +1,6 @@
 :root {
     --bg-main: #0f172a; 
-    --bg-card: rgba(30, 41, 59, 0.7); /* Более прозрачные карточки */
+    --bg-card: rgba(30, 41, 59, 0.7);
     --accent-gold: #fbbf24; 
     --accent-blue: #3b82f6; 
     --text-primary: #f8fafc; 
@@ -20,9 +20,13 @@ body {
     animation: gradientBG 15s ease infinite;
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
+    margin: 0; padding: 0; 
+    height: 100vh; /* Фиксируем высоту экрана */
+    overflow: hidden; /* Убираем скролл у body */
     touch-action: manipulation;
     font-size: 13px;
+    display: flex;        /* Flex для правильного распределения высоты */
+    flex-direction: column;
 }
 
 @keyframes gradientBG {
@@ -34,8 +38,9 @@ body {
 body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000000); }
 
 .header-container {
+    flex-shrink: 0; /* Хедер не сжимается */
     background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(10px); /* Размытие фона под хедером */
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--glass-border);
     padding: 10px 15px;
     box-shadow: 0 4px 30px rgba(0,0,0,0.3);
@@ -52,20 +57,23 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 .energy-fill { 
     height: 100%; width: 0%; 
     background: linear-gradient(90deg, var(--accent-blue), #60a5fa); 
-    box-shadow: 0 0 10px var(--accent-blue); /* Свечение полоски */
+    box-shadow: 0 0 10px var(--accent-blue);
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
 }
 
+/* === ИСПРАВЛЕННЫЙ КОНТЕЙНЕР КОНТЕНТА === */
 .content { 
+    flex: 1; /* Занимает все место между хедером и низом */
     padding: 15px; 
-    height: calc(100vh - 200px); 
-    overflow-y: auto; 
+    padding-bottom: 100px; /* ВАЖНО: Отступ снизу, чтобы меню не перекрывало последний товар */
+    overflow-y: auto;      /* Скролл внутри этого блока */
     display: flex; 
     flex-direction: column;
     position: relative;
+    /* height больше не нужен, flex сделает всё сам */
 }
 
-/* Скроллбар (скрытый, но функциональный) */
+/* Скроллбар */
 .content::-webkit-scrollbar { width: 4px; }
 .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
@@ -81,10 +89,8 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 #work-sphere {
     width: 170px; height: 170px;
     border-radius: 50%;
-    /* Более глубокий и насыщенный градиент */
     background: radial-gradient(circle at 35% 35%, #60a5fa, #2563eb, #1e3a8a);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    /* Мощное свечение */
     box-shadow: 
         inset -10px -10px 20px rgba(0,0,0,0.5), 
         inset 10px 10px 20px rgba(255,255,255,0.4), 
@@ -94,7 +100,7 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
     transition: transform 0.1s, box-shadow 0.3s; 
     position: relative; z-index: 10;
     border: 1px solid rgba(255,255,255,0.1);
-    animation: floatSphere 4s ease-in-out infinite; /* Левитация */
+    animation: floatSphere 4s ease-in-out infinite;
 }
 
 @keyframes floatSphere {
@@ -102,7 +108,6 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
     50% { transform: translateY(-8px); }
 }
 
-/* Пульсация (волны от сферы) */
 #work-sphere::before {
     content: ''; position: absolute; inset: -5px; border-radius: 50%;
     border: 2px solid var(--accent-blue); opacity: 0;
@@ -141,10 +146,10 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 }
 #weather-ui { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px; backdrop-filter: blur(4px); }
 
-/* === КАРТОЧКИ И КНОПКИ (GLASSMORPHISM) === */
+/* === КАРТОЧКИ И КНОПКИ === */
 .card { 
     background: var(--bg-card); 
-    backdrop-filter: blur(12px); /* Эффект стекла */
+    backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border); 
     border-radius: 16px; 
     padding: 15px; 
@@ -158,10 +163,11 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
     color: white; border: none; padding: 14px; border-radius: 12px;
     font-weight: 700; font-size: 13px; cursor: pointer; width: 100%;
     display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); /* Цветная тень */
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
     transition: all 0.2s ease;
     border: 1px solid rgba(255,255,255,0.1);
     text-transform: uppercase; letter-spacing: 0.5px;
+    outline: none; /* Убираем стандартную обводку */
 }
 .btn-action:active { transform: scale(0.97); filter: brightness(0.9); }
 
@@ -203,7 +209,9 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); animation: slideUp 0.3s ease-out;
 }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-#view-main.active::after { content: ''; display: block; height: 90px; width: 100%; flex-shrink: 0; }
+
+/* Спейсер для главного экрана тоже можно убрать, так как теперь есть общий padding-bottom */
+#view-main.active::after { display: none; } 
 
 #bonus-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 5000;
