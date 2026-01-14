@@ -1,4 +1,4 @@
-// --- logic.js (v5.1 STABLE FIX) ---
+// --- logic.js (v5.2 SPRAY FIX) ---
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
@@ -46,7 +46,7 @@ let G = {
     helmet: null,
     raincoat: null,
     powerbank: null,
-    spray: null, // НОВОЕ: Баллончик
+    spray: null, // Баллончик
     dailyQuests: [],
     lastDailyUpdate: 0,
     activeMilestones: [
@@ -55,7 +55,7 @@ let G = {
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
     ],
     lastActive: Date.now(),
-    gameTime: 720 // Время суток в минутах (0..1440). 720 = 12:00
+    gameTime: 720 // 12:00
 };
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
@@ -64,9 +64,8 @@ let repairProgress = 0;
 let lastClickTime = 0; 
 let clicksSinceBonus = 0;
 let bonusActive = false;
-let isNight = false; // Флаг ночи
+let isNight = false; 
 
-// Глобальные переменные для анти-бота
 let isSearching = false; 
 let spamCounter = 0;
 
@@ -76,11 +75,15 @@ const DISTRICTS = [
     { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } 
 ];
 
-// КАТЕГОРИИ: transport, gear, safety, electronics
+// КАТЕГОРИИ
 const UPGRADES = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', price: 0, bonus: '+2% PLN', maxDur: 40, repairPrice: 5, hidden: true, cat: 'gear' },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', price: 0, bonus: 'Связь', maxDur: 40, repairPrice: 5, hidden: true, cat: 'electronics' },
     
+    // БЕЗОПАСНОСТЬ (Важно!)
+    { id: 'spray', name: 'Перцовка', icon: '🌶️', desc: 'Защита от гопников (3 заряда).', price: 150, bonus: '🛡️ Уверенность', maxDur: 100, repairPrice: 150, cat: 'safety' },
+    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', price: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50, cat: 'safety' },
+
     // ТРАНСПОРТ
     { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', price: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100, cat: 'transport' },
     
@@ -90,11 +93,7 @@ const UPGRADES = [
     
     // ЭКИПИРОВКА
     { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', price: 350, bonus: '+15% PLN', maxDur: 100, repairPrice: 70, cat: 'gear' },
-    { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', price: 180, bonus: '☔ Сухость', maxDur: 80, repairPrice: 40, cat: 'gear' },
-
-    // БЕЗОПАСНОСТЬ
-    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', price: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50, cat: 'safety' },
-    { id: 'spray', name: 'Перцовка', icon: '🌶️', desc: 'Защита от гопников.', price: 150, bonus: '🛡️ Уверенность', maxDur: 100, repairPrice: 150, cat: 'safety' }
+    { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', price: 180, bonus: '☔ Сухость', maxDur: 80, repairPrice: 40, cat: 'gear' }
 ];
 
 function addHistory(msg, val, type = 'plus') {
@@ -276,48 +275,35 @@ function listenToCloud() {
             const remote = snapshot.val();
             if (!remote) return;
 
-            // 1. БАН
             if (remote.isBanned) {
                 document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:black;color:red;text-align:center;"><div style="font-size:60px;">⛔</div><h2>ACCESS DENIED</h2><p>Ваш аккаунт заблокирован.</p></div>';
                 return;
             }
 
-            // 2. СООБЩЕНИЯ
             if (remote.adminMessage) {
                 alert("🔔 СИСТЕМА: " + remote.adminMessage);
                 window.db.ref('users/' + userId + '/adminMessage').remove();
             }
 
-            // 3. ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ АДМИНОМ (СБРОС ИЛИ ИЗМЕНЕНИЕ ИНВЕНТАРЯ)
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 console.log("⚠️ АДМИН ОБНОВИЛ ДАННЫЕ");
                 
                 let wasNew = G.isNewPlayer;
-
-                // Принудительное удаление вещей, если их нет в обновлении
                 const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'spray', 'starter_bag', 'starter_phone'];
                 
                 invKeys.forEach(key => {
-                    if (!remote[key]) {
-                        G[key] = null; // Если в облаке пусто, удаляем у себя
-                    }
+                    if (!remote[key]) G[key] = null; 
                 });
 
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
                 
-                // Если админ сделал вайп (сброс в новичка), перезагружаем страницу
-                if (G.isNewPlayer && !wasNew) {
-                    location.reload();
-                    return;
-                }
+                if (G.isNewPlayer && !wasNew) { location.reload(); return; }
                 updateUI();
                 log("⚡ Данные синхронизированы с сервером", "var(--accent-blue)");
             }
 
-            // 4. ВОССТАНОВЛЕНИЕ ПОСЛЕ ОЧИСТКИ КЕША
             if (G.isNewPlayer && remote.isNewPlayer === false) {
-                 console.log("📥 ВОССТАНОВЛЕНИЕ ИЗ ОБЛАКА");
                  G = { ...G, ...remote };
                  document.getElementById('starter-modal').style.display = 'none';
                  localStorage.setItem(SAVE_KEY, JSON.stringify(G));
@@ -355,7 +341,12 @@ function load() {
         } catch(e) { console.error(e); }
     } 
     
-    // --- ЗАЩИТА: ИНИЦИАЛИЗАЦИЯ НЕДОСТАЮЩИХ ПЕРЕМЕННЫХ ---
+    // --- ПОЧИНКА СПРЕЯ ---
+    // Если переменной нет вообще или она сломана - создаем null, чтобы товар появился в магазине
+    if(G.spray === undefined || (G.spray && typeof G.spray !== 'object')) {
+        G.spray = null;
+    }
+
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(isNaN(G.en)) G.en = 2000;
@@ -364,7 +355,6 @@ function load() {
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
     if(G.gameTime === undefined) G.gameTime = 720; 
-    if(G.spray === undefined) G.spray = null; // ФИКС: Явно создаем spray если его нет
 
     ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'spray'].forEach(item => {
         if (G[item] === true) G[item] = { active: true, dur: 100 };
@@ -379,12 +369,7 @@ function load() {
     
     listenToCloud();
     
-    try {
-        updateUI(); 
-    } catch(e) {
-        log("Ошибка загрузки UI: " + e.message, "red");
-        console.error(e);
-    }
+    try { updateUI(); } catch(e) { console.error(e); }
 }
 
 function updateUI() {
@@ -392,20 +377,15 @@ function updateUI() {
         const moneyEl = document.getElementById('money-val');
         const isBlind = G.blindTime > 0; 
         
-        // ДЕНЬ/НОЧЬ ЛОГИКА
         isNight = (G.gameTime < 360 || G.gameTime >= 1320); 
-        if (isNight) {
-            document.body.classList.add('night-mode');
-        } else {
-            document.body.classList.remove('night-mode');
-        }
+        if (isNight) document.body.classList.add('night-mode');
+        else document.body.classList.remove('night-mode');
 
         if(moneyEl) {
             if (isBlind) {
                 let bMin = Math.floor(G.blindTime / 60);
                 let bSec = G.blindTime % 60;
-                let timerText = bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
-                moneyEl.innerText = "🔒 " + timerText;
+                moneyEl.innerText = "🔒 " + bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
                 moneyEl.style.color = "#aaa";
             } else {
                 moneyEl.innerText = G.money.toFixed(2) + " PLN";
@@ -603,15 +583,16 @@ function updateUI() {
         if(shopList) {
             shopList.innerHTML = ''; 
             
+            // КАТЕГОРИИ: БЕЗОПАСНОСТЬ ТЕПЕРЬ ПЕРВАЯ
             const categories = {
+                'safety': '🛡️ Безопасность (ВАЖНО!)',
                 'transport': '🚴 Транспорт',
                 'gear': '🎒 Экипировка',
-                'electronics': '📱 Электроника',
-                'safety': '🛡️ Безопасность'
+                'electronics': '📱 Электроника'
             };
 
             for (const [catKey, catName] of Object.entries(categories)) {
-                // ФИКС: Проверка на существование G[u.id] более строгая
+                // ФИКС: Строгая проверка G[u.id]
                 const items = UPGRADES.filter(u => u.cat === catKey && !u.hidden && !G[u.id]);
                 
                 if (items.length > 0) {
