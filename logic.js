@@ -39,12 +39,14 @@ let G = {
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
     starter_bag: null,
     starter_phone: null,
+    // Инвентарь
     bag: null, 
     phone: null,
     scooter: null,
     helmet: null,
     raincoat: null,
     powerbank: null,
+    spray: null, // НОВОЕ: Баллончик
     dailyQuests: [],
     lastDailyUpdate: 0,
     activeMilestones: [
@@ -52,7 +54,8 @@ let G = {
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
     ],
-    lastActive: Date.now()
+    lastActive: Date.now(),
+    gameTime: 720 // Время суток в минутах (0..1440). 720 = 12:00
 };
 
 let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
@@ -61,6 +64,7 @@ let repairProgress = 0;
 let lastClickTime = 0; 
 let clicksSinceBonus = 0;
 let bonusActive = false;
+let isNight = false; // Флаг ночи
 
 // Глобальные переменные для анти-бота
 let isSearching = false; 
@@ -72,15 +76,25 @@ const DISTRICTS = [
     { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } 
 ];
 
+// КАТЕГОРИИ: transport, gear, safety, electronics
 const UPGRADES = [
-    { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', price: 0, bonus: '+2% PLN', maxDur: 40, repairPrice: 5, hidden: true },
-    { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', price: 0, bonus: 'Связь', maxDur: 40, repairPrice: 5, hidden: true },
-    { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', price: 350, bonus: '+15% PLN', maxDur: 100, repairPrice: 70 }, 
-    { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', price: 1200, bonus: 'Заказы x1.4', maxDur: 100, repairPrice: 250 }, 
-    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', price: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100 },
-    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', price: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50 },
-    { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', price: 180, bonus: '☔ Сухость', maxDur: 80, repairPrice: 40 },
-    { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', price: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80 }
+    { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', price: 0, bonus: '+2% PLN', maxDur: 40, repairPrice: 5, hidden: true, cat: 'gear' },
+    { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', price: 0, bonus: 'Связь', maxDur: 40, repairPrice: 5, hidden: true, cat: 'electronics' },
+    
+    // ТРАНСПОРТ
+    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', price: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100, cat: 'transport' },
+    
+    // ЭЛЕКТРОНИКА
+    { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', price: 1200, bonus: 'Заказы x1.4', maxDur: 100, repairPrice: 250, cat: 'electronics' },
+    { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', price: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80, cat: 'electronics' },
+    
+    // ЭКИПИРОВКА
+    { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', price: 350, bonus: '+15% PLN', maxDur: 100, repairPrice: 70, cat: 'gear' },
+    { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', price: 180, bonus: '☔ Сухость', maxDur: 80, repairPrice: 40, cat: 'gear' },
+
+    // БЕЗОПАСНОСТЬ
+    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', price: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50, cat: 'safety' },
+    { id: 'spray', name: 'Перцовка', icon: '🌶️', desc: 'Защита от гопников.', price: 150, bonus: '🛡️ Уверенность', maxDur: 100, repairPrice: 150, cat: 'safety' }
 ];
 
 function addHistory(msg, val, type = 'plus') {
@@ -279,7 +293,7 @@ function listenToCloud() {
                 let wasNew = G.isNewPlayer;
 
                 // Принудительное удаление вещей, если их нет в обновлении
-                const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone'];
+                const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'spray', 'starter_bag', 'starter_phone'];
                 
                 invKeys.forEach(key => {
                     if (!remote[key]) {
@@ -324,6 +338,12 @@ function validateInventory() {
     });
 }
 
+function formatGameTime(mins) {
+    let h = Math.floor(mins / 60);
+    let m = mins % 60;
+    return (h < 10 ? '0' : '') + h + ":" + (m < 10 ? '0' : '') + m;
+}
+
 function load() { 
     let d = localStorage.getItem(SAVE_KEY); 
     if(d) { 
@@ -341,8 +361,9 @@ function load() {
     G.maxEn = 2000; 
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
+    if(G.gameTime === undefined) G.gameTime = 720; // 12:00 по умолчанию
 
-    ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
+    ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'spray'].forEach(item => {
         if (G[item] === true) G[item] = { active: true, dur: 100 };
     });
 
@@ -362,6 +383,14 @@ function load() {
 function updateUI() {
     const moneyEl = document.getElementById('money-val');
     const isBlind = G.blindTime > 0; 
+    
+    // ДЕНЬ/НОЧЬ ЛОГИКА
+    isNight = (G.gameTime < 360 || G.gameTime >= 1320); // 22:00 - 06:00
+    if (isNight) {
+        document.body.classList.add('night-mode');
+    } else {
+        document.body.classList.remove('night-mode');
+    }
 
     if(moneyEl) {
         if (isBlind) {
@@ -380,8 +409,13 @@ function updateUI() {
     document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
     document.getElementById('water-val').innerText = Math.floor(G.waterStock);
     
-    document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
-    document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
+    // ОБНОВЛЕНИЕ ВРЕМЕНИ И ИНФО О ГОРОДЕ
+    let timeIcon = isNight ? "🌙" : "☀️";
+    document.getElementById('district-ui').innerHTML = `📍 ${DISTRICTS[G.district].name} | ${timeIcon} ${formatGameTime(G.gameTime)}`;
+    
+    let weatherText = weather === "Дождь" ? "🌧️ Дождь" : (isNight ? "✨ Ясно" : "☀️ Ясно");
+    if(isNight) weatherText += " (Тариф +20%)";
+    document.getElementById('weather-ui').innerText = weatherText;
     
     if(weather === "Дождь") document.body.classList.add('rain-mode');
     else document.body.classList.remove('rain-mode');
@@ -395,27 +429,40 @@ function updateUI() {
     const buffUI = document.getElementById('buff-status-ui'); 
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
     if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
+
+    // --- БАЛЛОНЧИК В ХЕДЕРЕ ---
+    const sprayUI = document.getElementById('spray-status-ui');
+    if (sprayUI) {
+        if (G.spray && G.spray.dur > 0) {
+            sprayUI.style.display = 'block';
+            sprayUI.innerText = "🌶️ " + Math.floor(G.spray.dur) + "%";
+            sprayUI.style.animation = "none";
+        } else if (G.spray && G.spray.dur <= 0) {
+            sprayUI.style.display = 'block';
+            sprayUI.innerText = "🌶️ ПУСТО";
+            sprayUI.style.animation = "pulse 1s infinite";
+        } else {
+            sprayUI.style.display = 'none'; // Не показываем, если не куплен
+        }
+    }
     
-    // --- НАЧАЛО ИЗМЕНЕНИЯ (Обувь в Хедере) ---
+    // --- Обувь ---
     let shoeNameDisplay = G.shoes.name;
     let shoeBar = document.getElementById('shoe-bar');
     
     if (G.shoes.dur <= 0) {
-        // Если сломаны - пишем призыв к действию красным и мелко
         shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
-        // Делаем полоску полностью красной, чтобы привлечь внимание
         shoeBar.style.width = "100%";
         shoeBar.style.background = "var(--danger)";
         shoeBar.style.opacity = "0.3"; 
     } else {
-        // Если целые - показываем обычную полоску
         const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
         shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
         shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
         shoeBar.style.opacity = "1";
     }
     document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
-    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+    // ---
 
     let currentRank = RANKS[0];
     let nextRank = null;
@@ -485,8 +532,11 @@ function updateUI() {
         if (G.totalOrders >= 50) rankBonus = 0.05;
         if (G.totalOrders >= 150) rankBonus = 0.10;
         if (G.totalOrders >= 400) rankBonus = 0.20;
+        
+        // Ночной множитель
+        let nightMult = isNight ? 1.2 : 1.0;
 
-        let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
+        let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * nightMult).toFixed(2);
         if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
         
         if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
@@ -498,26 +548,24 @@ function updateUI() {
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
     
-    // --- НАЧАЛО ИЗМЕНЕНИЯ (Обувь в Инвентаре) ---
+    // Обувь в инвентаре
     const shoeDiv = document.createElement('div');
     shoeDiv.className = 'card';
     shoeDiv.style.marginBottom = '5px';
     shoeDiv.style.borderColor = G.shoes.dur <= 0 ? "var(--danger)" : "var(--purple)";
     
     let shoeStatusText = Math.floor(G.shoes.dur) + "%";
-    let shoeActionBtn = ""; // Кнопка действия
+    let shoeActionBtn = ""; 
 
     if (G.shoes.dur <= 0) {
-        // Если сломаны - пишем конкретно
         shoeStatusText = "<b style='color:var(--danger)'>СЛОМАНО (СКОРОСТЬ -30%)</b>";
-        // Добавляем кнопку быстрого перехода в магазин
         shoeActionBtn = `<button class="btn-action" style="margin-top:5px; background:var(--danger); font-size:10px; padding:5px;" onclick="switchTab('shop', document.querySelectorAll('.tab-item')[2])">🛒 КУПИТЬ НОВЫЕ В МАГАЗИНЕ</button>`;
     }
 
     shoeDiv.innerHTML = "<b>👟 " + G.shoes.name + "</b><br><small>Состояние: " + shoeStatusText + "</small>" + shoeActionBtn;
     myItemsList.appendChild(shoeDiv);
-    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
+    // Отрисовка инвентаря
     UPGRADES.forEach(up => {
         if(G[up.id]) {
             const item = G[up.id];
@@ -550,18 +598,40 @@ function updateUI() {
         }
     });
     
+    // --- ОРГАНИЗОВАННЫЙ МАГАЗИН (КАТЕГОРИИ) ---
     const shopList = document.getElementById('shop-upgrades-list'); 
     if(shopList) {
         shopList.innerHTML = ''; 
-        UPGRADES.forEach(up => { 
-            if(!G[up.id] && !up.hidden) { 
-                const div = document.createElement('div'); 
-                div.className = 'card'; 
-                div.style.marginBottom = '8px'; 
-                div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + up.price + ")\">КУПИТЬ (" + up.price + " PLN)</button>"; 
-                shopList.appendChild(div); 
+        
+        // Группируем товары
+        const categories = {
+            'transport': '🚴 Транспорт',
+            'gear': '🎒 Экипировка',
+            'electronics': '📱 Электроника',
+            'safety': '🛡️ Безопасность'
+        };
+
+        for (const [catKey, catName] of Object.entries(categories)) {
+            // Фильтруем товары этой категории
+            const items = UPGRADES.filter(u => u.cat === catKey && !u.hidden && !G[u.id]);
+            
+            if (items.length > 0) {
+                // Заголовок категории
+                const catHeader = document.createElement('div');
+                catHeader.className = 'shop-category';
+                catHeader.innerHTML = `<h4>${catName}</h4>`;
+                shopList.appendChild(catHeader);
+
+                // Товары категории
+                items.forEach(up => {
+                    const div = document.createElement('div'); 
+                    div.className = 'card'; 
+                    div.style.marginBottom = '8px'; 
+                    div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + up.price + ")\">КУПИТЬ (" + up.price + " PLN)</button>"; 
+                    shopList.appendChild(div); 
+                });
             }
-        });
+        }
     }
     
     const qBar = document.getElementById('quest-bar'); 
@@ -702,57 +772,10 @@ function doWork() {
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
 
-    let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
-    
-    G.money = parseFloat((G.money + gain).toFixed(2));
-    G.totalEarned += gain; 
-    checkDailyQuests('earn', gain); 
+    let weatherMult = weather === "Дождь" ? 1.5 : 1;
+    let nightMult = isNight ? 1.2 : 1.0; // Ночная наценка
 
-    G.lvl += 0.00025; 
-    checkMilestones(); 
-    
-    updateUI(); 
-    save();
-}
-
-function consumeResources(isOrder) {
-    let waterCost = isOrder ? 10 : 3;
-    if (G.buffTime > 0) waterCost = isOrder ? 8 : 2; 
-    G.waterStock = Math.max(0, G.waterStock - waterCost);
-
-    if (G.buffTime > 0) {
-        return; 
-    }
-
-    let cost = (G.scooter ? 7 : 10); 
-    if (G.bikeRentTime > 0) cost *= 0.5; 
-    
-    let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
-    cost *= rainMod; 
-    if (isOrder) cost *= 1.5; 
-    
-    G.en = Math.max(0, G.en - cost); 
-}
-
-function generateOrder() { 
-    if (order.visible || order.active) return; 
-    order.visible = true; 
-    order.offerTimer = 15; 
-    order.isCriminal = Math.random() < 0.12; 
-    
-    if (order.isCriminal) {
-        tg.HapticFeedback.notificationOccurred('error'); 
-    } else {
-        tg.HapticFeedback.notificationOccurred('success'); 
-    }
-
-    let d = 0.5 + Math.random() * 3.5; 
-    
-    let bagBonus = 1;
-    if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
-    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
-
-    let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * bagBonus * (weather === "Дождь" ? 1.5 : 1); 
+    let baseRew = (3.80 + d * 2.2) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * bagBonus * weatherMult * nightMult; 
     if(order.isCriminal) { baseRew *= 6.5; order.offerTimer = 12; } 
     order.baseReward = baseRew;
     order.reward = baseRew;
@@ -932,6 +955,29 @@ function finishOrder(win) {
     if(!order.active) return;
     order.active = false; 
     if(win) { 
+        // Логика НОЧНОГО ГОП-СТОПА (только в районе Прага и ночью)
+        if (isNight && G.district === 0) {
+            // Шанс 5% на ограбление
+            if (Math.random() < 0.05) {
+                 if (G.spray && G.spray.dur > 0) {
+                     // Успешная защита
+                     log("🌶️ ГОПНИК! Вы залили его перцем!", "var(--success)");
+                     G.spray.dur = Math.max(0, G.spray.dur - 34); // Тратим 34% (на 3 раза)
+                     if(G.spray.dur === 0) log("⚠️ Баллончик пуст!", "var(--danger)");
+                 } else {
+                     // Ограбление
+                     let stolen = parseFloat((G.money * 0.2).toFixed(2)); // Украли 20%
+                     if (stolen > 0) {
+                         G.money -= stolen;
+                         log("🔪 ГОП-СТОП! Украли " + stolen + " PLN", "var(--danger)");
+                         addHistory('🔪 ОГРАБЛЕНИЕ', stolen, 'minus');
+                     } else {
+                         log("🔪 Гопники обыскали, но денег нет.", "#aaa");
+                     }
+                 }
+            }
+        }
+
         if (order.isRiskyRoute) {
             let riskRoll = Math.random();
             let hasHelmet = (G.helmet && G.helmet.dur > 0);
@@ -1025,29 +1071,24 @@ function collectBottles() {
     // 1. ЛОВУШКА ДЛЯ БОТА
     if (isSearching) {
         spamCounter++;
-        // Если 15 кликов за секунду ожидания - это точно бот
         if (spamCounter > 15) {
             log("🤖 Слишком быстро! Руки не мельница!", "var(--danger)");
             tg.HapticFeedback.notificationOccurred('error');
-            
-            // Наказание боту
             G.money = Math.max(0, G.money - 100); 
-            G.lvl -= 0.1; // Откидываем рейтинг
-            
+            G.lvl -= 0.1; 
             spamCounter = 0;
             updateUI();
         }
         return; 
     }
 
-    // 2. БЛОКИРОВКА КНОПКИ (Имитация поиска)
+    // 2. БЛОКИРОВКА КНОПКИ
     isSearching = true;
     spamCounter = 0;
     
     const btn = document.querySelector("button[onclick='collectBottles()']");
     const originalText = btn ? btn.innerText : "♻️ СБОР БУТЫЛОК";
     
-    // Визуально показываем игроку, что надо подождать
     if(btn) {
         btn.innerText = "⏳ Роемся..."; 
         btn.style.opacity = "0.6";
@@ -1063,16 +1104,12 @@ function collectBottles() {
         
         // РЕЙТИНГ (СОЦИАЛЬНЫЙ ЛИФТ)
         let repGain = 0;
-        
         if (G.lvl < 1.0) {
-            // Если игрок на дне - помогаем выбраться БЫСТРО (+0.02)
             repGain = 0.02; 
         } else {
-            // Если игрок уже крутой - халявы нет (+0.002)
             repGain = 0.002; 
         }
 
-        // Шанс на крит (редкая бутылка)
         if (Math.random() < 0.10) { 
             repGain *= 3; 
             log("💎 Нашел стеклотару! Респект x3", "var(--success)");
@@ -1083,13 +1120,12 @@ function collectBottles() {
         save(); 
         updateUI(); 
 
-        // Разблокировка
         isSearching = false;
         if(btn) {
             btn.innerText = originalText;
             btn.style.opacity = "1";
         }
-    }, 1200); // 1.2 секунды задержка
+    }, 1200); 
 }
 
 function buyWater() { 
@@ -1218,6 +1254,10 @@ function closeProShop() {
 }
 
 setInterval(() => {
+    // ВРЕМЯ ИДЕТ: 1 сек = 1 минута в игре
+    G.gameTime++;
+    if (G.gameTime >= 1440) G.gameTime = 0; // Сброс суток
+
     if (isNaN(G.money)) G.money = 0;
     if (isNaN(G.en)) G.en = 0;
 
@@ -1317,4 +1357,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-
