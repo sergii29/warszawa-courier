@@ -2,351 +2,158 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Courier V4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест Сфер для Warszawa Courier</title>
     <style>
-        :root {
-            --bg-color: #050510;
-            --primary: #00f3ff;
-            --secondary: #ff00ff;
-            --pickup: #ffff00;
-            --danger: #ff3333;
-            --gold: #ffd700;
-            --panel-bg: rgba(15, 15, 35, 1);
-            --grid-line: rgba(255, 255, 255, 0.04);
-        }
-
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: #fff;
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden; /* Убираем скролл */
-            touch-action: manipulation;
+            background: #0f172a;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
             display: flex;
             flex-direction: column;
-            height: 100vh; /* Ровно высота экрана */
-            width: 100vw;
-        }
-
-        /* --- 1. ВЕРХНЕЕ МЕНЮ (HUD) --- */
-        .hud {
-            flex-shrink: 0; /* Не сжимать */
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 15px;
-            background: #000;
-            border-bottom: 1px solid #333;
-            z-index: 10;
-            height: 50px; /* Фиксированная высота */
-            box-sizing: border-box;
-        }
-
-        .stat-group { text-align: center; min-width: 60px; }
-        .stat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 2px; }
-        .stat-val { font-size: 16px; font-weight: bold; text-shadow: 0 0 5px currentColor; }
-
-        /* --- 2. КОНТЕЙНЕР КАРТЫ (СЕРЕДИНА) --- */
-        #game-container {
-            flex: 1; /* Занимает ВСЕ свободное место между верхом и низом */
-            display: flex;
-            align-items: center;     /* Центр по вертикали */
-            justify-content: center; /* Центр по горизонтали */
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-        }
-
-        #game-map {
-            display: grid;
-            background: 
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 100% 100%;
-            gap: 1px;
-            padding: 2px;
-            border: 1px solid rgba(255,255,255,0.1);
-            
-            /* АДАПТИВНЫЙ РАЗМЕР: 
-               Карта будет квадратной. 
-               Она займет максимум 95% ширины экрана 
-               ИЛИ 60% высоты экрана (чтобы оставить место кнопкам).
-            */
-            width: 90vmin;
-            height: 90vmin;
-            max-width: 95vw;
-            max-height: 55vh; /* Ограничение высоты, чтобы не лезть на кнопки */
-            aspect-ratio: 1/1; /* Всегда квадрат */
-        }
-
-        .cell {
-            display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 14px; 
-            position: relative;
-            border-radius: 2px;
+            gap: 50px;
+            padding: 50px 20px;
+            min-height: 100vh;
         }
+        h2 { margin: 0 0 10px 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
         
-        /* Эффекты */
-        .player-glow { filter: drop-shadow(0 0 4px var(--primary)); z-index: 5; font-size: 18px; }
-        .pickup-glow { filter: drop-shadow(0 0 6px var(--pickup)); animation: pulse 1s infinite; z-index: 4; }
-        .delivery-glow { filter: drop-shadow(0 0 6px var(--secondary)); animation: pulse 1s infinite; z-index: 4; }
-        .wall-glow { opacity: 0.5; filter: drop-shadow(0 0 2px var(--danger)); font-size: 14px; }
+        /* Общие стили для текста внутри */
+        .sphere-content { pointer-events: none; text-align: center; z-index: 2; position: relative; }
+        .sphere-content b { font-size: 22px; display: block; }
+        .sphere-content span { font-size: 12px; opacity: 0.7; }
 
-        /* --- 3. НИЖНЯЯ ПАНЕЛЬ (КНОПКИ) --- */
-        .controls-wrapper {
-            flex-shrink: 0; /* Не сжимать */
-            background: var(--bg-color); /* Фон, чтобы перекрыть карту если что */
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            padding-bottom: 20px; /* Отступ от самого низа экрана */
-            padding-top: 10px;
-            z-index: 20;
-        }
-
-        .controls-pad {
-            background: var(--panel-bg);
-            padding: 10px;
-            border-radius: 20px;
-            border: 1px solid var(--primary);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
+        /* === ВАРИАНТ 1: PREMIUM GLASS (Стекло / Apple Style) === */
+        .sphere-glass {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
             
-            display: grid;
-            grid-template-columns: 65px 65px 65px; /* Кнопки пошире */
-            grid-template-rows: 55px 55px;
-            gap: 6px;
-        }
-
-        .btn {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            color: var(--primary);
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            /* Сложный градиент и тени */
+            background: radial-gradient(120% 120% at 30% 30%, rgba(255, 255, 255, 0.1) 0%, rgba(59, 130, 246, 0.4) 50%, rgba(30, 58, 138, 0.8) 100%);
+            box-shadow: 
+                inset -10px -10px 20px rgba(0,0,0,0.5), /* Тень внутри */
+                inset 10px 10px 20px rgba(255,255,255,0.2), /* Блик внутри */
+                0 20px 50px rgba(37, 99, 235, 0.4), /* Свечение снаружи */
+                0 0 0 1px rgba(255,255,255,0.1); /* Тонкая рамка */
+            
+            backdrop-filter: blur(10px);
+            transition: transform 0.1s, box-shadow 0.2s;
             cursor: pointer;
         }
-        .btn:active { background: var(--primary); color: #000; transform: scale(0.95); }
-        .btn-action { border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.1); }
-        
-        /* Сообщения */
-        #msg-log {
-            position: absolute;
-            top: 50%; left: 50%; 
-            transform: translate(-50%, -50%);
-            font-size: 14px; font-weight: bold;
-            background: rgba(0,0,0,0.9);
-            padding: 8px 16px; border-radius: 10px;
-            border: 1px solid #fff;
-            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 100; text-align: center;
-            white-space: nowrap;
+        /* Глянцевый блик сверху */
+        .sphere-glass::after {
+            content: ''; position: absolute; top: 10px; left: 20px; width: 60px; height: 30px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, transparent 70%);
+            transform: rotate(-45deg); pointer-events: none;
         }
+        .sphere-glass:active { transform: scale(0.95); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
 
-        @keyframes pulse { 0% {transform: scale(0.9);} 50% {transform: scale(1.2);} 100% {transform: scale(0.9);} }
+        /* === ВАРИАНТ 2: CYBER REACTOR (Неон / Техно) === */
+        .sphere-reactor {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, #000 30%, #1e1b4b 100%);
+            box-shadow: 0 0 30px #3b82f6, inset 0 0 30px #3b82f6;
+            border: 2px solid #3b82f6;
+            cursor: pointer;
+        }
+        /* Вращающееся кольцо */
+        .reactor-ring {
+            position: absolute; inset: -10px; border-radius: 50%;
+            border: 2px dashed #60a5fa;
+            animation: spin 10s linear infinite;
+        }
+        .reactor-core {
+            position: absolute; inset: 10px; border-radius: 50%;
+            background: radial-gradient(circle at center, #60a5fa 0%, transparent 70%);
+            opacity: 0.5; animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes spin { 0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);} }
+        @keyframes pulse { 0% {transform: scale(0.95); opacity: 0.4;} 50% {transform: scale(1.05); opacity: 0.7;} 100% {transform: scale(0.95); opacity: 0.4;} }
+        .sphere-reactor:active { transform: scale(0.98); }
+        .sphere-reactor:active .reactor-ring { animation-duration: 2s; border-color: white; }
+
+        /* === ВАРИАНТ 3: LIQUID GOLD (Богатство / Живое) === */
+        .sphere-liquid {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            background: #1e293b;
+            box-shadow: 0 15px 35px rgba(251, 191, 36, 0.3), inset 0 0 20px rgba(0,0,0,0.5);
+            border: 4px solid #334155;
+            cursor: pointer;
+        }
+        .liquid-fill {
+            position: absolute; bottom: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(0deg, #d97706, #fbbf24);
+            border-radius: 40%;
+            animation: wave 6s linear infinite;
+            opacity: 0.8;
+        }
+        /* Вторая волна для объема */
+        .liquid-fill::before {
+            content: ''; position: absolute; top: 5px; left: 0; width: 100%; height: 100%;
+            border-radius: 40%; background: rgba(255,255,255,0.2);
+            animation: wave 8s linear infinite reverse;
+        }
+        @keyframes wave { 0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);} }
+        
+        .sphere-liquid:active { transform: scale(0.95); border-color: #fbbf24; }
+        .sphere-liquid:active .liquid-fill { bottom: -40%; transition: bottom 0.2s; }
+
     </style>
 </head>
 <body>
 
-    <div class="hud">
-        <div class="stat-group">
-            <div class="stat-label">Баланс</div>
-            <div class="stat-val" style="color: var(--gold)" id="ui-balance">0</div>
-        </div>
-        <div class="stat-group">
-            <div class="stat-label">Заряд</div>
-            <div class="stat-val" style="color: var(--primary)" id="ui-energy">100%</div>
-        </div>
-        <div class="stat-group">
-            <div class="stat-label">Цель</div>
-            <div class="stat-val" style="font-size: 12px; color: var(--pickup)" id="ui-status">ПОИСК</div>
+    <div style="text-align:center;">
+        <h2>1. Premium Glass</h2>
+        <div class="sphere-glass" onclick="clickEffect(this)">
+            <div class="sphere-content">
+                <b>РАБОТАТЬ</b>
+                <span>0.13 PLN</span>
+            </div>
         </div>
     </div>
 
-    <div id="game-container">
-        <div id="msg-log"></div>
-        <div id="game-map"></div>
+    <div style="text-align:center;">
+        <h2>2. Cyber Reactor</h2>
+        <div class="sphere-reactor" onclick="clickEffect(this)">
+            <div class="reactor-ring"></div>
+            <div class="reactor-core"></div>
+            <div class="sphere-content">
+                <b style="text-shadow: 0 0 10px #3b82f6;">РАБОТАТЬ</b>
+                <span style="color:#93c5fd;">0.13 PLN</span>
+            </div>
+        </div>
     </div>
 
-    <div class="controls-wrapper">
-        <div class="controls-pad">
-            <div></div>
-            <div class="btn" onclick="move(0, -1)">▲</div>
-            <div></div>
-            
-            <div class="btn" onclick="move(-1, 0)">◀</div>
-            <div class="btn btn-action" onclick="actionBoost()">⚡</div>
-            <div class="btn" onclick="move(1, 0)">▶</div>
-            
-            <div></div>
-            <div class="btn" onclick="move(0, 1)">▼</div>
-            <div></div>
+    <div style="text-align:center;">
+        <h2>3. Liquid Gold</h2>
+        <div class="sphere-liquid" onclick="clickEffect(this)">
+            <div class="liquid-fill"></div>
+            <div class="sphere-content">
+                <b style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);">РАБОТАТЬ</b>
+                <span style="color:#fff;">0.13 PLN</span>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- КОНФИГ ---
-        const GRID_SIZE = 13; 
-        
-        let state = {
-            x: 6, y: 6,        
-            objective: {x:0, y:0},
-            hasPackage: false,
-            walls: [],
-            balance: 0,
-            energy: 100
-        };
-
-        const mapEl = document.getElementById('game-map');
-
-        function initGame() {
-            mapEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
-            mapEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
-            
-            mapEl.innerHTML = '';
-            for(let i=0; i<GRID_SIZE*GRID_SIZE; i++) {
-                let cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.id = `c-${i}`;
-                mapEl.appendChild(cell);
+        // Простой эффект для теста клика
+        function clickEffect(el) {
+            // Эмуляция вибрации (если телефон поддерживает)
+            if(window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
             }
-            
-            spawnObjective();
-            generateWalls();
-            draw();
-            updateUI();
+            console.log("Click!");
         }
-
-        function getIdx(x, y) { return y * GRID_SIZE + x; }
-
-        function generateWalls() {
-            state.walls = [];
-            for(let i=0; i<25; i++) {
-                let wx, wy;
-                do {
-                    wx = Math.floor(Math.random() * GRID_SIZE);
-                    wy = Math.floor(Math.random() * GRID_SIZE);
-                } while ((wx === state.x && wy === state.y) || (wx === state.objective.x && wy === state.objective.y));
-                state.walls.push(getIdx(wx, wy));
-            }
-        }
-
-        function spawnObjective() {
-            do {
-                state.objective.x = Math.floor(Math.random() * GRID_SIZE);
-                state.objective.y = Math.floor(Math.random() * GRID_SIZE);
-            } while (state.objective.x === state.x && state.objective.y === state.y);
-            
-            if(state.hasPackage) generateWalls(); 
-            draw();
-            updateUI();
-        }
-
-        function move(dx, dy) {
-            if (state.energy <= 0) { showMsg("🪫 СЕЛА БАТАРЕЯ!", "red"); return; }
-
-            let nx = state.x + dx;
-            let ny = state.y + dy;
-
-            if (nx < 0 || nx >= GRID_SIZE || ny < 0 || ny >= GRID_SIZE) return;
-
-            let nIdx = getIdx(nx, ny);
-            if (state.walls.includes(nIdx)) {
-                showMsg("🚧 ТУПИК!", "#ff9900");
-                state.energy -= 2;
-                updateUI();
-                return;
-            }
-
-            state.x = nx;
-            state.y = ny;
-            state.energy -= 1;
-
-            if (state.x === state.objective.x && state.y === state.objective.y) {
-                if (!state.hasPackage) {
-                    state.hasPackage = true;
-                    showMsg("🎒 ВЕЗИ КЛИЕНТУ", "#ffff00");
-                    spawnObjective();
-                } else {
-                    state.hasPackage = false;
-                    let profit = 20 + Math.floor(Math.random() * 15);
-                    state.balance += profit;
-                    showMsg(`✅ +${profit} PLN`, "#00f3ff");
-                    generateWalls();
-                    spawnObjective();
-                }
-            }
-            draw();
-            updateUI();
-        }
-
-        function actionBoost() {
-            if (state.balance >= 15) {
-                state.balance -= 15;
-                state.energy = Math.min(100, state.energy + 50);
-                showMsg("⚡ ЗАРЯЖЕНО!", "#00ff00");
-                updateUI();
-            } else { showMsg("❌ НЕТ ДЕНЕГ", "red"); }
-        }
-
-        function draw() {
-            document.querySelectorAll('.cell').forEach(c => {
-                c.className = 'cell';
-                c.innerText = '';
-            });
-
-            state.walls.forEach(idx => {
-                let c = document.getElementById(`c-${idx}`);
-                c.innerText = '🚧';
-                c.classList.add('wall-glow');
-            });
-
-            let tIdx = getIdx(state.objective.x, state.objective.y);
-            let tCell = document.getElementById(`c-${tIdx}`);
-            if (!state.hasPackage) {
-                tCell.innerText = '🏪';
-                tCell.classList.add('pickup-glow');
-            } else {
-                tCell.innerText = '🏠';
-                tCell.classList.add('delivery-glow');
-            }
-
-            let pIdx = getIdx(state.x, state.y);
-            let pCell = document.getElementById(`c-${pIdx}`);
-            pCell.innerText = '🛵';
-            pCell.classList.add('player-glow');
-        }
-
-        function updateUI() {
-            document.getElementById('ui-balance').innerText = state.balance.toFixed(0);
-            let enEl = document.getElementById('ui-energy');
-            enEl.innerText = Math.floor(state.energy) + '%';
-            enEl.style.color = state.energy < 30 ? 'red' : 'var(--primary)';
-
-            let statusEl = document.getElementById('ui-status');
-            if(!state.hasPackage) {
-                 statusEl.innerText = "В РЕСТОРАН";
-                 statusEl.style.color = "var(--pickup)";
-            } else {
-                 statusEl.innerText = "К КЛИЕНТУ";
-                 statusEl.style.color = "var(--secondary)";
-            }
-        }
-
-        function showMsg(text, color) {
-            let el = document.getElementById('msg-log');
-            el.innerText = text;
-            el.style.color = color;
-            el.style.borderColor = color;
-            el.style.opacity = 1;
-            setTimeout(() => el.style.opacity = 0, 1500);
-        }
-
-        initGame();
     </script>
 </body>
 </html>
