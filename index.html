@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier</title>
+    <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=6.0">
+    <link rel="stylesheet" href="style.css?v=4.0">
 </head>
 <body>
 
@@ -107,20 +107,19 @@
 
 <div class="header-container">
     <div class="top-nav">
-        <div style="flex: 1; min-width: 0; padding-right: 10px;">
+        <div>
             <small style="color:var(--text-secondary); font-size:10px;">Баланс</small><br>
-            <b id="money-val" class="money-display" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 100%;">0.00 PLN</b>
+            <b id="money-val" class="money-display">0.00 PLN</b>
             <div id="shoes-status-ui">👟 <span id="shoe-name">...</span> <div class="durability-bar"><div id="shoe-bar" class="durability-fill"></div></div></div>
         </div>
         <div class="right-panel">
             <b id="lvl-val" class="lvl-display">LVL 1.0</b>
+            <div id="inventory-display"></div>
             <div style="display:flex; gap:3px;">
                 <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
                 <div id="auto-status-ui" class="status-badge">🤖 00:00</div>
                 <div id="buff-status-ui" class="status-badge">⚡ 00:00</div>
-                <div id="spray-status-ui" class="status-badge" style="background:rgba(239, 68, 68, 0.2); color:var(--danger); border:1px solid var(--danger); display:none;">🌶️ 100%</div>
             </div>
-            <div id="inventory-display"></div>
         </div>
     </div>
     
@@ -157,7 +156,7 @@
         </div>
 
         <div class="bottom-controls">
-            <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК</button>
+            <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК (+0.02)</button>
             <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
         </div>
 
@@ -170,7 +169,7 @@
     <div id="view-districts" class="view">
         <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
         <div class="card">
-            <b>Praga</b> <small>Аренда: 5% от баланса. Старт. <span style="color:var(--danger)">Ночью опасно!</span></small>
+            <b>Praga</b> <small>Аренда: 5% от баланса. Старт.</small>
             <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
         </div>
         <div class="card">
@@ -246,7 +245,7 @@
                 <b>Энергетик</b><br>
                 <small style="color:var(--success)">Временно останавливает расход энергии (но не воды).</small>
             </div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success); border:none;" onclick="buyDrink('energy', 12)">12.00</button>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">12.00</button>
         </div>
 
         <div class="section-title">👟 Обувь и Стиль</div>
@@ -286,11 +285,9 @@
                 <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
             </div>
         </div>
-        
         <div class="card">
              <div id="bank-actions-ui"></div>
         </div>
-        
         <div class="card">
             <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
             <div style="display:flex; gap:8px;">
@@ -314,8 +311,8 @@
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="database.js?v=6.0"></script>
-<script src="logic.js?v=6.0" defer></script>
+<script src="database.js?v=4.0"></script>
+<script src="logic.js?v=4.0" defer></script>
 
 </body>
 </html>
