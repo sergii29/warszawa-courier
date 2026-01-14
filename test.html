@@ -2,166 +2,278 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REALISTIC 3D MATERIALS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Next Gen UI</title>
     <style>
+        :root {
+            --bg-deep: #050507;
+            --glass-panel: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-blue: #3b82f6;
+            --accent-gold: #fbbf24;
+            --text-main: #ffffff;
+            --text-muted: #64748b;
+        }
+
         body {
-            background: #0f172a;
+            background: radial-gradient(circle at 50% -20%, #1e1b4b, var(--bg-deep) 60%);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; padding: 0;
+            height: 100vh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* === 1. TOP DASHBOARD (ПРИБОРНАЯ ПАНЕЛЬ) === */
+        .dashboard-header {
+            padding: 20px 24px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .balance-group .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        .balance-group .value { 
+            font-size: 32px; font-weight: 800; color: white; 
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            letter-spacing: -1px;
+        }
+        .balance-group .currency { font-size: 16px; color: var(--accent-blue); font-weight: 600; margin-left: 5px; }
+
+        .profile-badge {
+            background: var(--glass-panel);
+            border: 1px solid var(--glass-border);
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex; align-items: center; gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .lvl-circle {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent-gold) 75%, rgba(255,255,255,0.1) 0);
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .lvl-circle::after { content: ''; position: absolute; inset: 3px; background: var(--bg-deep); border-radius: 50%; }
+        .lvl-text { font-size: 10px; font-weight: bold; position: relative; z-index: 2; color: var(--accent-gold); }
+
+        /* === 2. STATUS HUD (ПОЛОСКИ) === */
+        .hud-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            padding: 0 24px;
+            margin-bottom: 20px;
+        }
+        .hud-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2));
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .hud-top { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+        .hud-val { font-size: 14px; font-weight: 700; color: white; }
+        
+        .progress-rail { width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 2px; box-shadow: 0 0 10px currentColor; }
+
+        /* === 3. THE CORE (СФЕРА В ДОКЕ) === */
+        .core-stage {
+            flex: 1;
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+        }
+        
+        /* Орбиты на фоне */
+        .orbit {
+            position: absolute; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.03);
+            pointer-events: none;
+        }
+        .orbit-1 { width: 280px; height: 280px; border-color: rgba(59, 130, 246, 0.05); animation: spin 20s linear infinite; }
+        .orbit-2 { width: 340px; height: 340px; border-style: dashed; animation: spin 40s linear infinite reverse; }
+
+        /* САМА СФЕРА (Gem Style) */
+        .main-sphere {
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            position: relative;
+            z-index: 5;
+            cursor: pointer;
+            background: radial-gradient(circle at 35% 35%, #1e293b, #000);
+            box-shadow: 
+                inset 5px 5px 20px rgba(255,255,255,0.1),
+                inset -10px -10px 30px rgba(0,0,0,0.8),
+                0 20px 60px rgba(0,0,0,0.5),
+                0 0 0 1px rgba(255,255,255,0.05); /* Тонкий бортик */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Свечение внутри */
+        .sphere-glow {
+            position: absolute; inset: 0; border-radius: 50%;
+            background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.4), transparent 70%);
+            opacity: 0.6; animation: breath 4s ease-in-out infinite;
+        }
+
+        .sphere-content { position: relative; z-index: 10; text-align: center; pointer-events: none; }
+        .sphere-title { font-size: 18px; font-weight: 800; letter-spacing: 2px; margin-bottom: 4px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        .sphere-sub { font-size: 12px; color: var(--accent-blue); font-weight: 600; background: rgba(59, 130, 246, 0.1); padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); }
+
+        .main-sphere:active { transform: scale(0.94); }
+        .main-sphere:active .sphere-glow { opacity: 0.8; transition: 0.1s; }
+
+        /* === 4. CONTROL DECK (КНОПКИ) === */
+        .control-deck {
+            padding: 0 24px 30px 24px;
+            display: flex; flex-direction: column; gap: 12px;
+            z-index: 10;
+        }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            padding: 16px;
+            border-radius: 16px;
             color: white;
-            font-family: system-ui, -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 100px;
-            padding: 80px 20px;
-            min-height: 100vh;
-        }
-        h2 { margin: 0 0 30px 0; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 3px; text-align: center; }
-
-        /* === 1. THE ROYAL GEM (Стекло/Глубина) === */
-        .gem-container {
-            width: 220px; height: 220px;
-            border-radius: 50%;
-            position: relative;
+            font-size: 13px; font-weight: 600;
+            display: flex; justify-content: space-between; align-items: center;
             cursor: pointer;
-            
-            /* Сложное освещение для объема */
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, rgba(37, 99, 235, 0.1) 20%, #1e3a8a 60%, #000 100%);
-            
-            /* Многослойные тени для реализма */
-            box-shadow: 
-                /* Верхний блик (свет падает сверху) */
-                inset 2px 2px 4px rgba(255, 255, 255, 0.3),
-                /* Нижняя тень (объем) */
-                inset -5px -5px 15px rgba(0, 0, 0, 0.8),
-                /* Внешнее свечение (Аура) */
-                0 0 30px rgba(37, 99, 235, 0.2),
-                /* Тень на "столе" */
-                0 20px 40px rgba(0,0,0,0.6);
-            
-            display: flex; justify-content: center; align-items: center;
-            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: 0.2s;
+            position: relative; overflow: hidden;
         }
-
-        /* Внутреннее стеклянное ядро */
-        .gem-lens {
-            position: absolute; inset: 10px; border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, rgba(59, 130, 246, 0.8), rgba(29, 78, 216, 0.4) 60%, transparent 80%);
-            filter: blur(5px);
-            opacity: 0.8;
-            mix-blend-mode: overlay;
+        .btn-glass::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--btn-color, #fff); opacity: 0; transition: 0.2s;
         }
+        .btn-glass:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
+        .btn-glass:active::before { opacity: 1; }
 
-        /* Текст */
-        .gem-text { 
-            z-index: 10; text-align: center; 
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5); 
-            transform: translateY(0); transition: transform 0.1s;
+        .btn-icon { font-size: 18px; margin-right: 10px; }
+        .btn-meta { color: var(--text-muted); font-size: 11px; }
+
+        /* === 5. BOTTOM NAV (СТЕКЛЯННЫЙ ДОК) === */
+        .nav-dock {
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            padding: 15px 0 25px 0;
+            display: flex; justify-content: space-around;
         }
-        .gem-text b { font-size: 26px; display: block; letter-spacing: 1px; color: #fff; font-weight: 800; }
-        .gem-text span { font-size: 12px; color: #93c5fd; opacity: 0.8; font-weight: 500; }
+        .nav-item { opacity: 0.5; transition: 0.2s; text-align: center; }
+        .nav-item.active { opacity: 1; color: var(--accent-blue); text-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
+        .nav-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+        .nav-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; }
 
-        /* Эффект нажатия (Физическое вдавливание) */
-        .gem-container:active {
-            transform: scale(0.96) translateY(2px);
-            box-shadow: 
-                inset 5px 5px 20px rgba(0, 0, 0, 0.9), /* Тень становится глубже внутри */
-                inset -2px -2px 5px rgba(255, 255, 255, 0.1),
-                0 0 10px rgba(37, 99, 235, 0.1),
-                0 5px 10px rgba(0,0,0,0.4); /* Тень снаружи уменьшается */
+        /* АНИМАЦИИ */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes breath { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 0.7; } }
+        
+        /* Район - парящая капсула */
+        .district-capsule {
+            position: absolute; top: 10%; 
+            background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border);
+            padding: 6px 16px; border-radius: 20px;
+            font-size: 11px; font-weight: 600; color: var(--text-muted);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; gap: 6px;
         }
-        .gem-container:active .gem-text { transform: scale(0.95); opacity: 0.7; }
-
-
-        /* === 2. TITANIUM TACTILE (Матовый металл) === */
-        .metal-outer {
-            width: 210px; height: 210px;
-            border-radius: 50%;
-            /* Основа корпуса */
-            background: linear-gradient(145deg, #1e293b, #0f172a);
-            /* Фаска вокруг кнопки */
-            box-shadow: 
-                -5px -5px 10px rgba(50, 60, 80, 0.2),
-                5px 5px 15px rgba(0, 0, 0, 0.6);
-            display: flex; justify-content: center; align-items: center;
-            padding: 8px; /* Зазор между корпусом и кнопкой */
-        }
-
-        .metal-btn {
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            cursor: pointer;
-            
-            /* Эффект матового металла */
-            background: conic-gradient(from 45deg, #1e293b, #334155, #1e293b, #334155, #1e293b);
-            
-            /* Объем кнопки */
-            box-shadow: 
-                inset 2px 2px 5px rgba(255,255,255,0.1),
-                inset -5px -5px 10px rgba(0,0,0,0.5),
-                0 10px 20px rgba(0,0,0,0.5); /* Тень кнопки над корпусом */
-            
-            display: flex; justify-content: center; align-items: center;
-            position: relative;
-            transition: transform 0.05s ease-out, box-shadow 0.05s;
-        }
-
-        /* Светящееся кольцо-индикатор */
-        .metal-ring {
-            position: absolute; inset: 15px; border-radius: 50%;
-            border: 2px solid rgba(59, 130, 246, 0.3);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
-        }
-
-        .metal-text { z-index: 5; text-align: center; }
-        .metal-text b { font-size: 24px; color: #cbd5e1; text-shadow: 0 -1px 1px rgba(0,0,0,0.8); display: block;}
-        .metal-text span { font-size: 11px; color: #64748b; font-weight: 600; }
-
-        /* Нажатие: Кнопка реально уходит "вглубь" */
-        .metal-outer:active .metal-btn {
-            transform: scale(0.97);
-            background: conic-gradient(from 45deg, #151d29, #1e293b, #151d29, #1e293b, #151d29); /* Темнее при нажатии */
-            box-shadow: 
-                inset 5px 5px 15px rgba(0,0,0,0.7), /* Глубокая тень внутри */
-                inset -1px -1px 2px rgba(255,255,255,0.05),
-                0 0 0 transparent; /* Внешняя тень исчезает */
-        }
-        .metal-outer:active .metal-ring { border-color: rgba(59, 130, 246, 0.6); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); } /* Вспышка */
+        .status-dot { width: 6px; height: 6px; background: var(--accent-gold); border-radius: 50%; box-shadow: 0 0 8px var(--accent-gold); }
 
     </style>
 </head>
 <body>
 
-    <div>
-        <h2>1. The Royal Gem (Glass & Light)</h2>
-        <div class="gem-container" onclick="clickEffect()">
-            <div class="gem-lens"></div>
-            <div class="gem-text">
-                <b>РАБОТАТЬ</b>
-                <span>0.13 PLN</span>
+    <div class="dashboard-header">
+        <div class="balance-group">
+            <div class="label">Total Balance</div>
+            <div class="value">1,240.50<span class="currency">PLN</span></div>
+        </div>
+        <div class="profile-badge">
+            <div class="lvl-circle"><span class="lvl-text">2</span></div>
+            <div style="font-size:11px; font-weight:700;">PROFI</div>
+        </div>
+    </div>
+
+    <div class="hud-grid">
+        <div class="hud-card">
+            <div class="hud-top"><span>Energy</span> <span>⚡</span></div>
+            <div class="hud-val" style="color:#60a5fa">1,450</div>
+            <div class="progress-rail"><div class="progress-fill" style="width: 70%; background: #3b82f6;"></div></div>
+        </div>
+        <div class="hud-card">
+            <div class="hud-top"><span>Water</span> <span>💧</span></div>
+            <div class="hud-val" style="color:#93c5fd">850 ml</div>
+            <div class="progress-rail"><div class="progress-fill" style="width: 40%; background: #93c5fd;"></div></div>
+        </div>
+    </div>
+
+    <div class="core-stage">
+        <div class="orbit orbit-1"></div>
+        <div class="orbit orbit-2"></div>
+        
+        <div class="district-capsule">
+            <div class="status-dot"></div>
+            PRAGA DISTRICT
+        </div>
+
+        <div class="main-sphere" onclick="clickFx(this)">
+            <div class="sphere-glow"></div>
+            <div class="sphere-content">
+                <div class="sphere-title">START</div>
+                <div class="sphere-sub">0.15 PLN / CLICK</div>
             </div>
         </div>
     </div>
 
-    <div>
-        <h2>2. Titanium (Physical Tactile)</h2>
-        <div class="metal-outer" onclick="clickEffect()">
-            <div class="metal-btn">
-                <div class="metal-ring"></div>
-                <div class="metal-text">
-                    <b>START</b>
-                    <span>TACTILE MODE</span>
-                </div>
+    <div class="control-deck">
+        <div class="btn-glass" style="--btn-color: #22c55e;" onclick="clickFx(this)">
+            <div style="display:flex; align-items:center;">
+                <span class="btn-icon">♻️</span> 
+                RECYCLE MODE
             </div>
+            <span class="btn-meta">+0.05 PLN</span>
+        </div>
+        <div class="btn-glass" style="--btn-color: #3b82f6;" onclick="clickFx(this)">
+            <div style="display:flex; align-items:center;">
+                <span class="btn-icon">🗺️</span> 
+                NAVIGATION
+            </div>
+            <span class="btn-meta">MAP</span>
+        </div>
+    </div>
+
+    <div class="nav-dock">
+        <div class="nav-item active">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-lbl">CITY</span>
+        </div>
+        <div class="nav-item">
+            <span class="nav-icon">💼</span>
+            <span class="nav-lbl">WORK</span>
+        </div>
+        <div class="nav-item">
+            <span class="nav-icon">🛒</span>
+            <span class="nav-lbl">SHOP</span>
+        </div>
+        <div class="nav-item">
+            <span class="nav-icon">🏦</span>
+            <span class="nav-lbl">BANK</span>
         </div>
     </div>
 
     <script>
-        function clickEffect() {
-            if(window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
+        function clickFx(el) {
+            // Эффект нажатия (визуальный уменьшение масштаба уже есть в CSS)
+            // Вибрация
+            if(window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(15);
+            }
+            console.log("Interaction detected");
         }
     </script>
-
 </body>
 </html>
