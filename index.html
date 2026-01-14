@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.0">
+    <link rel="stylesheet" href="style.css?v=4.2">
 </head>
 <body>
 
@@ -288,10 +288,9 @@
     <div id="view-invest" class="view">
         <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
         
-        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи (Следи за состоянием!)</h4>
-        <div id="my-items-list" style="margin-bottom:15px;">
-            <div style="text-align:center; padding:10px; color:#555; font-size:11px;">Пусто...</div>
-        </div>
+        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
+        <div id="my-items-list" class="shop-grid" style="margin-bottom:15px;">
+            </div>
     </div>
 
     <div id="view-bank" class="view">
@@ -330,7 +329,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=4.0" defer></script>
+<script src="logic.js?v=4.2" defer></script>
 
 </body>
 </html>
