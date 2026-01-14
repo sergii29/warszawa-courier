@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.2">
+    <link rel="stylesheet" href="style.css?v=5.3">
 </head>
 <body>
 
@@ -67,26 +67,6 @@
     </div>
 </div>
 
-<div id="pro-shop-modal" class="modal-overlay" style="z-index: 3500;">
-    <div class="modal-card" style="max-height: 80vh; overflow-y: auto; text-align: left; width: 90%; max-width: 360px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="margin:0; color:white;">⚙️ Проф. Экипировка</h3>
-            <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
-        </div>
-
-        <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05); margin-bottom:15px;">
-            <b>🚲 Аренда Электровелосипеда</b><br>
-            <small>Скорость x2. Цена зависит от LVL.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
-        </div>
-        
-        <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
-        <div id="shop-upgrades-list"></div>
-
-        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
-    </div>
-</div>
-
 <div id="garage-modal" class="modal-overlay" style="z-index: 3600;">
     <div class="modal-card" style="max-height: 85vh; overflow-y: auto; width: 95%; max-width: 380px; padding: 20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -94,21 +74,28 @@
             <button onclick="closeGarage()" style="background:transparent; border:none; color:#aaa; font-size:24px; cursor:pointer;">✕</button>
         </div>
 
-        <div style="background:rgba(0,0,0,0.3); border-radius:16px; padding:20px; text-align:center; margin-bottom:15px; position:relative; overflow:hidden;">
-            <div id="garage-sphere-preview" style="width:80px; height:80px; border-radius:50%; margin:0 auto; background:var(--accent-blue); box-shadow:0 0 30px var(--accent-blue);"></div>
-            <div style="margin-top:10px; font-size:11px; color:#aaa;">Цвет твоей сферы</div>
+        <div class="card" style="background:rgba(0,0,0,0.5); border:1px solid var(--accent-blue); margin-bottom:15px;">
+            <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase;">Активный транспорт</div>
+            <h2 id="garage-vehicle-name" style="margin:5px 0; color:white;">Велосипед (Аренда)</h2>
+            <div style="display:flex; gap:10px; font-size:11px; margin-top:5px;">
+                <span id="garage-veh-speed" style="color:var(--success)">Скорость: 10 км/ч</span>
+                <span id="garage-veh-power" style="color:var(--accent-gold)">Мощность: 0W</span>
+            </div>
         </div>
 
-        <div class="section-title" style="margin-top:0;">🎨 СТАЙЛИНГ (НЕОН)</div>
-        <div class="color-grid" id="garage-colors-list">
-            </div>
+        <div style="background:rgba(0,0,0,0.3); border-radius:16px; padding:20px; text-align:center; margin-bottom:15px; position:relative; overflow:hidden;">
+            <div id="garage-sphere-preview" style="width:80px; height:80px; border-radius:50%; margin:0 auto; background:var(--accent-blue); box-shadow:0 0 30px var(--accent-blue);"></div>
+            <div style="margin-top:10px; font-size:11px; color:#aaa;">Цвет твоей сферы (Неон)</div>
+        </div>
+
+        <div class="section-title" style="margin-top:0;">🎨 СТАЙЛИНГ</div>
+        <div class="color-grid" id="garage-colors-list"></div>
 
         <div class="section-title">🛠️ ТЕХНИЧЕСКИЙ ТЮНИНГ</div>
-        <p style="font-size:10px; color:#777; margin-bottom:10px;">Прокачивай уровни бесконечно. Цены растут.</p>
-        <div id="garage-parts-list" style="display:flex; flex-direction:column; gap:8px;">
-            </div>
+        <p style="font-size:10px; color:#777; margin-bottom:10px;">Улучшения применяются к текущему транспорту.</p>
+        <div id="garage-parts-list" style="display:flex; flex-direction:column; gap:8px;"></div>
 
-        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeGarage()">ВЕРНУТЬСЯ В ГОРОД</button>
+        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeGarage()">В ГОРОД</button>
     </div>
 </div>
 
@@ -231,25 +218,18 @@
     <div id="view-shop" class="view">
         <h3 style="margin:0; margin-bottom: 15px;">🏪 Маркет</h3>
         
-        <div class="tech-banner" onclick="openProShop()">
-            <div style="z-index: 1;">
-                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">PRO GEAR</div>
-                <h2 style="margin: 5px 0; font-size: 18px;">Техника & Транспорт</h2>
-                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Телефоны, сумки, самокаты</small>
-                <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">ОТКРЫТЬ КАТАЛОГ</button>
-            </div>
-            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); z-index: 1;">🛵</div>
-        </div>
-
         <div class="garage-banner" onclick="openGarage()">
             <div style="z-index: 1;">
-                <div style="font-size: 10px; color: var(--danger); font-weight: 800; letter-spacing: 1px;">TUNING</div>
+                <div style="font-size: 10px; color: var(--danger); font-weight: 800; letter-spacing: 1px;">TUNING & CUSTOM</div>
                 <h2 style="margin: 5px 0; font-size: 18px;">Гараж Курьера</h2>
-                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Прокачка, Стиль, Неон</small>
+                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Твой транспорт и стиль</small>
                 <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px; background: var(--danger); box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);">ЗАЕХАТЬ В ГАРАЖ</button>
             </div>
             <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.6)); z-index: 1;">🔧</div>
         </div>
+
+        <div class="section-title">🏍️ АВТОСАЛОН (E-BIKES & MOTO)</div>
+        <div id="shop-vehicles-list" style="display:flex; flex-direction:column; gap:10px;"></div>
 
         <div class="section-title">⚡ Энергия и Восстановление</div>
         <div class="shop-grid">
@@ -271,8 +251,8 @@
                     <div style="text-align:left; flex:1;">
                         <div class="shop-title">Red Bull Power</div>
                         <div class="shop-desc" style="margin:0; color:#fff;">
-                            <span style="color:var(--success)">Пауза расхода энергии на 2 мин.</span><br>
-                            <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
+                            <span style="color:var(--success)">Пауза энергии (2 мин).</span><br>
+                            <span style="color:var(--text-secondary); font-size:9px;">(Вода тратится)</span>
                         </div>
                     </div>
                     <button id="btn-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00 PLN</button>
@@ -282,6 +262,9 @@
 
         <div class="section-title">👟 Сникерхед</div>
         <div id="shop-shoes-list"></div>
+        
+        <div class="section-title">📦 Экипировка</div>
+        <div id="shop-upgrades-list"></div>
         
         <div style="height: 20px;"></div>
     </div>
@@ -328,7 +311,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=5.2" defer></script>
+<script src="logic.js?v=5.3" defer></script>
 
 </body>
 </html>
+
