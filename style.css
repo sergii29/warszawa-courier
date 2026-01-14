@@ -145,7 +145,7 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 
 /* === КАРТОЧКИ И КНОПКИ === */
 .card { 
-    background: var(--bg-card); 
+    background: var(--card-bg); 
     backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border); 
     border-radius: 16px; 
@@ -343,3 +343,4 @@ h3 { font-size: 16px; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.
 /* Полоска прочности в карточке */
 .inv-dur-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 5px; margin-bottom: 10px; }
 .inv-dur-fill { height: 100%; background: var(--success); width: 100%; }
+
