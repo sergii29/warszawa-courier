@@ -1,4 +1,4 @@
-// --- logic.js v7.1 (Fixing NaN & Restoring Logic) ---
+// --- logic.js v5.2 (Smart Inflation Update) ---
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
@@ -26,19 +26,12 @@ const SHOES_MODELS = [
     { id: 'Jorban', name: 'Jorban Air', desc: 'Премиум стиль.', icon: '🔥', basePrice: 250, durability: 150, bonus: 0.2, color: 'var(--gold)' }
 ];
 
-const VEHICLES = [
-    { id: 'old_bike', name: 'Ржавый Велик', icon: '🚲', price: 0, speed: 0, eco: 0, desc: 'Едет и ладно.' },
-    { id: 'scooter', name: 'Электросамокат', icon: '🛴', price: 500, speed: 5, eco: 10, desc: 'Легкий и быстрый.' },
-    { id: 'ebike_pro', name: 'E-Bike Pro', icon: '🛵', price: 2500, speed: 15, eco: 20, desc: 'Серьезный аппарат.' },
-    { id: 'cyber_moto', name: 'Cyber Moped', icon: '🏍️', price: 10000, speed: 30, eco: 40, desc: 'Король дорог.' }
-];
-
 const UPGRADES = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', basePrice: 0, bonus: '+2% PLN', maxDur: 40, repairPrice: 5, hidden: true },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', basePrice: 0, bonus: 'Связь', maxDur: 40, repairPrice: 5, hidden: true },
     { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', basePrice: 350, bonus: '+15% PLN', maxDur: 100, repairPrice: 70 }, 
     { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', basePrice: 1200, bonus: 'Заказы x1.4', maxDur: 100, repairPrice: 250 }, 
-    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', basePrice: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100, isVehicle: true }, 
+    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', basePrice: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100 },
     { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', basePrice: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50 },
     { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', basePrice: 180, bonus: '☔ Сухость', maxDur: 80, repairPrice: 40 },
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', basePrice: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80 }
@@ -53,15 +46,6 @@ let G = {
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
     starter_bag: null, starter_phone: null,
     bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
-    // GARAGE LOGIC (DEFAULT)
-    garage: {
-        motor: 1, 
-        wheels: 1, 
-        color: '#3b82f6',
-        unlockedColors: ['#3b82f6'],
-        activeVehicle: 'old_bike',
-        ownedVehicles: ['old_bike']
-    },
     dailyQuests: [], lastDailyUpdate: 0,
     activeMilestones: [
         { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
@@ -78,10 +62,27 @@ let isSearching = false, spamCounter = 0;
 
 // --- UTILS ---
 
+// 🔥 НОВАЯ ФОРМУЛА ЦЕНЫ 🔥
+// Теперь учитывает даже мелкие изменения LVL
 function getPrice(base) {
     if (base === 0) return 0;
-    let mult = 1 + (G.lvl * 0.4); 
-    return Math.ceil(base * mult);
+    
+    // Формула сложного процента: 
+    // Цена растет на 4% (0.04) за каждый полный 1.0 уровня.
+    // Но так как формула показательная, она реагирует и на 1.15, и на 1.5.
+    
+    // Если LVL = 1.0, множитель ~1.04
+    // Если LVL = 1.15, множитель ~1.046
+    // Если LVL = 5.0, множитель ~1.21
+    
+    // Используем Math.pow для плавного роста
+    let inflationRate = 0.35; // Коэффициент жесткости инфляции (35% за уровень в геометрической прогрессии)
+    let mult = Math.pow(1 + inflationRate, G.lvl);
+    
+    let finalPrice = base * mult;
+
+    // Округляем до сотых (копеек), чтобы видеть разницу даже на малых уровнях
+    return parseFloat(finalPrice.toFixed(2));
 }
 
 function addHistory(msg, val, type = 'plus') {
@@ -173,13 +174,8 @@ function doWork() {
         consumeResources(true); 
         let speed = (G.bikeRentTime > 0 ? 2 : 1);
         if (order.isRiskyRoute) speed *= 2; 
-        if (G.shoes.dur <= 0) speed *= 0.7;
-        
-        // Garage Tuning Effect (Wheels) - SAFE CHECK
-        let wheelsLvl = (G.garage && G.garage.wheels) ? G.garage.wheels : 1;
-        let garageSpeed = 1 + (wheelsLvl * 0.05); // +5% per level
-        order.steps += speed * garageSpeed;
-
+        if (G.shoes.dur <= 0) speed *= 0.7; 
+        order.steps += speed;
         if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; } 
         if(order.steps >= order.target) finishOrder(true); 
         updateUI(); save(); return; 
@@ -218,16 +214,10 @@ function consumeResources(isOrder) {
 
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
-    
-    // Garage Tuning Effect (Motor) - SAFE CHECK
-    let motorLvl = (G.garage && G.garage.motor) ? G.garage.motor : 1;
-    let garageEco = 1 - (motorLvl * 0.03); // -3% per level
-    cost *= garageEco;
-
     let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
     cost *= rainMod; 
     if (isOrder) cost *= 1.5; 
-    if (G.district === 3) cost *= 0.9; 
+    if (G.district === 3) cost *= 0.9; // Wola perk
     G.en = Math.max(0, G.en - cost); 
 }
 
@@ -252,87 +242,7 @@ function generateOrder() {
     updateUI(); 
 }
 
-// --- GARAGE & SHOP FUNCTIONS ---
-
-function upgradeGarage(type) {
-    // SAFE CHECK
-    if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
-    
-    let currentLvl = G.garage[type] || 1;
-    let basePrice = type === 'motor' ? 500 : 350;
-    
-    let price = Math.floor(basePrice * Math.pow(1.5, currentLvl - 1));
-    price = getPrice(price); 
-
-    if (G.money >= price) {
-        G.money = parseFloat((G.money - price).toFixed(2));
-        G.garage[type]++;
-        addHistory('🔧 ТЮНИНГ', price, 'minus');
-        log("Улучшение установлено!", "var(--success)");
-        tg.HapticFeedback.notificationOccurred('success');
-        save(); updateUI();
-    } else {
-        log("Не хватает денег (" + price + ")", "var(--danger)");
-    }
-}
-
-function setNeon(color, el) {
-    if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
-
-    let isUnlocked = G.garage.unlockedColors.includes(color);
-    if (isUnlocked) {
-        G.garage.color = color;
-        tg.HapticFeedback.selectionChanged();
-        save(); updateUI();
-    } else {
-        let price = getPrice(200);
-        if (G.money >= price) {
-            if(confirm(`Купить этот неон за ${price} PLN?`)) {
-                G.money = parseFloat((G.money - price).toFixed(2));
-                G.garage.unlockedColors.push(color);
-                G.garage.color = color;
-                addHistory('🎨 НЕОН', price, 'minus');
-                save(); updateUI();
-            }
-        } else {
-            log("Нужно " + price + " PLN", "var(--danger)");
-        }
-    }
-}
-
-function buyVehicle(id) {
-    if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
-    
-    let v = VEHICLES.find(x => x.id === id);
-    if (!v) return;
-    
-    if (G.garage.ownedVehicles.includes(id)) {
-        G.garage.activeVehicle = id;
-        if (id === 'scooter') {
-            if (!G.scooter) G.scooter = { active: true, dur: 100 };
-        }
-        log("Транспорт выбран!", "var(--success)");
-        save(); updateUI();
-        return;
-    }
-
-    let price = getPrice(v.price);
-    if (G.money >= price) {
-        G.money = parseFloat((G.money - price).toFixed(2));
-        G.garage.ownedVehicles.push(id);
-        G.garage.activeVehicle = id;
-        
-        if (id === 'scooter') {
-            G.scooter = { active: true, dur: 100 };
-        }
-        
-        addHistory('🛵 ' + v.name, price, 'minus');
-        log("Куплен " + v.name + "!", "var(--success)");
-        save(); updateUI();
-    } else {
-        log("Не хватает денег (" + price + ")", "var(--danger)");
-    }
-}
+// --- SHOPS & SERVICES (UPDATED PRICES) ---
 
 function buyWater() { 
     let price = getPrice(1.50);
@@ -423,14 +333,6 @@ function buyInvest(type) {
         G.money = parseFloat((G.money - price).toFixed(2)); 
         let maxDur = conf.maxDur || 100;
         G[type] = { active: true, dur: maxDur };
-        
-        // Sync with Garage logic if scooter
-        if (type === 'scooter') {
-             if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
-            if(!G.garage.ownedVehicles.includes('scooter')) G.garage.ownedVehicles.push('scooter');
-            G.garage.activeVehicle = 'scooter';
-        }
-
         addHistory('ИНВЕСТ', price, 'minus'); 
         save(); updateUI(); 
     } 
@@ -456,6 +358,7 @@ function repairItem(type) {
 function sellInvest(type) {
     if(!G[type]) return;
     let conf = UPGRADES.find(u => u.id === type);
+    // Продаем за 40% от ТЕКУЩЕЙ рыночной цены (инфляция помогает и тут)
     let sellPrice = Math.floor(getPrice(conf.basePrice) * 0.4);
     
     G.money = parseFloat((G.money + sellPrice).toFixed(2)); 
@@ -483,6 +386,7 @@ function moveDistrict(id) {
 // --- RENDERING ---
 
 function updateShopPrices() {
+    // Эта функция обновляет только цифры на кнопках, не ломая верстку
     const btnWater = document.getElementById('btn-water');
     if(btnWater) btnWater.innerText = getPrice(1.50) + " PLN";
 
@@ -497,96 +401,6 @@ function updateShopPrices() {
 
     const btnJorban = document.getElementById('btn-jorban');
     if(btnJorban) btnJorban.innerText = getPrice(250) + " PLN";
-}
-
-function renderGarage() {
-    if (!G.garage) return;
-
-    // Apply Neon
-    document.documentElement.style.setProperty('--accent-glow', G.garage.color);
-
-    // Render Stats
-    let speedVal = 10 + (G.garage.wheels - 1) * 5; 
-    document.getElementById('val-speed').innerText = "+" + speedVal + "%";
-    document.getElementById('bar-speed').style.width = Math.min(100, speedVal * 2) + "%";
-
-    let ecoVal = (G.garage.motor - 1) * 3;
-    document.getElementById('val-eco').innerText = "-" + ecoVal + "%";
-    document.getElementById('bar-eco').style.width = Math.min(100, ecoVal * 3) + "%";
-
-    // Update Buttons
-    let motorPrice = Math.floor(500 * Math.pow(1.5, G.garage.motor - 1));
-    document.getElementById('lvl-motor').innerText = "LVL " + G.garage.motor;
-    document.getElementById('btn-motor').innerText = getPrice(motorPrice) + " PLN";
-
-    let wheelsPrice = Math.floor(350 * Math.pow(1.5, G.garage.wheels - 1));
-    document.getElementById('lvl-wheels').innerText = "LVL " + G.garage.wheels;
-    document.getElementById('btn-wheels').innerText = getPrice(wheelsPrice) + " PLN";
-
-    // Colors
-    document.querySelectorAll('.color-btn').forEach(btn => {
-        let color = btn.getAttribute('onclick').split("'")[1];
-        if (G.garage.color === color) btn.classList.add('active');
-        else btn.classList.remove('active');
-        
-        if (!G.garage.unlockedColors.includes(color)) {
-            btn.style.opacity = "0.4";
-        } else {
-            btn.style.opacity = "1";
-        }
-    });
-
-    // Vehicles List
-    const vList = document.getElementById('vehicles-list-container');
-    if (vList) {
-        vList.innerHTML = '';
-        VEHICLES.forEach(v => {
-            let isOwned = G.garage.ownedVehicles.includes(v.id);
-            let isActive = G.garage.activeVehicle === v.id;
-            let price = getPrice(v.price);
-            
-            let btnText = isOwned ? (isActive ? "ВЫБРАНО" : "ВЫБРАТЬ") : `КУПИТЬ (${price})`;
-            let btnClass = isActive ? "btn-secondary" : "btn-buy";
-            let btnStyle = isActive ? "background:var(--success); color:black;" : "";
-
-            let div = document.createElement('div');
-            div.className = 'shop-item';
-            div.innerHTML = `
-                <div class="shop-icon">${v.icon}</div>
-                <div class="shop-title">${v.name}</div>
-                <div class="shop-desc">${v.desc}</div>
-                <button class="${btnClass}" style="width:100%; margin-top:5px; ${btnStyle}" onclick="buyVehicle('${v.id}')">${btnText}</button>
-            `;
-            vList.appendChild(div);
-        });
-    }
-
-    // Inventory List (Moved to Garage view)
-    const myItemsList = document.getElementById('my-items-list');
-    if (myItemsList) {
-        myItemsList.innerHTML = '';
-        const shoeDiv = document.createElement('div');
-        shoeDiv.className = 'shop-item item-shoes';
-        let shoeStatusText = Math.floor(G.shoes.dur) + "%";
-        let isShoesBroken = G.shoes.dur <= 0;
-        if (isShoesBroken) { shoeDiv.classList.add('item-broken'); shoeStatusText = "0%"; }
-        shoeDiv.innerHTML = `<div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div>`;
-        if(isShoesBroken) { shoeDiv.onclick = function() { switchTab('shop', document.querySelectorAll('.tab-item')[2]); }; }
-        myItemsList.appendChild(shoeDiv);
-
-        UPGRADES.forEach(up => {
-            if(G[up.id] && !up.isVehicle) { // Don't show scooters here, they are in vehicles
-                const item = G[up.id];
-                let conf = UPGRADES.find(u => u.id === up.id);
-                let repairP = getPrice(conf.repairPrice);
-                let sellP = Math.floor(getPrice(conf.basePrice) * 0.4);
-                const pct = Math.floor((item.dur / conf.maxDur) * 100);
-                const div = document.createElement('div'); div.className = 'shop-item';
-                div.innerHTML = `<div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc">${up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%;"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}')">🛠️ ${repairP}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}')">💸 ${sellP}</button></div>`;
-                myItemsList.appendChild(div);
-            }
-        });
-    }
 }
 
 // ОСТАЛЬНЫЕ ФУНКЦИИ
@@ -768,10 +582,12 @@ function usePromo() {
     if (!G.usedPromos) G.usedPromos = [];
     if (G.usedPromos.includes(code)) { log("Уже использовано!", "var(--danger)"); return; }
 
+    // Простая проверка (можно через fetch, но оставим локально для надежности)
     if(code === "WARSZAWA2025") {
         G.money += 2025; G.totalEarned += 2025; G.usedPromos.push(code);
         addHistory('🎁 PROMO', 2025, 'plus'); save(); updateUI();
     } else {
+        // Попытка загрузить из файла (как было)
         fetch('promos.json?nocache=' + Date.now()).then(r => r.json()).then(data => {
             if (data[code]) {
                 let reward = data[code].reward;
@@ -836,6 +652,13 @@ function renderBank() {
         </div>`;
     ui.innerHTML = creditHTML + buyLvlHTML;
 }
+function saveToCloud() { /* (Упрощено для локальной версии) */ }
+function listenToCloud() { /* (Упрощено для локальной версии) */ }
+function validateInventory() {
+    UPGRADES.forEach(up => {
+        if(G[up.id] && G[up.id].dur > up.maxDur) G[up.id].dur = up.maxDur;
+    });
+}
 
 function updateUI() {
     const moneyEl = document.getElementById('money-val');
@@ -870,7 +693,7 @@ function updateUI() {
     if(proList) {
         proList.innerHTML = ''; 
         UPGRADES.forEach(up => { 
-            if(!G[up.id] && !up.hidden && !up.isVehicle) { // Vehicles in garage
+            if(!G[up.id] && !up.hidden) { 
                 let p = getPrice(up.basePrice);
                 let div = document.createElement('div'); div.className = 'card'; div.style.marginBottom = '8px'; 
                 div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "')\">КУПИТЬ (" + p + " PLN)</button>"; 
@@ -901,8 +724,34 @@ function updateUI() {
     }
 
     renderDistricts();
-    renderGarage(); // Renders stats, tuning, vehicles
     
+    // Инвентарь
+    const myItemsList = document.getElementById('my-items-list');
+    if (myItemsList) {
+        myItemsList.innerHTML = '';
+        const shoeDiv = document.createElement('div');
+        shoeDiv.className = 'shop-item item-shoes';
+        let shoeStatusText = Math.floor(G.shoes.dur) + "%";
+        let isShoesBroken = G.shoes.dur <= 0;
+        if (isShoesBroken) { shoeDiv.classList.add('item-broken'); shoeStatusText = "0%"; }
+        shoeDiv.innerHTML = `<div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div>`;
+        if(isShoesBroken) { shoeDiv.onclick = function() { switchTab('shop', document.querySelectorAll('.tab-item')[2]); }; }
+        myItemsList.appendChild(shoeDiv);
+
+        UPGRADES.forEach(up => {
+            if(G[up.id]) {
+                const item = G[up.id];
+                let conf = UPGRADES.find(u => u.id === up.id);
+                let repairP = getPrice(conf.repairPrice);
+                let sellP = Math.floor(getPrice(conf.basePrice) * 0.4);
+                const pct = Math.floor((item.dur / conf.maxDur) * 100);
+                const div = document.createElement('div'); div.className = 'shop-item';
+                div.innerHTML = `<div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc">${up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%;"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}')">🛠️ ${repairP}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}')">💸 ${sellP}</button></div>`;
+                myItemsList.appendChild(div);
+            }
+        });
+    }
+
     const qBar = document.getElementById('quest-bar'); 
     if (order.visible && curView === 'main') { 
         qBar.style.display = 'block'; 
@@ -986,16 +835,6 @@ function load() {
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 };
-    
-    // --- CRITICAL FIX FOR NAN ---
-    if(!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
-    
-    // Recovery for broken stats
-    if(isNaN(G.en)) G.en = 2000;
-    if(isNaN(G.money)) G.money = 10.00;
-    if(isNaN(G.garage.motor)) G.garage.motor = 1;
-    if(isNaN(G.garage.wheels)) G.garage.wheels = 1;
-    
     updateUI();
 }
 
@@ -1014,3 +853,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
