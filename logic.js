@@ -396,15 +396,26 @@ function updateUI() {
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
     if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
     
+    // --- НАЧАЛО ИЗМЕНЕНИЯ (Обувь в Хедере) ---
     let shoeNameDisplay = G.shoes.name;
+    let shoeBar = document.getElementById('shoe-bar');
+    
     if (G.shoes.dur <= 0) {
-        shoeNameDisplay += " <span style='color:var(--danger); font-size:10px;'>(🐌 -30%)</span>";
+        // Если сломаны - пишем призыв к действию красным и мелко
+        shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
+        // Делаем полоску полностью красной, чтобы привлечь внимание
+        shoeBar.style.width = "100%";
+        shoeBar.style.background = "var(--danger)";
+        shoeBar.style.opacity = "0.3"; 
+    } else {
+        // Если целые - показываем обычную полоску
+        const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
+        shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
+        shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
+        shoeBar.style.opacity = "1";
     }
     document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
-    
-    const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
-    document.getElementById('shoe-bar').style.width = Math.min(100, Math.max(0, sPct)) + "%";
-    document.getElementById('shoe-bar').style.background = sPct <= 0 ? "var(--danger)" : (sPct < 20 ? "var(--danger)" : "var(--purple)");
+    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
     let currentRank = RANKS[0];
     let nextRank = null;
@@ -487,16 +498,25 @@ function updateUI() {
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
     
+    // --- НАЧАЛО ИЗМЕНЕНИЯ (Обувь в Инвентаре) ---
     const shoeDiv = document.createElement('div');
     shoeDiv.className = 'card';
     shoeDiv.style.marginBottom = '5px';
-    shoeDiv.style.borderColor = "var(--purple)";
+    shoeDiv.style.borderColor = G.shoes.dur <= 0 ? "var(--danger)" : "var(--purple)";
     
     let shoeStatusText = Math.floor(G.shoes.dur) + "%";
-    if (G.shoes.dur <= 0) shoeStatusText = "<b style='color:var(--danger)'>0% (🐌 ШТРАФ -30%)</b>";
+    let shoeActionBtn = ""; // Кнопка действия
 
-    shoeDiv.innerHTML = "<b>👟 " + G.shoes.name + "</b><br><small>Состояние: " + shoeStatusText + "</small>";
+    if (G.shoes.dur <= 0) {
+        // Если сломаны - пишем конкретно
+        shoeStatusText = "<b style='color:var(--danger)'>СЛОМАНО (СКОРОСТЬ -30%)</b>";
+        // Добавляем кнопку быстрого перехода в магазин
+        shoeActionBtn = `<button class="btn-action" style="margin-top:5px; background:var(--danger); font-size:10px; padding:5px;" onclick="switchTab('shop', document.querySelectorAll('.tab-item')[2])">🛒 КУПИТЬ НОВЫЕ В МАГАЗИНЕ</button>`;
+    }
+
+    shoeDiv.innerHTML = "<b>👟 " + G.shoes.name + "</b><br><small>Состояние: " + shoeStatusText + "</small>" + shoeActionBtn;
     myItemsList.appendChild(shoeDiv);
+    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
     UPGRADES.forEach(up => {
         if(G[up.id]) {
@@ -1297,3 +1317,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
