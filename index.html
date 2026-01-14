@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.0">
+    <link rel="stylesheet" href="style.css?v=5.1">
 </head>
 <body>
 
@@ -215,10 +215,57 @@
         </div>
 
         <div class="section-title">⚡ Энергия и Восстановление</div>
-        <div id="shop-consumables-grid" class="shop-grid"></div>
+        <div class="shop-grid">
+            <div class="shop-item item-food">
+                <div class="shop-icon">💧</div>
+                <div class="shop-title">Вода (1.5л)</div>
+                <div class="shop-desc">Восстанавливает силы.<br><b>+1500 мл</b></div>
+                <button id="btn-water" class="btn-price" onclick="buyWater()">1.50 PLN</button>
+            </div>
+            <div class="shop-item item-food">
+                <div class="shop-icon">☕</div>
+                <div class="shop-title">Эспрессо</div>
+                <div class="shop-desc">Заряд бодрости.<br><b>+300 Energy</b></div>
+                <button id="btn-coffee" class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
+            </div>
+            <div class="shop-item item-energy" style="grid-column: span 2;">
+                <div style="display:flex; align-items:center; width:100%; gap:15px;">
+                    <div class="shop-icon" style="margin:0;">🔋</div>
+                    <div style="text-align:left; flex:1;">
+                        <div class="shop-title">Red Bull Power</div>
+                        <div class="shop-desc" style="margin:0; color:#fff;">
+                            <span style="color:var(--success)">Пауза расхода энергии на 2 мин.</span><br>
+                            <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
+                        </div>
+                    </div>
+                    <button id="btn-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00 PLN</button>
+                </div>
+            </div>
+        </div>
 
         <div class="section-title">👟 Сникерхед</div>
-        <div id="shop-shoes-list"></div>
+        <div class="shop-item item-shoes" style="margin-bottom: 8px;">
+            <div class="shop-icon">🐼</div>
+            <div style="flex:1;">
+                <div class="shop-title">Abibas Ultra</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Классика района.</div>
+                <div style="background:rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Прочность: <b>100</b>
+                </div>
+            </div>
+            <button id="btn-abibas" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas')">50 PLN</button>
+        </div>
+        <div class="shop-item item-shoes" style="border-color: var(--gold);">
+            <div class="shop-icon">🔥</div>
+            <div style="flex:1;">
+                <div class="shop-title" style="color:var(--gold)">Jorban Air</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Премиум стиль.</div>
+                <div style="background:rgba(253, 186, 116, 0.2); color:var(--accent-gold); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Бонус: <b>+20% к чаевым</b>
+                </div>
+            </div>
+            <button id="btn-jorban" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban')">250 PLN</button>
+        </div>
         
         <div style="height: 20px;"></div>
     </div>
@@ -265,8 +312,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=5.0" defer></script>
+<script src="logic.js?v=5.1" defer></script>
 
 </body>
 </html>
-
