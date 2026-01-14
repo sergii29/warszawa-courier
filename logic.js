@@ -1,4 +1,4 @@
-// --- logic.js v6.0 (Added Garage & Tuning) ---
+// --- logic.js v7.1 (Fixing NaN & Restoring Logic) ---
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
@@ -38,7 +38,7 @@ const UPGRADES = [
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', basePrice: 0, bonus: 'Связь', maxDur: 40, repairPrice: 5, hidden: true },
     { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', basePrice: 350, bonus: '+15% PLN', maxDur: 100, repairPrice: 70 }, 
     { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', basePrice: 1200, bonus: 'Заказы x1.4', maxDur: 100, repairPrice: 250 }, 
-    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', basePrice: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100, isVehicle: true }, // Marked as vehicle logic
+    { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', basePrice: 500, bonus: '⚡ -30%', maxDur: 100, repairPrice: 100, isVehicle: true }, 
     { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', basePrice: 250, bonus: '🛡️ Безопасность', maxDur: 50, repairPrice: 50 },
     { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', basePrice: 180, bonus: '☔ Сухость', maxDur: 80, repairPrice: 40 },
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', basePrice: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80 }
@@ -53,10 +53,10 @@ let G = {
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
     starter_bag: null, starter_phone: null,
     bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
-    // GARAGE LOGIC
+    // GARAGE LOGIC (DEFAULT)
     garage: {
-        motor: 1, // Reduces energy consumption
-        wheels: 1, // Increases delivery speed
+        motor: 1, 
+        wheels: 1, 
         color: '#3b82f6',
         unlockedColors: ['#3b82f6'],
         activeVehicle: 'old_bike',
@@ -175,8 +175,9 @@ function doWork() {
         if (order.isRiskyRoute) speed *= 2; 
         if (G.shoes.dur <= 0) speed *= 0.7;
         
-        // Garage Tuning Effect (Wheels)
-        let garageSpeed = 1 + (G.garage.wheels * 0.05); // +5% per level
+        // Garage Tuning Effect (Wheels) - SAFE CHECK
+        let wheelsLvl = (G.garage && G.garage.wheels) ? G.garage.wheels : 1;
+        let garageSpeed = 1 + (wheelsLvl * 0.05); // +5% per level
         order.steps += speed * garageSpeed;
 
         if (G.bikeRentTime > 0 && Math.random() < 0.002) { triggerBreakdown(); return; } 
@@ -218,8 +219,9 @@ function consumeResources(isOrder) {
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
     
-    // Garage Tuning Effect (Motor)
-    let garageEco = 1 - (G.garage.motor * 0.03); // -3% per level
+    // Garage Tuning Effect (Motor) - SAFE CHECK
+    let motorLvl = (G.garage && G.garage.motor) ? G.garage.motor : 1;
+    let garageEco = 1 - (motorLvl * 0.03); // -3% per level
     cost *= garageEco;
 
     let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
@@ -253,11 +255,14 @@ function generateOrder() {
 // --- GARAGE & SHOP FUNCTIONS ---
 
 function upgradeGarage(type) {
+    // SAFE CHECK
+    if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
+    
     let currentLvl = G.garage[type] || 1;
     let basePrice = type === 'motor' ? 500 : 350;
-    // Formula from prototype
+    
     let price = Math.floor(basePrice * Math.pow(1.5, currentLvl - 1));
-    price = getPrice(price); // Apply dynamic pricing
+    price = getPrice(price); 
 
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
@@ -272,6 +277,8 @@ function upgradeGarage(type) {
 }
 
 function setNeon(color, el) {
+    if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
+
     let isUnlocked = G.garage.unlockedColors.includes(color);
     if (isUnlocked) {
         G.garage.color = color;
@@ -294,20 +301,16 @@ function setNeon(color, el) {
 }
 
 function buyVehicle(id) {
+    if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
+    
     let v = VEHICLES.find(x => x.id === id);
     if (!v) return;
     
-    // Check ownership
-    if (!G.garage.ownedVehicles) G.garage.ownedVehicles = ['old_bike'];
     if (G.garage.ownedVehicles.includes(id)) {
-        // Activate logic
         G.garage.activeVehicle = id;
-        
-        // Special logic for scooter (legacy support)
         if (id === 'scooter') {
             if (!G.scooter) G.scooter = { active: true, dur: 100 };
         }
-        
         log("Транспорт выбран!", "var(--success)");
         save(); updateUI();
         return;
@@ -423,6 +426,7 @@ function buyInvest(type) {
         
         // Sync with Garage logic if scooter
         if (type === 'scooter') {
+             if (!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
             if(!G.garage.ownedVehicles.includes('scooter')) G.garage.ownedVehicles.push('scooter');
             G.garage.activeVehicle = 'scooter';
         }
@@ -502,7 +506,7 @@ function renderGarage() {
     document.documentElement.style.setProperty('--accent-glow', G.garage.color);
 
     // Render Stats
-    let speedVal = 10 + (G.garage.wheels - 1) * 5; // Base visual logic
+    let speedVal = 10 + (G.garage.wheels - 1) * 5; 
     document.getElementById('val-speed').innerText = "+" + speedVal + "%";
     document.getElementById('bar-speed').style.width = Math.min(100, speedVal * 2) + "%";
 
@@ -983,8 +987,14 @@ function load() {
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 };
     
-    // Init Garage if missing
+    // --- CRITICAL FIX FOR NAN ---
     if(!G.garage) G.garage = { motor: 1, wheels: 1, color: '#3b82f6', unlockedColors: ['#3b82f6'], activeVehicle: 'old_bike', ownedVehicles: ['old_bike'] };
+    
+    // Recovery for broken stats
+    if(isNaN(G.en)) G.en = 2000;
+    if(isNaN(G.money)) G.money = 10.00;
+    if(isNaN(G.garage.motor)) G.garage.motor = 1;
+    if(isNaN(G.garage.wheels)) G.garage.wheels = 1;
     
     updateUI();
 }
