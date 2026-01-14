@@ -62,6 +62,10 @@ let lastClickTime = 0;
 let clicksSinceBonus = 0;
 let bonusActive = false;
 
+// Глобальные переменные для анти-бота
+let isSearching = false; 
+let spamCounter = 0;
+
 const DISTRICTS = [
     { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0 },       
     { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150 }, 
@@ -274,8 +278,7 @@ function listenToCloud() {
                 
                 let wasNew = G.isNewPlayer;
 
-                // ИСПРАВЛЕНИЕ: Принудительное удаление вещей, если их нет в обновлении
-                // Firebase удаляет ключ, если значение null, поэтому обычный merge не сработает
+                // Принудительное удаление вещей, если их нет в обновлении
                 const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone'];
                 
                 invKeys.forEach(key => {
@@ -293,8 +296,6 @@ function listenToCloud() {
                     return;
                 }
                 updateUI();
-                
-                // Уведомление игроку, чтобы он понял, что произошло
                 log("⚡ Данные синхронизированы с сервером", "var(--accent-blue)");
             }
 
@@ -1001,20 +1002,74 @@ function buyLvl(cost, amount) {
 }
 
 function collectBottles() { 
-    G.money = parseFloat((G.money + 0.02).toFixed(2)); 
-    G.totalEarned += 0.02;
-    checkDailyQuests('earn', 0.02);
-    G.totalBottles++; 
-    
-    if (Math.random() < 0.15) {
-        let bonusRep = 0.005;
-        G.lvl += bonusRep;
-        if(Math.random() < 0.3) log("♻️ Город стал чище! Респект +0.005 LVL", "var(--success)");
+    // 1. ЛОВУШКА ДЛЯ БОТА
+    if (isSearching) {
+        spamCounter++;
+        // Если 15 кликов за секунду ожидания - это точно бот
+        if (spamCounter > 15) {
+            log("🤖 Слишком быстро! Руки не мельница!", "var(--danger)");
+            tg.HapticFeedback.notificationOccurred('error');
+            
+            // Наказание боту
+            G.money = Math.max(0, G.money - 100); 
+            G.lvl -= 0.1; // Откидываем рейтинг
+            
+            spamCounter = 0;
+            updateUI();
+        }
+        return; 
     }
 
-    checkMilestones(); 
-    save(); 
-    updateUI(); 
+    // 2. БЛОКИРОВКА КНОПКИ (Имитация поиска)
+    isSearching = true;
+    spamCounter = 0;
+    
+    const btn = document.querySelector("button[onclick='collectBottles()']");
+    const originalText = btn ? btn.innerText : "♻️ СБОР БУТЫЛОК";
+    
+    // Визуально показываем игроку, что надо подождать
+    if(btn) {
+        btn.innerText = "⏳ Роемся..."; 
+        btn.style.opacity = "0.6";
+    }
+
+    // 3. ВЫДАЧА НАГРАДЫ (Через 1.2 секунды)
+    setTimeout(() => {
+        // Деньги
+        G.money = parseFloat((G.money + 0.05).toFixed(2)); 
+        G.totalEarned += 0.05;
+        checkDailyQuests('earn', 0.05);
+        G.totalBottles++; 
+        
+        // РЕЙТИНГ (СОЦИАЛЬНЫЙ ЛИФТ)
+        let repGain = 0;
+        
+        if (G.lvl < 1.0) {
+            // Если игрок на дне - помогаем выбраться БЫСТРО (+0.02)
+            repGain = 0.02; 
+        } else {
+            // Если игрок уже крутой - халявы нет (+0.002)
+            repGain = 0.002; 
+        }
+
+        // Шанс на крит (редкая бутылка)
+        if (Math.random() < 0.10) { 
+            repGain *= 3; 
+            log("💎 Нашел стеклотару! Респект x3", "var(--success)");
+        }
+
+        G.lvl += repGain;
+        checkMilestones(); 
+        save(); 
+        updateUI(); 
+
+        // Разблокировка
+        isSearching = false;
+        if(btn) {
+            btn.innerText = originalText;
+            btn.style.opacity = "1";
+        }
+    }, 1200); // 1.2 секунды задержка
 }
 
 function buyWater() { 
@@ -1135,7 +1190,6 @@ function renderBank() {
     ui.innerHTML = creditHTML + buyLvlHTML;
 }
 
-// === НОВЫЕ ФУНКЦИИ ДЛЯ МАГАЗИНА ===
 function openProShop() {
     document.getElementById('pro-shop-modal').style.display = 'flex';
 }
