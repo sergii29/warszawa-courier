@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier Simulator</title>
+    <title>Warszawa Courier</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.0">
+    <link rel="stylesheet" href="style.css?v=5.5">
 </head>
 <body>
 
@@ -18,71 +18,58 @@
         <div style="font-size: 40px; margin-bottom: 10px;">👋</div>
         <h3 style="margin-top:0; color:white;">Добро пожаловать!</h3>
         <p style="color:var(--text-secondary); font-size:12px; margin-bottom:20px;">
-            Варшава не прощает ошибок. Но мы своих не бросаем.<br>
-            Держи <b>"Набор Выживальщика"</b> от профсоюза:
+            Варшава не прощает ошибок.<br>Держи стартовый набор:
         </p>
         <div class="card" style="margin-bottom:15px; text-align:left;">
-            <div>💵 <b>+50.00 PLN</b> <small>На еду и штрафы</small></div>
-            <div style="margin-top:5px;">💧 <b>+500 мл</b> <small>Вода</small></div>
-            <div style="margin-top:5px;">🚲 <b>Велосипед</b> <small>Аренда на 15 мин</small></div>
-            <div style="margin-top:5px;">👟 <b>Шлепки "Bazuka"</b> <small>Временная обувь</small></div>
-            <div style="margin-top:5px;">🎒 <b>Пакет с логотипом</b> <small>Слабый, но свой</small></div>
+            <div>💵 <b>+50.00 PLN</b></div>
+            <div>💧 <b>+500 мл</b> Воды</div>
+            <div>🚲 <b>Велосипед</b> (15 мин)</div>
         </div>
-        <button class="btn-action" style="background:var(--success)" onclick="claimStarterPack()">ЗАБРАТЬ И НАЧАТЬ</button>
+        <button class="btn-action" style="background:var(--success)" onclick="claimStarterPack()">НАЧАТЬ РАБОТУ</button>
     </div>
 </div>
 
 <div id="route-modal" class="modal-overlay">
     <div class="modal-card">
-        <h3 style="margin-top:0; color:white; margin-bottom: 5px;">📍 Выбор маршрута</h3>
-        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:15px;">Как поедем к клиенту?</p>
+        <h3 style="margin-top:0; color:white; margin-bottom: 10px;">📍 Выбор маршрута</h3>
         
         <div class="route-option" onclick="chooseRoute('safe')">
             <div class="route-icon">🐢</div>
-            <div>
-                <b>Спокойный путь</b><br>
-                <small style="color:var(--success)">100% оплата • Нет рисков</small>
-            </div>
+            <div><b>Спокойный</b><br><small style="color:var(--success)">Без рисков</small></div>
         </div>
 
         <div class="route-option" onclick="chooseRoute('risky')">
             <div class="route-icon">😈</div>
-            <div>
-                <b>Срезать дворами (-50% времени)</b><br>
-                <small style="color:var(--danger)">Риск аварии 30% или двойные чаевые</small>
-            </div>
+            <div><b>Срезать дворами</b><br><small style="color:var(--danger)">Риск аварии 30%</small></div>
         </div>
 
         <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilot()">
             <div class="route-icon">🤖</div>
             <div id="lbl-auto-container">
                 <div id="lbl-auto-route"><b>Автопилот (45 PLN)</b></div>
-                <div id="desc-auto-route"><small style="color:var(--accent-gold)">Робот сделает всё сам</small></div>
+                <div id="desc-auto-route"><small style="color:var(--accent-gold)">Нужен LVL 0.15+</small></div>
             </div>
         </div>
 
-        <button class="btn-action btn-secondary" style="padding:8px;" onclick="closeRouteModal()">ОТМЕНА</button>
+        <button class="btn-action btn-secondary" style="padding:8px; margin-top:10px;" onclick="closeRouteModal()">ОТМЕНА</button>
     </div>
 </div>
 
 <div id="pro-shop-modal" class="modal-overlay" style="z-index: 3500;">
     <div class="modal-card" style="max-height: 80vh; overflow-y: auto; text-align: left; width: 90%; max-width: 360px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="margin:0; color:white;">⚙️ Проф. Экипировка</h3>
-            <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
+            <h3 style="margin:0; color:white;">⚙️ Экипировка</h3>
+            <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px;">✕</button>
         </div>
 
         <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05); margin-bottom:15px;">
-            <b>🚲 Аренда Электровелосипеда</b><br>
-            <small>Скорость x2. 30 PLN за 10 минут.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
+            <b>🚲 Аренда Байка</b><br>
+            <small>Скорость x2. 30 PLN / 10 мин.</small>
+            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
         </div>
         
-        <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
-        <div id="shop-upgrades-list">
-            </div>
-
-        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
+        <div id="shop-upgrades-list"></div>
+        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ</button>
     </div>
 </div>
 
@@ -90,13 +77,13 @@
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
             <b id="quest-title" style="color:var(--accent-blue); font-size: 13px;">📦 НОВЫЙ ЗАКАЗ</b><br>
-            <small style="color:var(--text-secondary)">Предложение:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
+            <small>Оплата:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
         </div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
     </div>
     
     <div id="quest-actions-choice" style="margin-top:10px;">
-        <button class="btn-action" style="background:var(--accent-blue);" onclick="openRouteModal()">🗺️ ВЫБРАТЬ МАРШРУТ</button>
+        <button class="btn-action" style="background:var(--accent-blue);" onclick="openRouteModal()">🗺️ ПРИНЯТЬ ЗАКАЗ</button>
     </div>
 
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
@@ -105,31 +92,20 @@
     </div>
 </div>
 
-<div id="donate-modal" class="modal-overlay" style="z-index: 6000;">
-    <div class="modal-card">
-        <h3 style="margin:0 0 10px 0; color:var(--accent-gold);">🤝 Поддержать Разработчика</h3>
-        <p style="font-size:11px; color:#aaa; margin-bottom:15px;">
-            Игра бесплатная, но сервер стоит денег.<br>
-            Любая сумма поможет проекту жить!
-        </p>
-        <button class="btn-action btn-secondary" onclick="document.getElementById('donate-modal').style.display='none'">ЗАКРЫТЬ</button>
-    </div>
-</div>
-
 <div class="header-container">
     <div class="top-nav">
-        <div style="flex: 1; min-width: 0; padding-right: 10px;">
+        <div style="flex:1;">
             <small style="color:var(--text-secondary); font-size:10px;">Баланс</small><br>
-            <b id="money-val" class="money-display" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 100%;">0.00 PLN</b>
+            <b id="money-val" class="money-display">0.00 PLN</b>
             <div id="shoes-status-ui">👟 <span id="shoe-name">...</span> <div class="durability-bar"><div id="shoe-bar" class="durability-fill"></div></div></div>
         </div>
         <div class="right-panel">
             <b id="lvl-val" class="lvl-display">LVL 1.0</b>
-            <div style="display:flex; gap:3px;">
+            <div style="display:flex; gap:3px; flex-wrap:wrap; justify-content:flex-end;">
                 <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
                 <div id="auto-status-ui" class="status-badge">🤖 00:00</div>
                 <div id="buff-status-ui" class="status-badge">⚡ 00:00</div>
-                <div id="spray-status-ui" class="status-badge" style="background:rgba(239, 68, 68, 0.2); color:var(--danger); border:1px solid var(--danger);">🌶️ 100%</div>
+                <div id="spray-status-ui" class="status-badge" style="background:rgba(220, 38, 38, 0.2); color:#fca5a5; border:1px solid #ef4444; display:none;">🌶️ 100%</div>
             </div>
             <div id="inventory-display"></div>
         </div>
@@ -142,8 +118,8 @@
     <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
     
     <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
-        <span id="tax-timer">Налог (FREE) через: 05:00</span>
-        <span id="rent-timer" style="color:var(--danger)">Аренда (%): 05:00</span>
+        <span id="tax-timer">Налог: 05:00</span>
+        <span id="rent-timer" style="color:var(--danger)">Аренда: 05:00</span>
     </div>
 </div>
 
@@ -162,8 +138,7 @@
             </div>
             
             <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
-                <button class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ (15 PLN)</button>
-                <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
+                <button class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 РЕМОНТ (15 PLN)</button>
             </div>
         </div>
 
@@ -181,15 +156,15 @@
     <div id="view-districts" class="view">
         <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
         <div class="card">
-            <b>Praga</b> <small>Аренда: 5% от баланса. Старт. <span style="color:var(--danger)">Ночью опасно!</span></small>
+            <b>Praga</b> <small>Аренда: 5%. Опасно ночью.</small>
             <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
         </div>
         <div class="card">
-            <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 10% от баланса. Доход: +50%.</small>
+            <b>Mokotów (LVL 2.5+)</b> <small>Аренда: 10%. Доход x1.5.</small>
             <button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
         </div>
         <div class="card">
-            <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 15% от баланса. Доход: +55%.</small>
+            <b>Śródmieście (LVL 5.0+)</b> <small>Аренда: 15%. Доход x1.55.</small>
             <button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
         </div>
     </div>
@@ -197,117 +172,81 @@
     <div id="view-quests" class="view">
         <div class="card rank-card">
             <div style="font-size:40px; margin-bottom:5px;" id="rank-icon">😎</div>
-            <h2 style="margin:0; font-size:18px; color:white; text-shadow:0 0 10px var(--accent-blue);" id="rank-name">Новичок</h2>
-            <small style="color:var(--text-secondary); display:block; margin-top:5px;" id="rank-next">До следующего ранга: ...</small>
-            
-            <div class="energy-track" style="margin-top:10px; background:rgba(0,0,0,0.5);">
-                <div id="rank-progress" class="energy-fill" style="width:0%; background: linear-gradient(90deg, var(--accent-gold), #fff7ed);"></div>
-            </div>
-            <div style="font-size:10px; color:var(--accent-gold); margin-top:5px; font-weight:bold;" id="rank-bonus">Бонус ранга: 0%</div>
+            <h2 style="margin:0; font-size:18px; color:white;" id="rank-name">...</h2>
+            <div style="font-size:10px; color:var(--accent-gold); margin-top:5px;" id="rank-bonus">Бонус: 0%</div>
+            <div class="energy-track" style="margin-top:10px; background:rgba(0,0,0,0.5);"><div id="rank-progress" class="energy-fill"></div></div>
+            <small style="color:var(--text-secondary); display:block; margin-top:5px;" id="rank-next">...</small>
         </div>
 
-        <h4 style="margin:15px 0 5px 0; display:flex; justify-content:space-between; align-items:center;">
-            📅 Ежедневные задания 
-            <small id="daily-timer" style="font-weight:normal; opacity:0.7; font-size:10px;">Обновление через...</small>
-        </h4>
+        <h4 style="margin:15px 0 5px 0;">📅 Задания <small id="daily-timer" style="opacity:0.7; font-size:10px;"></small></h4>
         <div id="daily-quests-list"></div>
 
         <h4 style="margin:15px 0 5px 0;">📊 Статистика</h4>
         <div class="card">
-            <div class="stat-row"><span>📦 Всего заказов</span> <b id="stat-orders">0</b></div>
-            <div class="stat-row"><span>⚡ Всего кликов</span> <b id="stat-clicks">0</b></div>
-            <div class="stat-row"><span>♻️ Сдано бутылок</span> <b id="stat-bottles">0</b></div>
-            <div class="stat-row"><span>💵 Заработано всего</span> <b id="stat-earned" style="color:var(--success)">0.00 PLN</b></div>
+            <div class="stat-row"><span>📦 Заказы</span> <b id="stat-orders">0</b></div>
+            <div class="stat-row"><span>♻️ Бутылки</span> <b id="stat-bottles">0</b></div>
+            <div class="stat-row"><span>💵 Заработано</span> <b id="stat-earned" style="color:var(--success)">0.00</b></div>
         </div>
-
-        <h4 style="margin:15px 0 5px 0;">🏆 Достижения</h4>
+        <h4 style="margin:15px 0 5px 0;">🏆 Цели</h4>
         <div id="milestones-list"></div>
     </div>
 
     <div id="view-shop" class="view">
-        <h3 style="margin:0; color:var(--text-primary); margin-bottom: 10px;">🏪 Супермаркет</h3>
+        <h3 style="margin:0; margin-bottom: 10px;">🏪 Магазин</h3>
         
         <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(30, 41, 59, 0.8)); border: 1px solid var(--accent-blue); text-align: center; padding: 20px; margin-bottom: 20px;">
-            <div style="font-size: 32px; margin-bottom: 5px;">🛵📱🎒</div>
-            <h3 style="margin: 0; color: white;">Техника и Транспорт</h3>
-            <small style="color: var(--text-secondary); display: block; margin-bottom: 10px;">Телефоны, сумки, аренда, самокаты</small>
-            <button class="btn-action" style="background: var(--accent-blue); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);" onclick="openProShop()">ОТКРЫТЬ КАТАЛОГ</button>
+            <div style="font-size: 32px; margin-bottom: 5px;">🎒</div>
+            <h3 style="margin: 0; color: white;">Каталог Оборудования</h3>
+            <small style="color: var(--text-secondary); display: block; margin-bottom: 10px;">Транспорт, Защита, Гаджеты</small>
+            <button class="btn-action" onclick="openProShop()">ОТКРЫТЬ КАТАЛОГ</button>
         </div>
 
-        <div class="section-title">🥤 Энергия и Питание</div>
+        <div class="section-title">🥤 Расходники</div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:20px;">💧</div>
-            <div style="flex:1;">
-                <b>Вода (1.5л)</b><br>
-                <small>Восполняет энергию при кликах.</small>
-            </div>
+            <div style="flex:1;"><b>Вода (1.5л)</b><br><small>Восстановить энергию.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px;" onclick="buyWater()">1.50</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
              <div style="font-size:20px;">☕</div>
-            <div style="flex:1;">
-                <b>Кофе</b><br>
-                <small>Мгновенно +300 энергии.</small>
-            </div>
+            <div style="flex:1;"><b>Кофе</b><br><small>+300 энергии сразу.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--accent-gold);" onclick="buyDrink('coffee', 5)">5.00</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
              <div style="font-size:20px;">🔋</div>
-            <div style="flex:1;">
-                <b>Энергетик</b><br>
-                <small style="color:var(--success)">Расход энергии: 0. Вода: -1.</small>
-            </div>
-            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success); border:none;" onclick="buyDrink('energy', 12)">12.00</button>
+            <div style="flex:1;"><b>Энергетик</b><br><small style="color:var(--success)">Безлимит энергии (2 мин).</small></div>
+            <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--success);" onclick="buyDrink('energy', 12)">12.00</button>
         </div>
 
-        <div class="section-title">👟 Обувь и Стиль</div>
+        <div class="section-title">👟 Обувь</div>
         <div class="card" style="display:flex; align-items:center; gap:10px;">
              <div style="font-size:20px;">🐼</div>
-            <div style="flex:1;">
-                <b>Abibas Ultra</b><br>
-                <small>Надежность: 5000 шагов.</small>
-            </div>
+            <div style="flex:1;"><b>Abibas</b><br><small>5000 шагов.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--purple);" onclick="buyShoes('Abibas', 50, 100)">50.00</button>
         </div>
         <div class="card" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
              <div style="font-size:20px;">🔥</div>
-            <div style="flex:1;">
-                <b>Jorban Air</b><br>
-                <small>Надежность: 15000. +20% чаевые.</small>
-            </div>
+            <div style="flex:1;"><b>Jorban</b><br><small>15000 шагов + Чаевые.</small></div>
             <button class="btn-action" style="width:auto; padding: 6px 12px; background:var(--purple);" onclick="buyShoes('Jorban', 250, 150)">250.00</button>
         </div>
     </div>
 
     <div id="view-invest" class="view">
-        <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
-        
-        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи (Следи за состоянием!)</h4>
-        <div id="my-items-list" style="margin-bottom:15px;">
-            <div style="text-align:center; padding:10px; color:#555; font-size:11px;">Пусто...</div>
-        </div>
+        <h3 style="margin:0;">🎒 Мои вещи</h3>
+        <div id="my-items-list" style="margin-top:10px;"></div>
     </div>
 
     <div id="view-bank" class="view">
         <h3 style="margin:0;">🏦 Банк</h3>
         <div class="card">
-            <h4 style="margin:0 0 5px 0; font-size:12px; color:var(--accent-blue);">🎁 Секретный промокод</h4>
+            <h4 style="margin:0 0 5px 0;">🎁 Промокод</h4>
             <div style="display:flex; gap:5px;">
-                <input type="text" id="promo-input" class="promo-input" placeholder="Введите слово..." style="margin:0;">
-                <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
+                <input type="text" id="promo-input" class="promo-input" placeholder="..." style="margin:0;">
+                <button class="btn-action" style="width:auto;" onclick="usePromo()">OK</button>
             </div>
         </div>
-        <div class="card">
-             <div id="bank-actions-ui"></div>
-        </div>
-        <div class="card">
-            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
-            <div style="display:flex; gap:8px;">
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
-            </div>
-        </div>
-        <div class="card history-list" id="history-ui" style="max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
+        <div class="card"><div id="bank-actions-ui"></div></div>
+        <div class="card history-list" id="history-ui" style="max-height: 200px; overflow-y: auto;"></div>
     </div>
 </div>
 
@@ -317,14 +256,14 @@
     <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
     <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
     <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
-    <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
+    <div class="tab-item" onclick="switchTab('invest', this)">Вещи</div>
     <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="database.js?v=4.0"></script>
-<script src="logic.js?v=5.0" defer></script>
+<script src="database.js?v=5.5"></script>
+<script src="logic.js?v=5.5" defer></script>
 
 </body>
 </html>
