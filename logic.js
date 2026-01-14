@@ -34,9 +34,8 @@ let G = {
     usedPromos: [], 
     isNewPlayer: true, 
     lastWelfare: 0, 
-    lastAdminUpdate: 0, // Важно для синхронизации
+    lastAdminUpdate: 0, 
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
-    // Предметы
     starter_bag: null,
     starter_phone: null,
     bag: null, 
@@ -227,6 +226,8 @@ function claimDaily(id) {
     }
 }
 
+// === CLOUD SYNC LOGIC (MOVED HERE TO FIX BUGS) ===
+
 function saveToCloud() {
     const tg = window.Telegram.WebApp.initDataUnsafe;
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
@@ -240,14 +241,62 @@ function saveToCloud() {
         lastActive: Date.now()
     };
 
-    if(typeof db !== 'undefined') {
-        db.ref('users/' + userId).set(dataToSave);
+    if(window.db) {
+        window.db.ref('users/' + userId).set(dataToSave);
+    }
+}
+
+function listenToCloud() {
+    const tg = window.Telegram.WebApp.initDataUnsafe;
+    let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
+
+    if(window.db) {
+        window.db.ref('users/' + userId).on('value', (snapshot) => {
+            const remote = snapshot.val();
+            if (!remote) return;
+
+            // 1. БАН
+            if (remote.isBanned) {
+                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:black;color:red;text-align:center;"><div style="font-size:60px;">⛔</div><h2>ACCESS DENIED</h2><p>Ваш аккаунт заблокирован.</p></div>';
+                return;
+            }
+
+            // 2. СООБЩЕНИЯ
+            if (remote.adminMessage) {
+                alert("🔔 СИСТЕМА: " + remote.adminMessage);
+                window.db.ref('users/' + userId + '/adminMessage').remove();
+            }
+
+            // 3. ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ АДМИНОМ (СБРОС ИЛИ НАЧИСЛЕНИЕ)
+            if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
+                console.log("⚠️ АДМИН ОБНОВИЛ ДАННЫЕ");
+                let wasNew = G.isNewPlayer;
+                G = { ...G, ...remote };
+                localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+                
+                // Если админ сделал вайп (сброс в новичка), перезагружаем страницу, чтобы выдать старт-пак
+                if (G.isNewPlayer && !wasNew) {
+                    location.reload();
+                    return;
+                }
+                updateUI();
+            }
+
+            // 4. ВОССТАНОВЛЕНИЕ ПОСЛЕ ОЧИСТКИ КЕША
+            if (G.isNewPlayer && remote.isNewPlayer === false) {
+                 console.log("📥 ВОССТАНОВЛЕНИЕ ИЗ ОБЛАКА");
+                 G = { ...G, ...remote };
+                 document.getElementById('starter-modal').style.display = 'none';
+                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+                 updateUI();
+            }
+        });
     }
 }
 
 function save() { 
     localStorage.setItem(SAVE_KEY, JSON.stringify(G)); 
-    if(typeof saveToCloud === 'function') saveToCloud(); 
+    saveToCloud(); 
 }
 
 function validateInventory() {
@@ -264,16 +313,14 @@ function load() {
         try {
             let loaded = JSON.parse(d);
             G = {...G, ...loaded}; 
-        } catch(e) {
-            console.error("Save Corrupted", e);
-        }
+        } catch(e) { console.error(e); }
     } 
     
+    // Инициализация дефолтных значений
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(isNaN(G.en)) G.en = 2000;
     if(isNaN(G.waterStock)) G.waterStock = 0;
-    
     G.maxEn = 2000; 
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
@@ -282,95 +329,17 @@ function load() {
         if (G[item] === true) G[item] = { active: true, dur: 100 };
     });
 
-    if (!G.bag && !G.starter_bag) {
-        G.starter_bag = { active: true, dur: 50 };
-    }
-    if (!G.phone && !G.starter_phone) {
-        G.starter_phone = { active: true, dur: 50 };
-    }
+    if (!G.bag && !G.starter_bag) G.starter_bag = { active: true, dur: 50 };
+    if (!G.phone && !G.starter_phone) G.starter_phone = { active: true, dur: 50 };
 
     validateInventory(); 
     checkStarterPack();
     generateDailyQuests();
     
-    // Включаем слушатель облака СРАЗУ
-    if(typeof listenToCloud === 'function') listenToCloud();
+    // Запускаем слушатель облака
+    listenToCloud();
     
     updateUI(); 
-}
-
-function listenToCloud() {
-    const tg = window.Telegram.WebApp.initDataUnsafe;
-    let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
-
-    if(typeof db !== 'undefined') {
-        db.ref('users/' + userId).on('value', (snapshot) => {
-            const remote = snapshot.val();
-            if (!remote) return;
-
-            // 1. ПРОВЕРКА БАНА
-            if (remote.isBanned) {
-                document.body.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:black; color:red; text-align:center; font-family:sans-serif;">
-                        <div style="font-size:60px;">⛔</div>
-                        <h2 style="margin:10px 0;">ACCESS DENIED</h2>
-                        <p>Ваш аккаунт заблокирован администратором.</p>
-                        <p style="font-size:10px; color:#555; margin-top:20px;">ID: ${userId}</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // 2. СООБЩЕНИЯ АДМИНА
-            if (remote.adminMessage) {
-                if(tg.showPopup) {
-                    tg.showPopup({
-                        title: 'Сообщение от Системы',
-                        message: remote.adminMessage,
-                        buttons: [{type: 'ok'}]
-                    });
-                } else {
-                    alert("🔔 СИСТЕМА: " + remote.adminMessage);
-                }
-                db.ref('users/' + userId + '/adminMessage').remove();
-            }
-
-            // 3. СИНХРОНИЗАЦИЯ ПОСЛЕ СБРОСА / РЕДАКТИРОВАНИЯ
-            // Если дата изменения админом новее, чем та, которую мы помним -> ПРИНУДИТЕЛЬНО ОБНОВИТЬСЯ
-            if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
-                console.log("⚠️ ОБНАРУЖЕНО ВМЕШАТЕЛЬСТВО АДМИНА. ПРИМЕНЯЮ...");
-                
-                // Запоминаем, были ли мы новичком до обновления
-                let wasNew = G.isNewPlayer;
-
-                // Перезаписываем локальные данные удаленными
-                G = { ...G, ...remote };
-                
-                // Важно: сразу сохраняем локально, чтобы таймер не переписал обратно
-                localStorage.setItem(SAVE_KEY, JSON.stringify(G));
-                
-                // Если админ сбросил нас в новичка (Wipe), а мы были уже в игре -> Перезагрузка для Старта
-                if (G.isNewPlayer && !wasNew) {
-                    location.reload();
-                    return;
-                }
-                
-                updateUI();
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-            }
-
-            // 4. ВОССТАНОВЛЕНИЕ ПОСЛЕ ОЧИСТКИ КЕША
-            // Если мы "Новичок" (isNewPlayer=true), а в облаке НЕ новичок -> Загружаем облако
-            if (G.isNewPlayer && remote.isNewPlayer === false) {
-                 console.log("📥 ВОССТАНОВЛЕНИЕ ИЗ ОБЛАКА...");
-                 G = { ...G, ...remote };
-                 // Убираем окно "Приветствия", если оно вылезло
-                 document.getElementById('starter-modal').style.display = 'none';
-                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
-                 updateUI();
-            }
-        });
-    }
 }
 
 function updateUI() {
@@ -498,9 +467,6 @@ function updateUI() {
 
     const invDisp = document.getElementById('inventory-display'); 
     invDisp.innerHTML = ''; 
-    // Я УДАЛИЛ ГЕНЕРАЦИЮ ИКОНОК ЗДЕСЬ, ЧТОБЫ ОСВОБОДИТЬ МЕСТО НА ГЛАВНОМ ЭКРАНЕ.
-    // ТЕПЕРЬ ПОЛЬЗОВАТЕЛЬ СМОТРИТ ИНВЕНТАРЬ ВО ВКЛАДКЕ "ИНВЕСТ".
-    
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
     
@@ -519,7 +485,6 @@ function updateUI() {
         if(G[up.id]) {
             const item = G[up.id];
             const isBroken = item.dur <= 0;
-            
             let conf = UPGRADES.find(u => u.id === up.id);
             let max = conf ? conf.maxDur : 100;
             const pct = Math.floor((item.dur / max) * 100);
@@ -548,9 +513,7 @@ function updateUI() {
         }
     });
     
-    // --- МАГАЗИН: ГРУЗИМ ТОВАРЫ В НОВЫЙ СПИСОК (В МОДАЛКЕ) ---
     const shopList = document.getElementById('shop-upgrades-list'); 
-    // Проверка, существует ли элемент, т.к. он теперь в модалке
     if(shopList) {
         shopList.innerHTML = ''; 
         UPGRADES.forEach(up => { 
@@ -892,6 +855,268 @@ function repairItem(type, cost) {
     } else {
         log("Нет денег на ремонт (" + cost + ")", "var(--danger)");
     }
+}
+
+function getWelfare() {
+    let now = Date.now();
+    if (G.money >= 0) {
+        log("Пособие только для должников!", "var(--danger)");
+        return;
+    }
+    if (now - G.lastWelfare < 600000) { 
+        let wait = Math.ceil((600000 - (now - G.lastWelfare)) / 60000);
+        log("Жди еще " + wait + " мин.", "var(--danger)");
+        return;
+    }
+    
+    G.money = parseFloat((G.money + 30).toFixed(2));
+    G.lastWelfare = now;
+    addHistory('👵 БАБУШКА', 30, 'plus');
+    log("Бабушка прислала 30 PLN на еду!", "var(--success)");
+    save();
+    updateUI();
+}
+
+function repairBikeInstant() {
+    if (G.money >= 15) {
+        G.money = parseFloat((G.money - 15).toFixed(2));
+        isBroken = false;
+        repairProgress = 0;
+        addHistory('🔧 РЕМОНТ', 15, 'minus');
+        log("Велик починен за деньги!", "var(--success)");
+        save();
+        updateUI();
+    } else {
+        log("Нет денег (15 PLN)!", "var(--danger)");
+    }
+}
+
+function finishOrder(win) { 
+    if(!order.active) return;
+    order.active = false; 
+    if(win) { 
+        if (order.isRiskyRoute) {
+            let riskRoll = Math.random();
+            let hasHelmet = (G.helmet && G.helmet.dur > 0);
+            let riskChance = hasHelmet ? 0.15 : 0.30; 
+
+            if (riskRoll < riskChance) { 
+                log("💥 АВАРИЯ на срезке!", "var(--danger)");
+                isBroken = true;
+                repairProgress = 0;
+                
+                G.money = parseFloat((G.money - 20).toFixed(2)); 
+                addHistory('💥 АВАРИЯ', 20, 'minus');
+                order.visible = false; updateUI(); save();
+                return; 
+            }
+        }
+        let policeChance = order.isCriminal ? 0.35 : 0.02; 
+        if(Math.random() < policeChance) { 
+            let fine = (G.lvl < 2) ? 50 : 150;
+            G.lvl -= 1.2; G.money = parseFloat((G.money - fine).toFixed(2)); 
+            addHistory('👮 ШТРАФ', fine, 'minus');
+            log("🚔 ПОЛИЦИЯ! Штраф -" + fine, "var(--danger)"); 
+        } else { 
+            G.money = parseFloat((G.money + order.reward).toFixed(2)); 
+            G.totalEarned += order.reward; 
+            addHistory(order.isCriminal ? '☠️ КРИМИНАЛ' : '📦 ЗАКАЗ', order.reward.toFixed(2), 'plus');
+            G.lvl += (order.isCriminal ? 0.12 : 0.015); 
+            G.totalOrders++; 
+            
+            checkDailyQuests('orders', 1); 
+            checkDailyQuests('earn', order.reward); 
+
+            if(Math.random() < 0.40) { 
+                let tip = parseFloat((5 + Math.random()*15).toFixed(2)); 
+                if (order.isRiskyRoute) tip *= 2; 
+                
+                if (G.shoes && G.shoes.bonus > 0) {
+                    tip *= (1 + G.shoes.bonus);
+                }
+
+                G.money = parseFloat((G.money + tip).toFixed(2)); 
+                G.totalEarned += tip; 
+                checkDailyQuests('earn', tip);
+
+                addHistory('💰 ЧАЕВЫЕ', tip, 'plus');
+                log("💰 Чаевые: +" + tip.toFixed(2), "var(--success)"); 
+            } 
+        } 
+    } 
+    order.visible = false; updateUI(); save(); 
+}
+
+function checkMilestones() { 
+    if(!G.activeMilestones) return;
+    G.activeMilestones.forEach((m, i) => { 
+        let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; 
+        if(cur >= m.goal) { 
+            G.money = parseFloat((G.money + m.reward).toFixed(2)); 
+            G.totalEarned += m.reward;
+            addHistory('🏆 ЦЕЛЬ', m.reward, 'plus'); 
+            G.lvl += 0.01; 
+            log("🏆 ДОСТИЖЕНИЕ: " + m.name, "var(--gold)"); 
+            G.activeMilestones[i] = { id: Date.now()+i, name: m.name, goal: cur + Math.floor(m.goal*0.6), type: m.type, reward: m.reward + 20 }; 
+            save(); 
+        } 
+    }); 
+}
+
+function renderMilestones() { 
+    if(!G.activeMilestones) return;
+    document.getElementById('milestones-list').innerHTML = G.activeMilestones.map(m => { 
+        let cur = m.type === 'orders' ? G.totalOrders : m.type === 'clicks' ? G.totalClicks : G.totalBottles; 
+        return "<div class='card' style='margin-top:8px;'><b>" + m.name + "</b><br><small style='color:var(--gold);'>Награда: " + m.reward + " PLN</small><div class='career-progress'><div class='career-fill' style='width:" + Math.min(100,(cur/m.goal*100)) + "%'></div></div><small>" + cur + "/" + m.goal + "</small></div>"; 
+    }).join(''); 
+}
+
+function buyLvl(cost, amount) {
+    if (G.money >= cost) {
+        G.money = parseFloat((G.money - cost).toFixed(2));
+        G.lvl += amount;
+        addHistory('📈 PR-ХОД', cost, 'minus');
+        log("Вы купили рекламу: +" + amount + " LVL", "var(--accent-blue)");
+        save();
+        updateUI();
+    } else {
+        log("Не хватает денег (" + cost + " PLN)!", "var(--danger)");
+    }
+}
+
+function collectBottles() { 
+    G.money = parseFloat((G.money + 0.02).toFixed(2)); 
+    G.totalEarned += 0.02;
+    checkDailyQuests('earn', 0.02);
+    G.totalBottles++; 
+    
+    if (Math.random() < 0.15) {
+        let bonusRep = 0.005;
+        G.lvl += bonusRep;
+        if(Math.random() < 0.3) log("♻️ Город стал чище! Респект +0.005 LVL", "var(--success)");
+    }
+
+    checkMilestones(); 
+    save(); 
+    updateUI(); 
+}
+
+function buyWater() { 
+    if(G.money >= 1.50) { 
+        G.money = parseFloat((G.money - 1.50).toFixed(2)); 
+        G.waterStock += 1500; 
+        addHistory('🧴 ВОДА', 1.50, 'minus'); 
+        save(); 
+        updateUI(); 
+    } 
+}
+
+function buyDrink(type, p) { 
+    if(G.money >= p) { 
+        G.money = parseFloat((G.money - p).toFixed(2)); 
+        addHistory(type.toUpperCase(), p, 'minus'); 
+        if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300); 
+        else G.buffTime += 120; 
+        save(); 
+        updateUI(); 
+    } 
+}
+
+function rentBike() { 
+    if (G.money >= 30) { 
+        G.money = parseFloat((G.money - 30).toFixed(2)); 
+        addHistory('🚲 ВЕЛИК', 30, 'minus'); 
+        G.bikeRentTime += 600; 
+        save(); 
+        updateUI(); 
+    } 
+}
+
+function exchangeLvl(l, m) { 
+    if(G.lvl >= l) { 
+        if (m > 200 && Math.random() < 0.3) {
+            G.blindTime = 600; 
+            log("👁️ БАНК СКРЫЛ СЧЕТА НА 10 МИН!", "var(--danger)");
+        }
+
+        G.lvl -= l; 
+        G.money = parseFloat((G.money + m).toFixed(2)); 
+        G.totalEarned += m;
+        checkDailyQuests('earn', m);
+        addHistory('💎 ОБМЕН', m, 'plus'); 
+        save(); 
+        updateUI(); 
+    } 
+}
+
+function switchTab(v, el) { 
+    curView = v; 
+    document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); 
+    document.getElementById('view-'+v).classList.add('active'); 
+    document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active')); 
+    el.classList.add('active'); 
+    updateUI(); 
+}
+
+function moveDistrict(id) { 
+    if (G.district === id) return;
+    if (G.money < DISTRICTS[id].price || G.lvl < DISTRICTS[id].minLvl) {
+        log("Недостаточно ресурсов!", "var(--danger)");
+        return;
+    }
+    G.money = parseFloat((G.money - DISTRICTS[id].price).toFixed(2)); 
+    addHistory('🏙️ ПЕРЕЕЗД', DISTRICTS[id].price, 'minus'); 
+    G.district = id; 
+    save(); 
+    updateUI(); 
+}
+
+function triggerBreakdown() { 
+    isBroken = true; 
+    repairProgress = 0; 
+    log("🚲 ПОЛОМКА!", "var(--danger)"); 
+    tg.HapticFeedback.notificationOccurred('error');
+    updateUI(); 
+}
+
+function updateDistrictButtons() {
+    DISTRICTS.forEach((d, i) => {
+        const btn = document.getElementById('btn-dist-' + i);
+        if(btn) {
+            if(G.district === i) {
+                btn.innerText = "ВЫ ЗДЕСЬ";
+                btn.classList.add('btn-secondary');
+            } else {
+                btn.innerText = "ПЕРЕЕХАТЬ" + (d.price > 0 ? " (" + d.price + " PLN)" : "");
+                btn.classList.remove('btn-secondary');
+            }
+        }
+    });
+}
+
+function renderBank() { 
+    const ui = document.getElementById('bank-actions-ui'); 
+    
+    let creditHTML = "";
+    if (G.money < 0) {
+        creditHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+30 PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
+    } else if (G.debt <= 0) {
+        creditHTML = "<button class='btn-action' onclick=\"G.money=parseFloat((G.money+50).toFixed(2));G.debt=50;addHistory('🏦 КРЕДИТ', 50, 'plus');updateUI();save();\">ВЗЯТЬ КРЕДИТ (50 PLN)</button>";
+    } else {
+        creditHTML = "<button class='btn-action' style='background:var(--success)' onclick=\"if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}\">ВЕРНУТЬ ДОЛГ (" + G.debt + " PLN)</button>";
+    }
+
+    let buyLvlHTML = `
+        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-blue);">📈 Инвестиции в себя (Купить LVL)</h4>
+            <div style="display:flex; gap:8px;">
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="buyLvl(75, 0.10)">КУПИТЬ +0.1 LVL<br>🔴 75 PLN</button>
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="buyLvl(350, 0.50)">КУПИТЬ +0.5 LVL<br>🔴 350 PLN</button>
+            </div>
+        </div>
+    `;
+
+    ui.innerHTML = creditHTML + buyLvlHTML;
 }
 
 // === НОВЫЕ ФУНКЦИИ ДЛЯ МАГАЗИНА ===
