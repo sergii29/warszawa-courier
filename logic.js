@@ -396,27 +396,24 @@ function updateUI() {
     buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
     if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
     
-    // --- НАЧАЛО ИЗМЕНЕНИЯ (Обувь в Хедере) ---
+    // --- Обувь в Хедере ---
     let shoeNameDisplay = G.shoes.name;
     let shoeBar = document.getElementById('shoe-bar');
     
     if (G.shoes.dur <= 0) {
-        // Если сломаны - пишем призыв к действию красным и мелко
         shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
-        // Делаем полоску полностью красной, чтобы привлечь внимание
         shoeBar.style.width = "100%";
         shoeBar.style.background = "var(--danger)";
         shoeBar.style.opacity = "0.3"; 
     } else {
-        // Если целые - показываем обычную полоску
         const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
         shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
         shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
         shoeBar.style.opacity = "1";
     }
     document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
-    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
+    // --- Ранги ---
     let currentRank = RANKS[0];
     let nextRank = null;
     if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
@@ -441,6 +438,7 @@ function updateUI() {
         document.getElementById('rank-next').innerText = "Вы достигли вершины!";
     }
 
+    // --- Квесты ---
     let questsHTML = "";
     if(G.dailyQuests) {
         G.dailyQuests.forEach(q => {
@@ -469,6 +467,7 @@ function updateUI() {
     let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
     document.getElementById('daily-timer').innerText = "Обновление: " + hours + "ч " + mins + "м";
 
+    // --- Сфера ---
     if (isBroken) {
         sphere.classList.add('broken');
         document.getElementById('sphere-text').innerText = "ЧИНИТЬ";
@@ -498,26 +497,35 @@ function updateUI() {
     const myItemsList = document.getElementById('my-items-list');
     myItemsList.innerHTML = '';
     
-    // --- НАЧАЛО ИЗМЕНЕНИЯ (Обувь в Инвентаре) ---
+    // --- ОТРИСОВКА ИНВЕНТАРЯ (НОВЫЙ ПЛИТОЧНЫЙ ДИЗАЙН) ---
+    
+    // 1. ОБУВЬ
     const shoeDiv = document.createElement('div');
-    shoeDiv.className = 'card';
-    shoeDiv.style.marginBottom = '5px';
-    shoeDiv.style.borderColor = G.shoes.dur <= 0 ? "var(--danger)" : "var(--purple)";
+    shoeDiv.className = 'shop-item item-shoes'; // Используем стиль карточки из магазина
     
     let shoeStatusText = Math.floor(G.shoes.dur) + "%";
-    let shoeActionBtn = ""; // Кнопка действия
-
-    if (G.shoes.dur <= 0) {
-        // Если сломаны - пишем конкретно
-        shoeStatusText = "<b style='color:var(--danger)'>СЛОМАНО (СКОРОСТЬ -30%)</b>";
-        // Добавляем кнопку быстрого перехода в магазин
-        shoeActionBtn = `<button class="btn-action" style="margin-top:5px; background:var(--danger); font-size:10px; padding:5px;" onclick="switchTab('shop', document.querySelectorAll('.tab-item')[2])">🛒 КУПИТЬ НОВЫЕ В МАГАЗИНЕ</button>`;
+    let isShoesBroken = G.shoes.dur <= 0;
+    
+    if (isShoesBroken) {
+        shoeDiv.classList.add('item-broken');
+        shoeStatusText = "0%";
     }
-
-    shoeDiv.innerHTML = "<b>👟 " + G.shoes.name + "</b><br><small>Состояние: " + shoeStatusText + "</small>" + shoeActionBtn;
+    
+    shoeDiv.innerHTML = `
+        <div class="shop-icon">👟</div>
+        <div style="flex:1;">
+            <div class="shop-title">${G.shoes.name}</div>
+            <div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div>
+            <div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div>
+        </div>
+    `;
+    // Добавляем кнопку купить если сломаны
+    if(isShoesBroken) {
+        shoeDiv.onclick = function() { switchTab('shop', document.querySelectorAll('.tab-item')[2]); };
+    }
     myItemsList.appendChild(shoeDiv);
-    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
+    // 2. ОСТАЛЬНЫЕ ВЕЩИ
     UPGRADES.forEach(up => {
         if(G[up.id]) {
             const item = G[up.id];
@@ -527,29 +535,30 @@ function updateUI() {
             const pct = Math.floor((item.dur / max) * 100);
             
             const div = document.createElement('div'); 
-            div.className = 'card'; 
-            div.style.marginBottom = '5px'; 
-            div.style.borderColor = isBroken ? "var(--danger)" : "var(--gold)";
+            div.className = 'shop-item'; // Стиль плитки
             if(isBroken) div.classList.add('item-broken');
 
             div.innerHTML = `
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${up.icon} ${up.name}</b>
-                    <b style="color:${isBroken ? 'var(--danger)' : 'var(--success)'}">${pct}%</b>
+                <div class="shop-icon">${up.icon}</div>
+                <div class="shop-title">${up.name}</div>
+                <div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">
+                    ${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}
                 </div>
-                <small style="color:#aaa;">${up.bonus}</small>
-                <div style="width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;">
-                    <div style="height:100%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}; width:${Math.min(100, pct)}%"></div>
+                
+                <div class="inv-dur-track">
+                    <div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div>
                 </div>
-                <div style="display:flex; gap:5px; margin-top:8px;">
-                    <button class='btn-action' style="flex:1; background:var(--repair); font-size:10px; padding:6px;" onclick="repairItem('${up.id}', ${up.repairPrice})">🧵 ПОДЛАТАТЬ (${up.repairPrice})</button>
-                    <button class='btn-action' style="flex:1; background:transparent; border:1px solid var(--danger); color:var(--danger); font-size:10px; padding:6px;" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ПРОДАТЬ (${up.price * 0.5})</button>
+
+                <div class="inv-action-row">
+                    <button class="inv-btn-repair" onclick="repairItem('${up.id}', ${up.repairPrice})">🛠️ ${up.repairPrice}</button>
+                    <button class="inv-btn-sell" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ${up.price * 0.5}</button>
                 </div>
             `;
             myItemsList.appendChild(div);
         }
     });
     
+    // --- Магазин (Заполнение списка улучшений) ---
     const shopList = document.getElementById('shop-upgrades-list'); 
     if(shopList) {
         shopList.innerHTML = ''; 
@@ -564,6 +573,7 @@ function updateUI() {
         });
     }
     
+    // --- Квест бар ---
     const qBar = document.getElementById('quest-bar'); 
     if (order.visible && curView === 'main') { 
         qBar.style.display = 'block'; 
