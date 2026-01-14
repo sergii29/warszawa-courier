@@ -1,3 +1,4 @@
+/* --- style.css v5.2 --- */
 :root {
     --bg-main: #0f172a; 
     --bg-card: rgba(30, 41, 59, 0.7);
@@ -86,6 +87,7 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 #work-sphere {
     width: 170px; height: 170px;
     border-radius: 50%;
+    /* Default Blue */
     background: radial-gradient(circle at 35% 35%, #60a5fa, #2563eb, #1e3a8a);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     box-shadow: 
@@ -94,7 +96,7 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
         0 0 30px rgba(37, 99, 235, 0.6),
         0 0 60px rgba(37, 99, 235, 0.3);
     user-select: none; touch-action: none; color: white;
-    transition: transform 0.1s, box-shadow 0.3s; 
+    transition: all 0.3s ease; 
     position: relative; z-index: 10;
     border: 1px solid rgba(255,255,255,0.1);
     animation: floatSphere 4s ease-in-out infinite;
@@ -107,7 +109,7 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 
 #work-sphere::before {
     content: ''; position: absolute; inset: -5px; border-radius: 50%;
-    border: 2px solid var(--accent-blue); opacity: 0;
+    border: 2px solid rgba(255,255,255,0.2); opacity: 0;
     animation: pulseWave 2s infinite; pointer-events: none;
 }
 
@@ -117,14 +119,14 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 }
 
 #work-sphere.broken {
-    background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b, #450a0a);
-    box-shadow: 0 0 40px rgba(239, 68, 68, 0.8);
+    background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b, #450a0a) !important;
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.8) !important;
     animation: shake 0.5s infinite;
 }
 
 @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
 
-#work-sphere:active { transform: scale(0.95); box-shadow: 0 0 15px rgba(37, 99, 235, 0.8); }
+#work-sphere:active { transform: scale(0.95); }
 #work-sphere b { font-size: 22px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); letter-spacing: 1.5px; font-weight: 800; }
 
 #repair-progress {
@@ -325,15 +327,32 @@ h3 { font-size: 16px; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.
     flex-direction: row; text-align: left; align-items: center; gap: 15px;
 }
 
+/* БАННЕР ПРО ГИР (СТАРЫЙ) */
 .tech-banner {
     background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
     border: 1px solid var(--accent-blue);
     border-radius: 16px; padding: 20px;
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 25px; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);
+    margin-bottom: 15px; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);
     position: relative; overflow: hidden;
 }
 .tech-banner::after { content: 'TECH'; position: absolute; right: -10px; bottom: -10px; font-size: 60px; font-weight: 900; color: rgba(255,255,255,0.03); z-index: 0; }
+
+/* БАННЕР ГАРАЖА (НОВЫЙ) */
+.garage-banner {
+    background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+    border: 1px solid var(--danger);
+    border-radius: 16px; padding: 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 25px; box-shadow: 0 10px 30px rgba(220, 38, 38, 0.2);
+    position: relative; overflow: hidden;
+}
+.garage-banner::after { content: 'TUNING'; position: absolute; right: -10px; bottom: -10px; font-size: 60px; font-weight: 900; color: rgba(255,255,255,0.03); z-index: 0; }
+
+/* ГАРАЖ: СЕТКА ЦВЕТОВ */
+.color-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;
+}
 
 /* Инвентарь: Кнопки действий */
 .inv-action-row { display: flex; gap: 5px; width: 100%; margin-top: auto; }
@@ -343,3 +362,4 @@ h3 { font-size: 16px; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.
 /* Полоска прочности в карточке */
 .inv-dur-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 5px; margin-bottom: 10px; }
 .inv-dur-fill { height: 100%; background: var(--success); width: 100%; }
+
