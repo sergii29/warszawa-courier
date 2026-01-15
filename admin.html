@@ -14,6 +14,7 @@
             --text: #ffffff; 
             --subtext: #8e8e93;
             --gold: #ffd60a; 
+            --purple: #bf5af2;
             --border: #38383a;
         }
         
@@ -124,7 +125,7 @@
             background: #1c1c1e; 
             width: 100%; 
             max-width: 600px;
-            max-height: 85vh; 
+            max-height: 90vh; /* Чуть выше */
             overflow-y: auto; 
             border-radius: 20px 20px 0 0; 
             border-top: 1px solid var(--border);
@@ -168,12 +169,18 @@
         .toggle-item input { width: 20px; height: 20px; accent-color: var(--accent); }
         .toggle-item.active { border-color: var(--accent); background: rgba(10, 132, 255, 0.1); }
 
-        .actions-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 20px; }
-        .btn-action-modal { padding: 15px; border-radius: 12px; font-weight: 600; border: none; font-size: 16px; cursor: pointer; }
-        .btn-save { background: var(--green); color: black; }
+        /* КНОПКИ ДЕЙСТВИЙ (2 КОЛОНКИ) */
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn-action-modal { padding: 15px; border-radius: 12px; font-weight: 600; border: none; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-transform: uppercase;}
+        
+        .btn-save { background: var(--green); color: black; grid-column: span 1; }
         .btn-ban { background: #2c2c2e; color: var(--danger); border: 1px solid var(--danger); }
         .btn-ban.banned { background: var(--danger); color: white; }
-        .btn-reset { background: transparent; color: var(--danger); border: 1px solid #3a3a3c; font-size: 12px; padding: 10px;}
+        
+        .btn-blind { background: #2c2c2e; color: #aaa; border: 1px solid #3a3a3c; }
+        .btn-blind.active { background: var(--purple); color: white; border: 1px solid var(--purple); box-shadow: 0 0 15px rgba(191, 90, 242, 0.4); }
+
+        .btn-reset { background: transparent; color: var(--danger); border: 1px solid #3a3a3c; font-size: 10px; padding: 10px; grid-column: span 2; margin-top: 10px;}
 
     </style>
     
@@ -184,7 +191,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">🚁 Admin <span style="color:var(--accent)">PRO</span></h2>
-        <div style="font-size:10px; color:var(--subtext);">v2.6 (Bank Control)</div>
+        <div style="font-size:10px; color:var(--subtext);">v2.8 (Blind Control)</div>
     </div>
 
     <div class="stats-grid">
@@ -254,8 +261,10 @@
             </div>
 
             <div class="actions-grid">
-                <button class="btn-action-modal btn-save" onclick="saveUserChanges()">💾 СОХРАНИТЬ ДАННЫЕ</button>
+                <button class="btn-action-modal btn-save" onclick="saveUserChanges()">💾 СОХРАНИТЬ</button>
+                <button class="btn-action-modal btn-blind" id="btn-blind" onclick="toggleBlind()">👁️ СЛЕПОТА</button>
                 <button class="btn-action-modal btn-ban" id="btn-ban" onclick="toggleBan()">⛔ ЗАБАНИТЬ</button>
+                
                 <button class="btn-action-modal btn-reset" onclick="resetUserFull()">♻️ ПОЛНЫЙ СБРОС (WIPE)</button>
             </div>
         </div>
@@ -278,6 +287,7 @@
         let allUsers = {};
         let currentEditId = null;
         let isCurrentBanned = false;
+        let isCurrentBlind = false;
 
         db.ref('users').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -303,6 +313,7 @@
                     let inv = "";
                     if(user.bag && user.bag.active) inv += "<span class='inv-icon'>🎒</span>";
                     if(user.deposit && user.deposit.amount > 0) inv += "<span class='inv-icon' style='color:var(--gold)'>💰</span>";
+                    if(user.blindTime > 0) inv += "<span class='inv-icon' style='color:var(--purple)'>👁️</span>";
                     if(user.isBanned) inv = "<b style='color:var(--danger)'>⛔ ЗАБАНЕН</b>";
 
                     const card = document.createElement('div');
@@ -363,24 +374,46 @@
             });
 
             isCurrentBanned = !!user.isBanned;
-            updateBanBtn();
+            isCurrentBlind = (user.blindTime && user.blindTime > 0);
+            updateStatusBtns();
         }
 
         function toggleBan() {
             if(!currentEditId) return;
             isCurrentBanned = !isCurrentBanned;
-            updateBanBtn();
+            updateStatusBtns();
             db.ref('users/' + currentEditId).update({ isBanned: isCurrentBanned, lastAdminUpdate: Date.now() });
         }
 
-        function updateBanBtn() {
-            const btn = document.getElementById('btn-ban');
+        function toggleBlind() {
+            if(!currentEditId) return;
+            isCurrentBlind = !isCurrentBlind;
+            updateStatusBtns();
+            
+            // Если включили -> 600 сек (10 мин), если выключили -> 0
+            let timeVal = isCurrentBlind ? 600 : 0;
+            db.ref('users/' + currentEditId).update({ blindTime: timeVal, lastAdminUpdate: Date.now() });
+        }
+
+        function updateStatusBtns() {
+            // BAN BTN
+            const btnBan = document.getElementById('btn-ban');
             if (isCurrentBanned) {
-                btn.innerText = "✅ РАЗБАНИТЬ";
-                btn.classList.add('banned');
+                btnBan.innerText = "✅ РАЗБАНИТЬ";
+                btnBan.classList.add('banned');
             } else {
-                btn.innerText = "⛔ ЗАБАНИТЬ";
-                btn.classList.remove('banned');
+                btnBan.innerText = "⛔ ЗАБАНИТЬ";
+                btnBan.classList.remove('banned');
+            }
+
+            // BLIND BTN
+            const btnBlind = document.getElementById('btn-blind');
+            if (isCurrentBlind) {
+                btnBlind.innerText = "👁️ ОТКРЫТЬ";
+                btnBlind.classList.add('active');
+            } else {
+                btnBlind.innerText = "🕶️ ОСЛЕПИТЬ";
+                btnBlind.classList.remove('active');
             }
         }
 
@@ -394,12 +427,11 @@
                 lastAdminUpdate: Date.now()
             };
 
-            // Логика ручного изменения депозита
+            // Логика депозита
             let newBank = parseFloat(document.getElementById('inp-bank').value);
-            if (newBank <= 0) {
-                updates.deposit = null; // Удаляем депозит если 0
+            if (!newBank || newBank <= 0) {
+                updates.deposit = null; 
             } else {
-                // Если депозит уже был - обновляем сумму, иначе создаем новый на 7 дней
                 const oldDep = allUsers[currentEditId].deposit;
                 if (oldDep) {
                     updates.deposit = { ...oldDep, amount: newBank, profit: newBank * (oldDep.rate || 0.05), penalty: newBank * 0.3 };
@@ -431,7 +463,7 @@
 
         function resetUserFull() {
             if(!currentEditId) return;
-            if(!confirm("УВЕРЕН? Это ПОЛНОСТЬЮ удалит прогресс и депозит.")) return;
+            if(!confirm("УВЕРЕН? Это ПОЛНОСТЬЮ удалит прогресс, депозит и инвентарь.")) return;
 
             const user = allUsers[currentEditId];
             
@@ -449,17 +481,15 @@
                 totalBottles: 0,
                 totalEarned: 0,
                 
-                // === ЯВНОЕ УДАЛЕНИЕ БАНКА ===
                 deposit: null, 
                 bankHistory: [],
-                // ===========================
+                blindTime: 0, // Сбрасываем слепоту
 
                 shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
                 bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
                 starter_bag: null, starter_phone: null,
                 district: 0, autoTime: 0, bikeRentTime: 0, buffTime: 0, 
                 transportMode: 'none', 
-                blindTime: 0,
                 isNewPlayer: true,
                 history: [], usedPromos: [],
                 activeMilestones: [
@@ -482,4 +512,3 @@
     </script>
 </body>
 </html>
-
