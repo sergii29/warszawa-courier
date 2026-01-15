@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warszawa Private Bank</title>
+    <title>Warszawa Royal Bank</title>
     <style>
         :root {
-            --bg: #0b0e14;
-            --card-bg: #151922;
-            --gold: #d4af37;
-            --gold-grad: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #b48811 100%);
+            --bg: #020617; /* Очень темный синий */
+            --card-bg: linear-gradient(145deg, #1e3a8a, #0f172a); /* Синий сапфир */
+            --gold: #fbbf24;
+            --gold-text: #fef3c7;
             --text: #ffffff;
-            --text-muted: #64748b;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --glass: rgba(255, 255, 255, 0.05);
         }
 
         body {
@@ -23,233 +25,291 @@
             min-height: 100vh;
         }
 
-        /* HEADER */
+        /* ИНФО БАР */
         .top-bar {
-            width: 100%; max-width: 380px;
+            width: 100%; max-width: 360px;
             display: flex; justify-content: space-between; align-items: flex-end;
             margin-bottom: 20px; padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
         }
-        .wallet-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-        .wallet-amount { font-size: 18px; font-weight: 600; color: #fff; }
+        .wallet-label { font-size: 10px; color: #60a5fa; text-transform: uppercase; letter-spacing: 1px; }
+        .wallet-amount { font-size: 20px; font-weight: 700; color: #fff; }
 
-        /* ELITE CARD */
-        .elite-card {
-            width: 100%; max-width: 380px;
-            background: linear-gradient(160deg, #1e2532 0%, #0f1219 100%);
-            border: 1px solid rgba(212, 175, 55, 0.3); /* Золотая рамка */
+        /* КАРТА SAPPHIRE */
+        .sapphire-card {
+            width: 100%; max-width: 360px;
+            height: auto;
+            background: var(--card-bg);
+            border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 24px;
             padding: 25px;
             box-sizing: border-box;
             position: relative;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.9);
             overflow: hidden;
+            display: flex; flex-direction: column;
         }
 
-        /* Золотое свечение сверху */
-        .elite-card::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 100%;
-            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+        /* Блики */
+        .sapphire-card::before {
+            content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
             pointer-events: none;
         }
 
-        .bank-logo {
-            font-family: serif; font-size: 14px; letter-spacing: 1px; color: #fff;
-            display: flex; align-items: center; gap: 8px; margin-bottom: 30px;
+        .bank-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
         }
-        .logo-icon { 
-            width: 24px; height: 24px; background: var(--gold-grad); 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            color: #000; font-weight: bold; font-family: sans-serif; font-size: 12px;
-        }
+        .bank-name { font-size: 12px; letter-spacing: 2px; color: #93c5fd; text-transform: uppercase; font-weight: 700; }
+        .bank-icon { font-size: 18px; }
 
-        .balance-label { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
-        .balance-val {
-            font-size: 42px; font-weight: 400; color: #fff; margin: 5px 0 20px 0;
-            font-family: "Didot", serif; /* Дорогой шрифт */
-            letter-spacing: -1px;
-            background: var(--gold-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-
-        .card-footer { display: flex; justify-content: space-between; align-items: center; }
-        .vip-badge {
-            background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.3);
-            color: var(--gold); padding: 5px 12px; border-radius: 20px; font-size: 10px; letter-spacing: 1px;
-        }
-
-        /* INPUT AREA */
-        .input-area { width: 100%; max-width: 380px; margin-top: 20px; display: flex; gap: 10px; }
-        .gold-input {
-            flex: 1; background: #151922; border: 1px solid #333; color: white;
-            padding: 15px; border-radius: 12px; font-size: 16px; outline: none; text-align: center;
-            transition: 0.3s;
-        }
-        .gold-input:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.1); }
-
-        /* BUTTONS */
-        .actions { width: 100%; max-width: 380px; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        /* БЛОК ДЕПОЗИТА (Когда активен) */
+        #active-deposit-ui { display: none; text-align: center; padding: 20px 0; }
         
-        .btn { padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 12px; border: none; transition: 0.2s; }
+        .locked-amount { font-size: 36px; font-weight: 700; color: #fff; margin-bottom: 5px; text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        .locked-info { font-size: 11px; color: #93c5fd; margin-bottom: 20px; }
+        
+        .progress-track { width: 100%; height: 6px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; margin-bottom: 15px; }
+        .progress-fill { height: 100%; background: var(--gold); width: 0%; transition: width 1s linear; }
+        
+        .timer-text { font-family: monospace; font-size: 14px; color: var(--gold); margin-bottom: 10px; display: block; }
+
+        /* ВЫБОР ТАРИФА (Когда нет депозита) */
+        #select-plan-ui { display: block; }
+        
+        .plan-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .plan-item {
+            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 10px 5px; text-align: center; cursor: pointer;
+            transition: 0.2s;
+        }
+        .plan-item.active { background: rgba(59, 130, 246, 0.2); border-color: #60a5fa; transform: scale(1.05); }
+        .plan-days { font-size: 14px; font-weight: bold; color: #fff; display: block; }
+        .plan-rate { font-size: 10px; color: var(--gold); }
+
+        .inp-blue {
+            background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; color: white;
+            padding: 14px; border-radius: 12px; width: 100%; box-sizing: border-box;
+            text-align: center; font-size: 16px; font-weight: bold; outline: none; margin-bottom: 10px;
+        }
+        .inp-blue:focus { border-color: #60a5fa; }
+
+        /* КНОПКИ */
+        .btn { width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; font-size: 12px; text-transform: uppercase; margin-top: 5px; transition: 0.2s; }
         .btn:active { transform: scale(0.98); }
 
         .btn-deposit {
-            background: var(--gold-grad); color: #1a1a1a;
-            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.2);
+            background: linear-gradient(135deg, #d4af37, #b45309); color: #000;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
         }
-        .btn-withdraw {
-            background: transparent; border: 1px solid #333; color: #888;
+        
+        .btn-break {
+            background: transparent; border: 1px solid var(--danger); color: var(--danger);
         }
-        .btn-withdraw:hover { border-color: #666; color: #fff; }
+        .btn-claim {
+            background: var(--success); color: #000; display: none; /* Скрыта пока таймер не выйдет */
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.02);} 100% {transform: scale(1);} }
 
-        /* HISTORY */
-        .history-section {
-            width: 100%; max-width: 380px; margin-top: 30px;
-            border-top: 1px solid #222; padding-top: 15px;
-        }
-        .history-title { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        
-        .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
-        
-        .h-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;
-            font-size: 12px;
-        }
-        .h-left { display: flex; flex-direction: column; gap: 2px; }
-        .h-type { color: #fff; font-weight: 500; }
-        .h-time { font-size: 10px; color: #555; }
-        
-        .h-val { font-weight: bold; }
-        .h-val.plus { color: #4ade80; }
-        .h-val.minus { color: #fff; }
-        .h-val.fee { color: #ef4444; }
+        /* ИСТОРИЯ */
+        .history-box { width: 100%; max-width: 360px; margin-top: 20px; border-top: 1px solid #1e293b; padding-top: 10px; }
+        .h-title { font-size: 10px; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+        .h-list { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: #94a3b8; max-height: 150px; overflow-y: auto; }
+        .h-row { display: flex; justify-content: space-between; padding: 6px; background: rgba(255,255,255,0.02); border-radius: 6px; }
 
+        /* ТЕСТ */
+        .debug-btn { margin-top: 30px; background: #334155; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 10px; cursor: pointer;}
     </style>
 </head>
 <body>
 
     <div class="top-bar">
         <div>
-            <div class="wallet-label">Личный счет</div>
+            <div class="wallet-label">Наличные</div>
             <div class="wallet-amount" id="money">5000.00 PLN</div>
         </div>
-        <div style="font-size:20px;">🪙</div>
+        <div style="font-size:20px;">💎</div>
     </div>
 
-    <div class="elite-card">
-        <div class="bank-logo">
-            <div class="logo-icon">W</div>
-            WARSZAWA PRIVATE
+    <div class="sapphire-card">
+        <div class="bank-header">
+            <span class="bank-name">Warszawa Royal Bank</span>
+            <span class="bank-icon">🏦</span>
         </div>
 
-        <div class="balance-label">Total Assets</div>
-        <div class="balance-val" id="bank">0.00</div>
-
-        <div class="card-footer">
-            <div class="vip-badge">PRIVATE CLIENT</div>
-            <div style="font-size:10px; color:#666;">**** 9821</div>
-        </div>
-    </div>
-
-    <div class="input-area">
-        <input type="number" id="inp" class="gold-input" placeholder="Введите сумму...">
-    </div>
-
-    <div class="actions">
-        <button class="btn btn-deposit" onclick="deposit()">ВНЕСТИ ДЕПОЗИТ</button>
-        <button class="btn btn-withdraw" onclick="withdraw()">ВЫВЕСТИ СРЕДСТВА</button>
-    </div>
-
-    <div class="history-section">
-        <div class="history-title">
-            <span>История операций</span>
-            <span>Recent</span>
-        </div>
-        <div class="history-list" id="history">
+        <div id="select-plan-ui">
+            <div class="plan-grid">
+                <div class="plan-item active" onclick="selectPlan(7, 0.02, this)">
+                    <span class="plan-days">7 Дней</span>
+                    <span class="plan-rate">+2%</span>
+                </div>
+                <div class="plan-item" onclick="selectPlan(15, 0.06, this)">
+                    <span class="plan-days">15 Дней</span>
+                    <span class="plan-rate">+6%</span>
+                </div>
+                <div class="plan-item" onclick="selectPlan(30, 0.15, this)">
+                    <span class="plan-days">30 Дней</span>
+                    <span class="plan-rate">+15%</span>
+                </div>
             </div>
+
+            <div style="margin-bottom:10px; font-size:10px; color:#64748b; text-align:center;">
+                *Досрочное снятие: <span style="color:var(--danger)">Штраф -30%</span>
+            </div>
+
+            <input type="number" id="inp" class="inp-blue" placeholder="Сумма вклада...">
+            <button class="btn btn-deposit" onclick="startDeposit()">🔒 ЗАМОРОЗИТЬ СРЕДСТВА</button>
+        </div>
+
+        <div id="active-deposit-ui">
+            <div class="locked-info">СРЕДСТВА ЗАМОРОЖЕНЫ</div>
+            <div class="locked-amount" id="locked-val">0.00</div>
+            
+            <div class="progress-track"><div class="progress-fill" id="prog-bar"></div></div>
+            <span class="timer-text" id="timer-text">00:00:00</span>
+
+            <button class="btn btn-claim" id="btn-claim" onclick="claimDeposit()">💰 ЗАБРАТЬ С ПРИБЫЛЬЮ</button>
+            <button class="btn btn-break" id="btn-break" onclick="breakDeposit()">⚠️ РАЗБИТЬ (-30% ШТРАФ)</button>
+        </div>
     </div>
+
+    <div class="history-box">
+        <div class="h-title">Выписка по счету</div>
+        <div class="h-list" id="history"></div>
+    </div>
+
+    <button class="debug-btn" onclick="fastForward()">⏩ ТЕСТ: Промотать время</button>
 
     <script>
-        // State
+        // Game State
         let G = {
-            money: 5000.00,
-            bank: 0.00,
-            history: [] // Храним историю здесь
+            money: 5000,
+            deposit: null, // { amount, start, end, profit }
+            history: []
         };
 
-        // Render
-        function update() {
+        let selectedPlan = { days: 7, rate: 0.02 };
+
+        // UI Updates
+        function updateUI() {
             document.getElementById('money').innerText = G.money.toFixed(2) + " PLN";
-            document.getElementById('bank').innerText = G.bank.toFixed(2);
             
-            // Render History
-            const hList = document.getElementById('history');
-            hList.innerHTML = "";
-            
-            if(G.history.length === 0) {
-                hList.innerHTML = "<div style='text-align:center; color:#333; font-size:10px; padding:10px;'>Нет операций</div>";
+            if (G.deposit) {
+                document.getElementById('select-plan-ui').style.display = 'none';
+                document.getElementById('active-deposit-ui').style.display = 'block';
+                document.getElementById('locked-val').innerText = G.deposit.amount.toFixed(2) + " PLN";
             } else {
-                // Показываем последние 5
-                G.history.slice().reverse().forEach(h => {
-                    let colorClass = h.type === 'in' ? 'plus' : (h.type === 'fee' ? 'fee' : 'minus');
-                    let sign = h.type === 'in' ? '+' : '-';
-                    let label = h.type === 'in' ? 'Пополнение' : (h.type === 'fee' ? 'Комиссия Банка' : 'Вывод средств');
-                    
-                    if(h.type === 'fee') sign = ''; // Для комиссии просто минус цветом
-
-                    hList.innerHTML += `
-                    <div class="h-item">
-                        <div class="h-left">
-                            <span class="h-type">${label}</span>
-                            <span class="h-time">${h.time}</span>
-                        </div>
-                        <div class="h-val ${colorClass}">${sign}${h.val.toFixed(2)} PLN</div>
-                    </div>`;
-                });
+                document.getElementById('select-plan-ui').style.display = 'block';
+                document.getElementById('active-deposit-ui').style.display = 'none';
             }
+            renderHistory();
         }
 
-        function addLog(type, val) {
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            G.history.push({ type, val, time });
-            if(G.history.length > 10) G.history.shift(); // Храним только 10 записей
+        function selectPlan(days, rate, el) {
+            selectedPlan = { days, rate };
+            document.querySelectorAll('.plan-item').forEach(d => d.classList.remove('active'));
+            el.classList.add('active');
         }
 
-        function deposit() {
+        function startDeposit() {
             let val = parseFloat(document.getElementById('inp').value);
-            if(val > 0 && G.money >= val) {
-                let fee = val * 0.10; // 10% комиссия за сервис
-                let net = val - fee;
+            if (!val || val <= 0 || val > G.money) { alert("Ошибка суммы!"); return; }
 
-                G.money -= val;
-                G.bank += net;
+            G.money -= val;
+            
+            // В ТЕСТЕ: 1 день = 5 секунд (для скорости)
+            let durationSec = selectedPlan.days * 5; 
+            
+            G.deposit = {
+                amount: val,
+                start: Date.now(),
+                end: Date.now() + (durationSec * 1000),
+                profit: val * selectedPlan.rate,
+                penalty: val * 0.30 // 30% штраф
+            };
 
-                addLog('in', net);
-                addLog('fee', fee); // Записываем комиссию отдельно в историю для прозрачности
+            addLog(`Вклад на ${selectedPlan.days} дн.`, `-${val.toFixed(0)}`);
+            updateUI();
+            startTimer();
+        }
 
-                document.getElementById('inp').value = "";
-                if(navigator.vibrate) navigator.vibrate([10, 30, 10]);
-                update();
-            } else {
-                alert("Недостаточно средств!");
+        function claimDeposit() {
+            if(!G.deposit) return;
+            let total = G.deposit.amount + G.deposit.profit;
+            G.money += total;
+            addLog(`Выплата (+${(selectedPlan.rate*100).toFixed(0)}%)`, `+${total.toFixed(2)}`, 'green');
+            G.deposit = null;
+            updateUI();
+        }
+
+        function breakDeposit() {
+            if(!G.deposit) return;
+            let returnVal = G.deposit.amount - G.deposit.penalty;
+            
+            if(confirm(`Внимание! При досрочном снятии вы потеряете ${(G.deposit.penalty).toFixed(2)} PLN.\nВернется только ${returnVal.toFixed(2)} PLN.\nСнять?`)) {
+                G.money += returnVal;
+                addLog(`Досрочно (Штраф)`, `-${G.deposit.penalty.toFixed(0)}`, 'red');
+                G.deposit = null;
+                updateUI();
             }
         }
 
-        function withdraw() {
-            if(G.bank > 0) {
-                let val = G.bank;
-                G.money += val;
-                G.bank = 0;
+        // Timer Logic
+        let timerInterval;
+        function startTimer() {
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if(!G.deposit) { clearInterval(timerInterval); return; }
                 
-                addLog('out', val);
+                let now = Date.now();
+                let left = G.deposit.end - now;
+                let totalDur = G.deposit.end - G.deposit.start;
                 
-                if(navigator.vibrate) navigator.vibrate(20);
-                update();
+                if (left <= 0) {
+                    // READY
+                    document.getElementById('timer-text').innerText = "СРОК ИСТЕК!";
+                    document.getElementById('timer-text').style.color = "#4ade80";
+                    document.getElementById('prog-bar').style.width = "100%";
+                    document.getElementById('btn-claim').style.display = 'block';
+                    document.getElementById('btn-break').style.display = 'none';
+                    clearInterval(timerInterval);
+                } else {
+                    // COUNTING
+                    let pct = 100 - (left / totalDur * 100);
+                    document.getElementById('prog-bar').style.width = pct + "%";
+                    
+                    let sec = Math.ceil(left/1000);
+                    document.getElementById('timer-text').innerText = `БЛОКИРОВКА: ${sec} сек.`; // В реале тут были бы дни
+                    
+                    document.getElementById('btn-claim').style.display = 'none';
+                    document.getElementById('btn-break').style.display = 'block';
+                }
+            }, 100);
+        }
+
+        function renderHistory() {
+            let h = document.getElementById('history');
+            h.innerHTML = G.history.map(x => `
+                <div class="h-row">
+                    <span>${x.msg}</span>
+                    <span style="color:${x.color || '#fff'}">${x.val} PLN</span>
+                </div>
+            `).join('');
+        }
+
+        function addLog(msg, val, color) {
+            G.history.unshift({msg, val, color});
+            if(G.history.length > 5) G.history.pop();
+        }
+
+        function fastForward() {
+            if(G.deposit) {
+                G.deposit.end = Date.now() - 1000; // Делаем так, будто время вышло
             }
         }
 
-        // Init
-        update();
+        updateUI();
     </script>
 
 </body>
