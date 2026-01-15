@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.7">
+    <link rel="stylesheet" href="style.css?v=4.8">
 </head>
 <body>
 
@@ -161,19 +161,10 @@
     </div>
 
     <div id="view-districts" class="view">
-        <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
-        <div class="card">
-            <b>Praga</b> <small>Аренда: 5% от баланса. Старт.</small>
-            <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
-        </div>
-        <div class="card">
-            <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 10% от баланса. Доход: +50%.</small>
-            <button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
-        </div>
-        <div class="card">
-            <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 15% от баланса. Доход: +55%.</small>
-            <button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
-        </div>
+        <h3 style="margin:0; color:var(--text-primary)">🗺️ Недвижимость & Районы</h3>
+        <p style="font-size:10px; color:var(--text-secondary); margin-bottom:15px;">Переезжай в районы подороже, чтобы зарабатывать больше. Купи квартиру, чтобы не платить грабительскую аренду!</p>
+        
+        <div id="districts-list-container"></div>
     </div>
 
     <div id="view-quests" class="view">
@@ -359,7 +350,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=4.7" defer></script>
+<script src="logic.js?v=4.8" defer></script>
 
 </body>
 </html>
