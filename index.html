@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.6">
+    <link rel="stylesheet" href="style.css?v=4.7">
 </head>
 <body>
 
@@ -70,12 +70,6 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0; color:white;">⚙️ Проф. Экипировка</h3>
             <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
-        </div>
-
-        <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05); margin-bottom:15px;">
-            <b>🚲 Аренда Электровелосипеда</b><br>
-            <small>Скорость x2. 30 PLN за 10 минут.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
         </div>
         
         <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
@@ -215,14 +209,56 @@
     <div id="view-shop" class="view">
         <h3 style="margin:0; margin-bottom: 15px;">🏪 Маркет</h3>
         
-        <div class="tech-banner" onclick="openProShop()">
+        <div class="section-title" style="margin-top:0;">🛵 Городская Мобильность (Аренда)</div>
+        <div class="shop-grid">
+            <div class="shop-item" style="border-top: 2px solid #ccc;">
+                <div class="shop-icon">🚲</div>
+                <div class="shop-title">Veturilo Electric</div>
+                <div class="shop-desc">
+                    Экономия сил.<br>
+                    <span style="color:var(--success)">Энергия: -50%</span>
+                </div>
+                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 0 PLN</div>
+                <button id="btn-veturilo" class="btn-price" style="background:#ddd; color:#000;" onclick="toggleTransport('veturilo')">
+                    0.50 PLN / мин
+                </button>
+            </div>
+
+            <div class="shop-item" style="border-top: 2px solid var(--success);">
+                <div class="shop-icon">🛴</div>
+                <div class="shop-title">Bolt Scooter</div>
+                <div class="shop-desc">
+                    Турбо доставка.<br>
+                    <span style="color:var(--accent-gold)">Скорость: +30%</span>
+                </div>
+                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 2.00 PLN</div>
+                <button id="btn-bolt" class="btn-price" style="background:var(--success); color:#000;" onclick="toggleTransport('bolt')">
+                    2.50 PLN / мин
+                </button>
+            </div>
+
+            <div class="shop-item" style="grid-column: span 2; border-top: 2px solid var(--accent-blue);">
+                <div style="display:flex; align-items:center; width:100%; gap:15px;">
+                    <div class="shop-icon" style="margin:0;">⚡</div>
+                    <div style="text-align:left; flex:1;">
+                        <div class="shop-title">E-Bike Премиум</div>
+                        <div class="shop-desc" style="margin:0; color:#fff;">
+                            <span style="color:var(--accent-blue)">Скорость x2. Без поминутной оплаты.</span>
+                        </div>
+                    </div>
+                    <button id="buy-bike-rent" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tech-banner" onclick="openProShop()" style="margin-top: 20px;">
             <div style="z-index: 1;">
-                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">PRO GEAR</div>
-                <h2 style="margin: 5px 0; font-size: 18px;">Техника & Транспорт</h2>
-                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Телефоны, сумки, самокаты</small>
+                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">GEAR STORE</div>
+                <h2 style="margin: 5px 0; font-size: 18px;">Экипировка Курьера</h2>
+                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Сумки, телефоны, гаджеты</small>
                 <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">ОТКРЫТЬ КАТАЛОГ</button>
             </div>
-            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); z-index: 1;">🛵</div>
+            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); z-index: 1;">🎒</div>
         </div>
 
         <div class="section-title">⚡ Энергия и Восстановление</div>
@@ -323,7 +359,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=4.6" defer></script>
+<script src="logic.js?v=4.7" defer></script>
 
 </body>
 </html>
