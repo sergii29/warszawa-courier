@@ -3,142 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warszawa Vault</title>
+    <title>Warszawa Private Bank</title>
     <style>
-        :root { --bg: #050505; --text: #fff; --gold: #cca568; }
+        :root {
+            --bg: #0b0e14;
+            --card-bg: #151922;
+            --gold: #d4af37;
+            --gold-grad: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #b48811 100%);
+            --text: #ffffff;
+            --text-muted: #64748b;
+        }
+
         body {
-            background: var(--bg); color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
         }
 
-        /* КАРТА-СЕЙФ */
-        .card-vault {
-            width: 100%; max-width: 360px;
-            background: linear-gradient(145deg, #1a1a1a, #000);
-            border: 1px solid #333;
-            border-radius: 24px; padding: 25px; box-sizing: border-box;
-            position: relative; overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+        /* HEADER */
+        .top-bar {
+            width: 100%; max-width: 380px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 20px; padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
+        .wallet-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .wallet-amount { font-size: 18px; font-weight: 600; color: #fff; }
+
+        /* ELITE CARD */
+        .elite-card {
+            width: 100%; max-width: 380px;
+            background: linear-gradient(160deg, #1e2532 0%, #0f1219 100%);
+            border: 1px solid rgba(212, 175, 55, 0.3); /* Золотая рамка */
+            border-radius: 24px;
+            padding: 25px;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            overflow: hidden;
+        }
+
+        /* Золотое свечение сверху */
+        .elite-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 100%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .bank-logo {
+            font-family: serif; font-size: 14px; letter-spacing: 1px; color: #fff;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 30px;
+        }
+        .logo-icon { 
+            width: 24px; height: 24px; background: var(--gold-grad); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: #000; font-weight: bold; font-family: sans-serif; font-size: 12px;
+        }
+
+        .balance-label { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
+        .balance-val {
+            font-size: 42px; font-weight: 400; color: #fff; margin: 5px 0 20px 0;
+            font-family: "Didot", serif; /* Дорогой шрифт */
+            letter-spacing: -1px;
+            background: var(--gold-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .card-footer { display: flex; justify-content: space-between; align-items: center; }
+        .vip-badge {
+            background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--gold); padding: 5px 12px; border-radius: 20px; font-size: 10px; letter-spacing: 1px;
+        }
+
+        /* INPUT AREA */
+        .input-area { width: 100%; max-width: 380px; margin-top: 20px; display: flex; gap: 10px; }
+        .gold-input {
+            flex: 1; background: #151922; border: 1px solid #333; color: white;
+            padding: 15px; border-radius: 12px; font-size: 16px; outline: none; text-align: center;
+            transition: 0.3s;
+        }
+        .gold-input:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.1); }
+
+        /* BUTTONS */
+        .actions { width: 100%; max-width: 380px; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
-        /* Металлический блеск */
-        .card-vault::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, #555, transparent);
+        .btn { padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 12px; border: none; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-deposit {
+            background: var(--gold-grad); color: #1a1a1a;
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.2);
         }
-
-        .vault-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .vault-title { font-size: 12px; letter-spacing: 3px; color: #666; text-transform: uppercase; font-weight: 700; }
-        .icon-lock { font-size: 20px; color: var(--gold); text-shadow: 0 0 10px rgba(204, 165, 104, 0.4); }
-
-        .vault-balance { 
-            font-size: 42px; font-weight: 600; color: #fff; letter-spacing: -1px; margin-bottom: 5px;
-            background: linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        .btn-withdraw {
+            background: transparent; border: 1px solid #333; color: #888;
         }
-        .vault-status { font-size: 11px; color: var(--gold); display: flex; align-items: center; gap: 6px; }
-        .dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 8px var(--gold); }
+        .btn-withdraw:hover { border-color: #666; color: #fff; }
 
-        .controls { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* HISTORY */
+        .history-section {
+            width: 100%; max-width: 380px; margin-top: 30px;
+            border-top: 1px solid #222; padding-top: 15px;
+        }
+        .history-title { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
         
-        .btn-action {
-            background: #111; border: 1px solid #333; color: #888;
-            padding: 15px; border-radius: 14px; font-size: 12px; font-weight: bold; cursor: pointer;
-            transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px;
-        }
-        .btn-action span { font-size: 18px; }
-        .btn-action:active { transform: scale(0.96); background: #222; }
+        .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
         
-        .btn-deposit { border-color: #333; color: #fff; background: linear-gradient(180deg, #222, #111); }
-        .btn-withdraw { border-color: #333; }
-
-        .info-panel {
-            margin-top: 20px; font-size: 10px; color: #444; text-align: center; line-height: 1.6;
-            border-top: 1px solid #111; padding-top: 15px;
+        .h-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;
+            font-size: 12px;
         }
-        .highlight { color: #777; }
+        .h-left { display: flex; flex-direction: column; gap: 2px; }
+        .h-type { color: #fff; font-weight: 500; }
+        .h-time { font-size: 10px; color: #555; }
+        
+        .h-val { font-weight: bold; }
+        .h-val.plus { color: #4ade80; }
+        .h-val.minus { color: #fff; }
+        .h-val.fee { color: #ef4444; }
 
-        /* ИНПУТ */
-        .amount-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .inp-dark { 
-            background: #0a0a0a; border: 1px solid #333; color: var(--gold); 
-            padding: 15px; border-radius: 12px; width: 100%; text-align: center; font-size: 18px; font-weight: bold; outline: none;
-        }
     </style>
 </head>
 <body>
 
-    <div style="width:100%; max-width:360px; display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#666;">
-        <span>НАЛИЧНЫЕ: <b style="color:#fff" id="money">5000.00</b> PLN</span>
-        <span>НАЛОГ: <b style="color:#ef4444">-15%</b></span>
+    <div class="top-bar">
+        <div>
+            <div class="wallet-label">Личный счет</div>
+            <div class="wallet-amount" id="money">5000.00 PLN</div>
+        </div>
+        <div style="font-size:20px;">🪙</div>
     </div>
 
-    <div class="card-vault">
-        <div class="vault-header">
-            <span class="vault-title">Shadow Vault</span>
-            <span class="icon-lock">🔒</span>
+    <div class="elite-card">
+        <div class="bank-logo">
+            <div class="logo-icon">W</div>
+            WARSZAWA PRIVATE
         </div>
 
-        <div class="vault-balance" id="bank">0.00</div>
-        <div class="vault-status">
-            <div class="dot"></div>
-            ЗАЩИЩЕНО ОТ НАЛОГОВОЙ
-        </div>
+        <div class="balance-label">Total Assets</div>
+        <div class="balance-val" id="bank">0.00</div>
 
-        <div style="margin-top: 25px;">
-            <input type="number" id="inp" class="inp-dark" placeholder="Сумма...">
+        <div class="card-footer">
+            <div class="vip-badge">PRIVATE CLIENT</div>
+            <div style="font-size:10px; color:#666;">**** 9821</div>
         </div>
+    </div>
 
-        <div class="controls">
-            <button class="btn-action btn-deposit" onclick="deposit()">
-                <span>📥</span>
-                СПРЯТАТЬ (-5%)
-            </button>
-            <button class="btn-action btn-withdraw" onclick="withdraw()">
-                <span>📤</span>
-                ДОСТАТЬ
-            </button>
-        </div>
+    <div class="input-area">
+        <input type="number" id="inp" class="gold-input" placeholder="Введите сумму...">
+    </div>
 
-        <div class="info-panel">
-            Деньги в сейфе <span class="highlight">не облагаются налогом</span> города.<br>
-            Комиссия за отмывание средств: <span style="color:var(--gold)">5%</span>.<br>
-            Процентная ставка: <span class="highlight">0%</span>.
+    <div class="actions">
+        <button class="btn btn-deposit" onclick="deposit()">ВНЕСТИ ДЕПОЗИТ</button>
+        <button class="btn btn-withdraw" onclick="withdraw()">ВЫВЕСТИ СРЕДСТВА</button>
+    </div>
+
+    <div class="history-section">
+        <div class="history-title">
+            <span>История операций</span>
+            <span>Recent</span>
         </div>
+        <div class="history-list" id="history">
+            </div>
     </div>
 
     <script>
-        let money = 5000;
-        let bank = 0;
+        // State
+        let G = {
+            money: 5000.00,
+            bank: 0.00,
+            history: [] // Храним историю здесь
+        };
 
+        // Render
         function update() {
-            document.getElementById('money').innerText = money.toFixed(2);
-            document.getElementById('bank').innerText = bank.toFixed(2);
+            document.getElementById('money').innerText = G.money.toFixed(2) + " PLN";
+            document.getElementById('bank').innerText = G.bank.toFixed(2);
+            
+            // Render History
+            const hList = document.getElementById('history');
+            hList.innerHTML = "";
+            
+            if(G.history.length === 0) {
+                hList.innerHTML = "<div style='text-align:center; color:#333; font-size:10px; padding:10px;'>Нет операций</div>";
+            } else {
+                // Показываем последние 5
+                G.history.slice().reverse().forEach(h => {
+                    let colorClass = h.type === 'in' ? 'plus' : (h.type === 'fee' ? 'fee' : 'minus');
+                    let sign = h.type === 'in' ? '+' : '-';
+                    let label = h.type === 'in' ? 'Пополнение' : (h.type === 'fee' ? 'Комиссия Банка' : 'Вывод средств');
+                    
+                    if(h.type === 'fee') sign = ''; // Для комиссии просто минус цветом
+
+                    hList.innerHTML += `
+                    <div class="h-item">
+                        <div class="h-left">
+                            <span class="h-type">${label}</span>
+                            <span class="h-time">${h.time}</span>
+                        </div>
+                        <div class="h-val ${colorClass}">${sign}${h.val.toFixed(2)} PLN</div>
+                    </div>`;
+                });
+            }
+        }
+
+        function addLog(type, val) {
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            G.history.push({ type, val, time });
+            if(G.history.length > 10) G.history.shift(); // Храним только 10 записей
         }
 
         function deposit() {
             let val = parseFloat(document.getElementById('inp').value);
-            if(val > 0 && money >= val) {
-                let fee = val * 0.05; // 5% комиссия
-                money -= val;
-                bank += (val - fee);
-                update();
+            if(val > 0 && G.money >= val) {
+                let fee = val * 0.10; // 10% комиссия за сервис
+                let net = val - fee;
+
+                G.money -= val;
+                G.bank += net;
+
+                addLog('in', net);
+                addLog('fee', fee); // Записываем комиссию отдельно в историю для прозрачности
+
                 document.getElementById('inp').value = "";
-                // Вибрация (для телефона)
-                if(navigator.vibrate) navigator.vibrate(20);
+                if(navigator.vibrate) navigator.vibrate([10, 30, 10]);
+                update();
             } else {
-                alert("Не хватает денег!");
+                alert("Недостаточно средств!");
             }
         }
 
         function withdraw() {
-            if(bank > 0) {
-                money += bank;
-                bank = 0;
-                update();
+            if(G.bank > 0) {
+                let val = G.bank;
+                G.money += val;
+                G.bank = 0;
+                
+                addLog('out', val);
+                
                 if(navigator.vibrate) navigator.vibrate(20);
+                update();
             }
         }
+
+        // Init
         update();
     </script>
 
