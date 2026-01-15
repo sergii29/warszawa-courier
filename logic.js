@@ -494,7 +494,8 @@ function updateUI() {
     if(rIcon) {
         rIcon.innerText = currentRank.icon;
         document.getElementById('rank-name').innerText = currentRank.name;
-        document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
+        // !!! ДЕТАЛЬНОЕ ОПИСАНИЕ БОНУСА !!!
+        document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100).toFixed(0) + "% к выплатам";
         
         if (nextRank) {
             let prevMax = 0;
@@ -841,8 +842,11 @@ function doWork() {
 function consumeResources(isOrder) {
     let waterCost = isOrder ? 10 : 3;
     if (G.buffTime > 0) waterCost = isOrder ? 8 : 2; 
+    
+    // ВОДА ТРАТИТСЯ ВСЕГДА
     G.waterStock = Math.max(0, G.waterStock - waterCost);
 
+    // ЭНЕРГИЯ НЕ ТРАТИТСЯ, ЕСЛИ АКТИВЕН ЭНЕРГЕТИК (BUFF)
     if (G.buffTime > 0) {
         return; 
     }
