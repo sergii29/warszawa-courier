@@ -107,18 +107,18 @@
         .badge-off { background: rgba(142, 142, 147, 0.15); color: var(--subtext); }
         .badge-ban { background: rgba(255, 69, 58, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
-        /* MODAL BOTTOM SHEET (ШТОРКА) */
+        /* MODAL (ШТОРКА) */
         #editor-modal { 
             display: none; 
             position: fixed; 
             inset: 0; 
-            background: rgba(0,0,0,0.6); 
-            backdrop-filter: blur(3px); 
+            background: rgba(0,0,0,0.7); 
+            backdrop-filter: blur(5px); 
             z-index: 1000; 
             align-items: flex-end; 
             justify-content: center;
             opacity: 0; 
-            transition: opacity 0.3s; 
+            transition: opacity 0.2s; 
         }
         #editor-modal.show { opacity: 1; }
         
@@ -130,17 +130,43 @@
             overflow-y: auto; 
             border-radius: 20px 20px 0 0; 
             border-top: 1px solid var(--border);
-            padding: 20px; 
-            padding-bottom: 40px;
+            padding: 0 20px 40px 20px; /* Padding moved here */
             box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
         
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        /* ЦЕНТРИРОВАНИЕ НА ПК */
+        @media (min-width: 600px) {
+            #editor-modal { align-items: center; }
+            .editor-content { 
+                border-radius: 20px; 
+                max-height: 85vh; 
+                animation: zoomIn 0.2s ease-out;
+            }
+        }
 
-        .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* HEADER - ТЕПЕРЬ ПРИКЛЕЕН */
+        .sheet-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px;
+            position: sticky; /* Приклеено */
+            top: 0;
+            background: #1c1c1e; /* Цвет фона чтобы текст не просвечивал */
+            z-index: 999;
+            padding-top: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
         .sheet-title { font-size: 18px; font-weight: 700; }
-        .close-btn { background: #3a3a3c; border: none; width: 30px; height: 30px; border-radius: 50%; color: #aaa; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .close-btn { background: #3a3a3c; border: none; width: 30px; height: 30px; border-radius: 50%; color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .close-btn:hover { background: #555; }
 
         .form-section { margin-bottom: 20px; }
         .form-title { font-size: 12px; color: var(--subtext); text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
@@ -205,7 +231,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">🚁 Admin <span style="color:var(--accent)">PRO</span></h2>
-        <div style="font-size:10px; color:var(--subtext);">v3.0 (Logs + Water)</div>
+        <div style="font-size:10px; color:var(--subtext);">v3.1 (Fix UI)</div>
     </div>
 
     <div class="stats-grid">
