@@ -47,6 +47,8 @@ let G = {
     helmet: null,
     raincoat: null,
     powerbank: null,
+    deposit: null, // ДЛЯ БАНКА
+    bankHistory: [], // ИСТОРИЯ БАНКА
     dailyQuests: [],
     lastDailyUpdate: 0,
     activeMilestones: [
@@ -185,7 +187,6 @@ function claimStarterPack() {
     G.money += 50;
     G.waterStock += 500;
     
-    // !!! ГАРАНТИЯ ЧИСТОГО СТАРТА !!!
     G.transportMode = 'none'; 
     G.bikeRentTime += 900; 
     
@@ -328,10 +329,14 @@ function load() {
     if(isNaN(G.en)) G.en = 2000;
     if(isNaN(G.waterStock)) G.waterStock = 0;
     if(!G.transportMode) G.transportMode = 'none';
-    if(!G.housing) G.housing = { id: -1 }; // Инициализация жилья
+    if(!G.housing) G.housing = { id: -1 }; 
     G.maxEn = 2000; 
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
+    
+    // ИНИЦИАЛИЗАЦИЯ БАНКА
+    if (!G.deposit) G.deposit = null;
+    if (!G.bankHistory) G.bankHistory = [];
 
     ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
         if (G[item] === true) G[item] = { active: true, dur: 100 };
@@ -693,6 +698,7 @@ function updateUI() {
     document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + (isBlind ? '?' : h.val) + "</b></div>").join('');
     
     renderBank(); 
+    renderBankFull(); // НОВОЕ: РЕНДЕР СЕЙФА
     renderMilestones();
     
     const taxTimer = document.getElementById('tax-timer');
@@ -1020,7 +1026,7 @@ function repairItem(type, baseCost) {
 
     if (G.money >= cost) {
         G.money = parseFloat((G.money - cost).toFixed(2));
-        G[type].dur = max;
+        G.type.dur = max;
         addHistory('🛠️ РЕМОНТ', cost, 'minus');
         log("Предмет отремонтирован!", "var(--success)");
         save();
@@ -1383,10 +1389,6 @@ function triggerBreakdown() {
     updateUI(); 
 }
 
-function updateDistrictButtons() {
-    // Вся логика рендеринга теперь внутри updateUI
-}
-
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
     if(!ui) return;
@@ -1411,6 +1413,149 @@ function renderBank() {
     `;
 
     ui.innerHTML = creditHTML + buyLvlHTML;
+}
+
+// === ЛОГИКА КОРОЛЕВСКОГО БАНКА ===
+let selectedBankPlan = { days: 7, rate: 0.05 };
+
+function selectBankPlan(days, rate, el) {
+    selectedBankPlan = { days, rate };
+    document.querySelectorAll('.plan-item').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function makeDeposit() {
+    const inp = document.getElementById('bank-inp');
+    let val = parseFloat(inp.value);
+    
+    if (!val || val <= 0) { log("Введите сумму!", "var(--danger)"); return; }
+    if (val > G.money) { log("Не хватает денег!", "var(--danger)"); return; }
+    if (val < 100) { log("Минимальный вклад 100 PLN", "var(--danger)"); return; }
+
+    G.money = parseFloat((G.money - val).toFixed(2));
+    
+    // ВРЕМЯ: Для реализма используем настоящие часы
+    let durationMs = selectedBankPlan.days * 86400000; 
+
+    G.deposit = {
+        amount: val,
+        start: Date.now(),
+        end: Date.now() + durationMs,
+        rate: selectedBankPlan.rate,
+        profit: val * selectedBankPlan.rate,
+        penalty: val * 0.30 // 30% штраф
+    };
+
+    addBankLog("Вклад " + selectedBankPlan.days + "дн", val, "minus");
+    log("💎 Средства заморожены в Royal Bank", "var(--accent-blue)");
+    tg.HapticFeedback.notificationOccurred('success');
+    
+    inp.value = "";
+    save();
+    updateUI();
+}
+
+function claimDeposit() {
+    if(!G.deposit) return;
+    let total = parseFloat((G.deposit.amount + G.deposit.profit).toFixed(2));
+    
+    G.money = parseFloat((G.money + total).toFixed(2));
+    addBankLog("Выплата %", total, "plus");
+    log("💰 Выплата по вкладу: +" + total + " PLN", "var(--success)");
+    
+    G.deposit = null;
+    tg.HapticFeedback.notificationOccurred('success');
+    save();
+    updateUI();
+}
+
+function breakDeposit() {
+    if(!G.deposit) return;
+    
+    let penalty = parseFloat(G.deposit.penalty.toFixed(2));
+    let returnVal = parseFloat((G.deposit.amount - penalty).toFixed(2));
+    
+    if(confirm(`⚠️ РАЗБИТЬ КОПИЛКУ?\n\nВы потеряете: ${penalty} PLN\nВам вернется: ${returnVal} PLN\n\nСделать это?`)) {
+        G.money = parseFloat((G.money + returnVal).toFixed(2));
+        addBankLog("Штраф", penalty, "fee");
+        addBankLog("Возврат", returnVal, "plus");
+        log("Копилка разбита. Штраф списан.", "var(--danger)");
+        
+        G.deposit = null;
+        tg.HapticFeedback.notificationOccurred('warning');
+        save();
+        updateUI();
+    }
+}
+
+function addBankLog(msg, val, type) {
+    if(!G.bankHistory) G.bankHistory = [];
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    G.bankHistory.unshift({ msg, val, type, time });
+    if(G.bankHistory.length > 10) G.bankHistory.pop();
+}
+
+function renderBankFull() {
+    // 1. Рендерим статус (Выбор или Таймер)
+    const selUI = document.getElementById('bank-select-ui');
+    const actUI = document.getElementById('bank-active-ui');
+    
+    if (!selUI || !actUI) return; 
+
+    if (G.deposit) {
+        selUI.style.display = 'none';
+        actUI.style.display = 'block';
+        
+        document.getElementById('locked-val').innerText = G.deposit.amount.toFixed(2) + " PLN";
+        
+        let now = Date.now();
+        let left = G.deposit.end - now;
+        let totalDur = G.deposit.end - G.deposit.start;
+        
+        if (left <= 0) {
+            // ВРЕМЯ ВЫШЛО
+            document.getElementById('bank-timer').innerText = "СРОК ИСТЕК! ПРИБЫЛЬ ГОТОВА";
+            document.getElementById('bank-timer').style.color = "var(--success)";
+            document.getElementById('bank-prog-bar').style.width = "100%";
+            document.getElementById('bank-prog-bar').style.background = "var(--success)";
+            
+            document.getElementById('btn-bank-claim').style.display = 'block';
+            document.getElementById('btn-bank-break').style.display = 'none';
+        } else {
+            // ТАЙМЕР ИДЕТ
+            let pct = 100 - (left / totalDur * 100);
+            document.getElementById('bank-prog-bar').style.width = pct + "%";
+            document.getElementById('bank-prog-bar').style.background = "var(--accent-gold)";
+            
+            // Форматирование времени
+            let days = Math.floor(left / (1000 * 60 * 60 * 24));
+            let hours = Math.floor((left % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            let mins = Math.floor((left % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById('bank-timer').innerText = `БЛОКИРОВКА: ${days}д ${hours}ч ${mins}м`;
+            document.getElementById('bank-timer').style.color = "var(--accent-gold)";
+            
+            document.getElementById('btn-bank-claim').style.display = 'none';
+            document.getElementById('btn-bank-break').style.display = 'block';
+        }
+
+    } else {
+        selUI.style.display = 'block';
+        actUI.style.display = 'none';
+    }
+
+    // 2. Рендерим историю
+    const hList = document.getElementById('bank-history-list');
+    if(hList && G.bankHistory) {
+        hList.innerHTML = G.bankHistory.map(h => {
+            let color = h.type === 'plus' ? 'var(--success)' : (h.type === 'fee' ? 'var(--danger)' : '#fff');
+            let sign = h.type === 'plus' ? '+' : '-';
+            if(h.type === 'fee') sign = '-';
+            return `<div class="h-row">
+                <span>${h.time} ${h.msg}</span>
+                <span style="color:${color}">${sign}${h.val} PLN</span>
+            </div>`;
+        }).join('');
+    }
 }
 
 function openProShop() {
