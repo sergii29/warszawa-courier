@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.5">
+    <link rel="stylesheet" href="style.css?v=4.6">
 </head>
 <body>
 
@@ -56,7 +56,7 @@
         <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilot()">
             <div class="route-icon">🤖</div>
             <div id="lbl-auto-container">
-                <div id="lbl-auto-route"><b>Автопилот (45 PLN)</b></div>
+                <div id="lbl-auto-route"><b>Автопилот</b> <span id="price-auto"></span></div>
                 <div id="desc-auto-route"><small style="color:var(--accent-gold)">Робот сделает всё сам</small></div>
             </div>
         </div>
@@ -75,7 +75,7 @@
         <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05); margin-bottom:15px;">
             <b>🚲 Аренда Электровелосипеда</b><br>
             <small>Скорость x2. 30 PLN за 10 минут.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
+            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
         </div>
         
         <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
@@ -150,7 +150,7 @@
             </div>
             
             <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
-                <button class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ (15 PLN)</button>
+                <button id="btn-repair-express" class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ</button>
                 <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
             </div>
         </div>
@@ -231,13 +231,13 @@
                 <div class="shop-icon">💧</div>
                 <div class="shop-title">Вода (1.5л)</div>
                 <div class="shop-desc">Восстанавливает силы при кликах.<br><b>+1500 мл</b></div>
-                <button class="btn-price" onclick="buyWater()">1.50 PLN</button>
+                <button id="btn-buy-water" class="btn-price" onclick="buyWater()">1.50 PLN</button>
             </div>
             <div class="shop-item item-food">
                 <div class="shop-icon">☕</div>
                 <div class="shop-title">Эспрессо</div>
                 <div class="shop-desc">Мгновенный заряд бодрости.<br><b>+300 Energy</b></div>
-                <button class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
+                <button id="btn-buy-coffee" class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
             </div>
             <div class="shop-item item-energy" style="grid-column: span 2;">
                 <div style="display:flex; align-items:center; width:100%; gap:15px;">
@@ -249,7 +249,7 @@
                             <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
                         </div>
                     </div>
-                    <button class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
+                    <button id="btn-buy-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
                 </div>
             </div>
         </div>
@@ -264,7 +264,7 @@
                     Прочность: <b>5000 шагов</b>
                 </div>
             </div>
-            <button class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas', 50, 100)">50 PLN</button>
+            <button id="btn-buy-abibas" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas', 50, 100)">50 PLN</button>
         </div>
         <div class="shop-item item-shoes" style="border-color: var(--gold);">
             <div class="shop-icon">🔥</div>
@@ -275,7 +275,7 @@
                     Бонус: <b>+20% к чаевым</b>
                 </div>
             </div>
-            <button class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban', 250, 150)">250 PLN</button>
+            <button id="btn-buy-jorban" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban', 250, 150)">250 PLN</button>
         </div>
         
         <div style="height: 20px;"></div>
@@ -323,7 +323,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=4.5" defer></script>
+<script src="logic.js?v=4.6" defer></script>
 
 </body>
 </html>
