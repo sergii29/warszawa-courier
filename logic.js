@@ -182,8 +182,11 @@ function claimStarterPack() {
     document.getElementById('starter-modal').style.display = 'none';
     G.money += 50;
     G.waterStock += 500;
-    G.transportMode = 'none'; // !!! ВАЖНО: Сбрасываем аренду, чтобы включить велик
+    
+    // !!! ГАРАНТИЯ ЧИСТОГО СТАРТА !!!
+    G.transportMode = 'none'; 
     G.bikeRentTime += 900; 
+    
     G.isNewPlayer = false;
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
     
@@ -1472,4 +1475,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-
