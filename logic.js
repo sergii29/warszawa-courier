@@ -82,6 +82,16 @@ const UPGRADES = [
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', price: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80 }
 ];
 
+// === ДИНАМИЧЕСКАЯ ЦЕНА ===
+function getDynamicPrice(basePrice) {
+    if (basePrice === 0) return 0;
+    // Инфляция: цена растет на 40% за каждый LVL выше 1
+    let inflationFactor = 0.40;
+    let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * inflationFactor;
+    return parseFloat((basePrice * multiplier).toFixed(2));
+}
+// =========================
+
 function addHistory(msg, val, type = 'plus') {
     const time = new Date().toLocaleTimeString().split(' ')[0];
     if (!G.history) G.history = [];
@@ -330,7 +340,7 @@ function load() {
 
 function updateUI() {
     const moneyEl = document.getElementById('money-val');
-    if(!moneyEl) return; // ЗАЩИТА ОТ КРАША
+    if(!moneyEl) return; 
 
     const isBlind = G.blindTime > 0; 
     if (isBlind) {
@@ -374,6 +384,32 @@ function updateUI() {
         if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
     }
     
+    // === ОБНОВЛЕНИЕ ЦЕННИКОВ ===
+    const hiddenPrice = isBlind ? "???" : null;
+    const setBtnText = (id, price) => {
+        const btn = document.getElementById(id);
+        if(btn) btn.innerText = (hiddenPrice || price.toFixed(2)) + " PLN";
+    };
+
+    setBtnText('btn-buy-water', getDynamicPrice(1.50));
+    setBtnText('btn-buy-coffee', getDynamicPrice(5.00));
+    setBtnText('btn-buy-energy', getDynamicPrice(12.00));
+    setBtnText('btn-buy-abibas', getDynamicPrice(50.00));
+    setBtnText('btn-buy-jorban', getDynamicPrice(250.00));
+    
+    const rentBikeBtn = document.getElementById('buy-bike-rent');
+    if(rentBikeBtn) {
+        if(G.bikeRentTime > 0) rentBikeBtn.innerText = "В АРЕНДЕ";
+        else rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice(30).toFixed(2)) + " PLN)";
+    }
+
+    const autoPriceLabel = document.getElementById('price-auto');
+    if(autoPriceLabel) autoPriceLabel.innerText = "(" + (hiddenPrice || getDynamicPrice(45).toFixed(2)) + " PLN)";
+
+    const repairBtn = document.getElementById('btn-repair-express');
+    if(repairBtn) repairBtn.innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice(15).toFixed(2)) + " PLN)";
+    // ===========================
+
     let shoeNameDisplay = G.shoes.name;
     let shoeBar = document.getElementById('shoe-bar');
     if(shoeBar) {
@@ -497,10 +533,13 @@ function updateUI() {
                 let max = conf ? conf.maxDur : 100;
                 const pct = Math.floor((item.dur / max) * 100);
                 
+                // ДИНАМИЧЕСКАЯ ЦЕНА РЕМОНТА
+                let repairCost = getDynamicPrice(up.repairPrice);
+                
                 const div = document.createElement('div'); 
                 div.className = 'shop-item';
                 if(isBroken) div.classList.add('item-broken');
-                div.innerHTML = `<div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${up.repairPrice})">🛠️ ${up.repairPrice}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}', ${up.price * 0.5})">💸 ${up.price * 0.5}</button></div>`;
+                div.innerHTML = `<div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairCost})">🛠️ ${hiddenPrice || repairCost}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}', ${getDynamicPrice(up.price) * 0.5})">💸 ${hiddenPrice || (getDynamicPrice(up.price) * 0.5).toFixed(2)}</button></div>`;
                 myItemsList.appendChild(div);
             }
         });
@@ -511,10 +550,13 @@ function updateUI() {
         shopList.innerHTML = ''; 
         UPGRADES.forEach(up => { 
             if(!G[up.id] && !up.hidden) { 
+                // ДИНАМИЧЕСКАЯ ЦЕНА ПОКУПКИ
+                let curPrice = getDynamicPrice(up.price);
+                
                 const div = document.createElement('div'); 
                 div.className = 'card'; 
                 div.style.marginBottom = '8px'; 
-                div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + up.price + ")\">КУПИТЬ (" + up.price + " PLN)</button>"; 
+                div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + curPrice + ")\">КУПИТЬ (" + (hiddenPrice || curPrice) + " PLN)</button>"; 
                 shopList.appendChild(div); 
             }
         });
@@ -536,8 +578,6 @@ function updateUI() {
             else document.getElementById('quest-pay').innerText = order.reward.toFixed(2);
         } 
     } else { qBar.style.display = 'none'; }
-    
-    document.getElementById('buy-bike-rent').innerText = G.bikeRentTime > 0 ? "В АРЕНДЕ" : "АРЕНДОВАТЬ (30 PLN)";
     
     document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + (isBlind ? '?' : h.val) + "</b></div>").join('');
     
@@ -724,6 +764,8 @@ function openRouteModal() {
     const autoLabel = document.getElementById('lbl-auto-route');
     const autoDesc = document.getElementById('desc-auto-route');
 
+    let curPrice = getDynamicPrice(45);
+
     if (G.autoTime > 0) {
         autoLabel.innerHTML = "<b>🤖 ПОРУЧИТЬ РОБОТУ</b>";
         autoDesc.innerHTML = "<small style='color:var(--success)'>Активно: " + Math.floor(G.autoTime/60) + " мин</small>";
@@ -735,7 +777,7 @@ function openRouteModal() {
         autoBtn.style.borderColor = "var(--success)";
         autoBtn.style.background = "rgba(34, 197, 94, 0.1)";
     } else {
-        autoLabel.innerHTML = "<b>🤖 КУПИТЬ АВТО (45 PLN)</b>";
+        autoLabel.innerHTML = "<b>🤖 КУПИТЬ АВТО (" + curPrice + " PLN)</b>";
         autoDesc.innerHTML = "<small style='color:var(--accent-gold)'>Робот сделает всё сам (+10 мин)</small>";
         autoBtn.onclick = function() { activateAutopilot(); };
         autoBtn.style.borderColor = "var(--accent-gold)";
@@ -761,15 +803,16 @@ function chooseRoute(type) {
 
 function activateAutopilot() { 
     closeRouteModal();
-    if(G.money >= 45 && G.lvl >= 0.15) { 
-        G.money = parseFloat((G.money - 45).toFixed(2)); 
+    let price = getDynamicPrice(45); // Динамическая цена
+    if(G.money >= price && G.lvl >= 0.15) { 
+        G.money = parseFloat((G.money - price).toFixed(2)); 
         G.lvl -= 0.15; 
         
         let hasPower = (G.powerbank && G.powerbank.dur > 0);
         let timeAdd = hasPower ? 900 : 600; 
         
         G.autoTime += timeAdd; 
-        addHistory('АВТОПИЛОТ', 45, 'minus'); 
+        addHistory('АВТОПИЛОТ', price, 'minus'); 
         acceptOrder(); 
         save(); 
         updateUI(); 
@@ -780,12 +823,14 @@ function activateAutopilot() {
 
 function acceptOrder() { order.active = true; updateUI(); }
 
-function buyShoes(name, price, durability) {
+function buyShoes(name, basePrice, durability) {
     if (G.shoes.name === name && G.shoes.dur > 0) {
         log("У вас уже есть эти кроссовки!", "var(--danger)");
         tg.HapticFeedback.notificationOccurred('error');
         return;
     }
+
+    let price = getDynamicPrice(basePrice); // Динамическая цена
 
     if (G.money >= price) {
         G.money -= price;
@@ -798,22 +843,25 @@ function buyShoes(name, price, durability) {
         save();
         updateUI();
     } else {
-        log("Не хватает денег!", "var(--danger)");
+        log("Не хватает денег (" + price + " PLN)!", "var(--danger)");
     }
 }
 
-function buyInvest(type, p) { 
-    if(!G[type] && G.money >= p) { 
-        G.money = parseFloat((G.money - p).toFixed(2)); 
+function buyInvest(type, basePrice) { 
+    let price = getDynamicPrice(basePrice); // Динамическая цена
+    if(!G[type] && G.money >= price) { 
+        G.money = parseFloat((G.money - price).toFixed(2)); 
         let maxDur = 100;
         let conf = UPGRADES.find(u => u.id === type);
         if(conf && conf.maxDur) maxDur = conf.maxDur;
 
         G[type] = { active: true, dur: maxDur };
-        addHistory('ИНВЕСТ', p, 'minus'); 
+        addHistory('ИНВЕСТ', price, 'minus'); 
         save(); 
         updateUI(); 
-    } 
+    } else if (G.money < price) {
+        log("Нужно " + price + " PLN", "var(--danger)");
+    }
 }
 
 function sellInvest(type, p) {
@@ -827,7 +875,7 @@ function sellInvest(type, p) {
     }
 }
 
-function repairItem(type, cost) {
+function repairItem(type, baseCost) {
     if (!G[type]) return;
 
     let conf = UPGRADES.find(u => u.id === type);
@@ -837,6 +885,8 @@ function repairItem(type, cost) {
         log("Предмет полностью цел!", "var(--accent-blue)");
         return;
     }
+
+    let cost = getDynamicPrice(baseCost); // Динамическая цена ремонта
 
     if (G.money >= cost) {
         G.money = parseFloat((G.money - cost).toFixed(2));
@@ -871,16 +921,17 @@ function getWelfare() {
 }
 
 function repairBikeInstant() {
-    if (G.money >= 15) {
-        G.money = parseFloat((G.money - 15).toFixed(2));
+    let cost = getDynamicPrice(15); // Динамическая цена
+    if (G.money >= cost) {
+        G.money = parseFloat((G.money - cost).toFixed(2));
         isBroken = false;
         repairProgress = 0;
-        addHistory('🔧 РЕМОНТ', 15, 'minus');
+        addHistory('🔧 РЕМОНТ', cost, 'minus');
         log("Велик починен за деньги!", "var(--success)");
         save();
         updateUI();
     } else {
-        log("Нет денег (15 PLN)!", "var(--danger)");
+        log("Нет денег (" + cost + " PLN)!", "var(--danger)");
     }
 }
 
@@ -1031,34 +1082,43 @@ function collectBottles() {
 }
 
 function buyWater() { 
-    if(G.money >= 1.50) { 
-        G.money = parseFloat((G.money - 1.50).toFixed(2)); 
+    let price = getDynamicPrice(1.50); // Динамическая цена
+    if(G.money >= price) { 
+        G.money = parseFloat((G.money - price).toFixed(2)); 
         G.waterStock += 1500; 
-        addHistory('🧴 ВОДА', 1.50, 'minus'); 
+        addHistory('🧴 ВОДА', price, 'minus'); 
         save(); 
         updateUI(); 
-    } 
+    } else {
+        log("Нужно " + price + " PLN", "var(--danger)");
+    }
 }
 
-function buyDrink(type, p) { 
-    if(G.money >= p) { 
-        G.money = parseFloat((G.money - p).toFixed(2)); 
-        addHistory(type.toUpperCase(), p, 'minus'); 
+function buyDrink(type, basePrice) { 
+    let price = getDynamicPrice(basePrice); // Динамическая цена
+    if(G.money >= price) { 
+        G.money = parseFloat((G.money - price).toFixed(2)); 
+        addHistory(type.toUpperCase(), price, 'minus'); 
         if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300); 
         else G.buffTime += 120; 
         save(); 
         updateUI(); 
-    } 
+    } else {
+        log("Нужно " + price + " PLN", "var(--danger)");
+    }
 }
 
 function rentBike() { 
-    if (G.money >= 30) { 
-        G.money = parseFloat((G.money - 30).toFixed(2)); 
-        addHistory('🚲 ВЕЛИК', 30, 'minus'); 
+    let price = getDynamicPrice(30); // Динамическая цена
+    if (G.money >= price) { 
+        G.money = parseFloat((G.money - price).toFixed(2)); 
+        addHistory('🚲 ВЕЛИК', price, 'minus'); 
         G.bikeRentTime += 600; 
         save(); 
         updateUI(); 
-    } 
+    } else {
+        log("Нужно " + price + " PLN", "var(--danger)");
+    }
 }
 
 function exchangeLvl(l, m) { 
@@ -1259,4 +1319,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-
