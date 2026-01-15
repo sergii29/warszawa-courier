@@ -113,7 +113,7 @@
             background: rgba(0,0,0,0.6); 
             backdrop-filter: blur(3px); 
             z-index: 1000; 
-            align-items: flex-end; /* Прижать к низу */
+            align-items: flex-end; 
             justify-content: center;
             opacity: 0; 
             transition: opacity 0.3s; 
@@ -124,8 +124,8 @@
             background: #1c1c1e; 
             width: 100%; 
             max-width: 600px;
-            max-height: 85vh; /* Максимум 85% высоты экрана */
-            overflow-y: auto; /* ПРОКРУТКА ВНУТРИ */
+            max-height: 85vh; 
+            overflow-y: auto; 
             border-radius: 20px 20px 0 0; 
             border-top: 1px solid var(--border);
             padding: 20px; 
@@ -184,7 +184,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">🚁 Admin <span style="color:var(--accent)">PRO</span></h2>
-        <div style="font-size:10px; color:var(--subtext);">v2.5 (Bank Wipe)</div>
+        <div style="font-size:10px; color:var(--subtext);">v2.6 (Bank Control)</div>
     </div>
 
     <div class="stats-grid">
@@ -217,12 +217,18 @@
             </div>
             
             <div class="form-section">
-                <div class="form-title">Финансы</div>
+                <div class="form-title">Финансы & Банк</div>
                 <div class="input-row">
                     <div style="flex:1">
                         <input type="number" id="inp-money" class="form-input" placeholder="PLN">
-                        <div style="font-size:10px; color:#666; margin-top:4px; text-align:center;">Баланс</div>
+                        <div style="font-size:10px; color:#666; margin-top:4px; text-align:center;">Наличные</div>
                     </div>
+                    <div style="flex:1">
+                        <input type="number" id="inp-bank" class="form-input" placeholder="0">
+                        <div style="font-size:10px; color:var(--gold); margin-top:4px; text-align:center;">Депозит (Банк)</div>
+                    </div>
+                </div>
+                <div class="input-row" style="margin-top:10px;">
                     <div style="flex:1">
                         <input type="number" id="inp-lvl" class="form-input" placeholder="LVL">
                         <div style="font-size:10px; color:#666; margin-top:4px; text-align:center;">Уровень</div>
@@ -256,7 +262,6 @@
     </div>
 
     <script>
-        // CONFIG
         const firebaseConfig = {
           apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
           authDomain: "warszawa-courier.firebaseapp.com",
@@ -274,7 +279,6 @@
         let currentEditId = null;
         let isCurrentBanned = false;
 
-        // LOAD DATA
         db.ref('users').on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -285,7 +289,6 @@
         function renderCards() {
             const container = document.getElementById('users-container');
             container.innerHTML = '';
-            
             let online = 0, rich = 0, total = 0;
             const now = Date.now();
             
@@ -294,13 +297,12 @@
                 .forEach(([id, user]) => {
                     total++;
                     if (user.money > 1000) rich++;
-                    const isOnline = (now - (user.lastActive || 0)) < 180000; // 3 min
+                    const isOnline = (now - (user.lastActive || 0)) < 180000;
                     if (isOnline) online++;
 
                     let inv = "";
-                    if(user.bag || (user.bag && user.bag.active)) inv += "<span class='inv-icon'>🎒</span>";
-                    if(user.scooter || (user.scooter && user.scooter.active)) inv += "<span class='inv-icon'>🛴</span>";
-                    if(user.shoes && user.shoes.name !== "Tapki") inv += "<span class='inv-icon'>👟</span>";
+                    if(user.bag && user.bag.active) inv += "<span class='inv-icon'>🎒</span>";
+                    if(user.deposit && user.deposit.amount > 0) inv += "<span class='inv-icon' style='color:var(--gold)'>💰</span>";
                     if(user.isBanned) inv = "<b style='color:var(--danger)'>⛔ ЗАБАНЕН</b>";
 
                     const card = document.createElement('div');
@@ -318,20 +320,11 @@
                                 ${isOnline ? '<span class="badge badge-on">ON</span>' : '<span class="badge badge-off">OFF</span>'}
                             </div>
                         </div>
-                        
                         <div class="user-stats">
-                            <div class="stat-box">
-                                <b style="color:${user.money < 0 ? 'var(--danger)' : 'var(--green)'}">${(user.money||0).toFixed(2)}</b>
-                                <small>PLN</small>
-                            </div>
-                            <div class="stat-box">
-                                <b style="color:var(--gold)">${(user.lvl||1).toFixed(2)}</b>
-                                <small>LVL</small>
-                            </div>
+                            <div class="stat-box"><b style="color:${user.money < 0 ? 'var(--danger)' : 'var(--green)'}">${(user.money||0).toFixed(0)}</b><small>PLN</small></div>
+                            <div class="stat-box"><b style="color:var(--gold)">${(user.lvl||1).toFixed(1)}</b><small>LVL</small></div>
                         </div>
-
                         <div class="user-inventory">${inv}</div>
-
                         <button class="btn-manage" onclick="openEditor('${id}')">УПРАВЛЕНИЕ ⚙️</button>
                     `;
                     container.appendChild(card);
@@ -345,7 +338,6 @@
         function openEditor(id) {
             currentEditId = id;
             const user = allUsers[id];
-            
             const modal = document.getElementById('editor-modal');
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('show'), 10);
@@ -355,18 +347,17 @@
             
             document.getElementById('inp-money').value = user.money;
             document.getElementById('inp-lvl').value = user.lvl;
+            
+            // Загрузка депозита
+            let depAmount = (user.deposit && user.deposit.amount) ? user.deposit.amount : 0;
+            document.getElementById('inp-bank').value = depAmount;
+
             document.getElementById('inp-msg').value = "";
 
-            const check = (key) => {
-                let val = user[key];
-                return (val === true) || (val && val.active === true);
-            };
-
-            // Обновляем чекбоксы и подсветку
+            const check = (key) => (user[key] === true) || (user[key] && user[key].active === true);
             ['bag','phone','scooter','helmet','raincoat','powerbank'].forEach(key => {
                 const el = document.getElementById('chk-'+key);
                 el.checked = check(key);
-                // Подсветка родителя
                 el.parentElement.style.borderColor = el.checked ? 'var(--accent)' : 'transparent';
                 el.onclick = function() { this.parentElement.style.borderColor = this.checked ? 'var(--accent)' : 'transparent'; }
             });
@@ -377,18 +368,9 @@
 
         function toggleBan() {
             if(!currentEditId) return;
-
-            // Переключаем статус
             isCurrentBanned = !isCurrentBanned;
             updateBanBtn();
-
-            // СРАЗУ ОТПРАВЛЯЕМ В БАЗУ
-            db.ref('users/' + currentEditId).update({
-                isBanned: isCurrentBanned,
-                lastAdminUpdate: Date.now()
-            }).then(() => {
-                console.log("Статус бана обновлен: " + isCurrentBanned);
-            });
+            db.ref('users/' + currentEditId).update({ isBanned: isCurrentBanned, lastAdminUpdate: Date.now() });
         }
 
         function updateBanBtn() {
@@ -412,19 +394,31 @@
                 lastAdminUpdate: Date.now()
             };
 
+            // Логика ручного изменения депозита
+            let newBank = parseFloat(document.getElementById('inp-bank').value);
+            if (newBank <= 0) {
+                updates.deposit = null; // Удаляем депозит если 0
+            } else {
+                // Если депозит уже был - обновляем сумму, иначе создаем новый на 7 дней
+                const oldDep = allUsers[currentEditId].deposit;
+                if (oldDep) {
+                    updates.deposit = { ...oldDep, amount: newBank, profit: newBank * (oldDep.rate || 0.05), penalty: newBank * 0.3 };
+                } else {
+                    updates.deposit = {
+                        amount: newBank,
+                        start: Date.now(),
+                        end: Date.now() + (7 * 86400000),
+                        rate: 0.05,
+                        profit: newBank * 0.05,
+                        penalty: newBank * 0.3
+                    };
+                }
+            }
+
             const msg = document.getElementById('inp-msg').value.trim();
             if(msg) updates.adminMessage = msg;
             
-            const setItem = (key) => {
-                const isChecked = document.getElementById('chk-'+key).checked;
-                if(isChecked) {
-                    if(allUsers[currentEditId][key]) return allUsers[currentEditId][key]; 
-                    return { active: true, dur: 100 };
-                } else {
-                    return null;
-                }
-            };
-
+            const setItem = (key) => document.getElementById('chk-'+key).checked ? { active: true, dur: 100 } : null;
             updates.bag = setItem('bag');
             updates.phone = setItem('phone');
             updates.scooter = setItem('scooter');
@@ -432,14 +426,12 @@
             updates.raincoat = setItem('raincoat');
             updates.powerbank = setItem('powerbank');
 
-            db.ref('users/' + currentEditId).update(updates).then(() => {
-                closeEditor();
-            });
+            db.ref('users/' + currentEditId).update(updates).then(() => closeEditor());
         }
 
         function resetUserFull() {
             if(!currentEditId) return;
-            if(!confirm("УВЕРЕН? Это удалит ВЕСЬ прогресс игрока.")) return;
+            if(!confirm("УВЕРЕН? Это ПОЛНОСТЬЮ удалит прогресс и депозит.")) return;
 
             const user = allUsers[currentEditId];
             
@@ -457,10 +449,10 @@
                 totalBottles: 0,
                 totalEarned: 0,
                 
-                // === СБРОС БАНКА (FIX) ===
-                deposit: null,
+                // === ЯВНОЕ УДАЛЕНИЕ БАНКА ===
+                deposit: null, 
                 bankHistory: [],
-                // ========================
+                // ===========================
 
                 shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
                 bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
@@ -477,9 +469,7 @@
                 ]
             };
 
-            db.ref('users/' + currentEditId).set(wipeData).then(() => {
-                closeEditor();
-            });
+            db.ref('users/' + currentEditId).set(wipeData).then(() => closeEditor());
         }
 
         function closeEditor() {
@@ -488,10 +478,7 @@
             setTimeout(() => modal.style.display = 'none', 300);
             currentEditId = null;
         }
-        
-        window.onclick = function(e) {
-            if(e.target == document.getElementById('editor-modal')) closeEditor();
-        }
+        window.onclick = function(e) { if(e.target == document.getElementById('editor-modal')) closeEditor(); }
     </script>
 </body>
 </html>
