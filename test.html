@@ -2,244 +2,220 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Garage Tuning System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Bank - Lokata</title>
     <style>
         :root {
             --bg: #0f172a;
             --card-bg: #1e293b;
-            --accent: #3b82f6; /* Дефолтный синий */
-            --text-main: #fff;
-            --text-muted: #94a3b8;
-            --success: #22c55e;
+            --gold: #fbbf24;
+            --gold-dim: #b45309;
+            --text: #f8fafc;
+            --text-sec: #94a3b8;
             --danger: #ef4444;
+            --success: #22c55e;
+            --btn-grad: linear-gradient(135deg, #f59e0b, #d97706);
         }
 
         body {
             background: var(--bg);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0; padding: 20px;
-            display: flex; flex-direction: column; gap: 20px;
-            min-height: 100vh;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
         }
 
-        /* Хедер с деньгами */
-        .garage-header {
+        .header {
+            width: 100%; max-width: 360px;
             display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .money-badge {
-            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-            padding: 8px 16px; border-radius: 20px; font-weight: 700; font-family: monospace; font-size: 16px;
-            color: #fbbf24;
-        }
+        .wallet-box { text-align: right; }
+        .wallet-val { font-size: 18px; font-weight: 800; color: var(--success); }
 
-        /* ПРЕВЬЮ БАЙКА / СФЕРЫ */
-        .preview-stage {
-            height: 200px;
-            background: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 70%);
+        /* СТИЛЬ СКАРБОНКИ */
+        .lokata-card {
+            background: linear-gradient(160deg, #2a1b05 0%, #1e293b 100%);
+            border: 1px solid var(--gold-dim);
             border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.05);
-            display: flex; justify-content: center; align-items: center;
+            padding: 20px;
+            width: 100%; max-width: 360px;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15);
             position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
-        /* Тюнингуемая Сфера */
-        .tuning-sphere {
-            width: 120px; height: 120px;
-            border-radius: 50%;
-            background: #000;
-            /* Самое важное: тень берет цвет из переменной --accent */
-            box-shadow: 
-                inset 0 0 20px var(--accent),
-                0 0 30px var(--accent),
-                0 20px 50px rgba(0,0,0,0.8);
-            border: 2px solid var(--accent);
-            display: flex; justify-content: center; align-items: center;
-            transition: 0.3s ease;
+        /* Блеск золота */
+        .lokata-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.05) 0%, transparent 60%);
+            pointer-events: none;
         }
-        .tuning-sphere b { font-size: 20px; z-index: 2; text-shadow: 0 0 10px black; }
 
-        /* Характеристики */
-        .stats-row {
-            display: flex; gap: 10px; margin-top: -10px;
+        .lokata-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 15px; position: relative; z-index: 2;
         }
-        .stat-card {
-            flex: 1; background: var(--card-bg); padding: 10px; border-radius: 12px;
-            display: flex; flex-direction: column; gap: 5px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .stat-name { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
-        .stat-bar { height: 4px; background: rgba(0,0,0,0.5); border-radius: 2px; overflow: hidden; }
-        .stat-fill { height: 100%; background: var(--text-main); width: 10%; transition: 0.3s; }
+        .lokata-title { font-size: 16px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+        .lokata-subtitle { font-size: 10px; color: var(--text-sec); margin-top: 4px; }
+        .icon-shield { font-size: 24px; filter: drop-shadow(0 0 10px var(--gold)); }
 
-        /* СПИСОК УЛУЧШЕНИЙ */
-        .section-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 10px; }
+        .balance-box {
+            text-align: center; margin: 20px 0; position: relative; z-index: 2;
+        }
+        .balance-val { font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .balance-label { font-size: 11px; color: var(--gold); text-transform: uppercase; font-weight: 600; }
         
-        .upgrade-item {
-            background: var(--card-bg);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px;
+        .rate-badge {
+            background: rgba(34, 197, 94, 0.15); color: var(--success);
+            padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;
+            display: inline-block; margin-top: 5px; border: 1px solid rgba(34, 197, 94, 0.2);
         }
-        .upg-info h4 { margin: 0; font-size: 14px; }
-        .upg-lvl { font-size: 10px; color: var(--accent); font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
-        .upg-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
-        .btn-buy {
-            background: var(--success);
-            color: black; border: none;
-            padding: 8px 16px; border-radius: 8px;
-            font-weight: 700; font-size: 12px;
-            cursor: pointer;
-            min-width: 80px;
+        .controls { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 10px; }
+        
+        .input-group { display: flex; gap: 10px; }
+        .money-input {
+            flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: bold;
+            outline: none; text-align: center;
         }
-        .btn-buy:active { transform: scale(0.95); }
+        .money-input:focus { border-color: var(--gold); }
 
-        /* СЕЛЕКТОР ЦВЕТА */
-        .color-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .color-btn {
-            width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
-            cursor: pointer; flex-shrink: 0;
+        .btn-main {
+            background: var(--btn-grad); color: black; border: none;
+            padding: 14px; border-radius: 10px; font-weight: 800; font-size: 13px;
+            cursor: pointer; width: 100%; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            transition: transform 0.1s;
         }
-        .color-btn.active { border-color: white; transform: scale(1.1); }
+        .btn-main:active { transform: scale(0.98); }
 
+        .btn-withdraw {
+            background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px; border-radius: 10px; font-weight: 600; font-size: 12px; cursor: pointer; width: 100%;
+        }
+        .btn-withdraw:hover { background: rgba(255,255,255,0.1); }
+
+        .fee-warning { font-size: 10px; color: var(--danger); text-align: center; margin-top: 5px; opacity: 0.8; }
+        
+        .log-area {
+            width: 100%; max-width: 360px; height: 150px; overflow-y: auto;
+            background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px;
+            font-size: 11px; color: var(--text-sec); border: 1px solid rgba(255,255,255,0.05);
+        }
+        .log-item { margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px;}
+
+        /* Для теста */
+        .debug-btn { margin-top: 20px; background: #334155; color: white; border:none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="garage-header">
-        <h2 style="margin:0;">⚙️ GARAGE</h2>
-        <div class="money-badge" id="money-display">5000 PLN</div>
-    </div>
-
-    <div class="preview-stage">
-        <div class="tuning-sphere" id="sphere-preview">
-            <b>TAP</b>
+    <div class="header">
+        <div><b>Твой Кошелек</b></div>
+        <div class="wallet-box">
+            <div class="wallet-val" id="wallet">1000.00 PLN</div>
+            <div style="font-size:10px; color:#666;">На руках</div>
         </div>
     </div>
 
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-name">Скорость</div>
-            <div class="stat-bar"><div class="stat-fill" id="bar-speed" style="width: 10%"></div></div>
-            <div id="val-speed" style="font-size:10px; text-align:right;">10 km/h</div>
+    <div class="lokata-card">
+        <div class="lokata-header">
+            <div>
+                <div class="lokata-title">Warszawska Lokata</div>
+                <div class="lokata-subtitle">Оффшор в центре города</div>
+            </div>
+            <div class="icon-shield" title="Защита от налога">🛡️</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-name">Экономия</div>
-            <div class="stat-bar"><div class="stat-fill" id="bar-eco" style="width: 0%"></div></div>
-            <div id="val-eco" style="font-size:10px; text-align:right;">0%</div>
+
+        <div class="balance-box">
+            <div class="balance-label">Счет в банке</div>
+            <div class="balance-val" id="bank-val">0.00 PLN</div>
+            <div class="rate-badge">📈 +1.0% / 10 мин</div>
+        </div>
+
+        <div class="controls">
+            <div class="input-group">
+                <input type="number" id="amount-in" class="money-input" placeholder="Сумма...">
+            </div>
+            
+            <div>
+                <button class="btn-main" onclick="deposit()">📥 Внести депозит</button>
+                <div class="fee-warning">⚠️ Комиссия мэрии: 10% (Сгорает сразу!)</div>
+            </div>
+
+            <button class="btn-withdraw" onclick="withdraw()">📤 Снять все средства</button>
         </div>
     </div>
 
-    <div class="section-title">🔧 Технический Тюнинг</div>
-    
-    <div class="upgrade-item">
-        <div class="upg-info">
-            <h4>Двигатель <span class="upg-lvl" id="lvl-motor">LVL 1</span></h4>
-            <div class="upg-desc">Расход энергии -5% за уровень</div>
-        </div>
-        <button class="btn-buy" id="btn-motor" onclick="upgradePart('motor')">
-            500 PLN
-        </button>
-    </div>
+    <div class="log-area" id="logs"></div>
 
-    <div class="upgrade-item">
-        <div class="upg-info">
-            <h4>Колеса <span class="upg-lvl" id="lvl-wheels">LVL 1</span></h4>
-            <div class="upg-desc">Скорость +2 km/h за уровень</div>
-        </div>
-        <button class="btn-buy" id="btn-wheels" onclick="upgradePart('wheels')">
-            350 PLN
-        </button>
-    </div>
-
-    <div class="section-title">🎨 Неоновая подсветка (200 PLN)</div>
-    <div class="color-grid">
-        <div class="color-btn active" style="background:#3b82f6" onclick="setNeon('#3b82f6', this)"></div> <div class="color-btn" style="background:#ef4444" onclick="setNeon('#ef4444', this)"></div> <div class="color-btn" style="background:#22c55e" onclick="setNeon('#22c55e', this)"></div> <div class="color-btn" style="background:#a855f7" onclick="setNeon('#a855f7', this)"></div> <div class="color-btn" style="background:#D4FF00" onclick="setNeon('#D4FF00', this)"></div> <div class="color-btn" style="background:#f97316" onclick="setNeon('#f97316', this)"></div> </div>
+    <button class="debug-btn" onclick="simulateTime()">⏩ ТЕСТ: Прошло 10 минут (Начислить %)</button>
 
     <script>
-        // Имитация данных игрока
-        let money = 5000;
-        let upgrades = {
-            motor: { lvl: 1, basePrice: 500, stat: 0 },
-            wheels: { lvl: 1, basePrice: 350, stat: 10 }
+        // Имитация переменных игры G
+        let G = {
+            money: 1000.00,
+            bankDeposit: 0.00,
+            lastBankInterest: Date.now()
         };
 
-        function updateUI() {
-            document.getElementById('money-display').innerText = Math.floor(money) + " PLN";
+        const updateUI = () => {
+            document.getElementById('wallet').innerText = G.money.toFixed(2) + " PLN";
+            document.getElementById('bank-val').innerText = G.bankDeposit.toFixed(2) + " PLN";
+        };
 
-            // Обновляем кнопки и цены
-            updatePartUI('motor', 5); // 5% за уровень
-            updatePartUI('wheels', 2); // 2 km/h за уровень
+        const log = (msg, color='white') => {
+            const el = document.getElementById('logs');
+            const d = new Date().toLocaleTimeString().split(' ')[0];
+            el.innerHTML = `<div class="log-item" style="color:${color}">[${d}] ${msg}</div>` + el.innerHTML;
+        };
+
+        function deposit() {
+            let val = parseFloat(document.getElementById('amount-in').value);
+            if(isNaN(val) || val <= 0) return;
+
+            if (G.money >= val) {
+                let fee = val * 0.10; // 10% комиссия
+                let net = val - fee;  // Чистая сумма на счет
+                
+                G.money -= val;
+                G.bankDeposit += net;
+                
+                log(`Внесено: ${val} PLN. Комиссия: -${fee.toFixed(2)}. Зачислено: +${net.toFixed(2)}`, 'var(--gold)');
+                updateUI();
+                document.getElementById('amount-in').value = '';
+            } else {
+                log("Недостаточно денег на руках!", "var(--danger)");
+            }
         }
 
-        function updatePartUI(type, statStep) {
-            let part = upgrades[type];
-            // ФОРМУЛА РОСТА ЦЕНЫ: База * (1.5 в степени уровня)
-            let nextPrice = Math.floor(part.basePrice * Math.pow(1.5, part.lvl - 1));
+        function withdraw() {
+            if (G.bankDeposit <= 0) return;
             
-            document.getElementById('lvl-' + type).innerText = "LVL " + part.lvl;
-            document.getElementById('btn-' + type).innerText = nextPrice + " PLN";
+            let amount = G.bankDeposit;
+            G.bankDeposit = 0;
+            G.money += amount;
             
-            // Обновляем полоски статов
-            if(type === 'wheels') {
-                let val = 10 + (part.lvl - 1) * statStep;
-                document.getElementById('val-speed').innerText = val + " km/h";
-                document.getElementById('bar-speed').style.width = Math.min(100, val * 2) + "%";
-            }
-            if(type === 'motor') {
-                let val = (part.lvl - 1) * statStep;
-                document.getElementById('val-eco').innerText = val + "%";
-                document.getElementById('bar-eco').style.width = Math.min(100, val * 2) + "%";
-            }
+            log(`Снято со счета: +${amount.toFixed(2)} PLN`, 'var(--success)');
+            updateUI();
         }
 
-        function upgradePart(type) {
-            let part = upgrades[type];
-            let price = Math.floor(part.basePrice * Math.pow(1.5, part.lvl - 1));
-
-            if (money >= price) {
-                money -= price;
-                part.lvl++;
-                
-                // Вибрация для кайфа
-                if(window.navigator.vibrate) window.navigator.vibrate(50);
-                
+        function simulateTime() {
+            if (G.bankDeposit > 0) {
+                let interest = G.bankDeposit * 0.01; // 1%
+                G.bankDeposit += interest;
+                log(`📈 Начислен процент (1%): +${interest.toFixed(2)} PLN`, '#4ade80');
                 updateUI();
             } else {
-                alert("Не хватает денег! Нужно " + price);
+                log("Счет пуст, проценты не начисляются.", "#aaa");
             }
         }
-
-        function setNeon(color, el) {
-            // Эмуляция покупки цвета
-            if (money >= 200 || el.classList.contains('unlocked')) { 
-                if(!el.classList.contains('unlocked')) {
-                    if(confirm("Купить этот цвет за 200 PLN?")) {
-                        money -= 200;
-                        el.classList.add('unlocked');
-                        updateUI();
-                    } else return;
-                }
-                
-                // Меняем CSS переменную --accent
-                document.documentElement.style.setProperty('--accent', color);
-                
-                // Переключаем активный класс
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                el.classList.add('active');
-                
-                if(window.navigator.vibrate) window.navigator.vibrate(20);
-            } else {
-                alert("Нет денег на покраску!");
-            }
-        }
-        
-        // Помечаем первый цвет как купленный
-        document.querySelector('.color-btn').classList.add('unlocked');
 
         updateUI();
     </script>
