@@ -438,8 +438,17 @@ function updateUI() {
 
     const rentBikeBtn = document.getElementById('buy-bike-rent');
     if(rentBikeBtn) {
-        if(G.bikeRentTime > 0) rentBikeBtn.innerText = "В АРЕНДЕ";
-        else rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice(30).toFixed(2)) + " PLN)";
+        if(G.bikeRentTime > 0) {
+            // КНОПКА ОТМЕНЫ
+            rentBikeBtn.innerText = "ОТМЕНИТЬ (" + Math.floor(G.bikeRentTime/60) + "м)";
+            rentBikeBtn.style.background = "#ef4444"; // Красный
+            rentBikeBtn.onclick = cancelBikeRent;
+        } else {
+            // КНОПКА ПОКУПКИ
+            rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice(30).toFixed(2)) + " PLN)";
+            rentBikeBtn.style.background = ""; // Стандарт
+            rentBikeBtn.onclick = rentBike;
+        }
     }
 
     const autoPriceLabel = document.getElementById('price-auto');
@@ -1231,6 +1240,15 @@ function rentBike() {
         log("Нужно " + price + " PLN", "var(--danger)");
     }
 }
+
+function cancelBikeRent() {
+    if(confirm("Отменить аренду E-Bike? Деньги за остаток времени не вернутся.")) {
+        G.bikeRentTime = 0;
+        log("Аренда E-Bike отменена досрочно.", "var(--text-secondary)");
+        updateUI();
+        save();
+    }
+}
 // ===============================
 
 function exchangeLvl(l, m) { 
@@ -1453,4 +1471,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-
