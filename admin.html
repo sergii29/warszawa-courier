@@ -15,6 +15,7 @@
             --subtext: #8e8e93;
             --gold: #ffd60a; 
             --purple: #bf5af2;
+            --blue: #60a5fa;
             --border: #38383a;
         }
         
@@ -125,7 +126,7 @@
             background: #1c1c1e; 
             width: 100%; 
             max-width: 600px;
-            max-height: 90vh; /* Чуть выше */
+            max-height: 90vh; 
             overflow-y: auto; 
             border-radius: 20px 20px 0 0; 
             border-top: 1px solid var(--border);
@@ -169,7 +170,7 @@
         .toggle-item input { width: 20px; height: 20px; accent-color: var(--accent); }
         .toggle-item.active { border-color: var(--accent); background: rgba(10, 132, 255, 0.1); }
 
-        /* КНОПКИ ДЕЙСТВИЙ (2 КОЛОНКИ) */
+        /* КНОПКИ ДЕЙСТВИЙ */
         .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
         .btn-action-modal { padding: 15px; border-radius: 12px; font-weight: 600; border: none; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-transform: uppercase;}
         
@@ -191,7 +192,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">🚁 Admin <span style="color:var(--accent)">PRO</span></h2>
-        <div style="font-size:10px; color:var(--subtext);">v2.8 (Blind Control)</div>
+        <div style="font-size:10px; color:var(--subtext);">v2.9 (Water & Bank)</div>
     </div>
 
     <div class="stats-grid">
@@ -224,7 +225,8 @@
             </div>
             
             <div class="form-section">
-                <div class="form-title">Финансы & Банк</div>
+                <div class="form-title">Ресурсы</div>
+                
                 <div class="input-row">
                     <div style="flex:1">
                         <input type="number" id="inp-money" class="form-input" placeholder="PLN">
@@ -235,10 +237,15 @@
                         <div style="font-size:10px; color:var(--gold); margin-top:4px; text-align:center;">Депозит (Банк)</div>
                     </div>
                 </div>
+
                 <div class="input-row" style="margin-top:10px;">
                     <div style="flex:1">
                         <input type="number" id="inp-lvl" class="form-input" placeholder="LVL">
                         <div style="font-size:10px; color:#666; margin-top:4px; text-align:center;">Уровень</div>
+                    </div>
+                    <div style="flex:1">
+                        <input type="number" id="inp-water" class="form-input" placeholder="0">
+                        <div style="font-size:10px; color:var(--blue); margin-top:4px; text-align:center;">Вода (мл)</div>
                     </div>
                 </div>
             </div>
@@ -264,7 +271,6 @@
                 <button class="btn-action-modal btn-save" onclick="saveUserChanges()">💾 СОХРАНИТЬ</button>
                 <button class="btn-action-modal btn-blind" id="btn-blind" onclick="toggleBlind()">👁️ СЛЕПОТА</button>
                 <button class="btn-action-modal btn-ban" id="btn-ban" onclick="toggleBan()">⛔ ЗАБАНИТЬ</button>
-                
                 <button class="btn-action-modal btn-reset" onclick="resetUserFull()">♻️ ПОЛНЫЙ СБРОС (WIPE)</button>
             </div>
         </div>
@@ -359,7 +365,8 @@
             document.getElementById('inp-money').value = user.money;
             document.getElementById('inp-lvl').value = user.lvl;
             
-            // Загрузка депозита
+            // Загрузка ВОДЫ и ДЕПОЗИТА
+            document.getElementById('inp-water').value = user.waterStock || 0;
             let depAmount = (user.deposit && user.deposit.amount) ? user.deposit.amount : 0;
             document.getElementById('inp-bank').value = depAmount;
 
@@ -389,8 +396,6 @@
             if(!currentEditId) return;
             isCurrentBlind = !isCurrentBlind;
             updateStatusBtns();
-            
-            // Если включили -> 600 сек (10 мин), если выключили -> 0
             let timeVal = isCurrentBlind ? 600 : 0;
             db.ref('users/' + currentEditId).update({ blindTime: timeVal, lastAdminUpdate: Date.now() });
         }
@@ -423,6 +428,7 @@
             const updates = {
                 money: parseFloat(document.getElementById('inp-money').value),
                 lvl: parseFloat(document.getElementById('inp-lvl').value),
+                waterStock: parseInt(document.getElementById('inp-water').value), // СОХРАНЕНИЕ ВОДЫ
                 isBanned: isCurrentBanned, 
                 lastAdminUpdate: Date.now()
             };
@@ -483,7 +489,7 @@
                 
                 deposit: null, 
                 bankHistory: [],
-                blindTime: 0, // Сбрасываем слепоту
+                blindTime: 0,
 
                 shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
                 bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
