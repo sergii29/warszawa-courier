@@ -29,6 +29,7 @@ let G = {
     autoTime: 0, 
     district: 0, 
     bikeRentTime: 0, 
+    transportMode: 'none', // 'none', 'veturilo', 'bolt'
     buffTime: 0,
     blindTime: 0, 
     history: [], 
@@ -320,6 +321,7 @@ function load() {
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(isNaN(G.en)) G.en = 2000;
     if(isNaN(G.waterStock)) G.waterStock = 0;
+    if(!G.transportMode) G.transportMode = 'none';
     G.maxEn = 2000; 
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
@@ -374,8 +376,20 @@ function updateUI() {
     
     const bikeStatus = document.getElementById('bike-status-ui');
     if(bikeStatus) {
-        bikeStatus.style.display = G.bikeRentTime > 0 ? 'block' : 'none';
-        if(G.bikeRentTime > 0) bikeStatus.innerText = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60);
+        let rentShow = false;
+        let text = "";
+        
+        if (G.transportMode === 'veturilo') {
+            rentShow = true; text = "🚲 VETURILO";
+        } else if (G.transportMode === 'bolt') {
+            rentShow = true; text = "🛴 BOLT";
+        } else if (G.bikeRentTime > 0) {
+            rentShow = true;
+            text = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60);
+        }
+        
+        bikeStatus.style.display = rentShow ? 'block' : 'none';
+        bikeStatus.innerText = text;
     }
 
     const buffUI = document.getElementById('buff-status-ui'); 
@@ -397,6 +411,31 @@ function updateUI() {
     setBtnText('btn-buy-abibas', getDynamicPrice(50.00));
     setBtnText('btn-buy-jorban', getDynamicPrice(250.00));
     
+    // Аренда кнопок (Veturilo / Bolt / Bike)
+    const btnVeturilo = document.getElementById('btn-veturilo');
+    if(btnVeturilo) {
+        let rate = getDynamicPrice(0.50);
+        if(G.transportMode === 'veturilo') {
+            btnVeturilo.innerText = "СТОП (АКТИВНО)";
+            btnVeturilo.style.background = "#faa";
+        } else {
+            btnVeturilo.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
+            btnVeturilo.style.background = "#ddd";
+        }
+    }
+
+    const btnBolt = document.getElementById('btn-bolt');
+    if(btnBolt) {
+        let rate = getDynamicPrice(2.50);
+        if(G.transportMode === 'bolt') {
+            btnBolt.innerText = "СТОП (АКТИВНО)";
+            btnBolt.style.background = "#faa";
+        } else {
+            btnBolt.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
+            btnBolt.style.background = "var(--success)";
+        }
+    }
+
     const rentBikeBtn = document.getElementById('buy-bike-rent');
     if(rentBikeBtn) {
         if(G.bikeRentTime > 0) rentBikeBtn.innerText = "В АРЕНДЕ";
@@ -674,6 +713,9 @@ function doWork() {
         let speed = (G.bikeRentTime > 0 ? 2 : 1);
         if (order.isRiskyRoute) speed *= 2; 
         
+        // БОНУС ОТ BOLT (Скорость +30%)
+        if (G.transportMode === 'bolt') speed *= 1.3;
+
         if (G.shoes.dur <= 0) speed *= 0.7; 
 
         order.steps += speed;
@@ -723,6 +765,9 @@ function consumeResources(isOrder) {
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
     
+    // БОНУС ОТ VETURILO (Энергия -50%)
+    if (G.transportMode === 'veturilo') cost *= 0.5;
+
     let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
     cost *= rainMod; 
     if (isOrder) cost *= 1.5; 
@@ -1108,7 +1153,59 @@ function buyDrink(type, basePrice) {
     }
 }
 
+// === НОВАЯ ЛОГИКА ТРАНСПОРТА ===
+function toggleTransport(type) {
+    if (G.transportMode === type) {
+        // Выключение
+        G.transportMode = 'none';
+        log(type.toUpperCase() + " остановлен.", "var(--text-secondary)");
+        updateUI();
+        save();
+        return;
+    }
+
+    if (G.transportMode !== 'none') {
+        log("Сначала завершите текущую аренду!", "var(--danger)");
+        return;
+    }
+    
+    if (G.bikeRentTime > 0) {
+        log("Нельзя брать аренду, пока активен E-Bike!", "var(--danger)");
+        return;
+    }
+
+    // Включение
+    if (type === 'veturilo') {
+        // Старт 0 PLN, но нужна проверка баланса > 0
+        if (G.money <= 0) {
+            log("Нужен положительный баланс для старта!", "var(--danger)");
+            return;
+        }
+        G.transportMode = 'veturilo';
+        log("Veturilo активирован! (0.50 PLN/мин)", "var(--success)");
+    } 
+    else if (type === 'bolt') {
+        let startCost = getDynamicPrice(2.00);
+        if (G.money >= startCost) {
+            G.money = parseFloat((G.money - startCost).toFixed(2));
+            G.transportMode = 'bolt';
+            addHistory('🛴 BOLT START', startCost, 'minus');
+            log("Bolt активирован! (2.50 PLN/мин)", "var(--success)");
+        } else {
+            log("Не хватает на старт (" + startCost + " PLN)", "var(--danger)");
+        }
+    }
+    updateUI();
+    save();
+}
+
 function rentBike() { 
+    // Старая аренда (Предоплата)
+    if (G.transportMode !== 'none') {
+        log("Сначала завершите поминутную аренду!", "var(--danger)");
+        return;
+    }
+
     let price = getDynamicPrice(30); // Динамическая цена
     if (G.money >= price) { 
         G.money = parseFloat((G.money - price).toFixed(2)); 
@@ -1120,6 +1217,7 @@ function rentBike() {
         log("Нужно " + price + " PLN", "var(--danger)");
     }
 }
+// ===============================
 
 function exchangeLvl(l, m) { 
     if(G.lvl >= l) { 
@@ -1226,6 +1324,24 @@ setInterval(() => {
     if (G.en > G.maxEn) G.en = G.maxEn;
 
     if (G.money > 0) {
+        // === ЛОГИКА СПИСАНИЯ АРЕНДЫ (ПОСЕКУНДНО) ===
+        if (G.transportMode === 'veturilo') {
+            let costPerSec = getDynamicPrice(0.50) / 60;
+            G.money -= costPerSec;
+        } 
+        else if (G.transportMode === 'bolt') {
+            let costPerSec = getDynamicPrice(2.50) / 60;
+            G.money -= costPerSec;
+        }
+        // Если деньги кончились во время аренды
+        if (G.transportMode !== 'none' && G.money <= 0) {
+            G.transportMode = 'none';
+            G.money = 0;
+            log("Аренда завершена: Недостаточно средств!", "var(--danger)");
+            updateUI();
+        }
+        // ===========================================
+
         G.tax--; 
         if(G.tax <= 0) { 
             let cost = 0;
@@ -1292,6 +1408,10 @@ setInterval(() => {
                     }
 
                     order.steps += (G.bikeRentTime > 0 ? 3 : 2); 
+                    
+                    // УСКОРЕНИЕ БОЛТА В АВТОРЕЖИМЕ
+                    if (G.transportMode === 'bolt') order.steps += 1;
+
                     if (order.steps >= order.target) { finishOrder(true); break; } 
                 }
             }
