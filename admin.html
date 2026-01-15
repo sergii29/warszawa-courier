@@ -3,187 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier GOD MODE</title>
+    <title>Warszawa GOD MODE ⚡</title>
     <style>
         :root { 
-            --bg: #0f172a; 
-            --card-bg: #1e293b; 
-            --accent: #3b82f6; 
-            --green: #22c55e; 
-            --danger: #ef4444; 
-            --gold: #fbbf24;
-            --text: #f8fafc; 
-            --subtext: #94a3b8;
-            --border: rgba(255,255,255,0.1);
+            --bg: #000000; 
+            --card-bg: #1c1c1e; 
+            --accent: #0a84ff; 
+            --green: #30d158; 
+            --danger: #ff453a; 
+            --text: #ffffff; 
+            --subtext: #8e8e93;
+            --gold: #ffd60a; 
+            --border: #38383a;
         }
         
         body { 
-            background: var(--bg); color: var(--text); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; padding: 15px; padding-bottom: 80px;
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            padding-bottom: 50px;
         }
         
-        /* HEADER stats */
-        .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: var(--card-bg); padding: 10px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
-        .stat-num { font-size: 18px; font-weight: 800; display: block; }
-        .stat-lbl { font-size: 10px; color: var(--subtext); text-transform: uppercase; }
+        h2 { margin: 0 0 15px 0; font-size: 22px; letter-spacing: -0.5px; }
+        
+        /* СТАТИСТИКА */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
+        .stat-card { 
+            background: var(--card-bg); 
+            padding: 12px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid var(--border);
+        }
+        .stat-val { font-size: 20px; font-weight: 800; display: block; margin-bottom: 4px; }
+        .stat-label { color: var(--subtext); font-size: 10px; text-transform: uppercase; font-weight: 600; }
+        .online-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--green); }
 
-        /* LIST */
+        /* СПИСОК ИГРОКОВ (КАРТОЧКИ) */
+        .users-list { display: flex; flex-direction: column; gap: 12px; }
+        
         .user-card { 
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; 
-            padding: 15px; margin-bottom: 10px; position: relative;
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            padding: 16px; 
+            border: 1px solid var(--border);
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px;
+            position: relative;
         }
-        .user-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .user-id { font-size: 10px; color: var(--subtext); font-family: monospace; }
-        .user-name { font-weight: 700; font-size: 15px; }
         
-        .badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; }
-        .badge.online { background: rgba(34, 197, 94, 0.2); color: var(--green); }
-        .badge.offline { background: rgba(148, 163, 184, 0.2); color: var(--subtext); }
-        .badge.banned { background: var(--danger); color: white; }
-
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; }
-        .info-box { background: rgba(0,0,0,0.2); padding: 6px; border-radius: 6px; text-align: center; }
-        .info-val { font-size: 12px; font-weight: bold; }
-        .info-lbl { font-size: 9px; color: var(--subtext); }
-
-        .btn { border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 13px; margin-top: 5px;}
-        .btn-edit { background: var(--accent); color: white; }
-        .btn-save { background: var(--green); color: black; margin-top: 20px; }
-        .btn-ban { background: rgba(255,255,255,0.05); color: var(--danger); border: 1px solid var(--danger); }
-        .btn-wipe { background: transparent; color: var(--danger); border: 1px solid var(--border); font-size: 10px; margin-top: 10px;}
-
-        /* MODAL */
-        #modal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100;
-            backdrop-filter: blur(5px); justify-content: center; align-items: flex-end;
+        .user-header { display: flex; align-items: center; justify-content: space-between; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { 
+            width: 42px; height: 42px; 
+            background: #2c2c2e; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 20px; 
         }
-        #modal.active { display: flex; }
-        .modal-content { 
-            background: #1e293b; width: 100%; max-width: 500px; height: 90vh; 
-            border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; box-sizing: border-box;
+        .user-names h4 { margin: 0; font-size: 16px; font-weight: 600; }
+        .user-names div { color: var(--subtext); font-size: 12px; margin-top: 2px; }
+        
+        .user-stats { 
+            display: flex; 
+            gap: 10px; 
+            background: rgba(255,255,255,0.03); 
+            padding: 10px; 
+            border-radius: 10px; 
+        }
+        .stat-box { flex: 1; text-align: center; }
+        .stat-box small { display: block; color: var(--subtext); font-size: 10px; }
+        .stat-box b { font-size: 14px; }
+
+        .user-inventory { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-start; min-height: 20px;}
+        .inv-icon { font-size: 14px; background: #2c2c2e; padding: 4px; border-radius: 6px; }
+
+        .btn-manage { 
+            background: var(--accent); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            font-size: 14px; 
+            width: 100%; 
+            margin-top: 5px;
+            cursor: pointer;
+        }
+        .btn-manage:active { opacity: 0.7; transform: scale(0.98); }
+
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+        .badge-on { background: rgba(48, 209, 88, 0.15); color: var(--green); }
+        .badge-off { background: rgba(142, 142, 147, 0.15); color: var(--subtext); }
+        .badge-ban { background: rgba(255, 69, 58, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* MODAL BOTTOM SHEET (ШТОРКА) */
+        #editor-modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(3px); 
+            z-index: 1000; 
+            align-items: flex-end; /* Прижать к низу */
+            justify-content: center;
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        #editor-modal.show { opacity: 1; }
+        
+        .editor-content { 
+            background: #1c1c1e; 
+            width: 100%; 
+            max-width: 600px;
+            max-height: 85vh; /* Максимум 85% высоты экрана */
+            overflow-y: auto; /* ПРОКРУТКА ВНУТРИ */
+            border-radius: 20px 20px 0 0; 
             border-top: 1px solid var(--border);
+            padding: 20px; 
+            padding-bottom: 40px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        .form-group { margin-bottom: 15px; }
-        .form-label { font-size: 11px; color: var(--subtext); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-        .inp { background: #0f172a; border: 1px solid var(--border); color: white; padding: 12px; width: 100%; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .inp-row { display: flex; gap: 10px; }
+        .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .sheet-title { font-size: 18px; font-weight: 700; }
+        .close-btn { background: #3a3a3c; border: none; width: 30px; height: 30px; border-radius: 50%; color: #aaa; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .form-section { margin-bottom: 20px; }
+        .form-title { font-size: 12px; color: var(--subtext); text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
         
-        .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .toggle-item { 
-            background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid transparent;
-            display: flex; align-items: center; justify-content: space-between; font-size: 13px;
+        .input-row { display: flex; gap: 10px; }
+        .form-input { 
+            background: #2c2c2e; 
+            border: 1px solid #3a3a3c; 
+            color: white; 
+            padding: 12px; 
+            border-radius: 10px; 
+            width: 100%; 
+            font-size: 16px; 
+            box-sizing: border-box;
         }
-        .toggle-item input { width: 18px; height: 18px; accent-color: var(--accent); }
-        .toggle-item.checked { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
         
-        select.inp { appearance: none; }
+        .toggles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .toggle-item { 
+            background: #2c2c2e; 
+            padding: 12px; 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border: 1px solid transparent;
+        }
+        .toggle-item input { width: 20px; height: 20px; accent-color: var(--accent); }
+        .toggle-item.active { border-color: var(--accent); background: rgba(10, 132, 255, 0.1); }
+
+        .actions-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 20px; }
+        .btn-action-modal { padding: 15px; border-radius: 12px; font-weight: 600; border: none; font-size: 16px; cursor: pointer; }
+        .btn-save { background: var(--green); color: black; }
+        .btn-ban { background: #2c2c2e; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-ban.banned { background: var(--danger); color: white; }
+        .btn-reset { background: transparent; color: var(--danger); border: 1px solid #3a3a3c; font-size: 12px; padding: 10px;}
+
     </style>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
 
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="margin:0; color:white;">WARSZAWA <span style="color:var(--accent)">ADMIN</span></h2>
-        <div style="font-size:10px; color:var(--subtext);">v3.0 Updated</div>
-    </div>
-    
-    <div class="stats-bar" style="margin-top:15px;">
-        <div class="stat-card">
-            <span class="stat-num" style="color:var(--green)" id="s-online">0</span>
-            <span class="stat-lbl">Online</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-num" id="s-total">0</span>
-            <span class="stat-lbl">Всего</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-num" style="color:var(--gold)" id="s-rich">0</span>
-            <span class="stat-lbl">Богачей</span>
-        </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0;">🚁 Admin <span style="color:var(--accent)">PRO</span></h2>
+        <div style="font-size:10px; color:var(--subtext);">v2.5 (Bank Wipe)</div>
     </div>
 
-    <input type="text" id="search" class="inp" placeholder="🔍 Поиск по ID или Имени..." style="margin-bottom:15px; padding:10px; font-size:14px;" onkeyup="renderList()">
-
-    <div id="list">
-        <div style="text-align:center; padding:20px; color:var(--subtext);">Загрузка базы данных...</div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-val" style="color:var(--green)" id="online-count">0</span>
+            <span class="stat-label"><span class="online-dot"></span> Online</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-val" id="total-count">0</span>
+            <span class="stat-label">Игроков</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-val" style="color:var(--gold)" id="rich-count">0</span>
+            <span class="stat-label">Богачей</span>
+        </div>
     </div>
 
-    <div id="modal">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0;" id="m-title">Игрок</h3>
-                <button onclick="closeModal()" style="background:none; border:none; color:#fff; font-size:24px;">✕</button>
-            </div>
+    <div id="users-container" class="users-list">
+        <div style="text-align:center; padding: 40px; color:var(--subtext);">Загрузка спутника... 📡</div>
+    </div>
 
-            <div class="form-group">
-                <div class="form-label">Финансы & Статус</div>
-                <div class="inp-row">
-                    <div style="flex:1"><input type="number" id="inp-money" class="inp" placeholder="PLN"></div>
-                    <div style="flex:1"><input type="number" id="inp-lvl" class="inp" placeholder="LVL"></div>
+    <div id="editor-modal">
+        <div class="editor-content">
+            <div class="sheet-header">
+                <div>
+                    <div class="sheet-title" id="edit-title">Игрок</div>
+                    <div style="font-size:11px; color:var(--subtext);" id="edit-id">ID...</div>
                 </div>
-                <div class="inp-row" style="margin-top:10px;">
-                    <div style="flex:1"><input type="number" id="inp-water" class="inp" placeholder="Вода мл"></div>
-                    <div style="flex:1"><input type="number" id="inp-en" class="inp" placeholder="Энергия"></div>
-                </div>
+                <button class="close-btn" onclick="closeEditor()">✕</button>
             </div>
-
-            <div class="form-group">
-                <div class="form-label">📍 Район и Жилье</div>
-                <div class="inp-row">
-                    <select id="inp-district" class="inp" style="flex:2">
-                        <option value="0">Praga (0)</option>
-                        <option value="1">Mokotów (1)</option>
-                        <option value="2">Śródmieście (2)</option>
-                    </select>
-                    <label class="toggle-item" style="flex:1; justify-content:center;">
-                        <span style="margin-right:5px;">Владелец</span>
-                        <input type="checkbox" id="chk-owner">
-                    </label>
+            
+            <div class="form-section">
+                <div class="form-title">Финансы</div>
+                <div class="input-row">
+                    <div style="flex:1">
+                        <input type="number" id="inp-money" class="form-input" placeholder="PLN">
+                        <div style="font-size:10px; color:#666; margin-top:4px; text-align:center;">Баланс</div>
+                    </div>
+                    <div style="flex:1">
+                        <input type="number" id="inp-lvl" class="form-input" placeholder="LVL">
+                        <div style="font-size:10px; color:#666; margin-top:4px; text-align:center;">Уровень</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <div class="form-label">🎒 Экипировка (Выдать 100%)</div>
-                <div class="toggle-grid">
-                    <label class="toggle-item">🎒 Сумка <input type="checkbox" id="chk-bag"></label>
-                    <label class="toggle-item">📱 Телефон <input type="checkbox" id="chk-phone"></label>
-                    <label class="toggle-item">🛴 Самокат <input type="checkbox" id="chk-scooter"></label>
-                    <label class="toggle-item">🧢 Шлем <input type="checkbox" id="chk-helmet"></label>
-                    <label class="toggle-item">🧥 Дождевик <input type="checkbox" id="chk-raincoat"></label>
-                    <label class="toggle-item">🔋 Powerbank <input type="checkbox" id="chk-powerbank"></label>
+            <div class="form-section">
+                <div class="form-title">Инвентарь (Выдать / Забрать)</div>
+                <div class="toggles-grid">
+                    <label class="toggle-item"><span style="font-size:20px;">🎒</span> Сумка <input type="checkbox" id="chk-bag"></label>
+                    <label class="toggle-item"><span style="font-size:20px;">📱</span> Смарт <input type="checkbox" id="chk-phone"></label>
+                    <label class="toggle-item"><span style="font-size:20px;">🛴</span> Самокат <input type="checkbox" id="chk-scooter"></label>
+                    <label class="toggle-item"><span style="font-size:20px;">🧢</span> Шлем <input type="checkbox" id="chk-helmet"></label>
+                    <label class="toggle-item"><span style="font-size:20px;">🧥</span> Дождевик <input type="checkbox" id="chk-raincoat"></label>
+                    <label class="toggle-item"><span style="font-size:20px;">🔋</span> Powerbank <input type="checkbox" id="chk-powerbank"></label>
                 </div>
             </div>
 
-            <div class="form-group">
-                <div class="form-label">👟 Обувь</div>
-                <select id="inp-shoes" class="inp">
-                    <option value="Tapki">Tapki (Стандарт)</option>
-                    <option value="Bazuka">Bazuka (Новичок)</option>
-                    <option value="Abibas">Abibas Ultra</option>
-                    <option value="Jorban">Jorban Air</option>
-                </select>
+            <div class="form-section">
+                <div class="form-title">Связь</div>
+                <input type="text" id="inp-msg" class="form-input" placeholder="Отправить сообщение игроку...">
             </div>
 
-            <div class="form-group" style="margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
-                <div class="form-label">Админ действия</div>
-                <input type="text" id="inp-msg" class="inp" placeholder="Отправить сообщение игроку..." style="margin-bottom:10px;">
-                <button class="btn" style="background:#334155; color:white;" onclick="resetTransport()">🛑 ЭКСТРЕННЫЙ СБРОС ТРАНСПОРТА</button>
-                <button id="btn-ban" class="btn btn-ban" onclick="toggleBan()">⛔ ЗАБАНИТЬ ИГРОКА</button>
-                <button class="btn btn-save" onclick="saveUser()">💾 СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
-                
-                <button class="btn btn-wipe" onclick="wipeUser()">⚠️ ПОЛНЫЙ СБРОС (WIPE)</button>
+            <div class="actions-grid">
+                <button class="btn-action-modal btn-save" onclick="saveUserChanges()">💾 СОХРАНИТЬ ДАННЫЕ</button>
+                <button class="btn-action-modal btn-ban" id="btn-ban" onclick="toggleBan()">⛔ ЗАБАНИТЬ</button>
+                <button class="btn-action-modal btn-reset" onclick="resetUserFull()">♻️ ПОЛНЫЙ СБРОС (WIPE)</button>
             </div>
-
-            <div style="height:50px;"></div>
         </div>
     </div>
 
     <script>
-        // === CONFIG ===
+        // CONFIG
         const firebaseConfig = {
           apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
           authDomain: "warszawa-courier.firebaseapp.com",
@@ -197,259 +270,206 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        let usersData = {};
-        let currentId = null;
+        let allUsers = {};
+        let currentEditId = null;
         let isCurrentBanned = false;
 
-        // === LISTENER ===
-        db.ref('users').on('value', snap => {
-            usersData = snap.val() || {};
-            renderList();
+        // LOAD DATA
+        db.ref('users').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            allUsers = data;
+            renderCards();
         });
 
-        function renderList() {
-            const listEl = document.getElementById('list');
-            const search = document.getElementById('search').value.toLowerCase();
-            const now = Date.now();
+        function renderCards() {
+            const container = document.getElementById('users-container');
+            container.innerHTML = '';
             
             let online = 0, rich = 0, total = 0;
-            let html = "";
+            const now = Date.now();
+            
+            Object.entries(allUsers)
+                .sort((a,b) => (b[1].lastActive || 0) - (a[1].lastActive || 0))
+                .forEach(([id, user]) => {
+                    total++;
+                    if (user.money > 1000) rich++;
+                    const isOnline = (now - (user.lastActive || 0)) < 180000; // 3 min
+                    if (isOnline) online++;
 
-            Object.entries(usersData).sort((a,b) => (b[1].lastActive||0) - (a[1].lastActive||0)).forEach(([id, user]) => {
-                const name = (user.name || "Без имени").toLowerCase();
-                const uid = id.toLowerCase();
-                
-                // Stats
-                total++;
-                if(user.money > 1000) rich++;
-                const isOnline = (now - (user.lastActive || 0)) < 180000; // 3 min
-                if(isOnline) online++;
+                    let inv = "";
+                    if(user.bag || (user.bag && user.bag.active)) inv += "<span class='inv-icon'>🎒</span>";
+                    if(user.scooter || (user.scooter && user.scooter.active)) inv += "<span class='inv-icon'>🛴</span>";
+                    if(user.shoes && user.shoes.name !== "Tapki") inv += "<span class='inv-icon'>👟</span>";
+                    if(user.isBanned) inv = "<b style='color:var(--danger)'>⛔ ЗАБАНЕН</b>";
 
-                // Filter
-                if(search && !name.includes(search) && !uid.includes(search)) return;
-
-                // Status Badge
-                let statusBadge = isOnline ? '<span class="badge online">ONLINE</span>' : '<span class="badge offline">OFFLINE</span>';
-                if(user.isBanned) statusBadge = '<span class="badge banned">BANNED</span>';
-
-                // Icons logic
-                let icons = "";
-                if(user.housing && user.housing.id > -1 && user.housing.id == user.district) icons += "🏠 ";
-                if(user.transportMode && user.transportMode !== 'none') icons += "🛴 ";
-
-                html += `
-                <div class="user-card" onclick="openModal('${id}')">
-                    <div class="user-head">
-                        <div>
-                            <div class="user-name">${user.name || "Аноним"} ${icons}</div>
-                            <div class="user-id">${id}</div>
+                    const card = document.createElement('div');
+                    card.className = 'user-card';
+                    card.innerHTML = `
+                        <div class="user-header">
+                            <div class="user-info">
+                                <div class="user-avatar">${user.icon || '👤'}</div>
+                                <div class="user-names">
+                                    <h4>${user.name || 'Unknown'}</h4>
+                                    <div>${user.user || id}</div>
+                                </div>
+                            </div>
+                            <div>
+                                ${isOnline ? '<span class="badge badge-on">ON</span>' : '<span class="badge badge-off">OFF</span>'}
+                            </div>
                         </div>
-                        ${statusBadge}
-                    </div>
-                    <div class="info-grid">
-                        <div class="info-box"><div class="info-val" style="color:${user.money<0?'var(--danger)':'var(--green)'}">${(user.money||0).toFixed(0)}</div><div class="info-lbl">PLN</div></div>
-                        <div class="info-box"><div class="info-val" style="color:var(--gold)">${(user.lvl||1).toFixed(1)}</div><div class="info-lbl">LVL</div></div>
-                        <div class="info-box"><div class="info-val">${(user.en||0).toFixed(0)}</div><div class="info-lbl">EN</div></div>
-                        <div class="info-box"><div class="info-val">${user.district===0?'PRG':user.district===1?'MOK':'SRD'}</div><div class="info-lbl">LOC</div></div>
-                    </div>
-                    <button class="btn btn-edit">УПРАВЛЕНИЕ</button>
-                </div>`;
-            });
+                        
+                        <div class="user-stats">
+                            <div class="stat-box">
+                                <b style="color:${user.money < 0 ? 'var(--danger)' : 'var(--green)'}">${(user.money||0).toFixed(2)}</b>
+                                <small>PLN</small>
+                            </div>
+                            <div class="stat-box">
+                                <b style="color:var(--gold)">${(user.lvl||1).toFixed(2)}</b>
+                                <small>LVL</small>
+                            </div>
+                        </div>
 
-            listEl.innerHTML = html;
-            document.getElementById('s-online').innerText = online;
-            document.getElementById('s-total').innerText = total;
-            document.getElementById('s-rich').innerText = rich;
+                        <div class="user-inventory">${inv}</div>
+
+                        <button class="btn-manage" onclick="openEditor('${id}')">УПРАВЛЕНИЕ ⚙️</button>
+                    `;
+                    container.appendChild(card);
+                });
+
+            document.getElementById('online-count').innerText = online;
+            document.getElementById('total-count').innerText = total;
+            document.getElementById('rich-count').innerText = rich;
         }
 
-        // === MODAL LOGIC ===
-        function openModal(id) {
-            currentId = id;
-            const u = usersData[id];
-            if(!u) return;
-
-            document.getElementById('m-title').innerText = u.name || id;
+        function openEditor(id) {
+            currentEditId = id;
+            const user = allUsers[id];
             
-            // Economy
-            document.getElementById('inp-money').value = u.money;
-            document.getElementById('inp-lvl').value = u.lvl;
-            document.getElementById('inp-water').value = u.waterStock || 0;
-            document.getElementById('inp-en').value = u.en || 0;
-
-            // District & Housing
-            document.getElementById('inp-district').value = u.district || 0;
-            // Check owner: housing exists AND housing.id matches district AND housing.id is not -1
-            let isOwner = (u.housing && u.housing.id !== -1 && u.housing.id == u.district);
-            document.getElementById('chk-owner').checked = isOwner;
-
-            // Inventory helper
-            const check = (key) => (u[key] && (u[key] === true || u[key].active === true));
-            ['bag','phone','scooter','helmet','raincoat','powerbank'].forEach(k => {
-                const el = document.getElementById('chk-'+k);
-                el.checked = check(k);
-                updateToggle(el);
-                el.onclick = () => updateToggle(el);
-            });
-
-            // Shoes
-            document.getElementById('inp-shoes').value = (u.shoes && u.shoes.name) ? u.shoes.name : "Tapki";
-
-            // Ban Status
-            isCurrentBanned = !!u.isBanned;
-            updateBanBtn();
-
+            const modal = document.getElementById('editor-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+            
+            document.getElementById('edit-title').innerText = user.name || "Игрок";
+            document.getElementById('edit-id').innerText = id;
+            
+            document.getElementById('inp-money').value = user.money;
+            document.getElementById('inp-lvl').value = user.lvl;
             document.getElementById('inp-msg').value = "";
-            document.getElementById('modal').classList.add('active');
-        }
 
-        function updateToggle(el) {
-            if(el.checked) el.parentElement.classList.add('checked');
-            else el.parentElement.classList.remove('checked');
-        }
+            const check = (key) => {
+                let val = user[key];
+                return (val === true) || (val && val.active === true);
+            };
 
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-            currentId = null;
-        }
-
-        // === ACTIONS ===
-
-        function saveUser() {
-            if(!currentId) return;
-            
-            let updates = {};
-            updates.money = parseFloat(document.getElementById('inp-money').value);
-            updates.lvl = parseFloat(document.getElementById('inp-lvl').value);
-            updates.waterStock = parseInt(document.getElementById('inp-water').value);
-            updates.en = parseFloat(document.getElementById('inp-en').value);
-            updates.lastAdminUpdate = Date.now();
-
-            // District logic
-            let dist = parseInt(document.getElementById('inp-district').value);
-            updates.district = dist;
-            
-            // Housing logic
-            let setOwner = document.getElementById('chk-owner').checked;
-            if (setOwner) {
-                updates.housing = { id: dist };
-            } else {
-                // Если мы снимаем владение, ставим -1, НО!
-                // Если у игрока было владение в ДРУГОМ районе, мы не должны его ломать,
-                // если админ просто меняет локацию. 
-                // Но для простоты админки: галочка "Владелец" привязана к ТЕКУЩЕМУ району в селекте.
-                updates.housing = { id: -1 }; 
-            }
-
-            // Inventory
-            ['bag','phone','scooter','helmet','raincoat','powerbank'].forEach(k => {
-                if(document.getElementById('chk-'+k).checked) {
-                    // Если предмета нет или он сломан, даем новый. Если есть - оставляем как есть, чтобы не сбрасывать прочность
-                    // Но админ скорее всего хочет "выдать". Сделаем выдачу новой прочности 100
-                    updates[k] = { active: true, dur: 100 };
-                } else {
-                    updates[k] = null;
-                }
+            // Обновляем чекбоксы и подсветку
+            ['bag','phone','scooter','helmet','raincoat','powerbank'].forEach(key => {
+                const el = document.getElementById('chk-'+key);
+                el.checked = check(key);
+                // Подсветка родителя
+                el.parentElement.style.borderColor = el.checked ? 'var(--accent)' : 'transparent';
+                el.onclick = function() { this.parentElement.style.borderColor = this.checked ? 'var(--accent)' : 'transparent'; }
             });
 
-            // Shoes
-            let sName = document.getElementById('inp-shoes').value;
-            let sBonus = 0;
-            let sDur = 100;
-            if(sName === 'Abibas') sBonus = 0.05; // Примерно, логика в logic.js сама разберется
-            if(sName === 'Jorban') sBonus = 0.20;
-            // Важно: если меняем обувь, обновляем. Если та же - не трогаем прочность? 
-            // Для админки проще: выбрал - обновил на новые
-            if (usersData[currentId].shoes && usersData[currentId].shoes.name !== sName) {
-                updates.shoes = { name: sName, dur: 100, maxDur: 100, bonus: sBonus };
-            }
-
-            // Msg
-            let msg = document.getElementById('inp-msg').value.trim();
-            if(msg) updates.adminMessage = msg;
-
-            db.ref('users/'+currentId).update(updates).then(() => closeModal());
+            isCurrentBanned = !!user.isBanned;
+            updateBanBtn();
         }
 
         function toggleBan() {
-            if(!currentId) return;
+            if(!currentEditId) return;
+
+            // Переключаем статус
             isCurrentBanned = !isCurrentBanned;
-            db.ref('users/'+currentId).update({ 
-                isBanned: isCurrentBanned,
-                lastAdminUpdate: Date.now() 
-            });
             updateBanBtn();
+
+            // СРАЗУ ОТПРАВЛЯЕМ В БАЗУ
+            db.ref('users/' + currentEditId).update({
+                isBanned: isCurrentBanned,
+                lastAdminUpdate: Date.now()
+            }).then(() => {
+                console.log("Статус бана обновлен: " + isCurrentBanned);
+            });
         }
 
         function updateBanBtn() {
             const btn = document.getElementById('btn-ban');
-            if(isCurrentBanned) {
+            if (isCurrentBanned) {
                 btn.innerText = "✅ РАЗБАНИТЬ";
-                btn.style.background = "var(--green)";
-                btn.style.color = "black";
+                btn.classList.add('banned');
             } else {
-                btn.innerText = "⛔ ЗАБАНИТЬ ИГРОКА";
-                btn.style.background = "transparent";
-                btn.style.color = "var(--danger)";
+                btn.innerText = "⛔ ЗАБАНИТЬ";
+                btn.classList.remove('banned');
             }
         }
 
-        function resetTransport() {
-            if(!currentId) return;
-            if(confirm("Сбросить весь активный транспорт (Veturilo, Bolt)? Это остановит списание денег.")) {
-                db.ref('users/'+currentId).update({
-                    transportMode: 'none',
-                    bikeRentTime: 0,
-                    lastAdminUpdate: Date.now()
-                });
-                alert("Транспорт сброшен!");
-            }
-        }
+        function saveUserChanges() {
+            if(!currentEditId) return;
 
-        function wipeUser() {
-            if(!currentId) return;
-            const check = prompt("Напишите WIPE для полного обнуления игрока до старта:");
-            if(check !== 'WIPE') return;
+            const updates = {
+                money: parseFloat(document.getElementById('inp-money').value),
+                lvl: parseFloat(document.getElementById('inp-lvl').value),
+                isBanned: isCurrentBanned, 
+                lastAdminUpdate: Date.now()
+            };
 
-            const oldUser = usersData[currentId];
+            const msg = document.getElementById('inp-msg').value.trim();
+            if(msg) updates.adminMessage = msg;
             
-            // Базовый объект, копирующий start logic
-            const cleanState = {
-                name: oldUser.name,
-                user: oldUser.user || "@unknown",
+            const setItem = (key) => {
+                const isChecked = document.getElementById('chk-'+key).checked;
+                if(isChecked) {
+                    if(allUsers[currentEditId][key]) return allUsers[currentEditId][key]; 
+                    return { active: true, dur: 100 };
+                } else {
+                    return null;
+                }
+            };
+
+            updates.bag = setItem('bag');
+            updates.phone = setItem('phone');
+            updates.scooter = setItem('scooter');
+            updates.helmet = setItem('helmet');
+            updates.raincoat = setItem('raincoat');
+            updates.powerbank = setItem('powerbank');
+
+            db.ref('users/' + currentEditId).update(updates).then(() => {
+                closeEditor();
+            });
+        }
+
+        function resetUserFull() {
+            if(!currentEditId) return;
+            if(!confirm("УВЕРЕН? Это удалит ВЕСЬ прогресс игрока.")) return;
+
+            const user = allUsers[currentEditId];
+            
+            const wipeData = {
+                name: user.name,
+                user: user.user,
                 lastActive: Date.now(),
                 lastAdminUpdate: Date.now(),
-                
-                // Starter Pack Values
-                money: 60.00, // 10 base + 50 starter
+                money: 10.00,
                 lvl: 1.0,
                 en: 2000,
-                waterStock: 500, // +500 starter
-                
+                waterStock: 0,
                 totalOrders: 0,
                 totalClicks: 0,
                 totalBottles: 0,
                 totalEarned: 0,
                 
-                // Locations
-                district: 0,
-                housing: { id: -1 },
-                
-                // Timers
-                bikeRentTime: 900, // Starter bonus bike
-                transportMode: 'none',
-                autoTime: 0,
-                buffTime: 0,
-                
-                // Items
-                shoes: { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 },
-                starter_bag: { active: true, dur: 50 },
-                starter_phone: { active: true, dur: 50 },
+                // === СБРОС БАНКА (FIX) ===
+                deposit: null,
+                bankHistory: [],
+                // ========================
+
+                shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
                 bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
-                
-                // System
-                isNewPlayer: false, // Мы уже выдали старт пак
-                history: [{time: new Date().toLocaleTimeString(), msg: 'WIPE & START', val: 0, type:'plus'}],
+                starter_bag: null, starter_phone: null,
+                district: 0, autoTime: 0, bikeRentTime: 0, buffTime: 0, 
+                transportMode: 'none', 
+                blindTime: 0,
+                isNewPlayer: true,
+                history: [], usedPromos: [],
                 activeMilestones: [
                     { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
                     { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
@@ -457,10 +477,20 @@
                 ]
             };
 
-            db.ref('users/'+currentId).set(cleanState).then(() => {
-                alert("Игрок полностью обнулен и получил стартовый пакет.");
-                closeModal();
+            db.ref('users/' + currentEditId).set(wipeData).then(() => {
+                closeEditor();
             });
+        }
+
+        function closeEditor() {
+            const modal = document.getElementById('editor-modal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+            currentEditId = null;
+        }
+        
+        window.onclick = function(e) {
+            if(e.target == document.getElementById('editor-modal')) closeEditor();
         }
     </script>
 </body>
