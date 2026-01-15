@@ -29,7 +29,8 @@ let G = {
     autoTime: 0, 
     district: 0, 
     bikeRentTime: 0, 
-    transportMode: 'none', // 'none', 'veturilo', 'bolt'
+    transportMode: 'none', 
+    housing: { id: -1 }, // -1 = Бездомный
     buffTime: 0,
     blindTime: 0, 
     history: [], 
@@ -66,10 +67,11 @@ let bonusActive = false;
 let isSearching = false; 
 let spamCounter = 0;
 
+// РАЙОНЫ И ЦЕНЫ НА ЖИЛЬЕ
 const DISTRICTS = [
-    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0 },       
-    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150 }, 
-    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500 } 
+    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0, housePrice: 250000, czynszBase: 25 },       
+    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150, housePrice: 850000, czynszBase: 80 }, 
+    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500, housePrice: 3500000, czynszBase: 250 } 
 ];
 
 const UPGRADES = [
@@ -326,6 +328,7 @@ function load() {
     if(isNaN(G.en)) G.en = 2000;
     if(isNaN(G.waterStock)) G.waterStock = 0;
     if(!G.transportMode) G.transportMode = 'none';
+    if(!G.housing) G.housing = { id: -1 }; // Инициализация жилья
     G.maxEn = 2000; 
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
@@ -360,7 +363,10 @@ function updateUI() {
     }
 
     const lvlEl = document.getElementById('lvl-val');
-    if(lvlEl) lvlEl.innerText = "LVL " + G.lvl.toFixed(6);
+    if(lvlEl) {
+        let houseIcon = (G.housing && G.housing.id !== -1) ? " 🏠" : "";
+        lvlEl.innerText = "LVL " + G.lvl.toFixed(6) + houseIcon;
+    }
 
     document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
     document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
@@ -443,14 +449,12 @@ function updateUI() {
     const rentBikeBtn = document.getElementById('buy-bike-rent');
     if(rentBikeBtn) {
         if(G.bikeRentTime > 0) {
-            // КНОПКА ОТМЕНЫ
             rentBikeBtn.innerText = "ОТМЕНИТЬ (" + Math.floor(G.bikeRentTime/60) + "м)";
-            rentBikeBtn.style.background = "#ef4444"; // Красный
+            rentBikeBtn.style.background = "#ef4444"; 
             rentBikeBtn.onclick = cancelBikeRent;
         } else {
-            // КНОПКА ПОКУПКИ
             rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice(30).toFixed(2)) + " PLN)";
-            rentBikeBtn.style.background = ""; // Стандарт
+            rentBikeBtn.style.background = ""; 
             rentBikeBtn.onclick = rentBike;
         }
     }
@@ -559,12 +563,11 @@ function updateUI() {
         else document.getElementById('click-rate-ui').innerText = rate + " PLN";
     }
 
-    // ИНВЕНТАРЬ (С ЗАЩИТОЙ ОТ МЕРЦАНИЯ)
+    // ИНВЕНТАРЬ
     const myItemsList = document.getElementById('my-items-list');
     if (myItemsList) {
         let invHTML = "";
         
-        // Обувь
         let shoeStatusText = Math.floor(G.shoes.dur) + "%";
         let isShoesBroken = G.shoes.dur <= 0;
         if (isShoesBroken) shoeStatusText = "0%";
@@ -578,7 +581,6 @@ function updateUI() {
             </div>
         </div>`;
 
-        // Остальные предметы
         UPGRADES.forEach(up => {
             if(G[up.id]) {
                 const item = G[up.id];
@@ -601,13 +603,12 @@ function updateUI() {
             }
         });
         
-        // Обновляем HTML только если он изменился (убирает мерцание)
         if (myItemsList.innerHTML !== invHTML) {
             myItemsList.innerHTML = invHTML;
         }
     }
 
-    // МАГАЗИН ПРО (С ЗАЩИТОЙ ОТ МЕРЦАНИЯ)
+    // МАГАЗИН ПРО
     const shopList = document.getElementById('shop-upgrades-list'); 
     if(shopList) {
         let shopHTML = "";
@@ -621,10 +622,54 @@ function updateUI() {
                 </div>`; 
             }
         });
-        
-        // Обновляем HTML только если он изменился
         if (shopList.innerHTML !== shopHTML) {
             shopList.innerHTML = shopHTML;
+        }
+    }
+    
+    // РЕНДЕР РАЙОНОВ И ПОКУПКИ ДОМА
+    const distContainer = document.getElementById('districts-list-container');
+    if (distContainer) {
+        let distHTML = "";
+        DISTRICTS.forEach((d, i) => {
+            let isCurrent = G.district === i;
+            let isOwner = G.housing && G.housing.id === i;
+            let moveBtn = "";
+            let houseBtn = "";
+
+            // Кнопка переезда
+            if(isCurrent) {
+                moveBtn = `<button class="btn-action btn-secondary" style="margin-top:8px; opacity:0.7;">ВЫ ЗДЕСЬ</button>`;
+            } else {
+                moveBtn = `<button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(${i})">ПЕРЕЕХАТЬ ${d.price > 0 ? '('+d.price+' PLN)' : ''}</button>`;
+            }
+
+            // Кнопка покупки дома
+            if (isOwner) {
+                houseBtn = `<button class="btn-action" style="margin-top:5px; background:var(--gold); color:black; font-weight:800;">🏠 ВЫ ВЛАДЕЛЕЦ</button>`;
+            } else {
+                houseBtn = `<button class="btn-action" style="margin-top:5px; background:rgba(251, 191, 36, 0.1); color:var(--accent-gold); border:1px solid var(--accent-gold);" onclick="buyHouse(${i})">КУПИТЬ ЖИЛЬЕ (${(d.housePrice/1000).toFixed(0)}k PLN)</button>`;
+            }
+
+            distHTML += `
+            <div class="card" style="border: ${isOwner ? '1px solid var(--gold)' : 'none'};">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${d.name} ${i>0 ? `<span style="color:var(--accent-gold); font-size:10px;">(LVL ${d.minLvl}+)</span>` : ''}</b>
+                    ${isOwner ? '⭐' : ''}
+                </div>
+                <small style="color:var(--text-secondary);">
+                    ${isOwner 
+                        ? `<span style="color:var(--success)">Квартплата (Czynsz): ${getDynamicPrice(d.czynszBase)} PLN</span>` 
+                        : `Аренда: ${(d.rentPct*100).toFixed(0)}% от баланса`}
+                    <br>Доход: x${d.mult}
+                </small>
+                ${moveBtn}
+                ${houseBtn}
+            </div>`;
+        });
+        
+        if(distContainer.innerHTML !== distHTML) {
+            distContainer.innerHTML = distHTML;
         }
     }
     
@@ -649,7 +694,6 @@ function updateUI() {
     
     renderBank(); 
     renderMilestones();
-    updateDistrictButtons();
     
     const taxTimer = document.getElementById('tax-timer');
     const rentTimer = document.getElementById('rent-timer');
@@ -662,8 +706,19 @@ function updateUI() {
         taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
     }
     
-    let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
-    if(rentTimer) rentTimer.innerText = "Аренда (" + rentP + "%) через: " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
+    // ЛОГИКА ТЕКСТА АРЕНДЫ (КВАРТПЛАТА ИЛИ АРЕНДА)
+    if(rentTimer) {
+        let isOwner = G.housing && G.housing.id === G.district;
+        if (isOwner) {
+            let czynszCost = getDynamicPrice(DISTRICTS[G.district].czynszBase);
+            rentTimer.innerText = "Квартплата (" + czynszCost.toFixed(0) + " PLN): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
+            rentTimer.style.color = "var(--success)";
+        } else {
+            let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
+            rentTimer.innerText = "Аренда (" + rentP + "%): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
+            rentTimer.style.color = "var(--danger)";
+        }
+    }
 }
 
 function doWork() {
@@ -704,6 +759,9 @@ function doWork() {
     }
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
+        // Бонус к восстановлению энергии, если живешь в своем доме
+        if (G.housing && G.housing.id === G.district) eff *= 1.2;
+
         let drink = Math.min(G.waterStock, 50); 
         G.en = Math.min(G.maxEn, G.en + (drink * eff)); 
         G.waterStock -= drink; 
@@ -1253,7 +1311,29 @@ function cancelBikeRent() {
         save();
     }
 }
-// ===============================
+
+// === ПОКУПКА ЖИЛЬЯ ===
+function buyHouse(distId) {
+    if (G.housing.id === distId) return; // Уже купил
+    
+    let housePrice = DISTRICTS[distId].housePrice;
+    
+    if (G.money >= housePrice) {
+        if(confirm(`Купить квартиру в ${DISTRICTS[distId].name} за ${housePrice} PLN?`)) {
+            G.money -= housePrice;
+            G.housing.id = distId;
+            addHistory('🏠 КВАРТИРА', housePrice, 'minus');
+            log(`Поздравляем! Вы купили квартиру в ${DISTRICTS[distId].name}!`, "var(--gold)");
+            tg.HapticFeedback.notificationOccurred('success');
+            save();
+            updateUI();
+        }
+    } else {
+        log(`Не хватает денег! Нужно ${housePrice} PLN`, "var(--danger)");
+        tg.HapticFeedback.notificationOccurred('error');
+    }
+}
+// =====================
 
 function exchangeLvl(l, m) { 
     if(G.lvl >= l) { 
@@ -1304,18 +1384,7 @@ function triggerBreakdown() {
 }
 
 function updateDistrictButtons() {
-    DISTRICTS.forEach((d, i) => {
-        const btn = document.getElementById('btn-dist-' + i);
-        if(btn) {
-            if(G.district === i) {
-                btn.innerText = "ВЫ ЗДЕСЬ";
-                btn.classList.add('btn-secondary');
-            } else {
-                btn.innerText = "ПЕРЕЕХАТЬ" + (d.price > 0 ? " (" + d.price + " PLN)" : "");
-                btn.classList.remove('btn-secondary');
-            }
-        }
-    });
+    // Вся логика рендеринга теперь внутри updateUI
 }
 
 function renderBank() { 
@@ -1399,10 +1468,24 @@ setInterval(() => {
         
         G.rent--; 
         if(G.rent <= 0) { 
-            let pct = DISTRICTS[G.district].rentPct;
-            let cost = parseFloat((G.money * pct).toFixed(2));
+            // ПРОВЕРКА: ЕСЛИ ЕСТЬ ЖИЛЬЕ В ЭТОМ РАЙОНЕ -> ПЛАТИМ ТОЛЬКО КОММУНАЛКУ
+            let isOwner = G.housing && G.housing.id === G.district;
+            let cost = 0;
+
+            if (isOwner) {
+                // Фиксированная коммуналка (Czynsz)
+                let baseCzynsz = DISTRICTS[G.district].czynszBase;
+                cost = getDynamicPrice(baseCzynsz); // Растет с инфляцией
+                log("🏠 Оплачена коммуналка: -" + cost.toFixed(2) + " PLN");
+            } else {
+                // Аренда (Процент)
+                let pct = DISTRICTS[G.district].rentPct;
+                cost = parseFloat((G.money * pct).toFixed(2));
+                log("💸 Оплачена аренда: -" + cost.toFixed(2) + " PLN");
+            }
+
             G.money = parseFloat((G.money - cost).toFixed(2)); 
-            addHistory('🏠 АРЕНДА', cost, 'minus'); 
+            addHistory(isOwner ? '🏠 CZYNSZ' : '🏠 АРЕНДА', cost, 'minus'); 
             G.rent = 300; 
             save(); 
         }
@@ -1475,3 +1558,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
