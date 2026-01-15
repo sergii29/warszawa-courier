@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.8">
+    <link rel="stylesheet" href="style.css?v=5.1">
 </head>
 <body>
 
@@ -315,25 +315,74 @@
     </div>
 
     <div id="view-bank" class="view">
-        <h3 style="margin:0;">🏦 Банк</h3>
-        <div class="card">
+        <h3 style="margin:0; margin-bottom: 15px;">🏦 Варшавский Банк</h3>
+        
+        <div class="card" style="margin-bottom:10px;">
             <h4 style="margin:0 0 5px 0; font-size:12px; color:var(--accent-blue);">🎁 Секретный промокод</h4>
             <div style="display:flex; gap:5px;">
                 <input type="text" id="promo-input" class="promo-input" placeholder="Введите слово..." style="margin:0;">
                 <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
             </div>
         </div>
-        <div class="card">
-             <div id="bank-actions-ui"></div>
+
+        <div class="card" style="margin-bottom:15px;">
+             <div id="bank-actions-ui"></div> </div>
+
+        <div class="sapphire-card">
+            <div class="bank-header">
+                <span class="bank-name">Private Vault</span>
+                <span style="font-size:18px;">💎</span>
+            </div>
+
+            <div id="bank-select-ui">
+                <div class="plan-grid">
+                    <div class="plan-item active" onclick="selectBankPlan(7, 0.05, this)">
+                        <span class="plan-days">7 Дней</span>
+                        <span class="plan-rate">+5%</span>
+                    </div>
+                    <div class="plan-item" onclick="selectBankPlan(15, 0.15, this)">
+                        <span class="plan-days">15 Дней</span>
+                        <span class="plan-rate">+15%</span>
+                    </div>
+                    <div class="plan-item" onclick="selectBankPlan(30, 0.40, this)">
+                        <span class="plan-days">30 Дней</span>
+                        <span class="plan-rate">+40%</span>
+                    </div>
+                </div>
+                <div style="margin-bottom:10px; font-size:10px; color:#94a3b8; text-align:center;">
+                    Досрочное снятие: <span style="color:var(--danger)">Штраф -30% от суммы</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="bank-inp" class="promo-input" placeholder="Сумма..." style="margin:0; text-align:center; font-weight:bold;">
+                    <button class="btn-action btn-deposit" style="width:auto;" onclick="makeDeposit()">ВЛОЖИТЬ</button>
+                </div>
+            </div>
+
+            <div id="bank-active-ui" style="display:none; text-align:center;">
+                <div class="locked-info">СРЕДСТВА ЗАМОРОЖЕНЫ</div>
+                <div class="locked-amount" id="locked-val">0.00 PLN</div>
+                
+                <div class="progress-track-bank"><div class="progress-fill-bank" id="bank-prog-bar"></div></div>
+                <span class="timer-text" id="bank-timer">00d 00h 00m</span>
+
+                <button class="btn-claim" id="btn-bank-claim" style="display:none;" onclick="claimDeposit()">💰 ЗАБРАТЬ ПРИБЫЛЬ</button>
+                <button class="btn-break" id="btn-bank-break" onclick="breakDeposit()">⚠️ РАЗБИТЬ КОПИЛКУ (-30%)</button>
+            </div>
+            
+            <div class="history-box">
+                <h4 style="margin:0 0 8px 0; font-size:10px; color:var(--text-secondary); text-transform:uppercase;">Выписка по счету</h4>
+                <div id="bank-history-list" style="max-height: 120px; overflow-y: auto;"></div>
+            </div>
         </div>
-        <div class="card">
+        <div class="card" style="margin-top:15px;">
             <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
             <div style="display:flex; gap:8px;">
                  <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
                  <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
             </div>
         </div>
-        <div class="card history-list" id="history-ui" style="max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
+        
+        <div class="card history-list" id="history-ui" style="margin-top:15px; max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
     </div>
 </div>
 
@@ -350,7 +399,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=4.8" defer></script>
+<script src="logic.js?v=5.1" defer></script>
 
 </body>
 </html>
+
