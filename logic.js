@@ -546,24 +546,26 @@ function updateUI() {
         else document.getElementById('click-rate-ui').innerText = rate + " PLN";
     }
 
-    // ИНВЕНТАРЬ (С ЗАЩИТОЙ)
+    // ИНВЕНТАРЬ (С ЗАЩИТОЙ ОТ МЕРЦАНИЯ)
     const myItemsList = document.getElementById('my-items-list');
     if (myItemsList) {
-        myItemsList.innerHTML = '';
-        const shoeDiv = document.createElement('div');
-        shoeDiv.className = 'shop-item item-shoes';
+        let invHTML = "";
+        
+        // Обувь
         let shoeStatusText = Math.floor(G.shoes.dur) + "%";
         let isShoesBroken = G.shoes.dur <= 0;
-        if (isShoesBroken) {
-            shoeDiv.classList.add('item-broken');
-            shoeStatusText = "0%";
-        }
-        shoeDiv.innerHTML = `<div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div>`;
-        if(isShoesBroken) {
-            shoeDiv.onclick = function() { switchTab('shop', document.querySelectorAll('.tab-item')[2]); };
-        }
-        myItemsList.appendChild(shoeDiv);
+        if (isShoesBroken) shoeStatusText = "0%";
+        
+        invHTML += `<div class="shop-item item-shoes ${isShoesBroken ? 'item-broken' : ''}" ${isShoesBroken ? 'onclick="switchTab(\'shop\', document.querySelectorAll(\'.tab-item\')[2])"' : ''}>
+            <div class="shop-icon">👟</div>
+            <div style="flex:1;">
+                <div class="shop-title">${G.shoes.name}</div>
+                <div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div>
+                <div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div>
+            </div>
+        </div>`;
 
+        // Остальные предметы
         UPGRADES.forEach(up => {
             if(G[up.id]) {
                 const item = G[up.id];
@@ -571,34 +573,46 @@ function updateUI() {
                 let conf = UPGRADES.find(u => u.id === up.id);
                 let max = conf ? conf.maxDur : 100;
                 const pct = Math.floor((item.dur / max) * 100);
-                
-                // ДИНАМИЧЕСКАЯ ЦЕНА РЕМОНТА
                 let repairCost = getDynamicPrice(up.repairPrice);
                 
-                const div = document.createElement('div'); 
-                div.className = 'shop-item';
-                if(isBroken) div.classList.add('item-broken');
-                div.innerHTML = `<div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairCost})">🛠️ ${hiddenPrice || repairCost}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}', ${getDynamicPrice(up.price) * 0.5})">💸 ${hiddenPrice || (getDynamicPrice(up.price) * 0.5).toFixed(2)}</button></div>`;
-                myItemsList.appendChild(div);
+                invHTML += `<div class="shop-item ${isBroken ? 'item-broken' : ''}">
+                    <div class="shop-icon">${up.icon}</div>
+                    <div class="shop-title">${up.name}</div>
+                    <div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div>
+                    <div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div>
+                    <div class="inv-action-row">
+                        <button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairCost})">🛠️ ${hiddenPrice || repairCost}</button>
+                        <button class="inv-btn-sell" onclick="sellInvest('${up.id}', ${getDynamicPrice(up.price) * 0.5})">💸 ${hiddenPrice || (getDynamicPrice(up.price) * 0.5).toFixed(2)}</button>
+                    </div>
+                </div>`;
             }
         });
+        
+        // Обновляем HTML только если он изменился (убирает мерцание)
+        if (myItemsList.innerHTML !== invHTML) {
+            myItemsList.innerHTML = invHTML;
+        }
     }
 
+    // МАГАЗИН ПРО (С ЗАЩИТОЙ ОТ МЕРЦАНИЯ)
     const shopList = document.getElementById('shop-upgrades-list'); 
     if(shopList) {
-        shopList.innerHTML = ''; 
+        let shopHTML = "";
         UPGRADES.forEach(up => { 
             if(!G[up.id] && !up.hidden) { 
-                // ДИНАМИЧЕСКАЯ ЦЕНА ПОКУПКИ
                 let curPrice = getDynamicPrice(up.price);
-                
-                const div = document.createElement('div'); 
-                div.className = 'card'; 
-                div.style.marginBottom = '8px'; 
-                div.innerHTML = "<b>" + up.icon + " " + up.name + "</b><br><small style='color:#aaa;'>" + up.desc + "</small><br><button class='btn-action' style='margin-top:8px;' onclick=\"buyInvest('" + up.id + "', " + curPrice + ")\">КУПИТЬ (" + (hiddenPrice || curPrice) + " PLN)</button>"; 
-                shopList.appendChild(div); 
+                shopHTML += `<div class="card" style="margin-bottom: 8px;">
+                    <b>${up.icon} ${up.name}</b><br>
+                    <small style="color:#aaa;">${up.desc}</small><br>
+                    <button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', ${curPrice})">КУПИТЬ (${hiddenPrice || curPrice} PLN)</button>
+                </div>`; 
             }
         });
+        
+        // Обновляем HTML только если он изменился
+        if (shopList.innerHTML !== shopHTML) {
+            shopList.innerHTML = shopHTML;
+        }
     }
     
     const qBar = document.getElementById('quest-bar'); 
@@ -1439,3 +1453,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
