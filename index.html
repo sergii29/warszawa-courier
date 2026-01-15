@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.1">
+    <link rel="stylesheet" href="style.css?v=4.5">
 </head>
 <body>
 
@@ -56,7 +56,7 @@
         <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilot()">
             <div class="route-icon">🤖</div>
             <div id="lbl-auto-container">
-                <div id="lbl-auto-route"><b>Автопилот</b></div>
+                <div id="lbl-auto-route"><b>Автопилот (45 PLN)</b></div>
                 <div id="desc-auto-route"><small style="color:var(--accent-gold)">Робот сделает всё сам</small></div>
             </div>
         </div>
@@ -74,12 +74,13 @@
 
         <div class="card" style="border: 1px solid var(--accent-blue); background: rgba(59, 130, 246, 0.05); margin-bottom:15px;">
             <b>🚲 Аренда Электровелосипеда</b><br>
-            <small>Скорость x2. Цена зависит от LVL.</small>
-            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
+            <small>Скорость x2. 30 PLN за 10 минут.</small>
+            <button id="buy-bike-rent" class="btn-action" style="margin-top:8px;" onclick="rentBike()">АРЕНДОВАТЬ (30 PLN)</button>
         </div>
         
         <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
-        <div id="shop-upgrades-list"></div>
+        <div id="shop-upgrades-list">
+            </div>
 
         <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
     </div>
@@ -149,7 +150,9 @@
             </div>
             
             <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
-                </div>
+                <button class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ (15 PLN)</button>
+                <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
+            </div>
         </div>
 
         <div class="bottom-controls">
@@ -164,11 +167,19 @@
     </div>
 
     <div id="view-districts" class="view">
-        <h3 style="margin:0; margin-bottom: 10px; color:var(--text-primary)">🗺️ Карта Варшавы</h3>
-        <p style="font-size:11px; color:var(--text-secondary); margin-bottom:15px;">
-            Переезжай в престижные районы, чтобы получать больше за заказы и ловить уникальные бонусы.
-        </p>
-        <div id="districts-list-container"></div>
+        <h3 style="margin:0; color:var(--text-primary)">🗺️ Районы</h3>
+        <div class="card">
+            <b>Praga</b> <small>Аренда: 5% от баланса. Старт.</small>
+            <button id="btn-dist-0" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(0)">ПЕРЕЕХАТЬ</button>
+        </div>
+        <div class="card">
+            <b>Mokotów <span style="color:var(--accent-gold); font-size:10px;">(LVL 2.5+)</span></b> <small>Аренда: 10% от баланса. Доход: +50%.</small>
+            <button id="btn-dist-1" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(1)">ПЕРЕЕХАТЬ (150 PLN)</button>
+        </div>
+        <div class="card">
+            <b>Śródmieście <span style="color:var(--accent-gold); font-size:10px;">(LVL 5.0+)</span></b> <small>Аренда: 15% от баланса. Доход: +55%.</small>
+            <button id="btn-dist-2" class="btn-action" style="margin-top:8px;" onclick="moveDistrict(2)">ПЕРЕЕХАТЬ (500 PLN)</button>
+        </div>
     </div>
 
     <div id="view-quests" class="view">
@@ -219,14 +230,14 @@
             <div class="shop-item item-food">
                 <div class="shop-icon">💧</div>
                 <div class="shop-title">Вода (1.5л)</div>
-                <div class="shop-desc">Восстанавливает силы.<br><b>+1500 мл</b></div>
-                <button id="btn-water" class="btn-price" onclick="buyWater()">1.50 PLN</button>
+                <div class="shop-desc">Восстанавливает силы при кликах.<br><b>+1500 мл</b></div>
+                <button class="btn-price" onclick="buyWater()">1.50 PLN</button>
             </div>
             <div class="shop-item item-food">
                 <div class="shop-icon">☕</div>
                 <div class="shop-title">Эспрессо</div>
-                <div class="shop-desc">Заряд бодрости.<br><b>+300 Energy</b></div>
-                <button id="btn-coffee" class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
+                <div class="shop-desc">Мгновенный заряд бодрости.<br><b>+300 Energy</b></div>
+                <button class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
             </div>
             <div class="shop-item item-energy" style="grid-column: span 2;">
                 <div style="display:flex; align-items:center; width:100%; gap:15px;">
@@ -238,7 +249,7 @@
                             <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
                         </div>
                     </div>
-                    <button id="btn-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00 PLN</button>
+                    <button class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
                 </div>
             </div>
         </div>
@@ -250,10 +261,10 @@
                 <div class="shop-title">Abibas Ultra</div>
                 <div class="shop-desc" style="margin-bottom:5px;">Классика района.</div>
                 <div style="background:rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
-                    Прочность: <b>100</b>
+                    Прочность: <b>5000 шагов</b>
                 </div>
             </div>
-            <button id="btn-abibas" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas')">50 PLN</button>
+            <button class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas', 50, 100)">50 PLN</button>
         </div>
         <div class="shop-item item-shoes" style="border-color: var(--gold);">
             <div class="shop-icon">🔥</div>
@@ -264,7 +275,7 @@
                     Бонус: <b>+20% к чаевым</b>
                 </div>
             </div>
-            <button id="btn-jorban" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban')">250 PLN</button>
+            <button class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban', 250, 150)">250 PLN</button>
         </div>
         
         <div style="height: 20px;"></div>
@@ -312,8 +323,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=5.1" defer></script>
+<script src="logic.js?v=4.5" defer></script>
 
 </body>
 </html>
-
