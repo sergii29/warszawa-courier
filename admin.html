@@ -182,6 +182,19 @@
         .btn-blind.active { background: var(--purple); color: white; border: 1px solid var(--purple); box-shadow: 0 0 15px rgba(191, 90, 242, 0.4); }
 
         .btn-reset { background: transparent; color: var(--danger); border: 1px solid #3a3a3c; font-size: 10px; padding: 10px; grid-column: span 2; margin-top: 10px;}
+        
+        /* ЛОГИ */
+        .logs-container {
+            background: #000;
+            border-radius: 10px;
+            padding: 10px;
+            height: 120px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .log-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #222; padding-bottom: 2px;}
 
     </style>
     
@@ -192,7 +205,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">🚁 Admin <span style="color:var(--accent)">PRO</span></h2>
-        <div style="font-size:10px; color:var(--subtext);">v2.9 (Water & Bank)</div>
+        <div style="font-size:10px; color:var(--subtext);">v3.0 (Logs + Water)</div>
     </div>
 
     <div class="stats-grid">
@@ -226,7 +239,6 @@
             
             <div class="form-section">
                 <div class="form-title">Ресурсы</div>
-                
                 <div class="input-row">
                     <div style="flex:1">
                         <input type="number" id="inp-money" class="form-input" placeholder="PLN">
@@ -237,7 +249,6 @@
                         <div style="font-size:10px; color:var(--gold); margin-top:4px; text-align:center;">Депозит (Банк)</div>
                     </div>
                 </div>
-
                 <div class="input-row" style="margin-top:10px;">
                     <div style="flex:1">
                         <input type="number" id="inp-lvl" class="form-input" placeholder="LVL">
@@ -247,6 +258,13 @@
                         <input type="number" id="inp-water" class="form-input" placeholder="0">
                         <div style="font-size:10px; color:var(--blue); margin-top:4px; text-align:center;">Вода (мл)</div>
                     </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-title">📋 Журнал последних действий</div>
+                <div class="logs-container" id="history-logs-container">
+                    <div style="text-align:center; padding-top:20px; color:#555;">Загрузка...</div>
                 </div>
             </div>
 
@@ -365,7 +383,6 @@
             document.getElementById('inp-money').value = user.money;
             document.getElementById('inp-lvl').value = user.lvl;
             
-            // Загрузка ВОДЫ и ДЕПОЗИТА
             document.getElementById('inp-water').value = user.waterStock || 0;
             let depAmount = (user.deposit && user.deposit.amount) ? user.deposit.amount : 0;
             document.getElementById('inp-bank').value = depAmount;
@@ -383,6 +400,24 @@
             isCurrentBanned = !!user.isBanned;
             isCurrentBlind = (user.blindTime && user.blindTime > 0);
             updateStatusBtns();
+
+            // === РЕНДЕР ЛОГОВ (ИСТОРИИ) ===
+            const hCont = document.getElementById('history-logs-container');
+            if (user.history && user.history.length > 0) {
+                hCont.innerHTML = user.history.map(h => {
+                    let color = h.type === 'plus' ? 'var(--green)' : 'var(--danger)';
+                    let sign = h.type === 'plus' ? '+' : '';
+                    if(h.type === 'minus') sign = '';
+                    let valDisplay = h.val ? (sign + h.val) : '';
+                    
+                    return `<div class="log-row">
+                        <span style="color:#888;">[${h.time}] ${h.msg}</span>
+                        <b style="color:${color}">${valDisplay}</b>
+                    </div>`;
+                }).join('');
+            } else {
+                hCont.innerHTML = '<div style="text-align:center; padding-top:20px; color:#555;">История пуста</div>';
+            }
         }
 
         function toggleBan() {
@@ -401,7 +436,6 @@
         }
 
         function updateStatusBtns() {
-            // BAN BTN
             const btnBan = document.getElementById('btn-ban');
             if (isCurrentBanned) {
                 btnBan.innerText = "✅ РАЗБАНИТЬ";
@@ -411,7 +445,6 @@
                 btnBan.classList.remove('banned');
             }
 
-            // BLIND BTN
             const btnBlind = document.getElementById('btn-blind');
             if (isCurrentBlind) {
                 btnBlind.innerText = "👁️ ОТКРЫТЬ";
@@ -428,12 +461,11 @@
             const updates = {
                 money: parseFloat(document.getElementById('inp-money').value),
                 lvl: parseFloat(document.getElementById('inp-lvl').value),
-                waterStock: parseInt(document.getElementById('inp-water').value), // СОХРАНЕНИЕ ВОДЫ
+                waterStock: parseInt(document.getElementById('inp-water').value),
                 isBanned: isCurrentBanned, 
                 lastAdminUpdate: Date.now()
             };
 
-            // Логика депозита
             let newBank = parseFloat(document.getElementById('inp-bank').value);
             if (!newBank || newBank <= 0) {
                 updates.deposit = null; 
