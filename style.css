@@ -344,3 +344,47 @@ h3 { font-size: 16px; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.
 .inv-dur-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 5px; margin-bottom: 10px; }
 .inv-dur-fill { height: 100%; background: var(--success); width: 100%; }
 
+/* === WARSZAWA ROYAL BANK (Sapphire) === */
+.sapphire-card {
+    background: linear-gradient(160deg, #1e3a8a 0%, #0f172a 100%);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+}
+.sapphire-card::before {
+    content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+.bank-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.bank-name { font-size: 11px; letter-spacing: 2px; color: #93c5fd; text-transform: uppercase; font-weight: 700; }
+
+/* План вклада */
+.plan-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+.plan-item {
+    background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 10px 4px; text-align: center; cursor: pointer; transition: 0.2s;
+}
+.plan-item.active { background: rgba(59, 130, 246, 0.2); border-color: #60a5fa; transform: scale(1.05); }
+.plan-days { font-size: 13px; font-weight: bold; color: #fff; display: block; }
+.plan-rate { font-size: 10px; color: var(--accent-gold); }
+
+/* Активный депозит */
+.locked-amount { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 5px; text-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+.locked-info { font-size: 10px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; }
+.progress-track-bank { width: 100%; height: 6px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; margin: 15px 0; }
+.progress-fill-bank { height: 100%; background: var(--accent-gold); width: 0%; transition: width 1s linear; }
+.timer-text { font-family: monospace; font-size: 14px; color: var(--accent-gold); margin-bottom: 10px; display: block; }
+
+/* Кнопки банка */
+.btn-deposit { background: linear-gradient(135deg, #d4af37, #b45309); color: #000; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2); font-weight: 800; border: none; }
+.btn-break { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: 100%; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+.btn-claim { background: var(--success); color: #000; width: 100%; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; animation: pulse 1s infinite; border: none; }
+
+/* История */
+.history-box { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
+.h-row { display: flex; justify-content: space-between; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px; margin-bottom: 4px; font-size: 11px; }
