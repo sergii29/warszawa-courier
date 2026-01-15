@@ -184,7 +184,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">🚁 Admin <span style="color:var(--accent)">PRO</span></h2>
-        <div style="font-size:10px; color:var(--subtext);">v2.4 (Fix: Full Wipe)</div>
+        <div style="font-size:10px; color:var(--subtext);">v2.5 (Fix: Housing Wipe)</div>
     </div>
 
     <div class="stats-grid">
@@ -459,7 +459,9 @@
                 shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
                 bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
                 starter_bag: null, starter_phone: null,
-                district: 0, autoTime: 0, bikeRentTime: 0, buffTime: 0, 
+                district: 0, 
+                housing: { id: -1 }, /* !!! ФИКС: СБРОС ЖИЛЬЯ !!! */
+                autoTime: 0, bikeRentTime: 0, buffTime: 0, 
                 transportMode: 'none', // !!! ЯВНЫЙ СБРОС АРЕНДЫ !!!
                 blindTime: 0,
                 isNewPlayer: true,
@@ -489,4 +491,3 @@
     </script>
 </body>
 </html>
-
