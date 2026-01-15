@@ -30,7 +30,7 @@ let G = {
     district: 0, 
     bikeRentTime: 0, 
     transportMode: 'none', 
-    housing: { id: -1 }, // -1 = Бездомный
+    housing: { id: -1 }, 
     buffTime: 0,
     blindTime: 0, 
     history: [], 
@@ -47,8 +47,8 @@ let G = {
     helmet: null,
     raincoat: null,
     powerbank: null,
-    deposit: null, // ДЛЯ БАНКА
-    bankHistory: [], // ИСТОРИЯ БАНКА
+    deposit: null, 
+    bankHistory: [], 
     dailyQuests: [],
     lastDailyUpdate: 0,
     activeMilestones: [
@@ -69,7 +69,6 @@ let bonusActive = false;
 let isSearching = false; 
 let spamCounter = 0;
 
-// РАЙОНЫ И ЦЕНЫ НА ЖИЛЬЕ
 const DISTRICTS = [
     { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0, housePrice: 250000, czynszBase: 25 },       
     { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150, housePrice: 850000, czynszBase: 80 }, 
@@ -87,15 +86,12 @@ const UPGRADES = [
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', price: 400, bonus: '🤖 +50% времени', maxDur: 100, repairPrice: 80 }
 ];
 
-// === ДИНАМИЧЕСКАЯ ЦЕНА ===
 function getDynamicPrice(basePrice) {
     if (basePrice === 0) return 0;
-    // Инфляция: цена растет на 40% за каждый LVL выше 1
     let inflationFactor = 0.40;
     let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * inflationFactor;
     return parseFloat((basePrice * multiplier).toFixed(2));
 }
-// =========================
 
 function addHistory(msg, val, type = 'plus') {
     const time = new Date().toLocaleTimeString().split(' ')[0];
@@ -186,16 +182,12 @@ function claimStarterPack() {
     document.getElementById('starter-modal').style.display = 'none';
     G.money += 50;
     G.waterStock += 500;
-    
     G.transportMode = 'none'; 
     G.bikeRentTime += 900; 
-    
     G.isNewPlayer = false;
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
-    
     G.starter_bag = { active: true, dur: 50 }; 
     G.starter_phone = { active: true, dur: 50 };
-
     addHistory('🎁 STARTER KIT', 50, 'plus');
     log("Вы получили набор новичка!", "var(--success)");
     save();
@@ -284,8 +276,11 @@ function listenToCloud() {
             }
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 let wasNew = G.isNewPlayer;
-                const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone'];
-                invKeys.forEach(key => { if (!remote[key]) G[key] = null; });
+                // !!! ИСПРАВЛЕНИЕ: Добавлен 'deposit' в список удаления !!!
+                const checkKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone', 'deposit'];
+                checkKeys.forEach(key => { if (!remote[key]) G[key] = null; });
+                if(!remote.bankHistory) G.bankHistory = []; // Очистка истории банка
+
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
                 if (G.isNewPlayer && !wasNew) { location.reload(); return; }
@@ -334,7 +329,6 @@ function load() {
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
     
-    // ИНИЦИАЛИЗАЦИЯ БАНКА
     if (!G.deposit) G.deposit = null;
     if (!G.bankHistory) G.bankHistory = [];
 
@@ -413,7 +407,6 @@ function updateUI() {
         if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
     }
     
-    // === ОБНОВЛЕНИЕ ЦЕННИКОВ ===
     const hiddenPrice = isBlind ? "???" : null;
     const setBtnText = (id, price) => {
         const btn = document.getElementById(id);
@@ -426,7 +419,6 @@ function updateUI() {
     setBtnText('btn-buy-abibas', getDynamicPrice(50.00));
     setBtnText('btn-buy-jorban', getDynamicPrice(250.00));
     
-    // Аренда кнопок (Veturilo / Bolt / Bike)
     const btnVeturilo = document.getElementById('btn-veturilo');
     if(btnVeturilo) {
         let rate = getDynamicPrice(0.50);
@@ -469,7 +461,6 @@ function updateUI() {
 
     const repairBtn = document.getElementById('btn-repair-express');
     if(repairBtn) repairBtn.innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice(15).toFixed(2)) + " PLN)";
-    // ===========================
 
     let shoeNameDisplay = G.shoes.name;
     let shoeBar = document.getElementById('shoe-bar');
@@ -514,7 +505,6 @@ function updateUI() {
         }
     }
 
-    // КВЕСТЫ
     let questsHTML = "";
     if(G.dailyQuests) {
         G.dailyQuests.forEach(q => {
@@ -568,7 +558,6 @@ function updateUI() {
         else document.getElementById('click-rate-ui').innerText = rate + " PLN";
     }
 
-    // ИНВЕНТАРЬ
     const myItemsList = document.getElementById('my-items-list');
     if (myItemsList) {
         let invHTML = "";
@@ -613,7 +602,6 @@ function updateUI() {
         }
     }
 
-    // МАГАЗИН ПРО
     const shopList = document.getElementById('shop-upgrades-list'); 
     if(shopList) {
         let shopHTML = "";
@@ -632,7 +620,6 @@ function updateUI() {
         }
     }
     
-    // РЕНДЕР РАЙОНОВ И ПОКУПКИ ДОМА
     const distContainer = document.getElementById('districts-list-container');
     if (distContainer) {
         let distHTML = "";
@@ -642,14 +629,12 @@ function updateUI() {
             let moveBtn = "";
             let houseBtn = "";
 
-            // Кнопка переезда
             if(isCurrent) {
                 moveBtn = `<button class="btn-action btn-secondary" style="margin-top:8px; opacity:0.7;">ВЫ ЗДЕСЬ</button>`;
             } else {
                 moveBtn = `<button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(${i})">ПЕРЕЕХАТЬ ${d.price > 0 ? '('+d.price+' PLN)' : ''}</button>`;
             }
 
-            // Кнопка покупки дома
             if (isOwner) {
                 houseBtn = `<button class="btn-action" style="margin-top:5px; background:var(--gold); color:black; font-weight:800;">🏠 ВЫ ВЛАДЕЛЕЦ</button>`;
             } else {
@@ -698,7 +683,7 @@ function updateUI() {
     document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + (isBlind ? '?' : h.val) + "</b></div>").join('');
     
     renderBank(); 
-    renderBankFull(); // НОВОЕ: РЕНДЕР СЕЙФА
+    renderBankFull(); 
     renderMilestones();
     
     const taxTimer = document.getElementById('tax-timer');
@@ -712,7 +697,6 @@ function updateUI() {
         taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
     }
     
-    // ЛОГИКА ТЕКСТА АРЕНДЫ (КВАРТПЛАТА ИЛИ АРЕНДА)
     if(rentTimer) {
         let isOwner = G.housing && G.housing.id === G.district;
         if (isOwner) {
@@ -765,7 +749,6 @@ function doWork() {
     }
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
-        // Бонус к восстановлению энергии, если живешь в своем доме
         if (G.housing && G.housing.id === G.district) eff *= 1.2;
 
         let drink = Math.min(G.waterStock, 50); 
@@ -803,10 +786,7 @@ function doWork() {
         consumeResources(true); 
         let speed = (G.bikeRentTime > 0 ? 2 : 1);
         if (order.isRiskyRoute) speed *= 2; 
-        
-        // БОНУС ОТ BOLT (Скорость +30%)
         if (G.transportMode === 'bolt') speed *= 1.3;
-
         if (G.shoes.dur <= 0) speed *= 0.7; 
 
         order.steps += speed;
@@ -855,8 +835,6 @@ function consumeResources(isOrder) {
 
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
-    
-    // БОНУС ОТ VETURILO (Энергия -50%)
     if (G.transportMode === 'veturilo') cost *= 0.5;
 
     let rainMod = (weather === "Дождь" && !G.raincoat) ? 1.2 : 1;
@@ -939,7 +917,7 @@ function chooseRoute(type) {
 
 function activateAutopilot() { 
     closeRouteModal();
-    let price = getDynamicPrice(45); // Динамическая цена
+    let price = getDynamicPrice(45); 
     if(G.money >= price && G.lvl >= 0.15) { 
         G.money = parseFloat((G.money - price).toFixed(2)); 
         G.lvl -= 0.15; 
@@ -966,7 +944,7 @@ function buyShoes(name, basePrice, durability) {
         return;
     }
 
-    let price = getDynamicPrice(basePrice); // Динамическая цена
+    let price = getDynamicPrice(basePrice); 
 
     if (G.money >= price) {
         G.money -= price;
@@ -984,7 +962,7 @@ function buyShoes(name, basePrice, durability) {
 }
 
 function buyInvest(type, basePrice) { 
-    let price = getDynamicPrice(basePrice); // Динамическая цена
+    let price = getDynamicPrice(basePrice); 
     if(!G[type] && G.money >= price) { 
         G.money = parseFloat((G.money - price).toFixed(2)); 
         let maxDur = 100;
@@ -1022,11 +1000,11 @@ function repairItem(type, baseCost) {
         return;
     }
 
-    let cost = getDynamicPrice(baseCost); // Динамическая цена ремонта
+    let cost = getDynamicPrice(baseCost);
 
     if (G.money >= cost) {
         G.money = parseFloat((G.money - cost).toFixed(2));
-        G.type.dur = max;
+        G[type].dur = max;
         addHistory('🛠️ РЕМОНТ', cost, 'minus');
         log("Предмет отремонтирован!", "var(--success)");
         save();
@@ -1057,7 +1035,7 @@ function getWelfare() {
 }
 
 function repairBikeInstant() {
-    let cost = getDynamicPrice(15); // Динамическая цена
+    let cost = getDynamicPrice(15); 
     if (G.money >= cost) {
         G.money = parseFloat((G.money - cost).toFixed(2));
         isBroken = false;
@@ -1244,10 +1222,8 @@ function buyDrink(type, basePrice) {
     }
 }
 
-// === НОВАЯ ЛОГИКА ТРАНСПОРТА ===
 function toggleTransport(type) {
     if (G.transportMode === type) {
-        // Выключение
         G.transportMode = 'none';
         log(type.toUpperCase() + " остановлен.", "var(--text-secondary)");
         updateUI();
@@ -1265,9 +1241,7 @@ function toggleTransport(type) {
         return;
     }
 
-    // Включение
     if (type === 'veturilo') {
-        // Старт 0 PLN, но нужна проверка баланса > 0
         if (G.money <= 0) {
             log("Нужен положительный баланс для старта!", "var(--danger)");
             return;
@@ -1291,13 +1265,12 @@ function toggleTransport(type) {
 }
 
 function rentBike() { 
-    // Старая аренда (Предоплата)
     if (G.transportMode !== 'none') {
         log("Сначала завершите поминутную аренду!", "var(--danger)");
         return;
     }
 
-    let price = getDynamicPrice(30); // Динамическая цена
+    let price = getDynamicPrice(30); 
     if (G.money >= price) { 
         G.money = parseFloat((G.money - price).toFixed(2)); 
         addHistory('🚲 ВЕЛИК', price, 'minus'); 
@@ -1318,9 +1291,8 @@ function cancelBikeRent() {
     }
 }
 
-// === ПОКУПКА ЖИЛЬЯ ===
 function buyHouse(distId) {
-    if (G.housing.id === distId) return; // Уже купил
+    if (G.housing.id === distId) return; 
     
     let housePrice = DISTRICTS[distId].housePrice;
     
@@ -1339,7 +1311,6 @@ function buyHouse(distId) {
         tg.HapticFeedback.notificationOccurred('error');
     }
 }
-// =====================
 
 function exchangeLvl(l, m) { 
     if(G.lvl >= l) { 
@@ -1415,7 +1386,6 @@ function renderBank() {
     ui.innerHTML = creditHTML + buyLvlHTML;
 }
 
-// === ЛОГИКА КОРОЛЕВСКОГО БАНКА ===
 let selectedBankPlan = { days: 7, rate: 0.05 };
 
 function selectBankPlan(days, rate, el) {
@@ -1434,7 +1404,6 @@ function makeDeposit() {
 
     G.money = parseFloat((G.money - val).toFixed(2));
     
-    // ВРЕМЯ: Для реализма используем настоящие часы
     let durationMs = selectedBankPlan.days * 86400000; 
 
     G.deposit = {
@@ -1443,7 +1412,7 @@ function makeDeposit() {
         end: Date.now() + durationMs,
         rate: selectedBankPlan.rate,
         profit: val * selectedBankPlan.rate,
-        penalty: val * 0.30 // 30% штраф
+        penalty: val * 0.30 
     };
 
     addBankLog("Вклад " + selectedBankPlan.days + "дн", val, "minus");
@@ -1496,7 +1465,6 @@ function addBankLog(msg, val, type) {
 }
 
 function renderBankFull() {
-    // 1. Рендерим статус (Выбор или Таймер)
     const selUI = document.getElementById('bank-select-ui');
     const actUI = document.getElementById('bank-active-ui');
     
@@ -1513,7 +1481,6 @@ function renderBankFull() {
         let totalDur = G.deposit.end - G.deposit.start;
         
         if (left <= 0) {
-            // ВРЕМЯ ВЫШЛО
             document.getElementById('bank-timer').innerText = "СРОК ИСТЕК! ПРИБЫЛЬ ГОТОВА";
             document.getElementById('bank-timer').style.color = "var(--success)";
             document.getElementById('bank-prog-bar').style.width = "100%";
@@ -1522,12 +1489,10 @@ function renderBankFull() {
             document.getElementById('btn-bank-claim').style.display = 'block';
             document.getElementById('btn-bank-break').style.display = 'none';
         } else {
-            // ТАЙМЕР ИДЕТ
             let pct = 100 - (left / totalDur * 100);
             document.getElementById('bank-prog-bar').style.width = pct + "%";
             document.getElementById('bank-prog-bar').style.background = "var(--accent-gold)";
             
-            // Форматирование времени
             let days = Math.floor(left / (1000 * 60 * 60 * 24));
             let hours = Math.floor((left % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             let mins = Math.floor((left % (1000 * 60 * 60)) / (1000 * 60));
@@ -1543,7 +1508,6 @@ function renderBankFull() {
         actUI.style.display = 'none';
     }
 
-    // 2. Рендерим историю
     const hList = document.getElementById('bank-history-list');
     if(hList && G.bankHistory) {
         hList.innerHTML = G.bankHistory.map(h => {
@@ -1574,7 +1538,6 @@ setInterval(() => {
     if (G.en > G.maxEn) G.en = G.maxEn;
 
     if (G.money > 0) {
-        // === ЛОГИКА СПИСАНИЯ АРЕНДЫ (ПОСЕКУНДНО) ===
         if (G.transportMode === 'veturilo') {
             let costPerSec = getDynamicPrice(0.50) / 60;
             G.money -= costPerSec;
@@ -1583,14 +1546,12 @@ setInterval(() => {
             let costPerSec = getDynamicPrice(2.50) / 60;
             G.money -= costPerSec;
         }
-        // Если деньги кончились во время аренды
         if (G.transportMode !== 'none' && G.money <= 0) {
             G.transportMode = 'none';
             G.money = 0;
             log("Аренда завершена: Недостаточно средств!", "var(--danger)");
             updateUI();
         }
-        // ===========================================
 
         G.tax--; 
         if(G.tax <= 0) { 
@@ -1613,17 +1574,14 @@ setInterval(() => {
         
         G.rent--; 
         if(G.rent <= 0) { 
-            // ПРОВЕРКА: ЕСЛИ ЕСТЬ ЖИЛЬЕ В ЭТОМ РАЙОНЕ -> ПЛАТИМ ТОЛЬКО КОММУНАЛКУ
             let isOwner = G.housing && G.housing.id === G.district;
             let cost = 0;
 
             if (isOwner) {
-                // Фиксированная коммуналка (Czynsz)
                 let baseCzynsz = DISTRICTS[G.district].czynszBase;
-                cost = getDynamicPrice(baseCzynsz); // Растет с инфляцией
+                cost = getDynamicPrice(baseCzynsz); 
                 log("🏠 Оплачена коммуналка: -" + cost.toFixed(2) + " PLN");
             } else {
-                // Аренда (Процент)
                 let pct = DISTRICTS[G.district].rentPct;
                 cost = parseFloat((G.money * pct).toFixed(2));
                 log("💸 Оплачена аренда: -" + cost.toFixed(2) + " PLN");
@@ -1673,7 +1631,6 @@ setInterval(() => {
 
                     order.steps += (G.bikeRentTime > 0 ? 3 : 2); 
                     
-                    // УСКОРЕНИЕ БОЛТА В АВТОРЕЖИМЕ
                     if (G.transportMode === 'bolt') order.steps += 1;
 
                     if (order.steps >= order.target) { finishOrder(true); break; } 
