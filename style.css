@@ -145,7 +145,7 @@ body.rain-mode { background: radial-gradient(circle at top center, #1e293b, #000
 
 /* === КАРТОЧКИ И КНОПКИ === */
 .card { 
-    background: var(--card-bg); 
+    background: var(--bg-card); 
     backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border); 
     border-radius: 16px; 
