@@ -3,181 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Bank Designs</title>
+    <title>Warszawa Vault</title>
     <style>
-        :root {
-            --bg: #050505;
-            --text: #ffffff;
-        }
+        :root { --bg: #050505; --text: #fff; --gold: #cca568; }
         body {
-            background: var(--bg);
-            color: var(--text);
+            background: var(--bg); color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            padding: 20px;
-            display: flex; flex-direction: column; align-items: center; gap: 30px;
-        }
-        h2 { font-weight: 200; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; color: #666; font-size: 12px; }
-
-        /* === ВАРИАНТ 1: PLATINUM GLASS (Стекло) === */
-        .card-platinum {
-            width: 100%; max-width: 340px;
-            height: 200px;
-            border-radius: 24px;
-            padding: 24px;
-            box-sizing: border-box;
-            position: relative;
-            overflow: hidden;
-            
-            /* Эффект стекла */
-            background: rgba(255, 255, 255, 0.07);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-        /* Блик сверху */
-        .card-platinum::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
-            pointer-events: none;
-        }
-        .plat-title { font-size: 14px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; }
-        .plat-balance { font-size: 36px; font-weight: 200; margin: 15px 0; color: #fff; letter-spacing: -1px; }
-        .plat-badge { 
-            background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 30px; 
-            font-size: 11px; display: inline-flex; align-items: center; gap: 6px;
-            border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px;
         }
 
-        /* === ВАРИАНТ 2: CYBER VAULT (Неон) === */
-        .card-cyber {
-            width: 100%; max-width: 340px;
-            height: 200px;
-            border-radius: 20px;
-            padding: 2px; /* Для градиентной рамки */
-            background: linear-gradient(90deg, #00f260, #0575E6, #00f260);
-            background-size: 200% 200%;
-            animation: gradientBorder 3s linear infinite;
-            box-shadow: 0 0 20px rgba(5, 117, 230, 0.4);
-            position: relative;
-        }
-        @keyframes gradientBorder { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
-        
-        .cyber-inner {
-            background: #0f172a; width: 100%; height: 100%; border-radius: 18px;
-            padding: 22px; box-sizing: border-box;
-            background-image: radial-gradient(#1e293b 1px, transparent 1px);
-            background-size: 20px 20px; /* Сетка точек */
-        }
-        .cyber-title { color: #00f260; font-family: monospace; font-size: 14px; text-shadow: 0 0 5px rgba(0,242,96,0.5); }
-        .cyber-balance { font-family: monospace; font-size: 32px; margin: 20px 0; color: white; letter-spacing: -1px;}
-        .cyber-btn {
-            background: rgba(5, 117, 230, 0.2); color: #60a5fa; border: 1px solid #60a5fa;
-            padding: 8px 15px; font-family: monospace; font-size: 12px; cursor: pointer; width: 100%;
-        }
-
-        /* === ВАРИАНТ 3: ROYAL BLACK (Золотой перелив) === */
-        .card-royal {
-            width: 100%; max-width: 340px;
-            height: 200px;
-            border-radius: 24px;
-            padding: 24px;
-            box-sizing: border-box;
-            /* Глубокий черный градиент */
-            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+        /* КАРТА-СЕЙФ */
+        .card-vault {
+            width: 100%; max-width: 360px;
+            background: linear-gradient(145deg, #1a1a1a, #000);
             border: 1px solid #333;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+            border-radius: 24px; padding: 25px; box-sizing: border-box;
+            position: relative; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
         }
-        /* Анимация золотого блеска (Shimmer) */
-        .card-royal::after {
-            content: "";
-            position: absolute;
-            top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(251, 191, 36, 0.2), transparent);
-            transform: skewX(-25deg);
-            animation: shine 4s infinite;
-        }
-        @keyframes shine { 
-            0% { left: -100%; } 
-            20% { left: 200%; } 
-            100% { left: 200%; } 
-        }
-
-        .royal-header { display: flex; justify-content: space-between; align-items: center; }
-        .royal-icon { font-size: 24px; background: linear-gradient(to bottom, #fcd34d, #b45309); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .royal-title { font-size: 12px; color: #888; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
         
-        .royal-balance { 
-            font-size: 38px; font-weight: 700; margin-top: 25px; margin-bottom: 5px;
-            /* Золотой текст */
-            background: linear-gradient(to right, #fef3c7, #f59e0b, #fef3c7);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-size: 200%; animation: textShine 5s infinite alternate;
-        }
-        .royal-sub { font-size: 11px; color: #555; }
-
-        @keyframes textShine { from {background-position: 0%;} to {background-position: 100%;} }
-
-        /* Actions */
-        .action-row { display: flex; gap: 10px; margin-top: auto; }
-        .btn-royal {
-            flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 12px; font-weight: bold; cursor: pointer;
-            background: linear-gradient(to bottom, #333, #111); color: #cca568; border: 1px solid #444;
+        /* Металлический блеск */
+        .card-vault::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, #555, transparent);
         }
 
+        .vault-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .vault-title { font-size: 12px; letter-spacing: 3px; color: #666; text-transform: uppercase; font-weight: 700; }
+        .icon-lock { font-size: 20px; color: var(--gold); text-shadow: 0 0 10px rgba(204, 165, 104, 0.4); }
+
+        .vault-balance { 
+            font-size: 42px; font-weight: 600; color: #fff; letter-spacing: -1px; margin-bottom: 5px;
+            background: linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .vault-status { font-size: 11px; color: var(--gold); display: flex; align-items: center; gap: 6px; }
+        .dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 8px var(--gold); }
+
+        .controls { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        .btn-action {
+            background: #111; border: 1px solid #333; color: #888;
+            padding: 15px; border-radius: 14px; font-size: 12px; font-weight: bold; cursor: pointer;
+            transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .btn-action span { font-size: 18px; }
+        .btn-action:active { transform: scale(0.96); background: #222; }
+        
+        .btn-deposit { border-color: #333; color: #fff; background: linear-gradient(180deg, #222, #111); }
+        .btn-withdraw { border-color: #333; }
+
+        .info-panel {
+            margin-top: 20px; font-size: 10px; color: #444; text-align: center; line-height: 1.6;
+            border-top: 1px solid #111; padding-top: 15px;
+        }
+        .highlight { color: #777; }
+
+        /* ИНПУТ */
+        .amount-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .inp-dark { 
+            background: #0a0a0a; border: 1px solid #333; color: var(--gold); 
+            padding: 15px; border-radius: 12px; width: 100%; text-align: center; font-size: 18px; font-weight: bold; outline: none;
+        }
     </style>
 </head>
 <body>
 
-    <div style="text-align:center;">
-        <h2>Variant 1: Platinum Glass</h2>
-        <div class="card-platinum">
-            <div class="plat-title">Warszawa Reserve</div>
-            <div class="plat-balance">1,250.00 PLN</div>
-            <div class="plat-badge">
-                <span style="color:#4ade80">●</span> Active · 1.5% APY
-            </div>
-            <div style="position: absolute; bottom: 24px; left: 24px; font-size: 10px; color: rgba(255,255,255,0.4);">
-                SECURED BY CITY HALL
-            </div>
+    <div style="width:100%; max-width:360px; display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#666;">
+        <span>НАЛИЧНЫЕ: <b style="color:#fff" id="money">5000.00</b> PLN</span>
+        <span>НАЛОГ: <b style="color:#ef4444">-15%</b></span>
+    </div>
+
+    <div class="card-vault">
+        <div class="vault-header">
+            <span class="vault-title">Shadow Vault</span>
+            <span class="icon-lock">🔒</span>
+        </div>
+
+        <div class="vault-balance" id="bank">0.00</div>
+        <div class="vault-status">
+            <div class="dot"></div>
+            ЗАЩИЩЕНО ОТ НАЛОГОВОЙ
+        </div>
+
+        <div style="margin-top: 25px;">
+            <input type="number" id="inp" class="inp-dark" placeholder="Сумма...">
+        </div>
+
+        <div class="controls">
+            <button class="btn-action btn-deposit" onclick="deposit()">
+                <span>📥</span>
+                СПРЯТАТЬ (-5%)
+            </button>
+            <button class="btn-action btn-withdraw" onclick="withdraw()">
+                <span>📤</span>
+                ДОСТАТЬ
+            </button>
+        </div>
+
+        <div class="info-panel">
+            Деньги в сейфе <span class="highlight">не облагаются налогом</span> города.<br>
+            Комиссия за отмывание средств: <span style="color:var(--gold)">5%</span>.<br>
+            Процентная ставка: <span class="highlight">0%</span>.
         </div>
     </div>
 
-    <div style="text-align:center;">
-        <h2>Variant 2: Cyber Vault</h2>
-        <div class="card-cyber">
-            <div class="cyber-inner">
-                <div style="display:flex; justify-content:space-between;">
-                    <span class="cyber-title">>_ LOKATA.EXE</span>
-                    <span style="color:#00f260; font-size:10px;">ONLINE</span>
-                </div>
-                <div class="cyber-balance">5,000.00</div>
-                <div style="display:flex; gap:10px;">
-                    <button class="cyber-btn" style="background:#00f260; color:black; border:none; font-weight:bold;">DEPOSIT</button>
-                    <button class="cyber-btn">WITHDRAW</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script>
+        let money = 5000;
+        let bank = 0;
 
-    <div style="text-align:center;">
-        <h2>Variant 3: Royal Black</h2>
-        <div class="card-royal">
-            <div class="royal-header">
-                <span class="royal-title">Elite Banking</span>
-                <span class="royal-icon">♛</span>
-            </div>
-            <div class="royal-balance">24,500 PLN</div>
-            <div class="royal-sub">Warszawa Gold Member • Tax Free</div>
-            
-            <div style="position: absolute; bottom: 20px; width: calc(100% - 48px); display:flex; gap:10px;">
-                <button class="btn-royal">DEPOSIT</button>
-                <button class="btn-royal" style="color:#666;">Unlock</button>
-            </div>
-        </div>
-    </div>
+        function update() {
+            document.getElementById('money').innerText = money.toFixed(2);
+            document.getElementById('bank').innerText = bank.toFixed(2);
+        }
+
+        function deposit() {
+            let val = parseFloat(document.getElementById('inp').value);
+            if(val > 0 && money >= val) {
+                let fee = val * 0.05; // 5% комиссия
+                money -= val;
+                bank += (val - fee);
+                update();
+                document.getElementById('inp').value = "";
+                // Вибрация (для телефона)
+                if(navigator.vibrate) navigator.vibrate(20);
+            } else {
+                alert("Не хватает денег!");
+            }
+        }
+
+        function withdraw() {
+            if(bank > 0) {
+                money += bank;
+                bank = 0;
+                update();
+                if(navigator.vibrate) navigator.vibrate(20);
+            }
+        }
+        update();
+    </script>
 
 </body>
 </html>
