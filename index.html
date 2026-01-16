@@ -3,1381 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Courier Simulator</title>
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-color: #e2e8f0;
-            --accent-color: #3b82f6;
-            --success-color: #22c55e;
-            --warning-color: #eab308;
-            --danger-color: #ef4444;
-            --neon-glow: 0 0 10px rgba(59, 130, 246, 0.5);
-        }
-
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* --- Header --- */
-        header {
-            background-color: var(--card-bg);
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-            z-index: 10;
-        }
-
-        .logo {
-            font-size: 1.2rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-controls {
-            display: flex;
-            gap: 15px;
-        }
-
-        /* --- Main Stats Area --- */
-        .stats-container {
-            padding: 15px;
-            background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg-color) 100%);
-        }
-
-        .balance-block {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 10px;
-        }
-
-        .balance-amount {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--success-color);
-            text-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
-        }
-        
-        /* Скрытый баланс (для 10-минутного бонуса) */
-        .balance-hidden {
-            filter: blur(8px);
-            pointer-events: none;
-        }
-
-        .level-info {
-            text-align: right;
-            font-size: 0.9rem;
-            color: #94a3b8;
-        }
-
-        /* Progress Bars */
-        .bars-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .bar-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.8rem;
-        }
-
-        .progress-bg {
-            flex-grow: 1;
-            height: 8px;
-            background-color: #334155;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-
-        .energy-fill { background-color: var(--warning-color); box-shadow: 0 0 10px var(--warning-color); }
-        .water-fill { background-color: #0ea5e9; box-shadow: 0 0 10px #0ea5e9; }
-        .lvl-fill { background-color: #a855f7; }
-
-        .stat-icon { width: 20px; text-align: center; }
-
-        /* Status Text (Rent/Tax) */
-        .status-tickers {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75rem;
-            margin-top: 8px;
-            color: #64748b;
-        }
-
-        /* --- Game Area (Scrollable) --- */
-        #game-area {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 15px;
-            padding-bottom: 80px; /* Space for nav */
-        }
-
-        /* Sections */
-        .section {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .section.active { display: block; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #334155;
-        }
-
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--accent-color);
-        }
-
-        /* Buttons */
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.95rem;
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .btn-primary { background-color: var(--accent-color); color: white; box-shadow: var(--neon-glow); }
-        .btn-success { background-color: var(--success-color); color: #000; }
-        .btn-outline { background-color: transparent; border: 1px solid #475569; color: #94a3b8; }
-        .btn-danger { background-color: var(--danger-color); color: white; }
-
-        /* Clicker Zone */
-        .click-zone {
-            height: 200px;
-            background: radial-gradient(circle at center, #334155 0%, var(--card-bg) 70%);
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 15px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            border: 2px dashed #475569;
-        }
-        
-        .click-zone:active {
-            border-color: var(--accent-color);
-            background: radial-gradient(circle at center, #475569 0%, var(--card-bg) 70%);
-        }
-
-        .click-icon { font-size: 4rem; margin-bottom: 10px; transition: transform 0.1s; }
-        .click-zone:active .click-icon { transform: scale(0.9); }
-
-        /* Floating Text */
-        .floating-text {
-            position: absolute;
-            font-weight: bold;
-            font-size: 1.2rem;
-            pointer-events: none;
-            animation: floatUp 1s forwards;
-            color: var(--success-color);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
-        }
-
-        /* Courier Mode Toggle */
-        .mode-toggle {
-            display: flex;
-            background: #0f172a;
-            padding: 4px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        .mode-btn {
-            flex: 1;
-            padding: 8px;
-            text-align: center;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            color: #64748b;
-        }
-        .mode-btn.active {
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        /* Locations List */
-        .location-card {
-            background: #1e293b;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #334155;
-            position: relative;
-        }
-        .location-card.current {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
-        }
-        .location-card.locked { opacity: 0.6; filter: grayscale(0.8); }
-
-        .loc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .loc-name { font-weight: bold; font-size: 1.1rem; }
-        .loc-star { color: var(--warning-color); }
-        .loc-stats { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4; }
-        .loc-badge { 
-            position: absolute; top: -8px; right: -8px; 
-            background: var(--success-color); color: black; 
-            font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;
-        }
-
-        /* Upgrades & Inventory */
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #334155;
-        }
-        .item-row:last-child { border-bottom: none; }
-        .item-info h4 { margin: 0 0 4px 0; font-size: 0.95rem; }
-        .item-desc { font-size: 0.8rem; color: #94a3b8; }
-        .item-btn { padding: 6px 12px; font-size: 0.85rem; width: auto; }
-
-        /* --- Navigation --- */
-        nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: var(--card-bg);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            border-top: 1px solid #334155;
-            z-index: 20;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 0.75rem;
-            color: #64748b;
-            cursor: pointer;
-            gap: 4px;
-            width: 20%;
-        }
-
-        .nav-item.active { color: var(--accent-color); }
-        .nav-icon { font-size: 1.2rem; }
-
-        /* Bank Styles */
-        .bank-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid #475569;
-        }
-        .deposit-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-        .bank-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 100;
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            width: 85%;
-            max-width: 320px;
-            text-align: center;
-            border: 1px solid var(--accent-color);
-        }
-        .modal h3 { margin-top: 0; }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--card-bg);
-            border: 1px solid var(--accent-color);
-            padding: 10px 20px;
-            border-radius: 20px;
-            z-index: 99;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            white-space: nowrap;
-        }
-        .notification.show { opacity: 1; }
-
-    </style>
+    <title>Warszawa Courier Simulator</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css?v=5.1">
 </head>
 <body>
 
-    <header>
-        <div class="logo">🚴 Courier Sim</div>
-        <div class="header-controls">
-            <span id="time-display">12:00</span>
-        </div>
-    </header>
+<div id="bonus-overlay">
+    <button id="bonus-btn" onclick="claimBonus()">🎁 +50 PLN</button>
+</div>
 
-    <div class="stats-container">
-        <div class="balance-block">
+<div id="starter-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="font-size: 40px; margin-bottom: 10px;">👋</div>
+        <h3 style="margin-top:0; color:white;">Добро пожаловать!</h3>
+        <p style="color:var(--text-secondary); font-size:12px; margin-bottom:20px;">
+            Варшава не прощает ошибок. Но мы своих не бросаем.<br>
+            Держи <b>"Набор Выживальщика"</b> от профсоюза:
+        </p>
+        <div class="card" style="margin-bottom:15px; text-align:left;">
+            <div>💵 <b>+50.00 PLN</b> <small>На еду и штрафы</small></div>
+            <div style="margin-top:5px;">💧 <b>+500 мл</b> <small>Вода</small></div>
+            <div style="margin-top:5px;">🚲 <b>Велосипед</b> <small>Аренда на 15 мин</small></div>
+            <div style="margin-top:5px;">👟 <b>Шлепки "Bazuka"</b> <small>Временная обувь</small></div>
+            <div style="margin-top:5px;">🎒 <b>Пакет с логотипом</b> <small>Слабый, но свой</small></div>
+        </div>
+        <button class="btn-action" style="background:var(--success)" onclick="claimStarterPack()">ЗАБРАТЬ И НАЧАТЬ</button>
+    </div>
+</div>
+
+<div id="route-modal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 style="margin-top:0; color:white; margin-bottom: 5px;">📍 Выбор маршрута</h3>
+        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:15px;">Как поедем к клиенту?</p>
+        
+        <div class="route-option" onclick="chooseRoute('safe')">
+            <div class="route-icon">🐢</div>
             <div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Баланс</div>
-                <div class="balance-amount" id="balance">0.00 PLN</div>
-            </div>
-            <div class="level-info">
-                LVL <span id="lvl-display">1.0</span> <span id="home-icon">⛺</span>
+                <b>Спокойный путь</b><br>
+                <small style="color:var(--success)">100% оплата • Нет рисков</small>
             </div>
         </div>
 
-        <div class="bars-container">
-            <div class="bar-wrapper">
-                <span class="stat-icon">⭐</span>
-                <div class="progress-bg">
-                    <div class="progress-fill lvl-fill" id="lvl-bar" style="width: 0%"></div>
-                </div>
-            </div>
-            <div class="bar-wrapper">
-                <span class="stat-icon">⚡</span>
-                <div class="progress-bg">
-                    <div class="progress-fill energy-fill" id="energy-bar" style="width: 100%"></div>
-                </div>
-                <span id="energy-text">2000/2000</span>
-            </div>
-            <div class="bar-wrapper">
-                <span class="stat-icon">💧</span>
-                <div class="progress-bg">
-                    <div class="progress-fill water-fill" id="water-bar" style="width: 100%"></div>
-                </div>
-                <span id="water-text">100%</span>
+        <div class="route-option" onclick="chooseRoute('risky')">
+            <div class="route-icon">😈</div>
+            <div>
+                <b>Срезать дворами (-50% времени)</b><br>
+                <small style="color:var(--danger)">Риск аварии 30% или двойные чаевые</small>
             </div>
         </div>
 
-        <div class="status-tickers">
-            <span id="tax-timer">Налог (FREE): --:--</span>
-            <span id="rent-timer">Квартплата (0 PLN): --:--</span>
+        <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilot()">
+            <div class="route-icon">🤖</div>
+            <div id="lbl-auto-container">
+                <div id="lbl-auto-route"><b>Автопилот</b> <span id="price-auto"></span></div>
+                <div id="desc-auto-route"><small style="color:var(--accent-gold)">Робот сделает всё сам</small></div>
+            </div>
+        </div>
+
+        <button class="btn-action btn-secondary" style="padding:8px;" onclick="closeRouteModal()">ОТМЕНА</button>
+    </div>
+</div>
+
+<div id="pro-shop-modal" class="modal-overlay" style="z-index: 3500;">
+    <div class="modal-card" style="max-height: 80vh; overflow-y: auto; text-align: left; width: 90%; max-width: 360px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; color:white;">⚙️ Проф. Экипировка</h3>
+            <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        
+        <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
+        <div id="shop-upgrades-list">
+            </div>
+
+        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
+    </div>
+</div>
+
+<div id="quest-bar">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+            <b id="quest-title" style="color:var(--accent-blue); font-size: 13px;">📦 НОВЫЙ ЗАКАЗ</b><br>
+            <small style="color:var(--text-secondary)">Предложение:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
+        </div>
+        <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
+    </div>
+    
+    <div id="quest-actions-choice" style="margin-top:10px;">
+        <button class="btn-action" style="background:var(--accent-blue);" onclick="openRouteModal()">🗺️ ВЫБРАТЬ МАРШРУТ</button>
+    </div>
+
+    <div id="quest-active-ui" style="display:none; margin-top:10px;">
+        <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
+        <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
+    </div>
+</div>
+
+<div class="header-container">
+    <div class="top-nav">
+        <div>
+            <small style="color:var(--text-secondary); font-size:10px;">Баланс</small><br>
+            <b id="money-val" class="money-display">0.00 PLN</b>
+            <div id="shoes-status-ui">👟 <span id="shoe-name">...</span> <div class="durability-bar"><div id="shoe-bar" class="durability-fill"></div></div></div>
+        </div>
+        <div class="right-panel">
+            <b id="lvl-val" class="lvl-display">LVL 1.0</b>
+            <div id="inventory-display"></div>
+            <div style="display:flex; gap:3px;">
+                <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
+                <div id="auto-status-ui" class="status-badge">🤖 00:00</div>
+                <div id="buff-status-ui" class="status-badge">⚡ 00:00</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-row" style="margin-top:5px;">
+        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-gold)">⚡</span> <b id="en-text" style="color:var(--text-primary)">0/2000</b></span>
+        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-blue)">💧</span> <b id="water-val" style="color:var(--text-primary)">0</b> мл</span>
+    </div>
+    <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
+    
+    <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
+        <span id="tax-timer">Налог (FREE) через: 05:00</span>
+        <span id="rent-timer" style="color:var(--danger)">Аренда (%): 05:00</span>
+    </div>
+</div>
+
+<div class="content">
+    
+    <div id="view-main" class="view active">
+        <div style="text-align: center; margin-top: 5px;">
+            <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 ...</span>
+        </div>
+
+        <div class="sphere-container">
+            <div id="work-sphere">
+                <b id="sphere-text">РАБОТАТЬ</b>
+                <div id="repair-progress"></div>
+                <div id="click-rate-ui" style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: 500; position:relative; z-index:2;">0.10 PLN</div>
+            </div>
+            
+            <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
+                <button id="btn-repair-express" class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ</button>
+                <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
+            </div>
+        </div>
+
+        <div class="bottom-controls">
+            <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК (+0.05)</button>
+            <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
+        </div>
+
+        <div class="city-info-group">
+            <div class="city-label">WARSAW</div>
+            <div id="weather-ui">☀️ Ясно</div>
         </div>
     </div>
 
-    <div id="notification" class="notification">Сообщение</div>
-
-    <div id="game-area">
+    <div id="view-districts" class="view">
+        <h3 style="margin:0; color:var(--text-primary)">🗺️ Недвижимость & Районы</h3>
+        <p style="font-size:10px; color:var(--text-secondary); margin-bottom:15px;">Переезжай в районы подороже, чтобы зарабатывать больше. Купи квартиру, чтобы не платить грабительскую аренду!</p>
         
-        <div id="section-city" class="section active">
-            <div class="mode-toggle">
-                <div class="mode-btn active" onclick="setWorkMode('manual')">Ручной</div>
-                <div class="mode-btn" onclick="setWorkMode('auto')">Авто-заказы</div>
-            </div>
+        <div id="districts-list-container"></div>
+    </div>
 
-            <div id="manual-mode">
-                <div class="click-zone" id="click-zone">
-                    <div class="click-icon">📦</div>
-                    <div style="color: #94a3b8;">Нажми, чтобы доставить</div>
+    <div id="view-quests" class="view">
+        <div class="card rank-card">
+            <div style="font-size:40px; margin-bottom:5px;" id="rank-icon">😎</div>
+            <h2 style="margin:0; font-size:18px; color:white; text-shadow:0 0 10px var(--accent-blue);" id="rank-name">Новичок</h2>
+            <small style="color:var(--text-secondary); display:block; margin-top:5px;" id="rank-next">До следующего ранга: ...</small>
+            
+            <div class="energy-track" style="margin-top:10px; background:rgba(0,0,0,0.5);">
+                <div id="rank-progress" class="energy-fill" style="width:0%; background: linear-gradient(90deg, var(--accent-gold), #fff7ed);"></div>
+            </div>
+            <div style="font-size:10px; color:var(--accent-gold); margin-top:5px; font-weight:bold;" id="rank-bonus">Бонус ранга: 0%</div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0; display:flex; justify-content:space-between; align-items:center;">
+            📅 Ежедневные задания 
+            <small id="daily-timer" style="font-weight:normal; opacity:0.7; font-size:10px;">Обновление через...</small>
+        </h4>
+        <div id="daily-quests-list"></div>
+
+        <h4 style="margin:15px 0 5px 0;">📊 Статистика</h4>
+        <div class="card">
+            <div class="stat-row"><span>📦 Всего заказов</span> <b id="stat-orders">0</b></div>
+            <div class="stat-row"><span>⚡ Всего кликов</span> <b id="stat-clicks">0</b></div>
+            <div class="stat-row"><span>♻️ Сдано бутылок</span> <b id="stat-bottles">0</b></div>
+            <div class="stat-row"><span>💵 Заработано всего</span> <b id="stat-earned" style="color:var(--success)">0.00 PLN</b></div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0;">🏆 Достижения</h4>
+        <div id="milestones-list"></div>
+    </div>
+
+    <div id="view-shop" class="view">
+        <h3 style="margin:0; margin-bottom: 15px;">🏪 Маркет</h3>
+        
+        <div class="section-title" style="margin-top:0;">🛵 Городская Мобильность (Аренда)</div>
+        <div class="shop-grid">
+            <div class="shop-item" style="border-top: 2px solid #ccc;">
+                <div class="shop-icon">🚲</div>
+                <div class="shop-title">Veturilo Electric</div>
+                <div class="shop-desc">
+                    Экономия сил.<br>
+                    <span style="color:var(--success)">Энергия: -50%</span>
                 </div>
+                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 0 PLN</div>
+                <button id="btn-veturilo" class="btn-price" style="background:#ddd; color:#000;" onclick="toggleTransport('veturilo')">
+                    0.50 PLN / мин
+                </button>
             </div>
 
-            <div id="auto-mode" style="display: none;">
-                <div class="card">
-                    <div class="card-title">🤖 Авто-курьер</div>
-                    <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 0;">
-                        Автоматическое выполнение заказов. Тратит воду и энергию. <br>
-                        Доход: <span style="color: var(--success-color);">+<span id="auto-rate">0</span> PLN/сек</span>
-                    </p>
-                    <div id="hired-couriers-list">
-                        <div style="text-align: center; padding: 20px; color: #64748b; font-style: italic;">
-                            У вас нет активных авто-контрактов. Зайдите в "Карьеру".
+            <div class="shop-item" style="border-top: 2px solid var(--success);">
+                <div class="shop-icon">🛴</div>
+                <div class="shop-title">Bolt Scooter</div>
+                <div class="shop-desc">
+                    Турбо доставка.<br>
+                    <span style="color:var(--accent-gold)">Скорость: +30%</span>
+                </div>
+                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 2.00 PLN</div>
+                <button id="btn-bolt" class="btn-price" style="background:var(--success); color:#000;" onclick="toggleTransport('bolt')">
+                    2.50 PLN / мин
+                </button>
+            </div>
+
+            <div class="shop-item" style="grid-column: span 2; border-top: 2px solid var(--accent-blue);">
+                <div style="display:flex; align-items:center; width:100%; gap:15px;">
+                    <div class="shop-icon" style="margin:0;">⚡</div>
+                    <div style="text-align:left; flex:1;">
+                        <div class="shop-title">E-Bike Премиум</div>
+                        <div class="shop-desc" style="margin:0; color:#fff;">
+                            <span style="color:var(--accent-blue)">Скорость x2. Без поминутной оплаты.</span>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">🎒 Припасы</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn btn-outline" onclick="buyWater()">
-                        💧 Вода (5 PLN)
-                    </button>
-                    <button class="btn btn-outline" onclick="buyEnergyDrink()">
-                        ⚡ Энергетик (15 PLN)
-                    </button>
-                </div>
-                <div style="margin-top: 8px; font-size: 0.75rem; color: #64748b; text-align: center;">
-                    * Энергетик временно останавливает расход энергии, но вода продолжает тратиться.
+                    <button id="buy-bike-rent" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
                 </div>
             </div>
         </div>
 
-        <div id="section-career" class="section">
-            <div class="card">
-                <div class="card-title">📈 Навыки и Снаряжение</div>
-                <div id="upgrades-list">
-                    </div>
+        <div class="tech-banner" onclick="openProShop()" style="margin-top: 20px;">
+            <div style="z-index: 1;">
+                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">GEAR STORE</div>
+                <h2 style="margin: 5px 0; font-size: 18px;">Экипировка Курьера</h2>
+                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Сумки, телефоны, гаджеты</small>
+                <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">ОТКРЫТЬ КАТАЛОГ</button>
             </div>
-            
-            <div class="card">
-                <div class="card-title">🤝 Контракты (Авто)</div>
-                <div id="auto-upgrades-list">
-                    </div>
-            </div>
+            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); z-index: 1;">🎒</div>
         </div>
 
-        <div id="section-shop" class="section">
-            <div class="card">
-                <div class="card-title">🚲 Транспорт</div>
-                <p style="font-size: 0.8rem; color: #94a3b8;">Лучший транспорт экономит энергию и увеличивает доход.</p>
-                <div id="transport-list">
-                    </div>
+        <div class="section-title">⚡ Энергия и Восстановление</div>
+        <div class="shop-grid">
+            <div class="shop-item item-food">
+                <div class="shop-icon">💧</div>
+                <div class="shop-title">Вода (1.5л)</div>
+                <div class="shop-desc">Восстанавливает силы при кликах.<br><b>+1500 мл</b></div>
+                <button id="btn-buy-water" class="btn-price" onclick="buyWater()">1.50 PLN</button>
             </div>
-
-            <div class="card">
-                <div class="card-title">🗺️ Недвижимость & Районы</div>
-                <p style="font-size: 0.8rem; color: #94a3b8;">
-                    Переезжай в районы подороже, чтобы зарабатывать больше. Купи квартиру, чтобы не платить грабительскую аренду!
-                </p>
-                <div id="locations-list">
-                    </div>
+            <div class="shop-item item-food">
+                <div class="shop-icon">☕</div>
+                <div class="shop-title">Эспрессо</div>
+                <div class="shop-desc">Мгновенный заряд бодрости.<br><b>+300 Energy</b></div>
+                <button id="btn-buy-coffee" class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
             </div>
-        </div>
-
-        <div id="section-invest" class="section">
-            <div class="card">
-                <div class="card-title">💼 Биржа (WIP)</div>
-                <p>Раздел в разработке. Скоро здесь можно будет торговать акциями Pyszne и Glovo.</p>
-            </div>
-            <div class="card" style="border-color: var(--danger-color);">
-                <div class="card-title" style="color: var(--danger-color);">⚠️ Опасная зона</div>
-                <button class="btn btn-danger" onclick="resetProgress()">Сброс прогресса</button>
-            </div>
-        </div>
-
-        <div id="section-bank" class="section">
-             <div class="card bank-card">
-                <div class="card-title">🏦 Банк Варшавы</div>
-                <p style="color: #94a3b8; font-size: 0.85rem; margin-top:0;">
-                    Храните деньги в банке под 5% в день. Депозит защищен от налогов.
-                </p>
-                
-                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center; margin: 15px 0;">
-                    <div style="font-size: 0.9rem; color: #94a3b8;">Счет в банке</div>
-                    <div style="font-size: 1.8rem; color: #60a5fa; font-weight: bold;" id="bank-balance">0.00 PLN</div>
-                </div>
-
-                <div class="bank-actions">
-                    <button class="btn btn-success" onclick="bankDepositAll()">⬇️ Всё в банк</button>
-                    <button class="btn btn-outline" onclick="bankWithdrawAll()">⬆️ Снять всё</button>
-                </div>
-                
-                <div style="margin-top: 15px; border-top: 1px solid #475569; padding-top: 10px;">
-                    <div class="deposit-info">
-                        <span>Ставка:</span>
-                        <span style="color: var(--success-color);">5% / день</span>
+            <div class="shop-item item-energy" style="grid-column: span 2;">
+                <div style="display:flex; align-items:center; width:100%; gap:15px;">
+                    <div class="shop-icon" style="margin:0;">🔋</div>
+                    <div style="text-align:left; flex:1;">
+                        <div class="shop-title">Red Bull Power</div>
+                        <div class="shop-desc" style="margin:0; color:#fff;">
+                            <span style="color:var(--success)">Пауза расхода энергии на 2 мин.</span><br>
+                            <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
+                        </div>
                     </div>
-                    <div class="deposit-info">
-                        <span>Начисление через:</span>
-                        <span id="bank-timer">24:00</span>
-                    </div>
+                    <button id="btn-buy-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
                 </div>
             </div>
         </div>
 
+        <div class="section-title">👟 Сникерхед</div>
+        <div class="shop-item item-shoes" style="margin-bottom: 8px;">
+            <div class="shop-icon">🐼</div>
+            <div style="flex:1;">
+                <div class="shop-title">Abibas Ultra</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Классика района.</div>
+                <div style="background:rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Прочность: <b>5000 шагов</b>
+                </div>
+            </div>
+            <button id="btn-buy-abibas" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas', 50, 100)">50 PLN</button>
+        </div>
+        <div class="shop-item item-shoes" style="border-color: var(--gold);">
+            <div class="shop-icon">🔥</div>
+            <div style="flex:1;">
+                <div class="shop-title" style="color:var(--gold)">Jorban Air</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Премиум стиль.</div>
+                <div style="background:rgba(253, 186, 116, 0.2); color:var(--accent-gold); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Бонус: <b>+20% к чаевым</b>
+                </div>
+            </div>
+            <button id="btn-buy-jorban" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban', 250, 150)">250 PLN</button>
+        </div>
+        
+        <div style="height: 20px;"></div>
     </div>
 
-    <nav>
-        <div class="nav-item active" onclick="switchSection('city', this)">
-            <span class="nav-icon">🏙️</span>
-            <span>Город</span>
-        </div>
-        <div class="nav-item" onclick="switchSection('career', this)">
-            <span class="nav-icon">🎓</span>
-            <span>Карьера</span>
-        </div>
-        <div class="nav-item" onclick="switchSection('shop', this)">
-            <span class="nav-icon">🛒</span>
-            <span>Магазин</span>
-        </div>
-        <div class="nav-item" onclick="switchSection('invest', this)">
-            <span class="nav-icon">📈</span>
-            <span>Инвест</span>
-        </div>
-        <div class="nav-item" onclick="switchSection('bank', this)">
-            <span class="nav-icon">🏦</span>
-            <span>Банк</span>
-        </div>
-    </nav>
-
-    <div id="modal-overlay" class="modal-overlay">
-        <div class="modal">
-            <h3 id="modal-title">Событие!</h3>
-            <p id="modal-text">Текст события...</p>
-            <button class="btn btn-primary" onclick="closeModal()">OK</button>
-        </div>
+    <div id="view-invest" class="view">
+        <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
+        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
+        <div id="my-items-list" class="shop-grid" style="margin-bottom:15px;"></div>
     </div>
 
-<script>
-/**
- * COURIER SIMULATOR - WARSZAWA_FOREVER
- * Core Logic:
- * 1. Balance, Energy (Watts), Water (Hydration), Leveling system.
- * 2. Locations with Rent (Czynsz) vs Ownership.
- * 3. Dynamic Income (Manual + Auto).
- * 4. Bank system (Deposit/Withdraw/Interest).
- * 5. Special Mode: Free Rating (Hidden UI for 10 mins).
- */
-
-/* --- STATE MANAGEMENT --- */
-const SAVE_KEY = 'WARSZAWA_FOREVER';
-
-let gameState = {
-    balance: 0,
-    bankBalance: 0,
-    level: 1,
-    xp: 0,
-    energy: 2000,
-    maxEnergy: 2000,
-    water: 100, // percentage 0-100
-    
-    // Timers
-    lastSaveTime: Date.now(),
-    bankInterestTimer: 86400, // Seconds in a day
-    rentTimer: 300, // 5 minutes for rent cycle
-    taxTimer: 600, // 10 minutes for tax cycle
-    
-    // Status
-    currentLocationIndex: 0,
-    currentTransportIndex: 0,
-    
-    // Inventory/Upgrades
-    upgrades: {
-        shoes: 1, // Base click multiplier
-        bag: 1,   // Max energy multiplier
-        charm: 0  // Tips chance
-    },
-    
-    // Auto Contracts (counts)
-    contracts: {
-        student: 0,
-        scooter: 0,
-        drone: 0
-    },
-
-    // Special Boosts
-    energyDrinkActive: false,
-    energyDrinkTimer: 0,
-
-    // Free Rating Logic
-    isFreeRatingMode: false,
-    freeRatingTimer: 0,
-    freeRatingOriginalLvl: 1, // backup to revert if cheated
-    freeRatingBonus: 0, // +0.5, +1, etc.
-    freeRatingStartTime: 0,
-    realEarningsAccumulated: 0 // To track what they actually earned blindly
-};
-
-/* --- CONFIGURATION --- */
-const LOCATIONS = [
-    { name: 'Praga', baseIncome: 1.0, rent: 25, buyPrice: 850000, minLvl: 1, owned: false, desc: 'Дешево и сердито. Опасно ночью.' },
-    { name: 'Mokotów', baseIncome: 1.5, rent: 150, buyPrice: 1200000, minLvl: 2.5, owned: false, desc: 'Спальный район для среднего класса. Аренда 10% от баланса (мин 150).' },
-    { name: 'Śródmieście', baseIncome: 2.5, rent: 500, buyPrice: 2500000, minLvl: 5, owned: false, desc: 'Центр. Высокий доход, высокие риски. Аренда 15%.' },
-    { name: 'Wilanów', baseIncome: 4.0, rent: 1200, buyPrice: 5000000, minLvl: 10, owned: false, desc: 'Элита. Доход x4.' }
-];
-
-const TRANSPORT = [
-    { name: 'Ноги', energyCons: 10, speed: 1.0, price: 0 },
-    { name: 'Старый велик', energyCons: 8, speed: 1.2, price: 250 },
-    { name: 'Электро-самокат', energyCons: 5, speed: 1.5, price: 1500 },
-    { name: 'Скутер', energyCons: 3, speed: 2.0, price: 5000 },
-    { name: 'Тесла (Кредитная)', energyCons: 1, speed: 5.0, price: 50000 }
-];
-
-// Карьера (Upgrades manual)
-const UPGRADES_INFO = [
-    { id: 'shoes', name: 'Удобные кроссы', type: 'manual', basePrice: 100, multiplier: 1.5, desc: 'Увеличивает доход за клик (Базовая ставка).' },
-    { id: 'bag', name: 'Термо-сумка', type: 'energy', basePrice: 200, multiplier: 1.2, desc: 'Увеличивает запас энергии (+20%).' },
-    { id: 'charm', name: 'Улыбка', type: 'luck', basePrice: 500, multiplier: 1.1, desc: 'Шанс получить чаевые.' }
-];
-
-// Карьера (Auto Contracts)
-const CONTRACTS_INFO = [
-    { id: 'student', name: 'Нанять студента', basePrice: 500, income: 1, desc: '+1 PLN/сек. Пьет много воды.' },
-    { id: 'scooter', name: 'Аренда курьера на мопеде', basePrice: 2000, income: 5, desc: '+5 PLN/сек. Быстрый.' },
-    { id: 'drone', name: 'Дрон-доставщик', basePrice: 10000, income: 25, desc: '+25 PLN/сек. Технологии будущего.' }
-];
-
-/* --- INITIALIZATION --- */
-function initGame() {
-    loadGame();
-    setupUI();
-    
-    // Game Loops
-    setInterval(gameLoop, 1000); // 1 sec tick
-    setInterval(saveGame, 10000); // Auto save 10s
-    
-    // Restore UI state
-    updateLocationUI();
-    updateTransportUI();
-    updateUpgradesUI();
-    renderStats();
-}
-
-/* --- SAVE/LOAD --- */
-function saveGame() {
-    // Save owned status inside locations
-    gameState.locationOwnership = LOCATIONS.map(l => l.owned);
-    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
-}
-
-function loadGame() {
-    const saved = localStorage.getItem(SAVE_KEY);
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            gameState = { ...gameState, ...parsed };
-            
-            // Restore location ownership
-            if (gameState.locationOwnership) {
-                gameState.locationOwnership.forEach((owned, idx) => {
-                    if (LOCATIONS[idx]) LOCATIONS[idx].owned = owned;
-                });
-            }
-
-            // Check if Free Rating mode expired while offline
-            if (gameState.isFreeRatingMode) {
-                const now = Date.now();
-                const elapsed = now - gameState.freeRatingStartTime;
-                if (elapsed >= 10 * 60 * 1000) {
-                    endFreeRatingMode(true); // Success
-                } else {
-                    // Resume timer logic in loop
-                }
-            }
-
-        } catch (e) {
-            console.error("Save corrupted", e);
-        }
-    }
-}
-
-function resetProgress() {
-    if(!confirm("Вы уверены? Это сотрет весь прогресс, включая покупки и недвижимость!")) return;
-    
-    localStorage.removeItem(SAVE_KEY);
-    
-    // Hard Reset variables
-    gameState.balance = 0;
-    gameState.bankBalance = 0;
-    gameState.level = 1;
-    gameState.xp = 0;
-    gameState.energy = 2000;
-    gameState.water = 100;
-    gameState.currentLocationIndex = 0;
-    gameState.currentTransportIndex = 0;
-    gameState.upgrades = { shoes: 1, bag: 1, charm: 0 };
-    gameState.contracts = { student: 0, scooter: 0, drone: 0 };
-    
-    // !ВАЖНО: Сброс прав собственности
-    LOCATIONS.forEach(loc => {
-        loc.owned = false;
-    });
-
-    saveGame();
-    location.reload();
-}
-
-/* --- CORE GAME LOGIC --- */
-
-// 1. Clicker
-document.getElementById('click-zone').addEventListener('click', (e) => {
-    if (gameState.energy < TRANSPORT[gameState.currentTransportIndex].energyCons) {
-        showNotification("Нет энергии! Выпей энергетик или отдохни.");
-        return;
-    }
-
-    // Cost
-    if (!gameState.energyDrinkActive) {
-        gameState.energy -= TRANSPORT[gameState.currentTransportIndex].energyCons;
-    }
-    gameState.water -= 0.5; // Water always drains on work
-    if (gameState.water < 0) gameState.water = 0;
-
-    // Calc Income
-    let locationMult = LOCATIONS[gameState.currentLocationIndex].baseIncome;
-    let transportMult = TRANSPORT[gameState.currentTransportIndex].speed;
-    let upgradeMult = 1 + (gameState.upgrades.shoes * 0.1); // +10% per level
-    
-    // Blind mode RNG
-    let rngFactor = 1.0;
-    if (gameState.isFreeRatingMode) {
-        // x2 or -50% chance
-        rngFactor = Math.random() > 0.5 ? 2.0 : 0.5;
-    }
-
-    let basePay = 1.5 * locationMult * transportMult * upgradeMult * rngFactor;
-    
-    // Tips
-    if (Math.random() < (gameState.upgrades.charm * 0.05)) {
-        basePay *= 3;
-        createFloatingText(e.clientX, e.clientY, "ЧАЕВЫЕ! 💰");
-    }
-
-    addMoney(basePay);
-    addXP(1);
-    
-    createFloatingText(e.clientX, e.clientY, `+${formatMoney(basePay)}`);
-    renderStats();
-});
-
-// 2. Helper Functions
-function addMoney(amount) {
-    if (gameState.isFreeRatingMode) {
-        gameState.realEarningsAccumulated += amount;
-    } else {
-        gameState.balance += amount;
-    }
-}
-
-function addXP(amount) {
-    gameState.xp += amount;
-    // Simple level formula: Level = 1 + sqrt(xp / 100)
-    let newLvl = 1 + Math.floor(Math.sqrt(gameState.xp / 50));
-    
-    if (gameState.isFreeRatingMode) {
-        // Level doesn't visually update instantly in this mode to preserve the "fake" level
-    } else {
-        if (newLvl > gameState.level) {
-            gameState.level = newLvl;
-            showNotification(`Уровень повышен! LVL ${gameState.level}`);
-            updateLocationUI(); // Unlock new areas
-        }
-    }
-}
-
-function formatMoney(amount) {
-    return amount.toFixed(2) + ' PLN';
-}
-
-function showNotification(msg) {
-    const el = document.getElementById('notification');
-    el.innerText = msg;
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 2000);
-}
-
-function createFloatingText(x, y, text) {
-    const el = document.createElement('div');
-    el.className = 'floating-text';
-    el.innerText = text;
-    if (gameState.isFreeRatingMode) {
-        el.innerText = "???"; // Hidden in blind mode
-    }
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1000);
-}
-
-// 3. Game Loop (1 sec)
-function gameLoop() {
-    // Energy Regen
-    if (gameState.energy < gameState.maxEnergy) {
-        gameState.energy += 5; // Passive regen
-        if (gameState.energy > gameState.maxEnergy) gameState.energy = gameState.maxEnergy;
-    }
-
-    // Auto Income
-    let autoIncome = 0;
-    autoIncome += gameState.contracts.student * CONTRACTS_INFO[0].income;
-    autoIncome += gameState.contracts.scooter * CONTRACTS_INFO[1].income;
-    autoIncome += gameState.contracts.drone * CONTRACTS_INFO[2].income;
-
-    if (autoIncome > 0) {
-        // Auto consumption
-        let waterCost = (gameState.contracts.student * 0.2) + (gameState.contracts.scooter * 0.1);
-        let energyCost = (gameState.contracts.scooter * 2) + (gameState.contracts.drone * 5);
-
-        if (gameState.water > waterCost && (gameState.energy > energyCost || gameState.energyDrinkActive)) {
-            gameState.water -= waterCost;
-            if (!gameState.energyDrinkActive) {
-                 gameState.energy -= energyCost;
-            }
-            // Add Income
-            let locMult = LOCATIONS[gameState.currentLocationIndex].baseIncome;
-            let finalAuto = autoIncome * locMult;
-            
-            // Blind Mode logic for Auto
-            if (gameState.isFreeRatingMode) {
-                let rng = Math.random() > 0.5 ? 2.0 : 0.5;
-                gameState.realEarningsAccumulated += (finalAuto * rng);
-            } else {
-                gameState.balance += finalAuto;
-            }
-        }
-    }
-
-    // Timers
-    handleTimers();
-    handleFreeRatingMode();
-    handleEnergyDrink();
-
-    renderStats();
-}
-
-function handleTimers() {
-    // Rent
-    if (gameState.rentTimer > 0) {
-        gameState.rentTimer--;
-    } else {
-        payRent();
-        gameState.rentTimer = 300; // Reset 5 min
-    }
-
-    // Bank Interest
-    if (gameState.bankInterestTimer > 0) {
-        gameState.bankInterestTimer--;
-    } else {
-        payBankInterest();
-        gameState.bankInterestTimer = 86400;
-    }
-}
-
-function handleEnergyDrink() {
-    if (gameState.energyDrinkActive) {
-        gameState.energyDrinkTimer--;
-        if (gameState.energyDrinkTimer <= 0) {
-            gameState.energyDrinkActive = false;
-            showNotification("Действие энергетика закончилось");
-        }
-    }
-}
-
-/* --- LOGIC: RENT & LOCATIONS --- */
-function payRent() {
-    let loc = LOCATIONS[gameState.currentLocationIndex];
-    if (loc.owned) {
-        showNotification(`Вы владелец ${loc.name}. Квартплата 0 PLN!`);
-        return;
-    }
-
-    let rentAmount = loc.rent;
-    // Dynamic rent for higher zones
-    if (gameState.currentLocationIndex === 1) rentAmount = Math.max(150, gameState.balance * 0.10);
-    if (gameState.currentLocationIndex === 2) rentAmount = Math.max(500, gameState.balance * 0.15);
-    
-    if (gameState.balance >= rentAmount) {
-        gameState.balance -= rentAmount;
-        showNotification(`Списана квартплата: -${formatMoney(rentAmount)}`);
-    } else {
-        // Debt or downgrade? For now simple logic
-        gameState.balance -= rentAmount; // Go negative
-        showNotification(`ДОЛГ ЗА КВАРТИРУ! -${formatMoney(rentAmount)}`);
-    }
-}
-
-function buyLocation(index) {
-    let loc = LOCATIONS[index];
-    if (gameState.balance >= loc.buyPrice) {
-        gameState.balance -= loc.buyPrice;
-        loc.owned = true;
-        saveGame();
-        updateLocationUI();
-        showNotification(`Поздравляем! Вы купили жилье в ${loc.name}!`);
-    } else {
-        showNotification("Недостаточно средств!");
-    }
-}
-
-function moveLocation(index) {
-    let loc = LOCATIONS[index];
-    
-    // Check Level req
-    // Special: If Free Rating Mode gives +Bonus, we check (Base + Bonus)
-    let effectiveLvl = gameState.level;
-    if (gameState.isFreeRatingMode) effectiveLvl += gameState.freeRatingBonus;
-
-    if (effectiveLvl < loc.minLvl) {
-        showNotification(`Нужен уровень ${loc.minLvl}!`);
-        return;
-    }
-
-    // Moving Cost (Fixed or small)
-    let moveCost = 150; 
-    if (index === 0) moveCost = 0; // Back to Praga is free usually or cheap
-    if (gameState.currentLocationIndex === index) return;
-
-    if (gameState.balance >= moveCost) {
-        gameState.balance -= moveCost;
-        gameState.currentLocationIndex = index;
-        updateLocationUI();
-        showNotification(`Вы переехали в ${loc.name}`);
-    } else {
-        showNotification("Нет денег на переезд (150 PLN)");
-    }
-}
-
-/* --- LOGIC: BANK --- */
-function bankDepositAll() {
-    if (gameState.balance > 0) {
-        gameState.bankBalance += gameState.balance;
-        gameState.balance = 0;
-        showNotification("Средства переведены в банк");
-        renderStats();
-    }
-}
-
-function bankWithdrawAll() {
-    if (gameState.bankBalance > 0) {
-        gameState.balance += gameState.bankBalance;
-        gameState.bankBalance = 0;
-        showNotification("Средства выведены из банка");
-        renderStats();
-    }
-}
-
-function payBankInterest() {
-    if (gameState.bankBalance > 0) {
-        let interest = gameState.bankBalance * 0.05;
-        gameState.bankBalance += interest;
-        showNotification(`Банк: начислены проценты +${formatMoney(interest)}`);
-    }
-}
-
-/* --- LOGIC: SHOP & SUPPLIES --- */
-function buyWater() {
-    if (gameState.balance >= 5) {
-        gameState.balance -= 5;
-        gameState.water = 100;
-        showNotification("Вода восстановлена");
-        renderStats();
-    }
-}
-
-function buyEnergyDrink() {
-    if (gameState.balance >= 15) {
-        gameState.balance -= 15;
-        gameState.energy = gameState.maxEnergy;
-        gameState.energyDrinkActive = true;
-        gameState.energyDrinkTimer = 60; // 60 seconds of infinite energy
-        showNotification("Энергетик! Энергия не тратится 60 сек.");
-        renderStats();
-    }
-}
-
-/* --- LOGIC: FREE RATING MODE --- */
-// Simulating the "Ad for bonus" or "Trick the system"
-// For this demo, let's assume a function triggerFreeRating(bonusAmount) is called from a hypothetical ad callback
-// Or we can add a button in 'Career' or 'Invest' to simulate getting this offer.
-// Let's add a "Cheat/Boost" button in Career for demo purposes.
-
-function startFreeRatingMode(bonus) {
-    if (gameState.isFreeRatingMode) return;
-
-    gameState.isFreeRatingMode = true;
-    gameState.freeRatingBonus = bonus;
-    gameState.freeRatingStartTime = Date.now();
-    gameState.realEarningsAccumulated = 0;
-    
-    // Save state before start (snapshot balance is maintained, but new earnings are hidden)
-    saveGame();
-    
-    renderStats();
-    showNotification(`Режим "Blind Work" на 10 мин! LVL +${bonus}`);
-}
-
-function handleFreeRatingMode() {
-    if (!gameState.isFreeRatingMode) return;
-
-    const duration = 10 * 60 * 1000; // 10 mins
-    if (Date.now() - gameState.freeRatingStartTime > duration) {
-        endFreeRatingMode(true); // Natural finish
-    }
-}
-
-function endFreeRatingMode(success) {
-    gameState.isFreeRatingMode = false;
-    
-    if (success) {
-        // User worked 10 mins. Reveal earnings.
-        gameState.balance += gameState.realEarningsAccumulated;
-        showNotification(`Бонус окончен! Вы заработали: ${formatMoney(gameState.realEarningsAccumulated)}`);
-    } else {
-        // User cancelled or "tricked" system (inactive) - logic implies if they didn't work, they get nothing.
-        // If "wait for 10 minutes without working", realEarningsAccumulated will be 0 anyway.
-        // The prompt says: "if I want to... wait... then this free rating is not taken into account and everything returns to initial state."
-        // Our logic handles this: balance wasn't added to, simply returns to normal.
-    }
-    
-    gameState.realEarningsAccumulated = 0;
-    gameState.freeRatingBonus = 0;
-    renderStats();
-}
-
-/* --- UI UPDATERS --- */
-function renderStats() {
-    // Balance
-    const balEl = document.getElementById('balance');
-    const lvlEl = document.getElementById('lvl-display');
-    const lvlBar = document.getElementById('lvl-bar');
-    const homeIcon = document.getElementById('home-icon');
-    
-    if (gameState.isFreeRatingMode) {
-        balEl.innerText = "??? PLN";
-        balEl.classList.add('balance-hidden');
-        // Fake Level
-        lvlEl.innerText = (gameState.level + gameState.freeRatingBonus).toFixed(1);
-        lvlBar.style.width = '100%'; // Hide progress
-    } else {
-        balEl.innerText = formatMoney(gameState.balance);
-        balEl.classList.remove('balance-hidden');
-        lvlEl.innerText = gameState.level.toFixed(1); // Real Level (simplified)
-        // XP progress calc (approx)
-        let progress = (gameState.xp % 50) / 50 * 100;
-        lvlBar.style.width = `${progress}%`;
-    }
-
-    // Icon for home
-    if (LOCATIONS[gameState.currentLocationIndex].owned) {
-        homeIcon.style.display = 'inline';
-        homeIcon.title = "Собственное жилье";
-    } else {
-        homeIcon.style.display = 'none';
-    }
-
-    // Energy
-    document.getElementById('energy-bar').style.width = (gameState.energy / gameState.maxEnergy * 100) + '%';
-    document.getElementById('energy-text').innerText = `${Math.floor(gameState.energy)}/${gameState.maxEnergy}`;
-    
-    if (gameState.energyDrinkActive) {
-        document.getElementById('energy-bar').style.backgroundColor = '#ec4899'; // Pink when boosted
-    } else {
-        document.getElementById('energy-bar').style.backgroundColor = ''; // Default class style
-    }
-
-    // Water
-    document.getElementById('water-bar').style.width = gameState.water + '%';
-    document.getElementById('water-text').innerText = Math.floor(gameState.water) + '%';
-
-    // Bank
-    document.getElementById('bank-balance').innerText = formatMoney(gameState.bankBalance);
-
-    // Timers
-    let rentTimeStr = new Date(gameState.rentTimer * 1000).toISOString().substr(14, 5);
-    let taxTimeStr = new Date(gameState.taxTimer * 1000).toISOString().substr(14, 5);
-    
-    let currentRent = LOCATIONS[gameState.currentLocationIndex].owned ? 0 : LOCATIONS[gameState.currentLocationIndex].rent;
-    // Calc dynamic rent for display
-    if (!LOCATIONS[gameState.currentLocationIndex].owned) {
-        if (gameState.currentLocationIndex === 1) currentRent = Math.max(150, (gameState.balance * 0.10).toFixed(0));
-        if (gameState.currentLocationIndex === 2) currentRent = Math.max(500, (gameState.balance * 0.15).toFixed(0));
-    }
-
-    document.getElementById('rent-timer').innerText = `Квартплата (${currentRent} PLN): ${rentTimeStr}`;
-    document.getElementById('tax-timer').innerText = `Налог: ${taxTimeStr}`;
-    
-    // Bank Timer
-    let bankTimeStr = new Date(gameState.bankInterestTimer * 1000).toISOString().substr(11, 8);
-    document.getElementById('bank-timer').innerText = bankTimeStr;
-    
-    // Auto Rate display
-    let autoTotal = (gameState.contracts.student * 1) + (gameState.contracts.scooter * 5) + (gameState.contracts.drone * 25);
-    document.getElementById('auto-rate').innerText = autoTotal * LOCATIONS[gameState.currentLocationIndex].baseIncome;
-}
-
-function updateLocationUI() {
-    const list = document.getElementById('locations-list');
-    list.innerHTML = '';
-
-    LOCATIONS.forEach((loc, index) => {
-        let isCurrent = (index === gameState.currentLocationIndex);
-        let isOwned = loc.owned;
-        let isLocked = (gameState.level < loc.minLvl && !gameState.isFreeRatingMode); 
-        // Note: In FreeRatingMode, we might show them as unlocked visually, but move logic checks bonus
-
-        let div = document.createElement('div');
-        div.className = `location-card ${isCurrent ? 'current' : ''} ${isLocked ? 'locked' : ''}`;
+    <div id="view-bank" class="view">
+        <h3 style="margin:0; margin-bottom: 15px;">🏦 Варшавский Банк</h3>
         
-        let actionBtn = '';
-        if (isCurrent) {
-            actionBtn = `<button class="btn btn-primary" disabled>ВЫ ЗДЕСЬ</button>`;
-        } else {
-            actionBtn = `<button class="btn btn-primary" onclick="moveLocation(${index})">ПЕРЕЕХАТЬ (150 PLN)</button>`;
-        }
-
-        let buyBtn = '';
-        if (isOwned) {
-            buyBtn = `<button class="btn btn-success" disabled>🏠 ВЫ ВЛАДЕЛЕЦ</button>`;
-        } else {
-            buyBtn = `<button class="btn btn-outline" style="border-color: #eab308; color: #eab308;" onclick="buyLocation(${index})">КУПИТЬ ЖИЛЬЕ (${loc.buyPrice/1000}K PLN)</button>`;
-        }
-
-        div.innerHTML = `
-            ${isOwned ? '<span class="loc-badge">ВЛАДЕЛЕЦ</span>' : ''}
-            <div class="loc-header">
-                <span class="loc-name">${loc.name} ${isLocked ? `(LVL ${loc.minLvl}+)` : ''}</span>
-                ${index === 0 ? '' : '<span class="loc-star">⭐</span>'}
+        <div class="card" style="margin-bottom:10px;">
+            <h4 style="margin:0 0 5px 0; font-size:12px; color:var(--accent-blue);">🎁 Секретный промокод</h4>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="promo-input" class="promo-input" placeholder="Введите слово..." style="margin:0;">
+                <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
             </div>
-            <div class="loc-stats">
-                Квартплата: ${isOwned ? '0 PLN' : loc.rent + ' PLN'} <br>
-                Доход: x${loc.baseIncome}<br>
-                <i>${loc.desc}</i>
-            </div>
-            <div style="display:grid; gap:8px;">
-                ${actionBtn}
-                ${buyBtn}
-            </div>
-        `;
-        list.appendChild(div);
-    });
-}
-
-function updateTransportUI() {
-    const list = document.getElementById('transport-list');
-    list.innerHTML = '';
-    
-    TRANSPORT.forEach((tr, index) => {
-        let isCurrent = (index === gameState.currentTransportIndex);
-        let row = document.createElement('div');
-        row.className = 'item-row';
-        row.innerHTML = `
-            <div class="item-info">
-                <h4>${tr.name}</h4>
-                <div class="item-desc">Энергия: -${tr.energyCons} | Скорость: x${tr.speed}</div>
-            </div>
-            <div>
-                ${isCurrent 
-                  ? '<button class="item-btn btn btn-success" disabled>Исп.</button>' 
-                  : `<button class="item-btn btn btn-outline" onclick="buyTransport(${index})">${tr.price === 0 ? 'Беспл.' : tr.price + ' PLN'}</button>`
-                }
-            </div>
-        `;
-        list.appendChild(row);
-    });
-}
-
-function buyTransport(index) {
-    let tr = TRANSPORT[index];
-    if (gameState.balance >= tr.price) {
-        if (tr.price > 0) gameState.balance -= tr.price;
-        gameState.currentTransportIndex = index;
-        updateTransportUI();
-        showNotification(`Транспорт: ${tr.name}`);
-    } else {
-        showNotification("Не хватает денег");
-    }
-}
-
-function updateUpgradesUI() {
-    // Manual Upgrades
-    const manualList = document.getElementById('upgrades-list');
-    manualList.innerHTML = '';
-    
-    UPGRADES_INFO.forEach(up => {
-        let currentLvl = gameState.upgrades[up.id];
-        let cost = Math.floor(up.basePrice * Math.pow(1.5, currentLvl));
-        
-        let row = document.createElement('div');
-        row.className = 'item-row';
-        row.innerHTML = `
-            <div class="item-info">
-                <h4>${up.name} (Ур. ${currentLvl})</h4>
-                <div class="item-desc">${up.desc}</div>
-            </div>
-            <button class="item-btn btn btn-primary" onclick="buyUpgrade('${up.id}')">
-                ${cost} PLN
-            </button>
-        `;
-        manualList.appendChild(row);
-    });
-
-    // Auto Contracts
-    const autoList = document.getElementById('auto-upgrades-list');
-    autoList.innerHTML = '';
-
-    CONTRACTS_INFO.forEach(c => {
-        let count = gameState.contracts[c.id];
-        let cost = Math.floor(c.basePrice * Math.pow(1.2, count));
-
-        let row = document.createElement('div');
-        row.className = 'item-row';
-        row.innerHTML = `
-            <div class="item-info">
-                <h4>${c.name} (x${count})</h4>
-                <div class="item-desc">${c.desc}</div>
-            </div>
-            <button class="item-btn btn btn-primary" onclick="hireContract('${c.id}')">
-                ${cost} PLN
-            </button>
-        `;
-        autoList.appendChild(row);
-    });
-
-    // Temp: Add Free Rating Button in Upgrades for Testing
-    let promoRow = document.createElement('div');
-    promoRow.className = 'item-row';
-    promoRow.style.background = 'rgba(59, 130, 246, 0.1)';
-    promoRow.innerHTML = `
-        <div class="item-info">
-            <h4>🎁 Рекламный контракт</h4>
-            <div class="item-desc">Смотреть рекламу (10 мин) ради рейтинга +1.5 LVL. Доходы скрыты.</div>
         </div>
-        <button class="item-btn btn btn-warning" onclick="startFreeRatingMode(1.5)">
-            Start
-        </button>
-    `;
-    manualList.appendChild(promoRow);
-}
 
-function buyUpgrade(id) {
-    let up = UPGRADES_INFO.find(u => u.id === id);
-    let currentLvl = gameState.upgrades[id];
-    let cost = Math.floor(up.basePrice * Math.pow(1.5, currentLvl));
+        <div class="card" style="margin-bottom:15px;">
+             <div id="bank-actions-ui"></div> </div>
 
-    if (gameState.balance >= cost) {
-        gameState.balance -= cost;
-        gameState.upgrades[id]++;
-        updateUpgradesUI();
-        showNotification(`${up.name} улучшено!`);
-    } else {
-        showNotification("Не хватает денег");
-    }
-}
+        <div class="sapphire-card">
+            <div class="bank-header">
+                <span class="bank-name">Private Vault</span>
+                <span style="font-size:18px;">💎</span>
+            </div>
 
-function hireContract(id) {
-    let c = CONTRACTS_INFO.find(x => x.id === id);
-    let count = gameState.contracts[id];
-    let cost = Math.floor(c.basePrice * Math.pow(1.2, count));
+            <div id="bank-select-ui">
+                <div class="plan-grid">
+                    <div class="plan-item active" onclick="selectBankPlan(7, 0.05, this)">
+                        <span class="plan-days">7 Дней</span>
+                        <span class="plan-rate">+5%</span>
+                    </div>
+                    <div class="plan-item" onclick="selectBankPlan(15, 0.15, this)">
+                        <span class="plan-days">15 Дней</span>
+                        <span class="plan-rate">+15%</span>
+                    </div>
+                    <div class="plan-item" onclick="selectBankPlan(30, 0.40, this)">
+                        <span class="plan-days">30 Дней</span>
+                        <span class="plan-rate">+40%</span>
+                    </div>
+                </div>
+                <div style="margin-bottom:10px; font-size:10px; color:#94a3b8; text-align:center;">
+                    Досрочное снятие: <span style="color:var(--danger)">Штраф -30% от суммы</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="bank-inp" class="promo-input" placeholder="Сумма..." style="margin:0; text-align:center; font-weight:bold;">
+                    <button class="btn-action btn-deposit" style="width:auto;" onclick="makeDeposit()">ВЛОЖИТЬ</button>
+                </div>
+            </div>
 
-    if (gameState.balance >= cost) {
-        gameState.balance -= cost;
-        gameState.contracts[id]++;
-        updateUpgradesUI();
-        updateAutoModeUI();
-        showNotification(`${c.name} нанят!`);
-    } else {
-        showNotification("Не хватает денег");
-    }
-}
+            <div id="bank-active-ui" style="display:none; text-align:center;">
+                <div class="locked-info">СРЕДСТВА ЗАМОРОЖЕНЫ</div>
+                <div class="locked-amount" id="locked-val">0.00 PLN</div>
+                
+                <div class="progress-track-bank"><div class="progress-fill-bank" id="bank-prog-bar"></div></div>
+                <span class="timer-text" id="bank-timer">00d 00h 00m</span>
 
-function updateAutoModeUI() {
-    const container = document.getElementById('hired-couriers-list');
-    let html = '';
-    let hasAny = false;
-    
-    if (gameState.contracts.student > 0) { html += `<div>👨‍🎓 Студенты: ${gameState.contracts.student}</div>`; hasAny = true; }
-    if (gameState.contracts.scooter > 0) { html += `<div>🛵 Мопеды: ${gameState.contracts.scooter}</div>`; hasAny = true; }
-    if (gameState.contracts.drone > 0) { html += `<div>🚁 Дроны: ${gameState.contracts.drone}</div>`; hasAny = true; }
+                <button class="btn-claim" id="btn-bank-claim" style="display:none;" onclick="claimDeposit()">💰 ЗАБРАТЬ ПРИБЫЛЬ</button>
+                <button class="btn-break" id="btn-bank-break" onclick="breakDeposit()">⚠️ РАЗБИТЬ КОПИЛКУ (-30%)</button>
+            </div>
+            
+            <div class="history-box">
+                <h4 style="margin:0 0 8px 0; font-size:10px; color:var(--text-secondary); text-transform:uppercase;">Выписка по счету</h4>
+                <div id="bank-history-list" style="max-height: 120px; overflow-y: auto;"></div>
+            </div>
+        </div>
+        <div class="card" style="margin-top:15px;">
+            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
+            <div style="display:flex; gap:8px;">
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, 10)">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, 300)">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
+            </div>
+        </div>
+        
+        <div class="card history-list" id="history-ui" style="margin-top:15px; max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
+    </div>
+</div>
 
-    if (!hasAny) {
-        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #64748b; font-style: italic;">У вас нет активных авто-контрактов. Зайдите в "Карьеру".</div>`;
-    } else {
-        container.innerHTML = html;
-    }
-}
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
+    <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
+    <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
+    <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
+    <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
+</div>
 
-/* --- SECTION SWITCHING --- */
-function switchSection(sectionId, navEl) {
-    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-    document.getElementById(`section-${sectionId}`).classList.add('active');
-    
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    navEl.classList.add('active');
-}
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="database.js?v=4.0"></script>
+<script src="logic.js?v=5.1" defer></script>
 
-function setWorkMode(mode) {
-    document.querySelectorAll('.mode-btn').forEach(el => el.classList.remove('active'));
-    if (mode === 'manual') {
-        document.getElementById('manual-mode').style.display = 'block';
-        document.getElementById('auto-mode').style.display = 'none';
-        document.querySelectorAll('.mode-btn')[0].classList.add('active');
-    } else {
-        document.getElementById('manual-mode').style.display = 'none';
-        document.getElementById('auto-mode').style.display = 'block';
-        document.querySelectorAll('.mode-btn')[1].classList.add('active');
-        updateAutoModeUI();
-    }
-}
-
-// Modal
-function closeModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
-}
-
-// Init
-window.onload = initGame;
-
-</script>
 </body>
 </html>
