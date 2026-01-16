@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa GOD MODE v7.2</title>
+    
+    <script>
+        // ТВОЙ СЕКРЕТНЫЙ ПАРОЛЬ:
+        var secret = 'sergii9422warszawa';
+        
+        var pass = prompt("Введите пароль администратора:");
+        if (pass !== secret) { 
+            document.write("<div style='background:black;color:red;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;'><h1 style='font-size:40px;'>⛔ ACCESS DENIED</h1><p>Неверный пароль</p></div>");
+            throw new Error("Доступ запрещен. Выполнение остановлено.");
+        }
+    </script>
     <style>
         :root { 
             --bg: #000000; 
@@ -477,3 +488,4 @@
     </script>
 </body>
 </html>
+
