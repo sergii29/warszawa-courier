@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa GOD MODE v7.1</title>
+    <title>Warszawa GOD MODE v7.2</title>
     <style>
         :root { 
             --bg: #000000; 
@@ -109,7 +109,7 @@
     <div id="tab-users" class="tab-content active">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="margin:0;">👥 Игроки</h2>
-            <div style="font-size:10px; color:var(--subtext);">Monitor v7.1</div>
+            <div style="font-size:10px; color:var(--subtext);">Monitor v7.2</div>
         </div>
 
         <div class="stats-grid">
@@ -458,7 +458,17 @@
                 deposit: null, bankHistory: [], blindTime: 0,
                 shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
                 bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
-                isNewPlayer: true
+                starter_bag: null, starter_phone: null,
+                district: 0, autoTime: 0, bikeRentTime: 0, buffTime: 0, 
+                transportMode: 'none', 
+                isNewPlayer: true,
+                history: [], usedPromos: [], dailyQuests: [],
+                activeMilestones: [
+                    { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
+                    { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
+                    { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
+                ],
+                housing: { id: -1 }, rent: 300, tax: 300
             };
             db.ref('users/' + currentEditId).set(wipeData).then(() => closeEditor());
         }
