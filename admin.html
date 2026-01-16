@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa GOD MODE v7.0</title>
+    <title>Warszawa GOD MODE v7.1</title>
     <style>
         :root { 
             --bg: #000000; 
@@ -45,13 +45,15 @@
         .stat-card { background: var(--card-bg); padding: 12px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
         .stat-val { font-size: 20px; font-weight: 800; display: block; margin-bottom: 4px; }
         .stat-label { color: var(--subtext); font-size: 10px; text-transform: uppercase; font-weight: 600; }
-        
+        .online-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--green); }
+
         .users-list { display: flex; flex-direction: column; gap: 12px; }
         .user-card { background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border); }
         .user-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
         .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
         .badge-on { background: rgba(48, 209, 88, 0.2); color: var(--green); }
         .badge-off { background: rgba(142, 142, 147, 0.2); color: var(--subtext); }
+        .badge-ban { background: rgba(255, 69, 58, 0.2); color: var(--danger); border: 1px solid var(--danger); }
         .btn-manage { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; font-weight: 600; margin-top: 10px; }
 
         /* НАСТРОЙКИ (INPUTS) */
@@ -89,6 +91,14 @@
         .editor-content { background: #1c1c1e; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; border-radius: 20px; padding: 20px; border: 1px solid var(--border); }
         .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
         .btn-action-modal { padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        
+        .btn-reset { 
+            grid-column: span 2; 
+            background: transparent; 
+            border: 1px solid var(--danger); 
+            color: var(--danger); 
+            opacity: 0.7; 
+        }
     </style>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -99,13 +109,13 @@
     <div id="tab-users" class="tab-content active">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="margin:0;">👥 Игроки</h2>
-            <div style="font-size:10px; color:var(--subtext);">Monitor v7.0</div>
+            <div style="font-size:10px; color:var(--subtext);">Monitor v7.1</div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card">
                 <span class="stat-val" style="color:var(--green)" id="online-count">0</span>
-                <span class="stat-label">Online</span>
+                <span class="stat-label"><span class="online-dot"></span> Online</span>
             </div>
             <div class="stat-card">
                 <span class="stat-val" id="total-count">0</span>
@@ -217,6 +227,7 @@
             <div class="actions-grid">
                 <button class="btn-action-modal" style="background:var(--green); color:black;" onclick="saveUserChanges()">СОХРАНИТЬ</button>
                 <button class="btn-action-modal" id="btn-ban" style="background:#2c2c2e; border:1px solid var(--danger); color:var(--danger);" onclick="toggleBan()">ЗАБАНИТЬ</button>
+                <button class="btn-action-modal btn-reset" onclick="resetUserFull()">♻️ СБРОС (WIPE)</button>
             </div>
         </div>
     </div>
@@ -263,7 +274,7 @@
             if(el) el.classList.add('active');
         }
 
-        // === ЗАПОЛНЕНИЕ НАСТРОЕК (ПЕРЕВОД В ЧЕЛОВЕЧЕСКИЙ ВИД) ===
+        // === ЗАПОЛНЕНИЕ НАСТРОЕК ===
         function fillSettingsUI(s) {
             if(s.prices) {
                 document.getElementById('set-water').value = s.prices.water;
@@ -283,9 +294,9 @@
                 document.getElementById('set-g-jorban').value = s.prices.jorban || 250;
             }
             if(s.economy) {
-                document.getElementById('set-tax-rate').value = (s.economy.tax_rate * 100).toFixed(0); // 0.15 -> 15
+                document.getElementById('set-tax-rate').value = (s.economy.tax_rate * 100).toFixed(0); 
                 document.getElementById('set-tax-limit').value = s.economy.tax_threshold;
-                document.getElementById('set-inflation').value = (s.economy.inflation_rate * 100).toFixed(0); // 0.4 -> 40
+                document.getElementById('set-inflation').value = (s.economy.inflation_rate * 100).toFixed(0); 
                 document.getElementById('set-welfare').value = s.economy.welfare_amount;
             }
             if(s.gameplay) {
@@ -297,7 +308,6 @@
                 document.getElementById('set-fine-new').value = s.gameplay.fine_amount;
                 document.getElementById('set-fine-pro').value = s.gameplay.fine_amount_pro;
                 
-                // LVL Fines (если их еще нет в базе, ставим дефолт)
                 document.getElementById('set-lvl-police').value = s.gameplay.lvl_fine_police || 1.2;
                 document.getElementById('set-lvl-missed').value = s.gameplay.lvl_fine_missed || 0.05;
                 document.getElementById('set-lvl-spam').value = s.gameplay.lvl_fine_spam || 0.1;
@@ -309,7 +319,7 @@
             }
         }
 
-        // === СОХРАНЕНИЕ НАСТРОЕК (ПЕРЕВОД ОБРАТНО В ДРОБИ) ===
+        // === СОХРАНЕНИЕ НАСТРОЕК ===
         function saveWorldSettings() {
             const btn = document.getElementById('btn-save-world');
             btn.innerText = "⏳ СОХРАНЕНИЕ...";
@@ -329,12 +339,12 @@
                     bag: parseFloat(document.getElementById('set-g-bag').value),
                     phone: parseFloat(document.getElementById('set-g-phone').value),
                     scooter: parseFloat(document.getElementById('set-g-scooter').value),
-                    helmet: 250, raincoat: 180, powerbank: 400, // Hardcoded or add more inputs
+                    helmet: 250, raincoat: 180, powerbank: 400, 
                     abibas: parseFloat(document.getElementById('set-g-abibas').value),
                     jorban: parseFloat(document.getElementById('set-g-jorban').value),
                 },
                 economy: {
-                    tax_rate: parseFloat(document.getElementById('set-tax-rate').value) / 100, // 15 -> 0.15
+                    tax_rate: parseFloat(document.getElementById('set-tax-rate').value) / 100, 
                     tax_threshold: parseFloat(document.getElementById('set-tax-limit').value),
                     inflation_rate: parseFloat(document.getElementById('set-inflation').value) / 100,
                     welfare_amount: parseFloat(document.getElementById('set-welfare').value),
@@ -350,7 +360,6 @@
                     fine_amount: parseFloat(document.getElementById('set-fine-new').value),
                     fine_amount_pro: parseFloat(document.getElementById('set-fine-pro').value),
                     
-                    // NEW LVL FINES
                     lvl_fine_police: parseFloat(document.getElementById('set-lvl-police').value),
                     lvl_fine_missed: parseFloat(document.getElementById('set-lvl-missed').value),
                     lvl_fine_spam: parseFloat(document.getElementById('set-lvl-spam').value),
@@ -439,9 +448,22 @@
             if(!updates.adminMessage) delete updates.adminMessage;
             db.ref('users/' + currentEditId).update(updates).then(() => closeEditor());
         }
+        
+        function resetUserFull() {
+            if(!currentEditId || !confirm("Точно сбросить прогресс и инвентарь?")) return;
+            const user = allUsers[currentEditId];
+            const wipeData = {
+                name: user.name, user: user.user, lastActive: Date.now(), lastAdminUpdate: Date.now(),
+                money: 10.00, lvl: 1.0, en: 2000, waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, totalEarned: 0,
+                deposit: null, bankHistory: [], blindTime: 0,
+                shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
+                bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
+                isNewPlayer: true
+            };
+            db.ref('users/' + currentEditId).set(wipeData).then(() => closeEditor());
+        }
 
         function closeEditor() { document.getElementById('editor-modal').style.display = 'none'; }
     </script>
 </body>
 </html>
-
