@@ -1792,4 +1792,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-
