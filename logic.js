@@ -1,65 +1,71 @@
 // --- logic.js ---
-// VERSION: 6.0 (GOD MODE ENABLED)
+// VERSION: 7.0 (GRANULAR CONTROL & LVL FINES)
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// === НАСТРОЙКИ ПО УМОЛЧАНИЮ (Если нет интернета или админ не настроил) ===
+// === НАСТРОЙКИ ПО УМОЛЧАНИЮ ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50,
         coffee: 5.00,
         energy: 12.00,
-        abibas: 50.00,
-        jorban: 250.00,
+        repair_express: 15.00,
+        auto_route: 45.00,
+        bike_rent: 30.00,
         veturilo_start: 0.00,
         veturilo_min: 0.50,
         bolt_start: 2.00,
         bolt_min: 2.50,
-        bike_rent: 30.00,
-        auto_route: 45.00,
-        repair_express: 15.00,
+        // Цены экипировки
         bag: 350,
         phone: 1200,
         scooter: 500,
         helmet: 250,
         raincoat: 180,
-        powerbank: 400
+        powerbank: 400,
+        abibas: 50,
+        jorban: 250
     },
     economy: {
-        inflation_rate: 0.40, // Насколько растут цены от уровня
-        tax_rate: 0.15,
-        tax_threshold: 200, // С какой суммы налог
+        tax_rate: 0.15,         // 0.15 = 15%
+        tax_threshold: 200,     // С какой суммы налог
+        inflation_rate: 0.40,   // Инфляция от уровня
+        welfare_amount: 30,     // Пособие
+        lvl_exchange_rate: 10,
+        lvl_exchange_rate_big: 300,
         tax_timer_sec: 300,
-        rent_timer_sec: 300,
-        welfare_amount: 30,
-        welfare_cooldown: 600, // секунд
-        lvl_exchange_rate: 10, // За 0.05 LVL
-        lvl_exchange_rate_big: 300 // За 1.00 LVL
+        rent_timer_sec: 300
     },
     gameplay: {
-        criminal_chance: 0.12,
-        police_chance: 0.02,
-        police_chance_criminal: 0.35,
-        fine_amount: 50, // Штраф новичка
-        fine_amount_pro: 150, // Штраф профи
-        accident_chance_safe: 0.002, // Поломка велобайка
-        accident_chance_risky: 0.30, // Срезка
+        criminal_chance: 0.12,         // 12%
+        police_chance: 0.02,           // 2%
+        police_chance_criminal: 0.35,  // 35%
+        accident_chance_risky: 0.30,   // 30%
+        accident_chance_safe: 0.002,   // 0.2%
+        
+        fine_amount: 50,      // Штраф новичка (деньги)
+        fine_amount_pro: 150, // Штраф профи (деньги)
+        
+        // ШТРАФЫ УРОВНЯ (LVL)
+        lvl_fine_police: 1.2,        // Сколько LVL снимает полиция
+        lvl_fine_missed: 0.05,       // Упущенный заказ
+        lvl_fine_spam: 0.1,          // Спам кликами
+        
         click_spam_limit: 15
     },
     toggles: {
         enable_bank: true,
         enable_shop: true,
-        enable_ads: true,
         enable_auto: true,
         service_veturilo: true,
         service_bolt: true
     }
 };
 
-let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); // Копия настроек
+let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 
 const RANKS = [
     { name: "Новичок", max: 50, bonus: 0, icon: "👶" },
@@ -88,7 +94,7 @@ let G = {
     transportMode: 'none', 
     housing: { id: -1 }, 
     buffTime: 0,
-    blindTime: 0, // Время слепоты (халявный уровень или наказание)
+    blindTime: 0,
     history: [], 
     usedPromos: [], 
     isNewPlayer: true, 
@@ -124,11 +130,10 @@ let bonusActive = false;
 let isSearching = false; 
 let spamCounter = 0;
 
-// Характеристики предметов (статичные, но цены берутся из конфига)
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairPriceKey: null, hidden: true },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', priceKey: null, bonus: 'Связь', maxDur: 40, repairPriceKey: null, hidden: true },
-    { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', priceKey: 'bag', bonus: '+15% PLN', maxDur: 100, repairPriceKey: 70 }, // repair hardcoded base for now or add to config
+    { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', priceKey: 'bag', bonus: '+15% PLN', maxDur: 100, repairPriceKey: 70 }, 
     { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', priceKey: 'phone', bonus: 'Заказы x1.4', maxDur: 100, repairPriceKey: 250 }, 
     { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', priceKey: 'scooter', bonus: '⚡ -30%', maxDur: 100, repairPriceKey: 100 },
     { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', priceKey: 'helmet', bonus: '🛡️ Безопасность', maxDur: 50, repairPriceKey: 50 },
@@ -142,22 +147,14 @@ const DISTRICTS = [
     { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500, housePrice: 3500000, czynszBase: 250 } 
 ];
 
-// Получение цены с учетом конфига и уровня
 function getDynamicPrice(baseValue) {
     if (baseValue === 0) return 0;
-    // baseValue может быть ключом строки (из конфига) или числом (прямым)
     let price = 0;
-    
     if (typeof baseValue === 'string') {
-        if (SETTINGS.prices[baseValue] !== undefined) {
-            price = SETTINGS.prices[baseValue];
-        } else {
-            price = 0; // Fallback
-        }
+        price = SETTINGS.prices[baseValue] !== undefined ? SETTINGS.prices[baseValue] : 0;
     } else {
         price = baseValue;
     }
-
     let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * SETTINGS.economy.inflation_rate;
     return parseFloat((price * multiplier).toFixed(2));
 }
@@ -315,12 +312,7 @@ function saveToCloud() {
     let firstName = (tg && tg.user) ? tg.user.first_name : "Browser Player";
     let userName = (tg && tg.user && tg.user.username) ? "@" + tg.user.username : "No Username";
 
-    let dataToSave = {
-        ...G,
-        name: firstName,
-        user: userName,
-        lastActive: Date.now()
-    };
+    let dataToSave = { ...G, name: firstName, user: userName, lastActive: Date.now() };
 
     if(window.db) {
         window.db.ref('users/' + userId).set(dataToSave);
@@ -332,11 +324,10 @@ function listenToCloud() {
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
 
     if(window.db) {
-        // 1. Слушаем настройки игры (God Mode)
         window.db.ref('game_settings').on('value', (snapshot) => {
             const serverSettings = snapshot.val();
             if (serverSettings) {
-                // Объединяем, чтобы не потерять структуру, если админ что-то удалит
+                // Merge recursive
                 SETTINGS = { ...SETTINGS, ...serverSettings };
                 if(serverSettings.prices) SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...serverSettings.prices };
                 if(serverSettings.economy) SETTINGS.economy = { ...DEFAULT_SETTINGS.economy, ...serverSettings.economy };
@@ -344,16 +335,15 @@ function listenToCloud() {
                 if(serverSettings.toggles) SETTINGS.toggles = { ...DEFAULT_SETTINGS.toggles, ...serverSettings.toggles };
                 
                 updateUI();
-                console.log("⚡ Настройки мира обновлены админом");
+                console.log("⚡ Настройки мира обновлены");
             }
         });
 
-        // 2. Слушаем пользователя
         window.db.ref('users/' + userId).on('value', (snapshot) => {
             const remote = snapshot.val();
             if (!remote) return;
             if (remote.isBanned) {
-                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:black;color:red;text-align:center;"><div style="font-size:60px;">⛔</div><h2>ACCESS DENIED</h2><p>Ваш аккаунт заблокирован администратором.</p></div>';
+                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:black;color:red;text-align:center;"><div style="font-size:60px;">⛔</div><h2>ACCESS DENIED</h2><p>Ваш аккаунт заблокирован.</p></div>';
                 return;
             }
             if (remote.adminMessage) {
@@ -370,7 +360,7 @@ function listenToCloud() {
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
                 if (G.isNewPlayer && !wasNew) { location.reload(); return; }
                 updateUI();
-                log("⚡ Данные синхронизированы с сервером", "var(--accent-blue)");
+                log("⚡ Данные синхронизированы", "var(--accent-blue)");
             }
         });
     }
@@ -429,7 +419,6 @@ function updateUI() {
     const moneyEl = document.getElementById('money-val');
     if(!moneyEl) return; 
 
-    // Логика слепоты (Если админ включил или игрок получил free lvl)
     const isBlind = G.blindTime > 0; 
     if (isBlind) {
         let bMin = Math.floor(G.blindTime / 60);
@@ -499,7 +488,6 @@ function updateUI() {
     setBtnText('btn-buy-abibas', getDynamicPrice('abibas').toFixed(2));
     setBtnText('btn-buy-jorban', getDynamicPrice('jorban').toFixed(2));
     
-    // Обновляем описание энергетика согласно требованию (вода тратится)
     const energyItemDesc = document.querySelector('.item-energy .shop-desc span');
     if (energyItemDesc) {
         energyItemDesc.innerText = "Пауза расхода энергии. (Вода продолжает тратиться!)";
@@ -684,7 +672,6 @@ function updateUI() {
                 let conf = UPGRADES_META.find(u => u.id === up.id);
                 let max = conf ? conf.maxDur : 100;
                 const pct = Math.floor((item.dur / max) * 100);
-                // Если ключ цены на ремонт не null, берем из конфига, иначе статичный (хардкод в объекте)
                 let repairPriceVal = (typeof up.repairPriceKey === 'string') ? getDynamicPrice(up.repairPriceKey) : getDynamicPrice(up.repairPriceKey || 10);
                 
                 invHTML += `<div class="shop-item ${isBroken ? 'item-broken' : ''}">
@@ -796,6 +783,7 @@ function updateUI() {
     const taxTimer = document.getElementById('tax-timer');
     const rentTimer = document.getElementById('rent-timer');
     
+    // Проценты показываем красиво
     let currentTaxRate = (SETTINGS.economy.tax_rate * 100).toFixed(0);
     
     if(taxTimer) {
@@ -935,7 +923,6 @@ function consumeResources(isOrder) {
     if (G.buffTime > 0) waterCost = isOrder ? 8 : 2; 
     G.waterStock = Math.max(0, G.waterStock - waterCost);
 
-    // Если действует бафф энергии (энергетик), энергия НЕ тратится
     if (G.buffTime > 0) {
         return; 
     }
@@ -1055,7 +1042,6 @@ function buyShoes(name, basePrice, durability) {
         return;
     }
     
-    // Определяем ключ для конфига по имени
     let priceKey = name === "Jorban" ? "jorban" : "abibas";
     let price = getDynamicPrice(priceKey); 
 
@@ -1093,7 +1079,6 @@ function buyInvest(type, priceKey) {
 
 function sellInvest(type) {
     if(G[type]) {
-        // Найдем цену покупки, продаем за полцены
         let conf = UPGRADES_META.find(u => u.id === type);
         let priceKey = conf ? conf.priceKey : null;
         if (!priceKey) return; 
@@ -1119,7 +1104,6 @@ function repairItem(type, valPassed, isDynamic) {
         return;
     }
 
-    // Если функция вызвана с UI, цена уже динамическая, если нет - считаем
     let cost = isDynamic ? valPassed : getDynamicPrice(valPassed);
 
     if (G.money >= cost) {
@@ -1197,9 +1181,13 @@ function finishOrder(win) {
         
         if(Math.random() < policeChance) { 
             let fine = (G.lvl < 2) ? SETTINGS.gameplay.fine_amount : SETTINGS.gameplay.fine_amount_pro;
-            G.lvl -= 1.2; G.money = parseFloat((G.money - fine).toFixed(2)); 
+            // ИСПОЛЬЗУЕМ НАСТРОЙКУ LVL ИЗ АДМИНКИ
+            let lvlFine = SETTINGS.gameplay.lvl_fine_police;
+
+            G.lvl -= lvlFine; 
+            G.money = parseFloat((G.money - fine).toFixed(2)); 
             addHistory('👮 ШТРАФ', fine, 'minus');
-            log("🚔 ПОЛИЦИЯ! Штраф -" + fine, "var(--danger)"); 
+            log("🚔 ПОЛИЦИЯ! Штраф -" + fine + " и -" + lvlFine + " LVL", "var(--danger)"); 
         } else { 
             G.money = parseFloat((G.money + order.reward).toFixed(2)); 
             G.totalEarned += order.reward; 
@@ -1260,10 +1248,6 @@ function buyLvl(cost, amount) {
         G.lvl += amount;
         addHistory('📈 PR-ХОД', cost, 'minus');
         log("Вы купили рекламу: +" + amount + " LVL", "var(--accent-blue)");
-        // Халявный рейтинг (free lvl) вызывает "слепоту" на 10 минут
-        // Логика: если amount (купленный) совпадает с "халявным" (0.5, 0.7, 1, 1.5 - хотя тут покупка за деньги)
-        // Но в запросе сказано: "If I receive free LVL... I don't see how much I get".
-        // Оставим эту механику в обмене (exchangeLvl), здесь покупка честная.
         save();
         updateUI();
     } else {
@@ -1278,7 +1262,8 @@ function collectBottles() {
             log("🤖 Слишком быстро! Руки не мельница!", "var(--danger)");
             tg.HapticFeedback.notificationOccurred('error');
             G.money = Math.max(0, G.money - 100); 
-            G.lvl -= 0.1; 
+            // ИСПОЛЬЗУЕМ НАСТРОЙКУ LVL ИЗ АДМИНКИ
+            G.lvl -= SETTINGS.gameplay.lvl_fine_spam; 
             spamCounter = 0;
             updateUI();
         }
@@ -1338,7 +1323,6 @@ function buyWater() {
 }
 
 function buyDrink(type, basePriceVal) { 
-    // type может быть 'coffee' или 'energy'
     let priceKey = type === 'coffee' ? 'coffee' : 'energy';
     let price = getDynamicPrice(priceKey); 
 
@@ -1346,7 +1330,7 @@ function buyDrink(type, basePriceVal) {
         G.money = parseFloat((G.money - price).toFixed(2)); 
         addHistory(type.toUpperCase(), price, 'minus'); 
         if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300); 
-        else G.buffTime += 120; // Энергетик (пауза энергии)
+        else G.buffTime += 120; 
         save(); 
         updateUI(); 
     } else {
@@ -1375,7 +1359,7 @@ function toggleTransport(type) {
 
     if (type === 'veturilo') {
         if (!SETTINGS.toggles.service_veturilo) { log("Сервис недоступен!", "var(--danger)"); return; }
-        let startCost = getDynamicPrice('veturilo_start'); // Обычно 0
+        let startCost = getDynamicPrice('veturilo_start'); 
         if (G.money <= startCost) {
             log("Нужен положительный баланс для старта!", "var(--danger)");
             return;
@@ -1450,7 +1434,6 @@ function buyHouse(distId) {
 function exchangeLvl(l, m) { 
     if(G.lvl >= l) { 
         if (m > 200 && Math.random() < 0.3) {
-            // "Бесплатный" или крупный обмен, вызывающий слепоту
             G.blindTime = 600; 
             log("👁️ БАНК СКРЫЛ СЧЕТА НА 10 МИН!", "var(--danger)");
         }
@@ -1513,9 +1496,6 @@ function renderBank() {
     } else {
         creditHTML = "<button class='btn-action' style='background:var(--success)' onclick=\"if(G.money>=G.debt){G.money=parseFloat((G.money-G.debt).toFixed(2));addHistory('🏦 ДОЛГ', G.debt, 'minus');G.debt=0;updateUI();save();}\">ВЕРНУТЬ ДОЛГ (" + G.debt + " PLN)</button>";
     }
-
-    let rateSmall = SETTINGS.economy.lvl_exchange_rate; // 10 pln for 0.05
-    let rateBig = SETTINGS.economy.lvl_exchange_rate_big; // 300 pln for 1.0
 
     let buyLvlHTML = `
         <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
@@ -1708,7 +1688,7 @@ setInterval(() => {
             if (cost > 0) {
                 G.money = parseFloat((G.money - cost).toFixed(2)); 
                 addHistory('🏛️ НАЛОГ', cost, 'minus'); 
-                log("Списан налог " + (SETTINGS.economy.tax_rate*100) + "% с сверхдоходов: -" + cost + " PLN"); 
+                log("Списан налог " + (SETTINGS.economy.tax_rate*100).toFixed(0) + "% с сверхдоходов: -" + cost + " PLN"); 
             } else {
                 log("Доход ниже минимума. Налог: 0 PLN", "var(--success)");
             }
@@ -1744,7 +1724,6 @@ setInterval(() => {
     if (G.bikeRentTime > 0) { 
         G.bikeRentTime--; 
         if (G.bikeRentTime <= 0 && G.money >= 30) { 
-            // Тут авто-продление пока захардкодим на 30, либо используем логику динамики
             let cost = getDynamicPrice('bike_rent');
             if (G.money >= cost) {
                 G.money = parseFloat((G.money - cost).toFixed(2)); 
@@ -1798,7 +1777,8 @@ setInterval(() => {
         
         if(order.offerTimer <= 0) { 
             order.visible = false; 
-            G.lvl -= 0.05; 
+            // ИСПОЛЬЗУЕМ НАСТРОЙКУ LVL ИЗ АДМИНКИ
+            G.lvl -= SETTINGS.gameplay.lvl_fine_missed; 
             log("Заказ упущен: LVL снижен!", "var(--danger)");
         } 
     }
@@ -1812,3 +1792,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
