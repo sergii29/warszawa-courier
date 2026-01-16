@@ -36,6 +36,7 @@ let G = {
     history: [], 
     usedPromos: [], 
     isNewPlayer: true, 
+    hasUsedBank: false, // Флаг: пользовался ли игрок банком
     lastWelfare: 0, 
     lastAdminUpdate: 0, 
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
@@ -276,10 +277,9 @@ function listenToCloud() {
             }
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 let wasNew = G.isNewPlayer;
-                // !!! ИСПРАВЛЕНИЕ: Добавлен 'deposit' в список удаления !!!
                 const checkKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone', 'deposit'];
                 checkKeys.forEach(key => { if (!remote[key]) G[key] = null; });
-                if(!remote.bankHistory) G.bankHistory = []; // Очистка истории банка
+                if(!remote.bankHistory) G.bankHistory = []; 
 
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
@@ -328,6 +328,7 @@ function load() {
     G.maxEn = 2000; 
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
+    if(G.hasUsedBank === undefined) G.hasUsedBank = false; // Инициализация флага банка
     
     if (!G.deposit) G.deposit = null;
     if (!G.bankHistory) G.bankHistory = [];
@@ -1402,22 +1403,39 @@ function makeDeposit() {
     if (val > G.money) { log("Не хватает денег!", "var(--danger)"); return; }
     if (val < 100) { log("Минимальный вклад 100 PLN", "var(--danger)"); return; }
 
+    // --- НОВАЯ ЛОГИКА БАНКА ---
+    let fee = 0;
+    let isFirst = !G.hasUsedBank;
+
+    if (!isFirst) {
+        fee = val * 0.60; // 60% комиссия
+    }
+
+    let finalAmount = val - fee;
+
     G.money = parseFloat((G.money - val).toFixed(2));
     
     let durationMs = selectedBankPlan.days * 86400000; 
 
     G.deposit = {
-        amount: val,
+        amount: finalAmount, // На счет попадает сумма за вычетом комиссии
         start: Date.now(),
         end: Date.now() + durationMs,
         rate: selectedBankPlan.rate,
-        profit: val * selectedBankPlan.rate,
-        penalty: val * 0.30 
+        profit: finalAmount * selectedBankPlan.rate,
+        penalty: finalAmount * 0.30 // Штраф 30% от суммы вклада
     };
+    
+    if (fee > 0) {
+        addHistory('🏦 КОМИССИЯ', fee, 'minus');
+        log(`🏦 Комиссия банка (60%): -${fee.toFixed(2)} PLN`, "var(--danger)");
+    }
 
-    addBankLog("Вклад " + selectedBankPlan.days + "дн", val, "minus");
+    addBankLog("Вклад " + selectedBankPlan.days + "дн", finalAmount, "minus");
     log("💎 Средства заморожены в Royal Bank", "var(--accent-blue)");
     tg.HapticFeedback.notificationOccurred('success');
+    
+    G.hasUsedBank = true; // Запоминаем, что пользовались банком
     
     inp.value = "";
     save();
