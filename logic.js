@@ -36,7 +36,6 @@ let G = {
     history: [], 
     usedPromos: [], 
     isNewPlayer: true, 
-    hasUsedBank: false, // Флаг: пользовался ли игрок банком
     lastWelfare: 0, 
     lastAdminUpdate: 0, 
     shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
@@ -181,11 +180,6 @@ function checkStarterPack() {
 
 function claimStarterPack() {
     document.getElementById('starter-modal').style.display = 'none';
-    
-    // --- ИСПРАВЛЕНИЕ: Обнуляем квесты ---
-    G.dailyQuests = [];
-    G.lastDailyUpdate = 0;
-    
     G.money += 50;
     G.waterStock += 500;
     G.transportMode = 'none'; 
@@ -194,11 +188,8 @@ function claimStarterPack() {
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
     G.starter_bag = { active: true, dur: 50 }; 
     G.starter_phone = { active: true, dur: 50 };
-    
     addHistory('🎁 STARTER KIT', 50, 'plus');
     log("Вы получили набор новичка!", "var(--success)");
-    
-    generateDailyQuests(); // Генерируем новые сразу
     save();
     updateUI();
 }
@@ -285,9 +276,10 @@ function listenToCloud() {
             }
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 let wasNew = G.isNewPlayer;
+                // !!! ИСПРАВЛЕНИЕ: Добавлен 'deposit' в список удаления !!!
                 const checkKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone', 'deposit'];
                 checkKeys.forEach(key => { if (!remote[key]) G[key] = null; });
-                if(!remote.bankHistory) G.bankHistory = []; 
+                if(!remote.bankHistory) G.bankHistory = []; // Очистка истории банка
 
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
@@ -336,7 +328,6 @@ function load() {
     G.maxEn = 2000; 
     if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
     if(!G.blindTime) G.blindTime = 0;
-    if(G.hasUsedBank === undefined) G.hasUsedBank = false; // Инициализация флага банка
     
     if (!G.deposit) G.deposit = null;
     if (!G.bankHistory) G.bankHistory = [];
@@ -1411,71 +1402,23 @@ function makeDeposit() {
     if (val > G.money) { log("Не хватает денег!", "var(--danger)"); return; }
     if (val < 100) { log("Минимальный вклад 100 PLN", "var(--danger)"); return; }
 
-    // --- НОВАЯ ЛОГИКА БАНКА ---
-    let fee = 0;
-    let isFirst = !G.hasUsedBank;
-
-    if (!isFirst) {
-        fee = val * 0.60; // 60% комиссия
-    }
-
-    let finalAmount = val - fee;
-
     G.money = parseFloat((G.money - val).toFixed(2));
     
     let durationMs = selectedBankPlan.days * 86400000; 
 
     G.deposit = {
-        amount: finalAmount, // На счет попадает сумма за вычетом комиссии
+        amount: val,
         start: Date.now(),
         end: Date.now() + durationMs,
         rate: selectedBankPlan.rate,
-        profit: finalAmount * selectedBankPlan.rate,
-        penalty: finalAmount * 0.30 // Штраф 30% от суммы вклада
+        profit: val * selectedBankPlan.rate,
+        penalty: val * 0.30 
     };
-    
-    if (fee > 0) {
-        addHistory('🏦 КОМИССИЯ', fee, 'minus');
-        log(`🏦 Комиссия банка (60%): -${fee.toFixed(2)} PLN`, "var(--danger)");
-    }
 
-    addBankLog("Вклад " + selectedBankPlan.days + "дн", finalAmount, "minus");
+    addBankLog("Вклад " + selectedBankPlan.days + "дн", val, "minus");
     log("💎 Средства заморожены в Royal Bank", "var(--accent-blue)");
     tg.HapticFeedback.notificationOccurred('success');
     
-    G.hasUsedBank = true; // Запоминаем, что пользовались банком
-    
-    inp.value = "";
-    save();
-    updateUI();
-}
-
-function addToDeposit() {
-    if(!G.deposit) return;
-    const inp = document.getElementById('bank-add-inp');
-    let val = parseFloat(inp.value);
-
-    if (!val || val <= 0) { log("Введите сумму!", "var(--danger)"); return; }
-    if (val > G.money) { log("Не хватает денег!", "var(--danger)"); return; }
-
-    // Комиссия 60% на докладывание
-    let fee = val * 0.60;
-    let finalAmount = val - fee;
-
-    G.money = parseFloat((G.money - val).toFixed(2));
-    
-    // Обновляем тело депозита
-    G.deposit.amount += finalAmount;
-    
-    // Пересчитываем прибыль и штраф от новой общей суммы
-    // (Процент прибыли берем тот же, что был при открытии)
-    G.deposit.profit = G.deposit.amount * G.deposit.rate;
-    G.deposit.penalty = G.deposit.amount * 0.30;
-
-    addHistory('🏦 КОМИССИЯ', fee, 'minus');
-    addBankLog("Пополнение", finalAmount, "minus");
-    log(`Добавлено: ${finalAmount.toFixed(2)} PLN (Комиссия: ${fee.toFixed(2)})`, "var(--success)");
-
     inp.value = "";
     save();
     updateUI();
@@ -1545,10 +1488,6 @@ function renderBankFull() {
             
             document.getElementById('btn-bank-claim').style.display = 'block';
             document.getElementById('btn-bank-break').style.display = 'none';
-            // Скрываем форму пополнения, если срок истек
-            let addForm = document.getElementById('bank-add-ui');
-            if(addForm) addForm.style.display = 'none';
-
         } else {
             let pct = 100 - (left / totalDur * 100);
             document.getElementById('bank-prog-bar').style.width = pct + "%";
@@ -1562,35 +1501,11 @@ function renderBankFull() {
             
             document.getElementById('btn-bank-claim').style.display = 'none';
             document.getElementById('btn-bank-break').style.display = 'block';
-            
-            // --- ДОБАВЛЕНО: Форма докидывания денег ---
-            // Если её еще нет в DOM, добавляем динамически или обновляем
-            let addForm = document.getElementById('bank-add-ui');
-            if(!addForm) {
-                addForm = document.createElement('div');
-                addForm.id = 'bank-add-ui';
-                addForm.style.marginTop = '15px';
-                addForm.style.borderTop = '1px solid rgba(255,255,255,0.1)';
-                addForm.style.paddingTop = '10px';
-                addForm.innerHTML = `
-                    <div style="font-size:10px; color:#aaa; margin-bottom:5px;">ДОКИНУТЬ В КОПИЛКУ (Ком. 60%)</div>
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" id="bank-add-inp" class="promo-input" placeholder="Сумма..." style="margin:0; text-align:center;">
-                        <button class="btn-action" style="width:auto; background:var(--accent-blue);" onclick="addToDeposit()">➕</button>
-                    </div>
-                `;
-                actUI.appendChild(addForm);
-            } else {
-                addForm.style.display = 'block';
-            }
         }
 
     } else {
         selUI.style.display = 'block';
         actUI.style.display = 'none';
-        // Очищаем форму добавления, если она вдруг осталась
-        let addForm = document.getElementById('bank-add-ui');
-        if(addForm) addForm.remove();
     }
 
     const hList = document.getElementById('bank-history-list');
@@ -1745,3 +1660,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
