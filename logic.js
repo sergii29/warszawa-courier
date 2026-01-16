@@ -1,5 +1,5 @@
 // --- logic.js ---
-// VERSION: 7.2 (WIPE FIX)
+// VERSION: 7.4 (BOLT START FIX & NAN PROTECTION)
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
@@ -85,14 +85,23 @@ const DISTRICTS = [
     { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500, housePrice: 3500000, czynszBase: 250 } 
 ];
 
+// === ГЛАВНОЕ ИСПРАВЛЕНИЕ (ЗАЩИТА ОТ NaN) ===
 function getDynamicPrice(baseValue) {
     if (baseValue === 0) return 0;
     let price = 0;
     if (typeof baseValue === 'string') {
-        price = SETTINGS.prices[baseValue] !== undefined ? SETTINGS.prices[baseValue] : 0;
+        // Если в настройках пришел мусор (NaN или null), ставим 0, чтобы не ломать игру
+        let val = SETTINGS.prices[baseValue];
+        price = (val !== undefined && !isNaN(val)) ? val : 0;
     } else { price = baseValue; }
+    
     let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * SETTINGS.economy.inflation_rate;
-    return parseFloat((price * multiplier).toFixed(2));
+    let finalPrice = price * multiplier;
+    
+    // Финальная проверка: если что-то пошло не так, возвращаем 0
+    if (isNaN(finalPrice)) return 0;
+    
+    return parseFloat(finalPrice.toFixed(2));
 }
 
 function addHistory(msg, val, type = 'plus') {
@@ -102,7 +111,6 @@ function addHistory(msg, val, type = 'plus') {
     if (G.history.length > 20) G.history.pop();
 }
 
-// ... Остальные функции игры (usePromo, sphere events, etc) без изменений логики ...
 async function usePromo() {
     const inputField = document.getElementById('promo-input');
     const code = inputField.value.trim().toUpperCase();
@@ -271,7 +279,6 @@ function listenToCloud() {
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 let wasNew = G.isNewPlayer;
                 
-                // Принудительно очищаем локальные данные, если их нет в обновлении (Firebase удаляет пустые поля)
                 if(!remote.dailyQuests) remote.dailyQuests = [];
                 if(!remote.usedPromos) remote.usedPromos = [];
                 if(!remote.history) remote.history = [];
@@ -283,14 +290,12 @@ function listenToCloud() {
                 ];
                 if(!remote.housing) remote.housing = { id: -1 };
                 
-                // Обнуляем инвентарь если ключей нет
                 const invKeys = ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank', 'starter_bag', 'starter_phone', 'deposit'];
                 invKeys.forEach(key => { if (!remote[key]) remote[key] = null; });
 
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
                 
-                // Если админ сделал вайп (isNewPlayer стал true), перезагружаем страницу
                 if (G.isNewPlayer && !wasNew) { location.reload(); return; }
                 
                 updateUI();
@@ -316,6 +321,11 @@ function load() {
     
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
+    
+    // === FIX FOR NaN TIMERS ===
+    if(isNaN(G.tax)) G.tax = 300; 
+    if(isNaN(G.rent)) G.rent = 300; 
+    
     if(isNaN(G.en)) G.en = 2000;
     if(isNaN(G.waterStock)) G.waterStock = 0;
     if(!G.transportMode) G.transportMode = 'none';
@@ -1311,3 +1321,5 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
+}
