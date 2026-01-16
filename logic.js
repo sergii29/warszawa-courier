@@ -181,6 +181,11 @@ function checkStarterPack() {
 
 function claimStarterPack() {
     document.getElementById('starter-modal').style.display = 'none';
+    
+    // --- ИСПРАВЛЕНИЕ: Обнуляем квесты ---
+    G.dailyQuests = [];
+    G.lastDailyUpdate = 0;
+    
     G.money += 50;
     G.waterStock += 500;
     G.transportMode = 'none'; 
@@ -189,8 +194,11 @@ function claimStarterPack() {
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
     G.starter_bag = { active: true, dur: 50 }; 
     G.starter_phone = { active: true, dur: 50 };
+    
     addHistory('🎁 STARTER KIT', 50, 'plus');
     log("Вы получили набор новичка!", "var(--success)");
+    
+    generateDailyQuests(); // Генерируем новые сразу
     save();
     updateUI();
 }
@@ -1442,6 +1450,37 @@ function makeDeposit() {
     updateUI();
 }
 
+function addToDeposit() {
+    if(!G.deposit) return;
+    const inp = document.getElementById('bank-add-inp');
+    let val = parseFloat(inp.value);
+
+    if (!val || val <= 0) { log("Введите сумму!", "var(--danger)"); return; }
+    if (val > G.money) { log("Не хватает денег!", "var(--danger)"); return; }
+
+    // Комиссия 60% на докладывание
+    let fee = val * 0.60;
+    let finalAmount = val - fee;
+
+    G.money = parseFloat((G.money - val).toFixed(2));
+    
+    // Обновляем тело депозита
+    G.deposit.amount += finalAmount;
+    
+    // Пересчитываем прибыль и штраф от новой общей суммы
+    // (Процент прибыли берем тот же, что был при открытии)
+    G.deposit.profit = G.deposit.amount * G.deposit.rate;
+    G.deposit.penalty = G.deposit.amount * 0.30;
+
+    addHistory('🏦 КОМИССИЯ', fee, 'minus');
+    addBankLog("Пополнение", finalAmount, "minus");
+    log(`Добавлено: ${finalAmount.toFixed(2)} PLN (Комиссия: ${fee.toFixed(2)})`, "var(--success)");
+
+    inp.value = "";
+    save();
+    updateUI();
+}
+
 function claimDeposit() {
     if(!G.deposit) return;
     let total = parseFloat((G.deposit.amount + G.deposit.profit).toFixed(2));
@@ -1506,6 +1545,10 @@ function renderBankFull() {
             
             document.getElementById('btn-bank-claim').style.display = 'block';
             document.getElementById('btn-bank-break').style.display = 'none';
+            // Скрываем форму пополнения, если срок истек
+            let addForm = document.getElementById('bank-add-ui');
+            if(addForm) addForm.style.display = 'none';
+
         } else {
             let pct = 100 - (left / totalDur * 100);
             document.getElementById('bank-prog-bar').style.width = pct + "%";
@@ -1519,11 +1562,35 @@ function renderBankFull() {
             
             document.getElementById('btn-bank-claim').style.display = 'none';
             document.getElementById('btn-bank-break').style.display = 'block';
+            
+            // --- ДОБАВЛЕНО: Форма докидывания денег ---
+            // Если её еще нет в DOM, добавляем динамически или обновляем
+            let addForm = document.getElementById('bank-add-ui');
+            if(!addForm) {
+                addForm = document.createElement('div');
+                addForm.id = 'bank-add-ui';
+                addForm.style.marginTop = '15px';
+                addForm.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+                addForm.style.paddingTop = '10px';
+                addForm.innerHTML = `
+                    <div style="font-size:10px; color:#aaa; margin-bottom:5px;">ДОКИНУТЬ В КОПИЛКУ (Ком. 60%)</div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="bank-add-inp" class="promo-input" placeholder="Сумма..." style="margin:0; text-align:center;">
+                        <button class="btn-action" style="width:auto; background:var(--accent-blue);" onclick="addToDeposit()">➕</button>
+                    </div>
+                `;
+                actUI.appendChild(addForm);
+            } else {
+                addForm.style.display = 'block';
+            }
         }
 
     } else {
         selUI.style.display = 'block';
         actUI.style.display = 'none';
+        // Очищаем форму добавления, если она вдруг осталась
+        let addForm = document.getElementById('bank-add-ui');
+        if(addForm) addForm.remove();
     }
 
     const hList = document.getElementById('bank-history-list');
