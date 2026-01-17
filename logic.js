@@ -3,9 +3,9 @@ type: file
 fileName: logic.js
 fullContent:
 // --- logic.js ---
-// VERSION: 10.0 (BUSINESS REWORK & MANAGERS)
+// VERSION: 10.1 (STABLE & FIXED)
 // Ключ сохранения WARSZAWA_FOREVER.
-// Обновлена механика бизнеса: общий счет, менеджеры, налоги, лимиты на вывод.
+// Исправлена инициализация данных, добавлен общий счет бизнеса, менеджеры и налоги.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -23,18 +23,12 @@ const DEFAULT_SETTINGS = {
         bolt_start: 2.00, bolt_min: 2.50,
         bag: 350, phone: 1200, scooter: 500, helmet: 250, raincoat: 180, powerbank: 400, abibas: 50, jorban: 250
     },
-    // Цены для бизнеса (Закупка / Продажа)
+    // Цены товаров и менеджеров
     business_goods: {
-        vending_buy: 8.0, vending_sell: 12.0, 
-        vege_buy: 15.0, vege_sell: 25.0,      
-        kebab_buy: 40.0, kebab_sell: 75.0,    
-        zabka_buy: 100.0, zabka_sell: 180.0   
-    },
-    business_managers: {
-        vending_cost: 150,
-        vege_cost: 400,
-        kebab_cost: 1200,
-        zabka_cost: 5000
+        vending_buy: 8.0, vending_sell: 12.0, vending_manager: 150,
+        vege_buy: 15.0, vege_sell: 25.0, vege_manager: 400,   
+        kebab_buy: 40.0, kebab_sell: 75.0, kebab_manager: 1200,
+        zabka_buy: 100.0, zabka_sell: 180.0, zabka_manager: 5000
     },
     economy: {
         tax_rate: 0.15, tax_threshold: 200, inflation_rate: 0.40, 
@@ -57,47 +51,31 @@ const DEFAULT_SETTINGS = {
 const BUSINESS_META = [
     { 
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
-        basePrice: 5000, 
-        minLvl: 5.0, 
-        taxRate: 0.18, 
-        stockConsume: 1, 
+        basePrice: 5000, minLvl: 5.0, taxRate: 0.0, 
         maxStock: 500, 
-        priceKeys: { buy: 'vending_buy', sell: 'vending_sell' },
-        managerCostKey: 'vending_cost',
-        desc: "Автомат. Купи сникерсы оптом, продай в розницу."
+        priceKeys: { buy: 'vending_buy', sell: 'vending_sell', manager: 'vending_manager' },
+        desc: "Автомат со снеками. Доступный старт."
     },
     { 
         id: 'vege', name: 'Warzywniak', icon: '🥦', 
-        basePrice: 20000, 
-        minLvl: 10.0,
-        taxRate: 0.23, 
-        stockConsume: 2, 
+        basePrice: 20000, minLvl: 10.0, taxRate: 0.0, 
         maxStock: 1500, 
-        priceKeys: { buy: 'vege_buy', sell: 'vege_sell' },
-        managerCostKey: 'vege_cost',
-        desc: "Овощи гниют быстро, но наценка хорошая."
+        priceKeys: { buy: 'vege_buy', sell: 'vege_sell', manager: 'vege_manager' },
+        desc: "Овощная лавка. Свежие витамины."
     },
     { 
         id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', 
-        basePrice: 75000, 
-        minLvl: 20.0,
-        taxRate: 0.30, 
-        stockConsume: 4, 
+        basePrice: 75000, minLvl: 20.0, taxRate: 0.0, 
         maxStock: 4000, 
-        priceKeys: { buy: 'kebab_buy', sell: 'kebab_sell' },
-        managerCostKey: 'kebab_cost',
-        desc: "Мясо, лаваш, соус. Клиенты идут потоком."
+        priceKeys: { buy: 'kebab_buy', sell: 'kebab_sell', manager: 'kebab_manager' },
+        desc: "Лучший кебаб на районе."
     },
     { 
         id: 'zabka', name: 'Żabka Franchise', icon: '🐸', 
-        basePrice: 300000, 
-        minLvl: 30.0, 
-        taxRate: 0.40, 
-        stockConsume: 8, 
+        basePrice: 300000, minLvl: 30.0, taxRate: 0.0, 
         maxStock: 20000, 
-        priceKeys: { buy: 'zabka_buy', sell: 'zabka_sell' },
-        managerCostKey: 'zabka_cost',
-        desc: "Высокие обороты. Главное успевать завозить товар."
+        priceKeys: { buy: 'zabka_buy', sell: 'zabka_sell', manager: 'zabka_manager' },
+        desc: "Магазин у дома. Высокий оборот."
     }
 ];
 
@@ -126,12 +104,12 @@ let G = {
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
     ],
-    // НОВЫЕ ПОЛЯ БИЗНЕСА
+    // БИЗНЕС
     business: {}, 
-    businessCapital: 0, // Общий счет бизнеса
-    businessWorkers: {}, // Таймеры работников
-    dailyBizTransfers: 0, // Кол-во выводов за сегодня
-    lastDailyBizReset: 0, // Время сброса лимитов
+    businessCapital: 0, 
+    businessWorkers: {}, 
+    dailyBizTransfers: 0, 
+    lastDailyBizReset: 0,
     lastActive: Date.now()
 };
 
@@ -163,7 +141,6 @@ function getDynamicPrice(baseValue) {
     if (typeof baseValue === 'string') {
         if (SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
         else if (SETTINGS.business_goods && SETTINGS.business_goods[baseValue] !== undefined) price = SETTINGS.business_goods[baseValue];
-        else if (SETTINGS.business_managers && SETTINGS.business_managers[baseValue] !== undefined) price = SETTINGS.business_managers[baseValue];
         else price = 0;
     } else { price = baseValue; }
     let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * SETTINGS.economy.inflation_rate;
@@ -359,28 +336,37 @@ function validateInventory() {
     });
 }
 
-function load() { 
-    let d = localStorage.getItem(SAVE_KEY); 
-    if(d) { 
-        try { let loaded = JSON.parse(d); G = {...G, ...loaded}; } catch(e) { console.error(e); }
-    } 
+function FixData() {
+    // Эта функция чинит битые сохранения
+    if (!G.business) G.business = {};
+    if (typeof G.businessCapital !== 'number' || isNaN(G.businessCapital)) G.businessCapital = 0;
+    if (!G.businessWorkers) G.businessWorkers = {};
+    if (typeof G.dailyBizTransfers !== 'number') G.dailyBizTransfers = 0;
+    if (typeof G.lastDailyBizReset !== 'number') G.lastDailyBizReset = 0;
     
-    // ИНИЦИАЛИЗАЦИЯ НОВЫХ ПОЛЕЙ
-    if(!G.business) G.business = {};
-    if(G.businessCapital === undefined) G.businessCapital = 0;
-    if(G.businessWorkers === undefined) G.businessWorkers = {};
-    if(G.dailyBizTransfers === undefined) G.dailyBizTransfers = 0;
-    if(G.lastDailyBizReset === undefined) G.lastDailyBizReset = 0;
-
-    if(G.business) {
-        for(let key in G.business) {
-            if(G.business[key]) {
-                if(G.business[key].stock === undefined) G.business[key].stock = 0;
-                // cash больше не используется внутри объектов бизнеса, но оставим для совместимости старых сейвов, 
-                // при первой "сборке" можно будет перенести в capital (опционально)
+    // Чистим товары от старых полей
+    for(let k in G.business) {
+        if(G.business[k]) {
+            if(G.business[k].stock === undefined) G.business[k].stock = 0;
+            // Убираем старый cash, если он есть, переносим в businessCapital один раз
+            if(G.business[k].cash > 0) {
+                G.businessCapital += G.business[k].cash;
+                G.business[k].cash = 0;
             }
         }
     }
+}
+
+function load() { 
+    let d = localStorage.getItem(SAVE_KEY); 
+    if(d) { 
+        try { 
+            let loaded = JSON.parse(d); 
+            G = {...G, ...loaded}; 
+        } catch(e) { console.error("Corrupt save", e); }
+    } 
+    
+    FixData(); // <--- ВАЖНО: Исправляем данные перед стартом
 
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
@@ -408,7 +394,7 @@ function load() {
     updateUI(); 
 }
 
-// === ЛОГИКА БИЗНЕСА (REWORKED) ===
+// === БИЗНЕС ЛОГИКА (ИСПРАВЛЕННАЯ) ===
 
 function withdrawBusinessCapital() {
     if (Date.now() - G.lastDailyBizReset > 86400000) {
@@ -416,27 +402,27 @@ function withdrawBusinessCapital() {
         G.lastDailyBizReset = Date.now();
     }
 
-    if (G.businessCapital <= 0) {
+    if (G.businessCapital <= 0.01) {
         log("На счету бизнеса нет средств!", "var(--danger)");
         return;
     }
 
     let amount = parseFloat(G.businessCapital.toFixed(2));
-    let fee = 0;
+    let feePct = 0;
     let isFree = G.dailyBizTransfers < 3;
 
-    if (!isFree) {
-        fee = amount * 0.15;
-    }
+    if (!isFree) feePct = 0.15;
 
+    let fee = amount * feePct;
     let toReceive = amount - fee;
+
     G.money = parseFloat((G.money + toReceive).toFixed(2));
     G.businessCapital = 0;
     G.dailyBizTransfers++;
 
     if (fee > 0) {
         addHistory('💼 ВЫВОД (-15%)', toReceive, 'plus');
-        log(`Выведено: ${toReceive.toFixed(2)} PLN (Комиссия: ${fee.toFixed(2)})`, "var(--accent-gold)");
+        log(`Выведено: ${toReceive.toFixed(2)} PLN (Налог: ${fee.toFixed(2)})`, "var(--accent-gold)");
     } else {
         addHistory('💼 ВЫВОД (FREE)', toReceive, 'plus');
         log(`Выведено: ${toReceive.toFixed(2)} PLN без комиссии`, "var(--success)");
@@ -455,42 +441,30 @@ function sellBusinessItemManual(id) {
     }
 
     let sellPrice = getDynamicPrice(biz.priceKeys.sell);
-    // Налог вычитается сразу при продаже в капитал? Или только при выводе?
-    // В ТЗ: "весь баланс бизнеса облагался налогом". Значит, сюда поступает "грязная" прибыль, 
-    // а налог снимается таймером.
-    
-    // Но! В старой логике был taxRate при продаже. Сохраним механику "чистой прибыли" на этом этапе, 
-    // чтобы не ломать баланс, или добавим налог сверху? 
-    // Давай так: Прибыль с продажи идет в Capital. А Capital дополнительно облагается "городским налогом".
-    // Тут мы считаем операционную прибыль.
-    
-    let revenue = sellPrice;
-    let opsTax = revenue * biz.taxRate; // Операционный расход (накладные)
-    let profit = revenue - opsTax;
-
+    // Доход сразу в общий капитал
     userBiz.stock--;
-    G.businessCapital += profit;
+    G.businessCapital += sellPrice;
 
-    // Небольшой визуальный эффект или звук можно добавить
     tg.HapticFeedback.impactOccurred('light');
     save(); updateUI();
 }
 
 function hireBusinessManager(id) {
     let biz = BUSINESS_META.find(b => b.id === id);
-    let cost = getDynamicPrice(biz.managerCostKey);
+    let cost = getDynamicPrice(biz.priceKeys.manager);
 
+    // Можно оплатить со счета бизнеса ИЛИ с личного
     if (G.businessCapital >= cost) {
         G.businessCapital -= cost;
     } else if (G.money >= cost) {
         G.money -= cost;
     } else {
-        log(`Нужно ${cost} PLN (на счету бизнеса или личном)`, "var(--danger)");
+        log(`Нужно ${cost.toFixed(2)} PLN (бизнес или личные)`, "var(--danger)");
         return;
     }
 
     if (!G.businessWorkers[id]) G.businessWorkers[id] = 0;
-    G.businessWorkers[id] += 600; // 10 минут (600 сек)
+    G.businessWorkers[id] += 600; // 10 минут
 
     addHistory('👔 МЕНЕДЖЕР', cost, 'minus');
     log(`Менеджер нанят в ${biz.name} на 10 мин!`, "var(--success)");
@@ -501,32 +475,29 @@ function renderBusiness() {
     const list = document.getElementById('business-list');
     if(!list) return;
 
-    // --- ВЕРХНЯЯ ПАНЕЛЬ (БАНК БИЗНЕСА) ---
-    let bankHTML = "";
+    // Банк бизнеса
     if (Date.now() - G.lastDailyBizReset > 86400000) { G.dailyBizTransfers = 0; }
     let freeLeft = Math.max(0, 3 - G.dailyBizTransfers);
-    let feeText = freeLeft > 0 ? `<span style="color:var(--success)">Бесплатно: ${freeLeft}</span>` : `<span style="color:var(--danger)">Комиссия: 15%</span>`;
+    let feeText = freeLeft > 0 ? `<span style="color:var(--success)">Бесплатно сегодня: ${freeLeft}</span>` : `<span style="color:var(--danger)">Комиссия далее: 15%</span>`;
 
-    bankHTML += `
-    <div class="sapphire-card" style="margin-bottom:20px; padding:15px; background:linear-gradient(135deg, #0f172a 0%, #334155 100%); border:1px solid #475569;">
+    let html = `
+    <div class="sapphire-card" style="margin-bottom:20px; padding:15px; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border:1px solid #475569;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;">Счет Предприятия</div>
-                <div style="font-size:24px; font-weight:800; color:var(--text-primary); text-shadow:0 0 10px rgba(255,255,255,0.2);">${G.businessCapital.toFixed(2)} PLN</div>
+                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase;">Капитал Предприятия</div>
+                <div style="font-size:24px; font-weight:800; color:#fff;">${G.businessCapital.toFixed(2)} PLN</div>
             </div>
             <div style="text-align:right;">
-                <div style="font-size:10px; color:#cbd5e1;">Лимит переводов</div>
-                <div style="font-size:12px;">${feeText}</div>
+                <div style="font-size:10px; color:#cbd5e1;">Вывод средств</div>
+                <div style="font-size:11px;">${feeText}</div>
             </div>
         </div>
         <button class="btn-action" style="margin-top:10px; background:var(--accent-gold); color:black;" onclick="withdrawBusinessCapital()">
-            🏦 ВЫВЕСТИ СРЕДСТВА
+            🏦 ПЕРЕВЕСТИ НА ЛИЧНЫЙ СЧЕТ
         </button>
     </div>
     `;
 
-    // --- СПИСОК БИЗНЕСОВ ---
-    let html = bankHTML;
     let hasHouse = G.housing && G.housing.id !== -1;
 
     BUSINESS_META.forEach(biz => {
@@ -538,16 +509,12 @@ function renderBusiness() {
         
         let buyCost = getDynamicPrice(biz.priceKeys.buy);
         let sellPrice = getDynamicPrice(biz.priceKeys.sell);
-        let managerCost = getDynamicPrice(biz.managerCostKey);
+        let managerCost = getDynamicPrice(biz.priceKeys.manager);
 
         if (!isOwned) {
-            let reason = "";
-            if (!hasHouse) reason = "🔒 НУЖНА КВАРТИРА";
-            else if (!hasLvl) reason = `🔒 НУЖЕН LVL ${biz.minLvl}`;
-            else reason = `КУПИТЬ ${currentPrice} PLN`;
-
+            let reason = hasHouse ? (hasLvl ? `КУПИТЬ ${currentPrice.toFixed(0)} PLN` : `НУЖЕН LVL ${biz.minLvl}`) : "НУЖНА КВАРТИРА";
             let canBuy = hasHouse && hasLvl;
-            let btnStyle = canBuy ? "background:var(--accent-gold); color:black;" : "background:#334155; color:#94a3b8; border:1px solid #475569;";
+            let btnStyle = canBuy ? "background:var(--accent-gold); color:black;" : "background:#334155; color:#94a3b8;";
             let btnAction = canBuy ? `onclick="buyBusiness('${biz.id}')"` : "";
 
             html += `
@@ -562,32 +529,16 @@ function renderBusiness() {
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <div style="font-size:9px; color:#64748b;">
-                        Вход: ${currentPrice} PLN<br>
-                        Менеджер: ~${managerCost.toFixed(0)} PLN
-                    </div>
-                    <button class="btn-action" style="width:auto; padding:8px 15px; ${btnStyle}" ${btnAction}>
-                        ${reason}
-                    </button>
+                    <div style="font-size:9px; color:#64748b;">Вход: ${currentPrice.toFixed(0)} PLN</div>
+                    <button class="btn-action" style="width:auto; padding:6px 12px; font-size:10px; ${btnStyle}" ${btnAction}>${reason}</button>
                 </div>
             </div>`;
         } else {
-            if(userBiz.stock === undefined) userBiz.stock = 0;
-            
             let stockPct = (userBiz.stock / biz.maxStock) * 100;
-            let isStockEmpty = userBiz.stock <= 0;
-            
-            // Worker Logic
             let workerTime = G.businessWorkers[biz.id] || 0;
             let hasWorker = workerTime > 0;
-            let workerHtml = "";
-            if (hasWorker) {
-                let min = Math.floor(workerTime / 60);
-                let sec = workerTime % 60;
-                workerHtml = `<div style="margin-top:8px; background:rgba(34, 197, 94, 0.1); border:1px solid rgba(34, 197, 94, 0.3); padding:5px; border-radius:6px; color:var(--success); font-size:10px; text-align:center;">
-                    👔 Менеджер работает: <b>${min}:${sec < 10 ? '0' : ''}${sec}</b>
-                </div>`;
-            }
+            let wMin = Math.floor(workerTime / 60);
+            let wSec = workerTime % 60;
 
             html += `
             <div class="biz-card">
@@ -596,34 +547,32 @@ function renderBusiness() {
                         <div class="biz-icon">${biz.icon}</div>
                         <div>
                             <div class="biz-title">${biz.name} <span class="biz-level">Владелец</span></div>
-                            <div style="font-size:10px; color:${isStockEmpty ? 'var(--danger)' : 'var(--success)'};">
-                                ${isStockEmpty ? '⚠️ НЕТ ТОВАРА' : (hasWorker ? '⚡ АВТО-ПРОДАЖА' : '✋ ЖДЕТ ПРОДАЖИ')}
+                            <div style="font-size:10px; color:${hasWorker ? 'var(--success)' : '#94a3b8'}">
+                                ${hasWorker ? `⚡ АВТО-ПРОДАЖА: ${wMin}:${wSec<10?'0':''}${wSec}` : '🛑 Ручное управление'}
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="biz-stat-row">
-                    <span>Склад (${userBiz.stock.toFixed(0)}/${biz.maxStock})</span>
-                    <span>Цена: ${sellPrice} PLN</span>
+                    <span>Склад: ${userBiz.stock.toFixed(0)} / ${biz.maxStock}</span>
+                    <span>Цена: ${sellPrice.toFixed(2)} PLN</span>
                 </div>
                 <div class="biz-track"><div class="biz-fill-stock" style="width:${stockPct}%; background:${stockPct<10?'var(--danger)':'#3b82f6'}"></div></div>
 
                 <div class="biz-actions">
                     <button class="btn-biz btn-restock" onclick="restockBusiness('${biz.id}')">
-                        📦 ЗАКУП (-${(buyCost*10).toFixed(0)})
+                        📦 ЗАКУПИТЬ 10 (${(buyCost*10).toFixed(0)} PLN)
                     </button>
-                    <button class="btn-biz" style="background:#eab308; color:black; border:none;" onclick="sellBusinessItemManual('${biz.id}')">
-                        💰 ПРОДАТЬ 1
-                    </button>
+                    ${hasWorker 
+                        ? `<button class="btn-biz" style="background:#334155; color:#94a3b8;">⚙️ РАБОТАЕТ...</button>` 
+                        : `<button class="btn-biz" style="background:#eab308;" onclick="sellBusinessItemManual('${biz.id}')">💰 ПРОДАТЬ 1 ШТ</button>`
+                    }
                 </div>
-                
-                ${hasWorker ? '' : `
-                <button class="btn-action btn-secondary" style="margin-top:8px; padding:8px; font-size:10px;" onclick="hireBusinessManager('${biz.id}')">
-                    👔 НАНЯТЬ МЕНЕДЖЕРА (10 мин) - ${managerCost} PLN
-                </button>`}
-                
-                ${workerHtml}
+                ${!hasWorker ? `
+                <button class="btn-action btn-secondary" style="margin-top:8px; padding:6px; font-size:10px; width:100%;" onclick="hireBusinessManager('${biz.id}')">
+                    👔 НАНЯТЬ МЕНЕДЖЕРА (10 мин) - ${managerCost.toFixed(0)} PLN
+                </button>` : ''}
             </div>`;
         }
     });
@@ -633,79 +582,55 @@ function renderBusiness() {
 
 function buyBusiness(id) {
     if (G.housing.id === -1) { log("⛔ Сначала купите квартиру!", "var(--danger)"); return; }
-    
     let biz = BUSINESS_META.find(b => b.id === id);
     if (G.lvl < biz.minLvl) { log(`⛔ Нужен уровень ${biz.minLvl}!`, "var(--danger)"); return; }
-
     let price = getBusinessPrice(biz.basePrice);
 
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
-        G.business[id] = {
-            stock: 100, // Бонусные 100 товаров при покупке
-            lastUpdate: Date.now()
-        };
+        G.business[id] = { stock: 100, lastUpdate: Date.now() };
         addHistory('🏗️ БИЗНЕС', price, 'minus');
         tg.HapticFeedback.notificationOccurred('success');
         save(); updateUI();
     } else {
-        log(`Не хватает денег! Нужно ${price} PLN`, "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
+        log(`Нужно ${price.toFixed(0)} PLN`, "var(--danger)");
     }
 }
 
 function restockBusiness(id) {
     let biz = BUSINESS_META.find(b => b.id === id);
     let userBiz = G.business[id];
+    if (userBiz.stock >= biz.maxStock) { log("Склад полон!", "var(--accent-blue)"); return; }
+
+    let cost = getDynamicPrice(biz.priceKeys.buy) * 10;
     
-    if (userBiz.stock >= biz.maxStock) {
-        log("Склад полон!", "var(--accent-blue)");
+    // Приоритет списания: Бизнес -> Личный
+    if (G.businessCapital >= cost) {
+        G.businessCapital -= cost;
+        userBiz.stock += 10;
+        addHistory('📦 ЗАКУП (БИЗ)', cost, 'minus');
+    } else if (G.money >= cost) {
+        G.money -= cost;
+        userBiz.stock += 10;
+        addHistory('📦 ЗАКУП (ЛИЧ)', cost, 'minus');
+    } else {
+        log(`Нет денег (${cost.toFixed(0)} PLN)`, "var(--danger)");
         return;
     }
-
-    let unitCost = getDynamicPrice(biz.priceKeys.buy);
-    let batchSize = 10;
-    let totalCost = unitCost * batchSize;
-
-    // Можно платить со счета бизнеса или личного
-    if (G.businessCapital >= totalCost) {
-        G.businessCapital -= totalCost;
-        userBiz.stock = Math.min(biz.maxStock, userBiz.stock + batchSize); 
-        addHistory('📦 ЗАКУП (БИЗ)', totalCost, 'minus');
-        save(); updateUI();
-    } else if (G.money >= totalCost) {
-        G.money -= totalCost;
-        userBiz.stock = Math.min(biz.maxStock, userBiz.stock + batchSize); 
-        addHistory('📦 ЗАКУП', totalCost, 'minus');
-        save(); updateUI();
-    } else {
-        log(`Нет денег на закупку (${totalCost.toFixed(0)} PLN)`, "var(--danger)");
-    }
+    save(); updateUI();
 }
 
 function processBusinessLogic() {
     if (!G.business) return;
-    
     BUSINESS_META.forEach(biz => {
         let userBiz = G.business[biz.id];
-        if (userBiz) {
-            // АВТО-ФИКС
-            if(userBiz.stock === undefined) userBiz.stock = 0;
-
-            // Обработка менеджера
-            if (G.businessWorkers[biz.id] > 0) {
-                G.businessWorkers[biz.id]--; // Уменьшаем таймер
-
-                // Автоматическая продажа, если есть товар
-                // Скорость продажи зависит от типа бизнеса, упростим: 1 товар в секунду, если менеджер работает
-                if (userBiz.stock >= 1) {
-                    let sellPrice = getDynamicPrice(biz.priceKeys.sell);
-                    let opsTax = sellPrice * biz.taxRate;
-                    let profit = sellPrice - opsTax;
-
-                    userBiz.stock--;
-                    G.businessCapital += profit;
-                }
+        if (userBiz && G.businessWorkers[biz.id] > 0) {
+            G.businessWorkers[biz.id]--; // Таймер тикает
+            // Автопродажа (1 шт в секунду если есть товар)
+            if (userBiz.stock > 0) {
+                let price = getDynamicPrice(biz.priceKeys.sell);
+                userBiz.stock--;
+                G.businessCapital += price;
             }
         }
     });
@@ -1655,37 +1580,31 @@ setInterval(() => {
 
         G.tax--; 
         if(G.tax <= 0) { 
-            let totalTax = 0;
+            let taxFromMoney = 0;
+            let taxFromBiz = 0;
 
-            // Налог с личного дохода
+            // 1. Налог на личные деньги (только если выше порога)
             if (G.money > SETTINGS.economy.tax_threshold) {
-                totalTax += parseFloat(((G.money - SETTINGS.economy.tax_threshold) * SETTINGS.economy.tax_rate).toFixed(2));
+                taxFromMoney = (G.money - SETTINGS.economy.tax_threshold) * SETTINGS.economy.tax_rate;
             }
 
-            // Налог с бизнеса (весь баланс)
+            // 2. Налог на бизнес капитал (весь)
             if (G.businessCapital > 0) {
-                let bizTax = parseFloat((G.businessCapital * SETTINGS.economy.tax_rate).toFixed(2));
-                totalTax += bizTax;
-                G.businessCapital -= bizTax; // Снимаем прямо со счета бизнеса
+                taxFromBiz = G.businessCapital * SETTINGS.economy.tax_rate;
             }
 
-            if (totalTax > 0) {
-                G.money = parseFloat((G.money - (totalTax - (G.businessCapital * SETTINGS.economy.tax_rate))).toFixed(2)); 
-                // Выше мы уже сняли с bizCapital, теперь снимаем остаток с Money. 
-                // Но проще снять всё отдельно.
-                
-                // Исправленная логика:
-                // Мы уже сняли с BusinessCapital. Теперь снимаем с Money только часть от Money.
-                let moneyTax = 0;
-                if (G.money > SETTINGS.economy.tax_threshold) {
-                    moneyTax = parseFloat(((G.money - SETTINGS.economy.tax_threshold) * SETTINGS.economy.tax_rate).toFixed(2));
-                    G.money -= moneyTax;
-                }
+            // Списываем
+            if (taxFromMoney > 0) G.money -= taxFromMoney;
+            if (taxFromBiz > 0) G.businessCapital -= taxFromBiz;
 
-                addHistory('🏛️ НАЛОГ', (moneyTax + (G.businessCapital * SETTINGS.economy.tax_rate || 0)).toFixed(2), 'minus'); 
-                log(`Уплачен налог города: ${(moneyTax + (G.businessCapital * SETTINGS.economy.tax_rate || 0)).toFixed(2)} PLN`); 
-            } else { log("Доход ниже минимума. Налог: 0 PLN", "var(--success)"); }
-            
+            let totalTax = taxFromMoney + taxFromBiz;
+
+            if (totalTax > 0.01) {
+                addHistory('🏛️ НАЛОГ', totalTax.toFixed(2), 'minus'); 
+                log(`Списан налог города: ${totalTax.toFixed(2)} PLN (Личный: ${taxFromMoney.toFixed(2)}, Бизнес: ${taxFromBiz.toFixed(2)})`); 
+            } else { 
+                log("Доход ниже минимума. Налог: 0 PLN", "var(--success)"); 
+            }
             G.tax = SETTINGS.economy.tax_timer_sec; save(); 
         }
         
