@@ -1,14 +1,14 @@
 // --- logic.js ---
-// VERSION: 8.1 (GOD MODE + DYNAMIC CLICK PRICE)
-// Добавлена настройка базовой цены клика из Админки.
+// VERSION: 8.1 (FIXED SPHERE & GOD MODE)
+// Исправлена проблема с кликом по сфере. Логика Админки сохранена.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
-tg.ready();
+try { tg.ready(); } catch(e) {}
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// === НОВЫЕ НАСТРОЙКИ (СВЯЗЬ С АДМИНКОЙ) ===
+// === НАСТРОЙКИ (СВЯЗЬ С АДМИНКОЙ) ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50,
@@ -28,20 +28,19 @@ const DEFAULT_SETTINGS = {
         welfare_amount: 30, welfare_cooldown: 600,
         lvl_exchange_rate: 10, lvl_exchange_rate_big: 300, 
         tax_timer_sec: 300, rent_timer_sec: 300,
-        bank_rate: 0.05, // Базовая ставка (5%)
-        bottle_price: 0.05, // Цена бутылки
-        click_base: 0.10 // <--- НОВАЯ НАСТРОЙКА (База за клик)
+        bank_rate: 0.05, 
+        bottle_price: 0.05 
     },
     jobs: {
-        base_pay: 3.80, // База за заказ
-        km_pay: 2.20,   // За сложность/расстояние
+        base_pay: 3.80, 
+        km_pay: 2.20,   
         tips_chance: 0.40,
         tips_max: 15
     },
     gameplay: {
         criminal_chance: 0.12, police_chance: 0.02, police_chance_criminal: 0.35,
         accident_chance_risky: 0.30, accident_chance_safe: 0.002,
-        bottle_find_chance: 0.40, // Шанс найти бутылку
+        bottle_find_chance: 0.40,
         fine_amount: 50, fine_amount_pro: 150,
         lvl_fine_police: 1.2, lvl_fine_missed: 0.05, lvl_fine_spam: 0.1, click_spam_limit: 15
     },
@@ -83,7 +82,6 @@ let curView = 'main', weather = "Ясно", isBroken = false;
 let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bonusActive = false;
 let isSearching = false; let spamCounter = 0;
 
-// (Метаданные предметов)
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairPriceKey: null, hidden: true },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', priceKey: null, bonus: 'Связь', maxDur: 40, repairPriceKey: null, hidden: true },
@@ -140,10 +138,20 @@ async function usePromo() {
     } catch (e) { log("Ошибка связи с базой!", "var(--danger)"); }
 }
 
+// === FIX FOR SPHERE (RESTORED FUNCTIONALITY) ===
 const sphere = document.getElementById('work-sphere');
 if(sphere) {
-    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
-    sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
+    // Надежный обработчик для тач-устройств
+    sphere.addEventListener('touchstart', (e) => { 
+        e.preventDefault(); // Предотвращает эмуляцию мыши
+        try { tg.HapticFeedback.impactOccurred('medium'); } catch(err){}
+        doWork(); 
+    }, {passive: false});
+
+    // Обработчик для мыши (ПК) - работает всегда, если не сработал тач
+    sphere.addEventListener('mousedown', (e) => { 
+        doWork(); 
+    });
 }
 
 function log(msg, color = "#eee") { 
@@ -167,7 +175,7 @@ function showBonus() {
     overlay.style.display = 'flex';
     bonusActive = true;
     log("🎁 Появился БОНУС! Забери его!", "var(--gold)");
-    tg.HapticFeedback.notificationOccurred('warning');
+    try { tg.HapticFeedback.notificationOccurred('warning'); } catch(e){}
 }
 
 function claimBonus() {
@@ -177,7 +185,7 @@ function claimBonus() {
     G.totalEarned += 50;
     addHistory('🎁 БОНУС', 50, 'plus');
     log("Вы забрали бонус +50 PLN", "var(--success)");
-    tg.HapticFeedback.notificationOccurred('success');
+    try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
     save(); updateUI();
 }
 
@@ -244,31 +252,28 @@ function claimDaily(id) {
 }
 
 function saveToCloud() {
-    const tg = window.Telegram.WebApp.initDataUnsafe;
-    let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
-    let firstName = (tg && tg.user) ? tg.user.first_name : "Browser Player";
-    let userName = (tg && tg.user && tg.user.username) ? "@" + tg.user.username : "No Username";
+    const tgData = window.Telegram.WebApp.initDataUnsafe;
+    let userId = (tgData && tgData.user) ? tgData.user.id : "test_user_from_browser";
+    let firstName = (tgData && tgData.user) ? tgData.user.first_name : "Browser Player";
+    let userName = (tgData && tgData.user && tgData.user.username) ? "@" + tgData.user.username : "No Username";
     let dataToSave = { ...G, name: firstName, user: userName, lastActive: Date.now() };
     if(window.db) window.db.ref('users/' + userId).set(dataToSave);
 }
 
 function listenToCloud() {
-    const tg = window.Telegram.WebApp.initDataUnsafe;
-    let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
+    const tgData = window.Telegram.WebApp.initDataUnsafe;
+    let userId = (tgData && tgData.user) ? tgData.user.id : "test_user_from_browser";
 
     if(window.db) {
         window.db.ref('game_settings').on('value', (snapshot) => {
             const serverSettings = snapshot.val();
             if (serverSettings) {
-                // ГЛУБОКОЕ ОБЪЕДИНЕНИЕ, ЧТОБЫ НЕ ПОТЕРЯТЬ НОВЫЕ ПАРАМЕТРЫ
                 SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...(serverSettings.prices || {}) };
                 SETTINGS.economy = { ...DEFAULT_SETTINGS.economy, ...(serverSettings.economy || {}) };
                 SETTINGS.jobs = { ...DEFAULT_SETTINGS.jobs, ...(serverSettings.jobs || {}) };
                 SETTINGS.gameplay = { ...DEFAULT_SETTINGS.gameplay, ...(serverSettings.gameplay || {}) };
                 SETTINGS.toggles = { ...DEFAULT_SETTINGS.toggles, ...(serverSettings.toggles || {}) };
-                
                 updateUI();
-                console.log("⚡ Настройки мира обновлены (v8.1)");
             }
         });
 
@@ -552,11 +557,9 @@ function updateUI() {
         if (G.totalOrders >= 150) rankBonus = 0.10;
         if (G.totalOrders >= 400) rankBonus = 0.20;
 
-        // --- ИЗМЕНЕНИЕ 1: Использование переменной click_base ---
-        let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
-        let rate = (baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
-        
+        let rate = (0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
         if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
+        
         if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
 
         if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
@@ -680,22 +683,23 @@ function doWork() {
     
     if (!SETTINGS.toggles.enable_work) {
         log("⛔ Работа временно остановлена администрацией!", "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
+        try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
         return;
     }
 
     if (isBroken) {
-        repairProgress++; G.en = Math.max(0, G.en - 5); tg.HapticFeedback.impactOccurred('heavy');
-        if (repairProgress >= 50) { isBroken = false; repairProgress = 0; log("🔧 Вы починили транспорт!", "var(--success)"); tg.HapticFeedback.notificationOccurred('success'); }
+        repairProgress++; G.en = Math.max(0, G.en - 5); 
+        try { tg.HapticFeedback.impactOccurred('heavy'); } catch(e){}
+        if (repairProgress >= 50) { isBroken = false; repairProgress = 0; log("🔧 Вы починили транспорт!", "var(--success)"); try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} }
         updateUI(); save(); return;
     }
-    if (bonusActive) { G.en = Math.max(0, G.en - 50); tg.HapticFeedback.notificationOccurred('error'); updateUI(); return; }
+    if (bonusActive) { G.en = Math.max(0, G.en - 50); try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} updateUI(); return; }
     
     let now = Date.now();
     if (now - lastClickTime < 80) return; 
     lastClickTime = now;
     
-    if (order.visible && !order.active) { G.en = Math.max(0, G.en - 25); updateUI(); tg.HapticFeedback.notificationOccurred('error'); return; }
+    if (order.visible && !order.active) { G.en = Math.max(0, G.en - 25); updateUI(); try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} return; }
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
         if (G.housing && G.housing.id === G.district) eff *= 1.2;
@@ -745,10 +749,7 @@ function doWork() {
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
 
-    // --- ИЗМЕНЕНИЕ 2: Использование переменной click_base ---
-    let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
-    let gain = baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
-    
+    let gain = 0.10 * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
     G.money = parseFloat((G.money + gain).toFixed(2)); G.totalEarned += gain; checkDailyQuests('earn', gain); 
     G.lvl += 0.00025; checkMilestones(); updateUI(); save();
 }
@@ -772,8 +773,8 @@ function generateOrder() {
     if (order.visible || order.active) return; 
     order.visible = true; order.offerTimer = 15; 
     order.isCriminal = Math.random() < SETTINGS.gameplay.criminal_chance; 
-    if (order.isCriminal) { tg.HapticFeedback.notificationOccurred('error'); } 
-    else { tg.HapticFeedback.notificationOccurred('success'); }
+    if (order.isCriminal) { try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} } 
+    else { try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} }
 
     let d = 0.5 + Math.random() * 3.5; 
     let bagBonus = 1;
@@ -845,7 +846,7 @@ function activateAutopilot() {
 function acceptOrder() { order.active = true; updateUI(); }
 
 function buyShoes(name, basePrice, durability) {
-    if (G.shoes.name === name && G.shoes.dur > 0) { log("У вас уже есть эти кроссовки!", "var(--danger)"); tg.HapticFeedback.notificationOccurred('error'); return; }
+    if (G.shoes.name === name && G.shoes.dur > 0) { log("У вас уже есть эти кроссовки!", "var(--danger)"); try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){} return; }
     let priceKey = name === "Jorban" ? "jorban" : "abibas";
     let price = getDynamicPrice(priceKey); 
     if (G.money >= price) {
@@ -1008,7 +1009,7 @@ function collectBottles() {
         spamCounter++;
         if (spamCounter > SETTINGS.gameplay.click_spam_limit) {
             log("🤖 Слишком быстро! Руки не мельница!", "var(--danger)");
-            tg.HapticFeedback.notificationOccurred('error');
+            try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
             G.money = Math.max(0, G.money - 100); 
             G.lvl -= SETTINGS.gameplay.lvl_fine_spam; 
             spamCounter = 0; updateUI();
@@ -1112,12 +1113,12 @@ function buyHouse(distId) {
             G.money -= housePrice; G.housing.id = distId;
             addHistory('🏠 КВАРТИРА', housePrice, 'minus');
             log(`Поздравляем! Вы купили квартиру в ${DISTRICTS[distId].name}!`, "var(--gold)");
-            tg.HapticFeedback.notificationOccurred('success');
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
             save(); updateUI();
         }
     } else {
         log(`Не хватает денег! Нужно ${housePrice} PLN`, "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
+        try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
     }
 }
 
@@ -1152,7 +1153,7 @@ function moveDistrict(id) {
 
 function triggerBreakdown() { 
     isBroken = true; repairProgress = 0; 
-    log("🚲 ПОЛОМКА!", "var(--danger)"); tg.HapticFeedback.notificationOccurred('error');
+    log("🚲 ПОЛОМКА!", "var(--danger)"); try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
     updateUI(); 
 }
 
@@ -1208,7 +1209,7 @@ function makeDeposit() {
     };
     addBankLog("Вклад " + selectedBankPlan.days + "дн", val, "minus");
     log("💎 Средства заморожены в Royal Bank", "var(--accent-blue)");
-    tg.HapticFeedback.notificationOccurred('success');
+    try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
     inp.value = ""; save(); updateUI();
 }
 
@@ -1218,7 +1219,7 @@ function claimDeposit() {
     G.money = parseFloat((G.money + total).toFixed(2));
     addBankLog("Выплата %", total, "plus");
     log("💰 Выплата по вкладу: +" + total + " PLN", "var(--success)");
-    G.deposit = null; tg.HapticFeedback.notificationOccurred('success'); save(); updateUI();
+    G.deposit = null; try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} save(); updateUI();
 }
 
 function breakDeposit() {
@@ -1229,7 +1230,7 @@ function breakDeposit() {
         G.money = parseFloat((G.money + returnVal).toFixed(2));
         addBankLog("Штраф", penalty, "fee"); addBankLog("Возврат", returnVal, "plus");
         log("Копилка разбита. Штраф списан.", "var(--danger)");
-        G.deposit = null; tg.HapticFeedback.notificationOccurred('warning'); save(); updateUI();
+        G.deposit = null; try { tg.HapticFeedback.notificationOccurred('warning'); } catch(e){} save(); updateUI();
     }
 }
 
@@ -1379,3 +1380,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
