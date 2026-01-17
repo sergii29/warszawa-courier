@@ -1,13 +1,13 @@
 // --- logic.js ---
-// VERSION: 9.9 (BANKING UPDATE)
-// Добавлен лимит на 3 бесплатных снятия кассы в день.
-// С 4-го снятия берется банковская комиссия 15%.
+// VERSION: 10.0 (STABLE RECOVERY)
+// Автоматическое исправление поврежденных сохранений.
+// Ключ WARSZAWA_FOREVER сохранен.
+// Исправлена ошибка зависания интерфейса.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
 
-// КЛЮЧ ТОТ ЖЕ - ПРОГРЕСС СОХРАНЯЕТСЯ
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
 // === НАСТРОЙКИ ===
@@ -19,7 +19,6 @@ const DEFAULT_SETTINGS = {
         bolt_start: 2.00, bolt_min: 2.50,
         bag: 350, phone: 1200, scooter: 500, helmet: 250, raincoat: 180, powerbank: 400, abibas: 50, jorban: 250
     },
-    // Цены для бизнеса (Закупка / Продажа)
     business_goods: {
         vending_buy: 8.0, vending_sell: 12.0, 
         vege_buy: 15.0, vege_sell: 25.0,      
@@ -32,7 +31,7 @@ const DEFAULT_SETTINGS = {
         lvl_exchange_rate: 10, lvl_exchange_rate_big: 300, 
         tax_timer_sec: 300, rent_timer_sec: 300,
         bank_rate: 0.05, bottle_price: 0.05, click_base: 0.10,
-        transfer_fee: 0.15 // Комиссия за частые переводы (15%)
+        transfer_fee: 0.15
     },
     jobs: { base_pay: 3.80, km_pay: 2.20, tips_chance: 0.40, tips_max: 15 },
     gameplay: {
@@ -48,45 +47,29 @@ const DEFAULT_SETTINGS = {
 const BUSINESS_META = [
     { 
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
-        basePrice: 5000, 
-        minLvl: 5.0, 
-        taxRate: 0.18, 
-        stockConsume: 1, 
-        maxStock: 500, 
-        maxCash: 2000, 
+        basePrice: 5000, minLvl: 5.0, taxRate: 0.18, stockConsume: 1, 
+        maxStock: 500, maxCash: 2000, 
         priceKeys: { buy: 'vending_buy', sell: 'vending_sell' },
         desc: "Автомат. Купи сникерсы оптом, продай в розницу."
     },
     { 
         id: 'vege', name: 'Warzywniak', icon: '🥦', 
-        basePrice: 20000, 
-        minLvl: 10.0,
-        taxRate: 0.23, 
-        stockConsume: 2, 
-        maxStock: 1500, 
-        maxCash: 8000, 
+        basePrice: 20000, minLvl: 10.0, taxRate: 0.23, stockConsume: 2, 
+        maxStock: 1500, maxCash: 8000, 
         priceKeys: { buy: 'vege_buy', sell: 'vege_sell' },
         desc: "Овощи гниют быстро, но наценка хорошая."
     },
     { 
         id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', 
-        basePrice: 75000, 
-        minLvl: 20.0,
-        taxRate: 0.30, 
-        stockConsume: 4, 
-        maxStock: 4000, 
-        maxCash: 25000, 
+        basePrice: 75000, minLvl: 20.0, taxRate: 0.30, stockConsume: 4, 
+        maxStock: 4000, maxCash: 25000, 
         priceKeys: { buy: 'kebab_buy', sell: 'kebab_sell' },
         desc: "Мясо, лаваш, соус. Клиенты идут потоком."
     },
     { 
         id: 'zabka', name: 'Żabka Franchise', icon: '🐸', 
-        basePrice: 300000, 
-        minLvl: 30.0, 
-        taxRate: 0.40, 
-        stockConsume: 8, 
-        maxStock: 20000, 
-        maxCash: 150000, 
+        basePrice: 300000, minLvl: 30.0, taxRate: 0.40, stockConsume: 8, 
+        maxStock: 20000, maxCash: 150000, 
         priceKeys: { buy: 'zabka_buy', sell: 'zabka_sell' },
         desc: "Высокие обороты. Главное успевать завозить товар."
     }
@@ -101,6 +84,7 @@ const RANKS = [
     { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
 ];
 
+// ИНИЦИАЛИЗАЦИЯ G (ЧТОБЫ НЕ БЫЛО ОШИБОК UNDEFINED)
 let G = { 
     money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 300, 
     waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, totalEarned: 0, 
@@ -111,16 +95,10 @@ let G = {
     starter_bag: null, starter_phone: null,
     bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
     deposit: null, bankHistory: [], dailyQuests: [], lastDailyUpdate: 0,
-    activeMilestones: [
-        { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
-        { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
-        { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
-    ],
+    activeMilestones: [],
     business: {}, 
-    // НОВЫЕ ПОЛЯ ДЛЯ БАНКОВСКИХ ЛИМИТОВ
     dailyBizWithdrawals: 0,
     lastBizWithdrawalDay: null,
-    
     lastActive: Date.now()
 };
 
@@ -128,6 +106,7 @@ let order = { visible: false, active: false, steps: 0, target: 100, time: 0, rew
 let curView = 'main', weather = "Ясно", isBroken = false;
 let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bonusActive = false;
 let isSearching = false; let spamCounter = 0;
+let gameLoaded = false; // Флаг загрузки
 
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairPriceKey: null, hidden: true },
@@ -339,7 +318,11 @@ function listenToCloud() {
     }
 }
 
-function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); saveToCloud(); }
+function save() { 
+    if(!gameLoaded) return; // Не сохранять если не загрузилось
+    localStorage.setItem(SAVE_KEY, JSON.stringify(G)); 
+    saveToCloud(); 
+}
 
 function validateInventory() {
     UPGRADES_META.forEach(up => {
@@ -348,54 +331,54 @@ function validateInventory() {
 }
 
 function load() { 
-    let d = localStorage.getItem(SAVE_KEY); 
-    if(d) { 
-        try { let loaded = JSON.parse(d); G = {...G, ...loaded}; } catch(e) { console.error(e); }
-    } 
-    
-    if(!G.business) G.business = {};
+    try {
+        let d = localStorage.getItem(SAVE_KEY); 
+        if(d) { 
+            let loaded = JSON.parse(d); 
+            G = {...G, ...loaded}; 
+        } 
+        
+        // === АВТО-РЕМОНТ СОХРАНЕНИЯ ===
+        if(!G.business) G.business = {};
+        if(!G.housing) G.housing = { id: -1 };
+        if(isNaN(G.money)) G.money = 10;
+        
+        // Гарантируем что все товары есть
+        BUSINESS_META.forEach(biz => {
+            if(!G.business[biz.id]) G.business[biz.id] = null; // or empty obj
+        });
 
-    // ЗАЩИТА: Если есть старый прогресс, но нет полей бизнеса - инициализируем их
-    if(G.business) {
-        for(let key in G.business) {
-            if(G.business[key]) {
-                if(G.business[key].stock === undefined) G.business[key].stock = 0;
-                if(G.business[key].cash === undefined) G.business[key].cash = 0;
-            }
-        }
+        // Инициализация полей для лимита снятий
+        if (G.dailyBizWithdrawals === undefined) G.dailyBizWithdrawals = 0;
+        if (G.lastBizWithdrawalDay === undefined) G.lastBizWithdrawalDay = null;
+
+        // ... остальные проверки ...
+        if(isNaN(G.lvl)) G.lvl = 1.0;
+        if(isNaN(G.en)) G.en = 2000;
+        if(isNaN(G.waterStock)) G.waterStock = 0;
+        if(!G.transportMode) G.transportMode = 'none';
+        
+        // ... инвентарь ...
+        ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
+            if (G[item] === true) G[item] = { active: true, dur: 100 };
+        });
+
+        validateInventory(); 
+        checkStarterPack();
+        generateDailyQuests();
+        listenToCloud();
+        
+        gameLoaded = true; // Игра загружена
+        updateUI(); 
+    } catch(e) {
+        console.error("Load error:", e);
+        alert("Ошибка загрузки! Сброс...");
+        localStorage.removeItem(SAVE_KEY);
+        location.reload();
     }
-    
-    // Инициализация полей для лимита снятий
-    if (G.dailyBizWithdrawals === undefined) G.dailyBizWithdrawals = 0;
-    if (G.lastBizWithdrawalDay === undefined) G.lastBizWithdrawalDay = null;
-
-    if(isNaN(G.money)) G.money = 10;
-    if(isNaN(G.lvl)) G.lvl = 1.0;
-    if(isNaN(G.en)) G.en = 2000;
-    if(isNaN(G.waterStock)) G.waterStock = 0;
-    if(!G.transportMode) G.transportMode = 'none';
-    if(!G.housing) G.housing = { id: -1 }; 
-    G.maxEn = 2000; 
-    if(!G.shoes) G.shoes = { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 }; 
-    if(!G.blindTime) G.blindTime = 0;
-    if (!G.deposit) G.deposit = null;
-    if (!G.bankHistory) G.bankHistory = [];
-
-    ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
-        if (G[item] === true) G[item] = { active: true, dur: 100 };
-    });
-
-    if (!G.bag && !G.starter_bag) G.starter_bag = { active: true, dur: 50 };
-    if (!G.phone && !G.starter_phone) G.starter_phone = { active: true, dur: 50 };
-
-    validateInventory(); 
-    checkStarterPack();
-    generateDailyQuests();
-    listenToCloud();
-    updateUI(); 
 }
 
-// === ЛОГИКА БИЗНЕСА (SAFE & HARDCORE & BANKING) ===
+// === ЛОГИКА БИЗНЕСА ===
 
 function renderBusiness() {
     const list = document.getElementById('business-list');
@@ -403,17 +386,27 @@ function renderBusiness() {
 
     let html = "";
     let hasHouse = G.housing && G.housing.id !== -1;
-    
     let totalCash = 0;
     let totalValue = 0;
 
     BUSINESS_META.forEach(biz => {
-        if (!G.business[biz.id]) G.business[biz.id] = null; 
         let userBiz = G.business[biz.id];
-        let isOwned = !!userBiz;
+        
+        // АВТО-ИНИЦИАЛИЗАЦИЯ ЕСЛИ NULL (Визуально)
+        let stock = 0;
+        let cash = 0;
+        let isOwned = false;
+
+        if(userBiz) {
+            isOwned = true;
+            stock = userBiz.stock || 0;
+            cash = userBiz.cash || 0;
+            totalCash += cash;
+            totalValue += getBusinessPrice(biz.basePrice);
+        }
+
         let currentPrice = getBusinessPrice(biz.basePrice);
         let hasLvl = G.lvl >= biz.minLvl;
-        
         let buyCost = getDynamicPrice(biz.priceKeys.buy);
         let sellPrice = getDynamicPrice(biz.priceKeys.sell);
 
@@ -449,16 +442,10 @@ function renderBusiness() {
                 </div>
             </div>`;
         } else {
-            if(userBiz.stock === undefined) userBiz.stock = 0;
-            if(userBiz.cash === undefined) userBiz.cash = 0;
-
-            totalCash += userBiz.cash;
-            totalValue += currentPrice;
-
-            let stockPct = (userBiz.stock / biz.maxStock) * 100;
-            let cashPct = (userBiz.cash / biz.maxCash) * 100;
-            let isStockEmpty = userBiz.stock <= 0;
-            let isCashFull = userBiz.cash >= biz.maxCash;
+            let stockPct = (stock / biz.maxStock) * 100;
+            let cashPct = (cash / biz.maxCash) * 100;
+            let isStockEmpty = stock <= 0;
+            let isCashFull = cash >= biz.maxCash;
 
             let taxPerUnit = sellPrice * biz.taxRate;
             let netPerUnit = sellPrice - taxPerUnit;
@@ -478,13 +465,13 @@ function renderBusiness() {
                 </div>
                 
                 <div class="biz-stat-row">
-                    <span>Склад (${userBiz.stock.toFixed(0)}/${biz.maxStock})</span>
+                    <span>Склад (${stock.toFixed(0)}/${biz.maxStock})</span>
                     <span>Цена продажи: ${sellPrice} PLN</span>
                 </div>
                 <div class="biz-track"><div class="biz-fill-stock" style="width:${stockPct}%; background:${stockPct<10?'var(--danger)':'#3b82f6'}"></div></div>
 
                 <div class="biz-stat-row">
-                    <span>Сейф (${userBiz.cash.toFixed(2)}/${biz.maxCash})</span>
+                    <span>Сейф (${cash.toFixed(2)}/${biz.maxCash})</span>
                     <span style="color:var(--text-secondary)">Чистыми: ~${netPerUnit.toFixed(2)}/шт</span>
                 </div>
                 <div class="biz-track"><div class="biz-fill-cash" style="width:${cashPct}%; background:${isCashFull?'var(--accent-gold)':'#22c55e'}"></div></div>
@@ -494,7 +481,7 @@ function renderBusiness() {
                         📦 КУПИТЬ 10 ШТ (-${(buyCost*10).toFixed(0)} PLN)
                     </button>
                     <button class="btn-biz btn-collect" onclick="collectBusiness('${biz.id}')">
-                        💰 ЗАБРАТЬ (${userBiz.cash.toFixed(0)})
+                        💰 ЗАБРАТЬ (${cash.toFixed(0)})
                     </button>
                 </div>
             </div>`;
@@ -519,11 +506,7 @@ function buyBusiness(id) {
 
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
-        G.business[id] = {
-            stock: 100, 
-            cash: 0,
-            lastUpdate: Date.now()
-        };
+        G.business[id] = { stock: 100, cash: 0, lastUpdate: Date.now() };
         addHistory('🏗️ БИЗНЕС', price, 'minus');
         tg.HapticFeedback.notificationOccurred('success');
         save(); updateUI();
@@ -537,10 +520,8 @@ function restockBusiness(id) {
     let biz = BUSINESS_META.find(b => b.id === id);
     let userBiz = G.business[id];
     
-    if (userBiz.stock >= biz.maxStock) {
-        log("Склад полон!", "var(--accent-blue)");
-        return;
-    }
+    if (!userBiz) return; // Защита
+    if (userBiz.stock >= biz.maxStock) { log("Склад полон!", "var(--accent-blue)"); return; }
 
     let unitCost = getDynamicPrice(biz.priceKeys.buy);
     let batchSize = 10;
@@ -548,8 +529,6 @@ function restockBusiness(id) {
 
     if (G.money >= totalCost) {
         G.money = parseFloat((G.money - totalCost).toFixed(2));
-        if(userBiz.stock === undefined) userBiz.stock = 0;
-        
         userBiz.stock = Math.min(biz.maxStock, userBiz.stock + batchSize); 
         addHistory('📦 ЗАКУПКА', totalCost, 'minus');
         save(); updateUI();
@@ -560,15 +539,10 @@ function restockBusiness(id) {
 
 function collectBusiness(id) {
     let userBiz = G.business[id];
-    if (!userBiz || userBiz.cash <= 0.1) {
-        log("В сейфе пусто!", "#aaa");
-        return;
-    }
+    if (!userBiz || userBiz.cash <= 0.1) { log("В сейфе пусто!", "#aaa"); return; }
     
     // --- BANKING LOGIC ---
     let today = new Date().toDateString();
-    
-    // Сброс счетчика, если новый день
     if (G.lastBizWithdrawalDay !== today) {
         G.dailyBizWithdrawals = 0;
         G.lastBizWithdrawalDay = today;
@@ -577,16 +551,15 @@ function collectBusiness(id) {
     let amount = parseFloat(userBiz.cash.toFixed(2));
     let fee = 0;
     
-    // Лимит 3 бесплатных, дальше комиссия
     if (G.dailyBizWithdrawals >= 3) {
-        let feeRate = SETTINGS.economy.transfer_fee || 0.15; // 15%
+        let feeRate = SETTINGS.economy.transfer_fee || 0.15;
         fee = amount * feeRate;
         amount = amount - fee;
     }
 
     G.money = parseFloat((G.money + amount).toFixed(2));
-    userBiz.cash = 0; // Опустошаем сейф
-    G.dailyBizWithdrawals++; // Увеличиваем счетчик
+    userBiz.cash = 0;
+    G.dailyBizWithdrawals++; 
 
     if (fee > 0) {
         addHistory('🏦 ПЕРЕВОД', amount, 'plus');
@@ -606,7 +579,7 @@ function processBusinessLogic() {
     BUSINESS_META.forEach(biz => {
         let userBiz = G.business[biz.id];
         if (userBiz) {
-            // АВТО-ФИКС ДЛЯ СТАРЫХ СОХРАНЕНИЙ
+            // Исправление "на лету"
             if(userBiz.stock === undefined) userBiz.stock = 0;
             if(userBiz.cash === undefined) userBiz.cash = 0;
 
@@ -625,6 +598,8 @@ function processBusinessLogic() {
 }
 
 function updateUI() {
+    if(!gameLoaded) return; // Не обновлять UI если не загрузилось
+
     try {
         const moneyEl = document.getElementById('money-val');
         if(!moneyEl) return; 
@@ -1015,10 +990,6 @@ function doWork() {
     if (G.totalOrders >= 50) rankBonus = 0.05;
     if (G.totalOrders >= 150) rankBonus = 0.10;
     if (G.totalOrders >= 400) rankBonus = 0.20;
-
-    let bagBonus = 1;
-    if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
-    else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
 
     let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
     let gain = baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
@@ -1615,6 +1586,9 @@ setInterval(() => {
     if (G.buffTime > 0) G.buffTime--;
     if (G.blindTime > 0) G.blindTime--; 
     
+    // БИЗНЕС ЛОГИКА (ВЫЗОВ)
+    processBusinessLogic();
+
     generateDailyQuests(); 
 
     if (G.autoTime > 0) { 
@@ -1653,4 +1627,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-}
