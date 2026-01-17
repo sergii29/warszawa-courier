@@ -1,14 +1,12 @@
 // --- logic.js ---
-// VERSION: 9.7 (FIXED & RESTORED)
-// Ключ сохранения WARSZAWA_FOREVER (старый прогресс возвращен).
-// Вся старая механика (Сфера, Вода, Бутылки) на месте.
-// Добавлен Бизнес с Хардкорными ценами и защитой от сбоев.
+// VERSION: 12.0 (STRATEGY & TAX EDITION)
+// Ключ сохранения WARSZAWA_FOREVER.
+// Разные механики для каждого бизнеса + Налог 19%.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
 
-// ВОЗВРАЩАЕМ СТАРЫЙ КЛЮЧ
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
 // === НАСТРОЙКИ ===
@@ -20,15 +18,9 @@ const DEFAULT_SETTINGS = {
         bolt_start: 2.00, bolt_min: 2.50,
         bag: 350, phone: 1200, scooter: 500, helmet: 250, raincoat: 180, powerbank: 400, abibas: 50, jorban: 250
     },
-    // Цены для бизнеса (Закупка / Продажа)
-    business_goods: {
-        vending_buy: 8.0, vending_sell: 12.0, 
-        vege_buy: 15.0, vege_sell: 25.0,      
-        kebab_buy: 40.0, kebab_sell: 75.0,    
-        zabka_buy: 100.0, zabka_sell: 180.0   
-    },
     economy: {
         tax_rate: 0.15, tax_threshold: 200, inflation_rate: 0.40, 
+        business_tax: 0.19, // Налог на прибыль бизнеса (19%)
         welfare_amount: 30, welfare_cooldown: 600,
         lvl_exchange_rate: 10, lvl_exchange_rate_big: 300, 
         tax_timer_sec: 300, rent_timer_sec: 300,
@@ -44,55 +36,43 @@ const DEFAULT_SETTINGS = {
     toggles: { enable_bank: true, enable_shop: true, enable_auto: true, enable_work: true, service_veturilo: true, service_bolt: true }
 };
 
-// === БИЗНЕС МЕТАДАННЫЕ (ХАРДКОР ЦЕНЫ) ===
+let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+
+// === МЕТАДАННЫЕ БИЗНЕСА ===
 const BUSINESS_META = [
     { 
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
-        basePrice: 5000, // Высокая цена
+        basePrice: 5000, 
         minLvl: 5.0, 
-        taxRate: 0.18, 
-        stockConsume: 1, 
-        maxStock: 500, 
-        maxCash: 2000, 
-        priceKeys: { buy: 'vending_buy', sell: 'vending_sell' },
-        desc: "Автомат. Купи сникерсы оптом, продай в розницу."
+        type: 'maintenance', // Тип механики: Обслуживание
+        dealCost: 50, // Стоимость действия
+        desc: "Простой доход. Требует пинка."
     },
     { 
         id: 'vege', name: 'Warzywniak', icon: '🥦', 
         basePrice: 20000, 
         minLvl: 10.0,
-        taxRate: 0.23, 
-        stockConsume: 2, 
-        maxStock: 1500, 
-        maxCash: 8000, 
-        priceKeys: { buy: 'vege_buy', sell: 'vege_sell' },
-        desc: "Овощи гниют быстро, но наценка хорошая."
+        type: 'lottery', // Тип механики: Лотерея качества
+        dealCost: 300,
+        desc: "Овощи. Риск гнилой партии."
     },
     { 
         id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', 
         basePrice: 75000, 
         minLvl: 20.0,
-        taxRate: 0.30, 
-        stockConsume: 4, 
-        maxStock: 4000, 
-        maxCash: 25000, 
-        priceKeys: { buy: 'kebab_buy', sell: 'kebab_sell' },
-        desc: "Мясо, лаваш, соус. Клиенты идут потоком."
+        type: 'strategy', // Тип механики: Выбор риска
+        dealCost: 0, // Динамическая стоимость
+        desc: "Выбор ингредиентов. Опасайся Sanepid."
     },
     { 
         id: 'zabka', name: 'Żabka Franchise', icon: '🐸', 
         basePrice: 300000, 
         minLvl: 30.0, 
-        taxRate: 0.40, 
-        stockConsume: 8, 
-        maxStock: 20000, 
-        maxCash: 150000, 
-        priceKeys: { buy: 'zabka_buy', sell: 'zabka_sell' },
-        desc: "Высокие обороты. Главное успевать завозить товар."
+        type: 'high_stakes', // Тип механики: Всё или ничего
+        dealCost: 5000,
+        desc: "Выполнение корп. плана. Крупные ставки."
     }
 ];
-
-let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 
 const RANKS = [
     { name: "Новичок", max: 50, bonus: 0, icon: "👶" },
@@ -143,12 +123,13 @@ const DISTRICTS = [
     { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500, housePrice: 3500000, czynszBase: 250 } 
 ];
 
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+
 function getDynamicPrice(baseValue) {
     if (baseValue === 0) return 0;
     let price = 0;
     if (typeof baseValue === 'string') {
         if (SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
-        else if (SETTINGS.business_goods && SETTINGS.business_goods[baseValue] !== undefined) price = SETTINGS.business_goods[baseValue];
         else price = 0;
     } else { price = baseValue; }
     let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * SETTINGS.economy.inflation_rate;
@@ -166,6 +147,290 @@ function addHistory(msg, val, type = 'plus') {
     G.history.unshift({ time, msg, val, type });
     if (G.history.length > 20) G.history.pop();
 }
+
+function log(msg, color = "#eee") { 
+    console.log(`%c ${msg}`, `color: ${color}`);
+}
+
+// --- БИЗНЕС ЛОГИКА (РАЗНЫЕ СТРАТЕГИИ) ---
+
+function renderBusiness() {
+    const list = document.getElementById('business-list');
+    if(!list) return;
+
+    // Скрываем старые панели
+    const bizTotalPanel = document.getElementById('biz-total-value');
+    if(bizTotalPanel) {
+        let totalVal = 0;
+        BUSINESS_META.forEach(b => { if(G.business[b.id]) totalVal += getBusinessPrice(b.basePrice); });
+        bizTotalPanel.innerText = totalVal.toLocaleString() + " PLN";
+    }
+    const bizCashPanel = document.getElementById('biz-total-cash');
+    if(bizCashPanel) {
+        bizCashPanel.parentElement.innerHTML = `<small style="color:#aaa;">Ваш капитал:</small><br><b style="font-size:16px; color:var(--success);">${G.money.toFixed(2)} PLN</b>`;
+    }
+
+    let html = "";
+    let hasHouse = G.housing && G.housing.id !== -1;
+
+    BUSINESS_META.forEach(biz => {
+        if (!G.business[biz.id]) G.business[biz.id] = null; 
+        let userBiz = G.business[biz.id];
+        let isOwned = !!userBiz;
+        let currentPrice = getBusinessPrice(biz.basePrice);
+        let hasLvl = G.lvl >= biz.minLvl;
+        
+        let dealCost = getDynamicPrice(biz.dealCost);
+
+        if (!isOwned) {
+            let reason = "";
+            if (!hasHouse) reason = "🔒 НУЖНА КВАРТИРА";
+            else if (!hasLvl) reason = `🔒 НУЖЕН LVL ${biz.minLvl}`;
+            else reason = `КУПИТЬ ${currentPrice.toLocaleString()} PLN`;
+
+            let canBuy = hasHouse && hasLvl;
+            let btnStyle = canBuy ? "background:var(--accent-gold); color:black;" : "background:#334155; color:#94a3b8; border:1px solid #475569;";
+            let btnAction = canBuy ? `onclick="buyBusiness('${biz.id}')"` : "";
+
+            html += `
+            <div class="biz-card biz-locked">
+                <div class="biz-header">
+                    <div style="display:flex; align-items:center;">
+                        <div class="biz-icon">${biz.icon}</div>
+                        <div>
+                            <div class="biz-title">${biz.name}</div>
+                            <div style="font-size:10px; color:#aaa;">${biz.desc}</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <button class="btn-action" style="width:100%; padding:10px; ${btnStyle}" ${btnAction}>${reason}</button>
+                </div>
+            </div>`;
+        } else {
+            let lastRes = userBiz.lastResult || { msg: "Бизнес ждет указаний...", color: "#aaa" };
+            let controls = "";
+
+            // ГЕНЕРАЦИЯ УПРАВЛЕНИЯ В ЗАВИСИМОСТИ ОТ ТИПА БИЗНЕСА
+            if (biz.type === 'maintenance') {
+                // ВЕНДИНГ
+                controls = `
+                    <button class="btn-action" style="background:var(--accent-blue);" onclick="runVendingDeal('${biz.id}')">
+                        🔧 ОБСЛУЖИТЬ АВТОМАТ (-${dealCost.toFixed(0)} PLN)
+                    </button>`;
+            } else if (biz.type === 'lottery') {
+                // ОВОЩНОЙ
+                controls = `
+                    <button class="btn-action" style="background:var(--success); color:black;" onclick="runVegeGamble('${biz.id}')">
+                        🎲 КУПИТЬ ПАРТИЮ И ПРОВЕРИТЬ (-${dealCost.toFixed(0)})
+                    </button>`;
+            } else if (biz.type === 'strategy') {
+                // КЕБАБ
+                controls = `
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-action" style="flex:1; font-size:10px; background:#475569;" onclick="runKebabStrategy('${biz.id}', 'safe')">ЛЕГАЛЬНО<br>Safe</button>
+                        <button class="btn-action" style="flex:1; font-size:10px; background:var(--accent-gold); color:black;" onclick="runKebabStrategy('${biz.id}', 'normal')">ОБЫЧНО<br>Mix</button>
+                        <button class="btn-action" style="flex:1; font-size:10px; background:var(--danger);" onclick="runKebabStrategy('${biz.id}', 'risky')">ОПАСНО<br>Illegal</button>
+                    </div>`;
+            } else if (biz.type === 'high_stakes') {
+                // ЖАБКА
+                controls = `
+                    <button class="btn-action" style="background:linear-gradient(45deg, #16a34a, #15803d);" onclick="runZabkaContract('${biz.id}')">
+                        📝 ПОДПИСАТЬ ПЛАН ПРОДАЖ (-${dealCost.toFixed(0)} PLN)
+                    </button>`;
+            }
+
+            html += `
+            <div class="biz-card">
+                <div class="biz-header">
+                    <div style="display:flex; align-items:center;">
+                        <div class="biz-icon">${biz.icon}</div>
+                        <div>
+                            <div class="biz-title">${biz.name} <span class="biz-level">Владелец</span></div>
+                            <div style="font-size:10px; color:var(--text-secondary);">Стратегия: ${getStrategyName(biz.type)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin:10px 0; min-height:40px; display:flex; align-items:center; justify-content:center; text-align:center;">
+                    <span style="font-size:11px; font-weight:700; color:${lastRes.color}; animation:fadeIn 0.5s;">${lastRes.msg}</span>
+                </div>
+
+                <div class="biz-actions" style="flex-direction:column;">
+                    ${controls}
+                </div>
+            </div>`;
+        }
+    });
+    
+    if (list.innerHTML !== html) list.innerHTML = html;
+}
+
+function getStrategyName(type) {
+    if(type === 'maintenance') return "🔧 Тех. Обслуживание";
+    if(type === 'lottery') return "🎲 Оценка Качества";
+    if(type === 'strategy') return "🧠 Выбор Риска";
+    if(type === 'high_stakes') return "💼 Корпоративный План";
+    return "Бизнес";
+}
+
+function buyBusiness(id) {
+    if (G.housing.id === -1) { log("⛔ Сначала купите квартиру!", "var(--danger)"); return; }
+    let biz = BUSINESS_META.find(b => b.id === id);
+    if (G.lvl < biz.minLvl) { log(`⛔ Нужен уровень ${biz.minLvl}!`, "var(--danger)"); return; }
+
+    let price = getBusinessPrice(biz.basePrice);
+    if (G.money >= price) {
+        G.money = parseFloat((G.money - price).toFixed(2));
+        G.business[id] = { lastResult: { msg: "Бизнес куплен! Выберите действие.", color: "var(--success)" } };
+        addHistory('🏗️ БИЗНЕС', price, 'minus');
+        tg.HapticFeedback.notificationOccurred('success');
+        save(); updateUI();
+    } else {
+        log(`Не хватает денег! Нужно ${price} PLN`, "var(--danger)");
+        tg.HapticFeedback.notificationOccurred('error');
+    }
+}
+
+// === 1. VENDING (Просто) ===
+function runVendingDeal(id) {
+    let biz = BUSINESS_META.find(b => b.id === id);
+    let cost = getDynamicPrice(biz.dealCost);
+    
+    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
+    G.money -= cost;
+
+    let r = Math.random();
+    let profit = 0; let msg = ""; let color = "";
+
+    if (r < 0.2) {
+        profit = 0; msg = "⚠️ Монетоприемник сломался. Дохода нет."; color = "var(--danger)";
+    } else if (r < 0.7) {
+        profit = cost * 1.5; msg = "✅ Стабильные продажи."; color: "var(--success)";
+    } else {
+        profit = cost * 3.0; msg = "🔥 Офисный жор! Автомат пуст!"; color: "var(--accent-gold)";
+    }
+
+    applyBusinessResult(id, profit, cost, msg, color);
+}
+
+// === 2. VEGE (Лотерея) ===
+function runVegeGamble(id) {
+    let biz = BUSINESS_META.find(b => b.id === id);
+    let cost = getDynamicPrice(biz.dealCost);
+    
+    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
+    G.money -= cost;
+
+    let r = Math.random();
+    let profit = 0; let msg = ""; let color = "";
+
+    if (r < 0.35) { // 35% Гниль
+        profit = cost * 0.2; msg = "🤢 Партия гнилая. Убыток."; color = "var(--danger)";
+    } else if (r < 0.85) { // 50% Норма
+        profit = cost * 1.6; msg = "🥦 Свежие овощи. Хорошая выручка."; color: "#fff";
+    } else { // 15% Премиум
+        profit = cost * 4.0; msg = "💎 ЭКО-БИО Партия! Тройная цена!"; color: "var(--accent-gold)";
+    }
+
+    applyBusinessResult(id, profit, cost, msg, color);
+}
+
+// === 3. KEBAB (Стратегия) ===
+function runKebabStrategy(id, mode) {
+    let biz = BUSINESS_META.find(b => b.id === id);
+    let baseCost = 800; // Базовая цена мяса
+    let cost = getDynamicPrice(baseCost);
+    
+    if (mode === 'safe') cost *= 1.5; // Дорогое хорошее мясо
+    if (mode === 'risky') cost *= 0.3; // Дешевое "мясо" (голуби?)
+
+    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
+    G.money -= cost;
+
+    let profit = 0; let msg = ""; let color = "";
+    let r = Math.random();
+
+    if (mode === 'safe') {
+        // Низкий риск, низкая маржа
+        profit = cost * 1.3; msg = "🛡️ Легальное мясо. Спокойный доход."; color: "#fff";
+    } else if (mode === 'normal') {
+        // Средний риск
+        if (r < 0.2) {
+            profit = cost * 0.5; msg = "📉 Мясо жесткое. Клиенты недовольны."; color: "#aaa";
+        } else {
+            profit = cost * 2.5; msg = "🥙 Вкусный кебаб. Хорошая касса."; color: "var(--success)";
+        }
+    } else if (mode === 'risky') {
+        // Высокий риск, огромная маржа
+        if (r < 0.5) { // 50% шанс проверки
+            profit = 0; msg = "🚓 SANEPID! Нашли голубя. Конфискация!"; color: "var(--danger)";
+        } else {
+            profit = cost * 8.0; msg = "💰 Дешевое мясо - супер навар!"; color: "var(--purple)";
+        }
+    }
+
+    applyBusinessResult(id, profit, cost, msg, color);
+}
+
+// === 4. ZABKA (Ставки) ===
+function runZabkaContract(id) {
+    let biz = BUSINESS_META.find(b => b.id === id);
+    let cost = getDynamicPrice(biz.dealCost);
+    
+    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
+    G.money -= cost;
+
+    let successChance = 0.4 + (G.lvl * 0.01); // Шанс растет с уровнем
+    if (successChance > 0.8) successChance = 0.8;
+
+    let r = Math.random();
+    let profit = 0; let msg = ""; let color = "";
+
+    if (r < successChance) {
+        profit = cost * 2.5; msg = "📈 ПЛАН ВЫПОЛНЕН! Бонус от офиса."; color: "var(--accent-gold)";
+    } else {
+        profit = cost * 0.5; msg = "📉 План провален. Штрафные санкции."; color: "var(--danger)";
+    }
+
+    applyBusinessResult(id, profit, cost, msg, color);
+}
+
+// === ОБЩАЯ ФУНКЦИЯ РАСЧЕТА И НАЛОГОВ ===
+function applyBusinessResult(id, revenue, cost, text, color) {
+    let grossProfit = revenue - cost; // Грязная прибыль
+    let tax = 0;
+    
+    // Налог 19% только с прибыли
+    if (grossProfit > 0) {
+        tax = grossProfit * SETTINGS.economy.business_tax;
+        revenue -= tax;
+    }
+
+    G.money = parseFloat((G.money + revenue).toFixed(2));
+    let netProfit = revenue - cost;
+    
+    if (netProfit > 0) G.totalEarned += netProfit;
+
+    let sign = netProfit >= 0 ? "+" : "";
+    let finalMsg = `${text} (${sign}${netProfit.toFixed(0)} PLN)`;
+    if (tax > 0) finalMsg += `<br><small style="opacity:0.7">Налог: -${tax.toFixed(0)}</small>`;
+
+    G.business[id].lastResult = { msg: finalMsg, color: color };
+
+    if (netProfit > 0) {
+        addHistory('💰 БИЗНЕС', netProfit, 'plus');
+        tg.HapticFeedback.notificationOccurred('success');
+    } else {
+        addHistory('📉 УБЫТОК', Math.abs(netProfit), 'minus');
+        tg.HapticFeedback.notificationOccurred('warning');
+    }
+    
+    save(); updateUI();
+}
+
+
+// --- СТАНДАРТНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ) ---
 
 async function usePromo() {
     const inputField = document.getElementById('promo-input');
@@ -193,11 +458,6 @@ const sphere = document.getElementById('work-sphere');
 if(sphere) {
     sphere.addEventListener('touchstart', (e) => { e.preventDefault(); tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
     sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
-}
-
-function log(msg, color = "#eee") { 
-    const logEl = document.getElementById('game-log'); 
-    if(!logEl) return; 
 }
 
 function showBonus() {
@@ -301,9 +561,6 @@ function listenToCloud() {
             const serverSettings = snapshot.val();
             if (serverSettings) {
                 SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...(serverSettings.prices || {}) };
-                if (serverSettings.business_goods) {
-                    SETTINGS.business_goods = { ...DEFAULT_SETTINGS.business_goods, ...serverSettings.business_goods };
-                }
                 SETTINGS.economy = { ...DEFAULT_SETTINGS.economy, ...(serverSettings.economy || {}) };
                 SETTINGS.jobs = { ...DEFAULT_SETTINGS.jobs, ...(serverSettings.jobs || {}) };
                 SETTINGS.gameplay = { ...DEFAULT_SETTINGS.gameplay, ...(serverSettings.gameplay || {}) };
@@ -326,7 +583,6 @@ function listenToCloud() {
             
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 let wasNew = G.isNewPlayer;
-                if(!remote.business) remote.business = {}; 
                 G = { ...G, ...remote };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
                 if (G.isNewPlayer && !wasNew) { location.reload(); return; }
@@ -350,18 +606,8 @@ function load() {
         try { let loaded = JSON.parse(d); G = {...G, ...loaded}; } catch(e) { console.error(e); }
     } 
     
+    // Очистка старых данных бизнеса (безопасно)
     if(!G.business) G.business = {};
-
-    // ЗАЩИТА: Если есть старый прогресс, но нет полей бизнеса - инициализируем их
-    // Это предотвращает ошибку и сброс игры
-    if(G.business) {
-        for(let key in G.business) {
-            if(G.business[key]) {
-                if(G.business[key].stock === undefined) G.business[key].stock = 0;
-                if(G.business[key].cash === undefined) G.business[key].cash = 0;
-            }
-        }
-    }
 
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
@@ -387,200 +633,6 @@ function load() {
     generateDailyQuests();
     listenToCloud();
     updateUI(); 
-}
-
-// === ЛОГИКА БИЗНЕСА (SAFE & HARDCORE) ===
-
-function renderBusiness() {
-    const list = document.getElementById('business-list');
-    if(!list) return;
-
-    let html = "";
-    let hasHouse = G.housing && G.housing.id !== -1;
-
-    BUSINESS_META.forEach(biz => {
-        if (!G.business[biz.id]) G.business[biz.id] = null; 
-        let userBiz = G.business[biz.id];
-        let isOwned = !!userBiz;
-        let currentPrice = getBusinessPrice(biz.basePrice);
-        let hasLvl = G.lvl >= biz.minLvl;
-        
-        let buyCost = getDynamicPrice(biz.priceKeys.buy);
-        let sellPrice = getDynamicPrice(biz.priceKeys.sell);
-
-        if (!isOwned) {
-            let reason = "";
-            if (!hasHouse) reason = "🔒 НУЖНА КВАРТИРА";
-            else if (!hasLvl) reason = `🔒 НУЖЕН LVL ${biz.minLvl}`;
-            else reason = `КУПИТЬ ${currentPrice} PLN`;
-
-            let canBuy = hasHouse && hasLvl;
-            let btnStyle = canBuy ? "background:var(--accent-gold); color:black;" : "background:#334155; color:#94a3b8; border:1px solid #475569;";
-            let btnAction = canBuy ? `onclick="buyBusiness('${biz.id}')"` : "";
-
-            html += `
-            <div class="biz-card biz-locked">
-                <div class="biz-header">
-                    <div style="display:flex; align-items:center;">
-                        <div class="biz-icon">${biz.icon}</div>
-                        <div>
-                            <div class="biz-title">${biz.name}</div>
-                            <div style="font-size:10px; color:#aaa;">${biz.desc}</div>
-                        </div>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <div style="font-size:9px; color:#64748b;">
-                        Входной билет: ${currentPrice} PLN<br>
-                        <span style="color:var(--danger)">Налог на прибыль: -${(biz.taxRate*100).toFixed(0)}%</span>
-                    </div>
-                    <button class="btn-action" style="width:auto; padding:8px 15px; ${btnStyle}" ${btnAction}>
-                        ${reason}
-                    </button>
-                </div>
-            </div>`;
-        } else {
-            // FIX: Если данные были повреждены или старые
-            if(userBiz.stock === undefined) userBiz.stock = 0;
-            if(userBiz.cash === undefined) userBiz.cash = 0;
-
-            let stockPct = (userBiz.stock / biz.maxStock) * 100;
-            let cashPct = (userBiz.cash / biz.maxCash) * 100;
-            let isStockEmpty = userBiz.stock <= 0;
-            let isCashFull = userBiz.cash >= biz.maxCash;
-
-            let taxPerUnit = sellPrice * biz.taxRate;
-            let netPerUnit = sellPrice - taxPerUnit;
-
-            html += `
-            <div class="biz-card">
-                <div class="biz-header">
-                    <div style="display:flex; align-items:center;">
-                        <div class="biz-icon">${biz.icon}</div>
-                        <div>
-                            <div class="biz-title">${biz.name} <span class="biz-level">Владелец</span></div>
-                            <div style="font-size:10px; color:${isStockEmpty ? 'var(--danger)' : 'var(--success)'};">
-                                ${isStockEmpty ? '⚠️ НЕТ ТОВАРА (СТОИТ)' : '🟢 ИДУТ ПРОДАЖИ'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="biz-stat-row">
-                    <span>Склад (${userBiz.stock.toFixed(0)}/${biz.maxStock})</span>
-                    <span>Цена продажи: ${sellPrice} PLN</span>
-                </div>
-                <div class="biz-track"><div class="biz-fill-stock" style="width:${stockPct}%; background:${stockPct<10?'var(--danger)':'#3b82f6'}"></div></div>
-
-                <div class="biz-stat-row">
-                    <span>Сейф (${userBiz.cash.toFixed(2)}/${biz.maxCash})</span>
-                    <span style="color:var(--text-secondary)">Чистыми: ~${netPerUnit.toFixed(2)}/шт</span>
-                </div>
-                <div class="biz-track"><div class="biz-fill-cash" style="width:${cashPct}%; background:${isCashFull?'var(--accent-gold)':'#22c55e'}"></div></div>
-
-                <div class="biz-actions">
-                    <button class="btn-biz btn-restock" onclick="restockBusiness('${biz.id}')">
-                        📦 КУПИТЬ 10 ШТ (-${(buyCost*10).toFixed(0)} PLN)
-                    </button>
-                    <button class="btn-biz btn-collect" onclick="collectBusiness('${biz.id}')">
-                        💰 ЗАБРАТЬ (${userBiz.cash.toFixed(0)})
-                    </button>
-                </div>
-            </div>`;
-        }
-    });
-    
-    if (list.innerHTML !== html) list.innerHTML = html;
-}
-
-function buyBusiness(id) {
-    if (G.housing.id === -1) { log("⛔ Сначала купите квартиру!", "var(--danger)"); return; }
-    
-    let biz = BUSINESS_META.find(b => b.id === id);
-    if (G.lvl < biz.minLvl) { log(`⛔ Нужен уровень ${biz.minLvl}!`, "var(--danger)"); return; }
-
-    let price = getBusinessPrice(biz.basePrice);
-
-    if (G.money >= price) {
-        G.money = parseFloat((G.money - price).toFixed(2));
-        G.business[id] = {
-            stock: 100, // Бонусные 100 товаров при покупке
-            cash: 0,
-            lastUpdate: Date.now()
-        };
-        addHistory('🏗️ БИЗНЕС', price, 'minus');
-        tg.HapticFeedback.notificationOccurred('success');
-        save(); updateUI();
-    } else {
-        log(`Не хватает денег! Нужно ${price} PLN`, "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
-    }
-}
-
-function restockBusiness(id) {
-    let biz = BUSINESS_META.find(b => b.id === id);
-    let userBiz = G.business[id];
-    
-    if (userBiz.stock >= biz.maxStock) {
-        log("Склад полон!", "var(--accent-blue)");
-        return;
-    }
-
-    let unitCost = getDynamicPrice(biz.priceKeys.buy);
-    let batchSize = 10;
-    let totalCost = unitCost * batchSize;
-
-    if (G.money >= totalCost) {
-        G.money = parseFloat((G.money - totalCost).toFixed(2));
-        if(userBiz.stock === undefined) userBiz.stock = 0;
-        
-        userBiz.stock = Math.min(biz.maxStock, userBiz.stock + batchSize); 
-        addHistory('📦 ЗАКУПКА', totalCost, 'minus');
-        save(); updateUI();
-    } else {
-        log(`Нет денег на закупку (${totalCost.toFixed(0)} PLN)`, "var(--danger)");
-    }
-}
-
-function collectBusiness(id) {
-    let userBiz = G.business[id];
-    if (!userBiz || userBiz.cash <= 0.1) {
-        log("В сейфе пусто!", "#aaa");
-        return;
-    }
-    
-    let amount = parseFloat(userBiz.cash.toFixed(2));
-    G.money = parseFloat((G.money + amount).toFixed(2));
-    G.totalEarned += amount;
-    userBiz.cash = 0;
-    
-    addHistory('💰 ПРИБЫЛЬ', amount, 'plus');
-    tg.HapticFeedback.notificationOccurred('success');
-    save(); updateUI();
-}
-
-function processBusinessLogic() {
-    if (!G.business) return;
-    
-    BUSINESS_META.forEach(biz => {
-        let userBiz = G.business[biz.id];
-        if (userBiz) {
-            // АВТО-ФИКС ДЛЯ СТАРЫХ СОХРАНЕНИЙ
-            if(userBiz.stock === undefined) userBiz.stock = 0;
-            if(userBiz.cash === undefined) userBiz.cash = 0;
-
-            if (userBiz.stock >= 1 && userBiz.cash < biz.maxCash) {
-                let soldAmount = Math.min(userBiz.stock, biz.stockConsume);
-                let sellPrice = getDynamicPrice(biz.priceKeys.sell);
-                let revenue = soldAmount * sellPrice;
-                let tax = revenue * biz.taxRate;
-                let netProfit = revenue - tax;
-
-                userBiz.stock -= soldAmount;
-                userBiz.cash = Math.min(biz.maxCash, userBiz.cash + netProfit);
-            }
-        }
-    });
 }
 
 function updateUI() {
@@ -1574,8 +1626,7 @@ setInterval(() => {
     if (G.buffTime > 0) G.buffTime--;
     if (G.blindTime > 0) G.blindTime--; 
     
-    // БИЗНЕС ЛОГИКА (ВЫЗОВ)
-    processBusinessLogic();
+    // БИЗНЕС ЛОГИКА (ВЫЗОВ) - ОТКЛЮЧЕНА (Все на кнопках)
 
     generateDailyQuests(); 
 
@@ -1615,4 +1666,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-
