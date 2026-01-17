@@ -388,3 +388,43 @@ h3 { font-size: 16px; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.
 /* История */
 .history-box { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
 .h-row { display: flex; justify-content: space-between; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px; margin-bottom: 4px; font-size: 11px; }
+
+/* === БИЗНЕС СТИЛИ (Добавлено в v9.0) === */
+
+.biz-card {
+    background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 15px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.biz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.biz-icon { font-size: 32px; margin-right: 10px; }
+.biz-title { font-size: 14px; font-weight: 800; color: #fff; }
+.biz-level { font-size: 10px; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 2px 6px; border-radius: 6px; }
+
+/* Прогресс бары бизнеса */
+.biz-stat-row { display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-top: 5px; }
+.biz-track { width: 100%; height: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
+.biz-fill-stock { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); width: 0%; transition: width 0.5s; }
+.biz-fill-cash { height: 100%; background: linear-gradient(90deg, #22c55e, #86efac); width: 0%; transition: width 0.5s; }
+
+/* Кнопки управления бизнесом */
+.biz-actions { display: flex; gap: 8px; margin-top: 10px; }
+.btn-biz { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 700; font-size: 11px; cursor: pointer; color: #000; }
+
+.btn-restock { background: var(--accent-blue); color: white; border: 1px solid rgba(255,255,255,0.2); }
+.btn-collect { background: var(--success); color: #000; box-shadow: 0 0 10px rgba(34, 197, 94, 0.3); animation: pulse 2s infinite; }
+
+.biz-locked { opacity: 0.8; filter: grayscale(0.8); }
+.biz-price-tag { font-size: 14px; color: var(--accent-gold); font-weight: 800; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
