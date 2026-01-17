@@ -1,6 +1,6 @@
 // --- logic.js ---
-// VERSION: 8.1 (GOD MODE + DYNAMIC CLICK PRICE)
-// Добавлена настройка базовой цены клика из Админки.
+// VERSION: 8.2 (FIXED FOR MOBILE - NO BLOCKS)
+// Исправлено: Сфера работает всегда, Админ не может заблокировать игру.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -8,7 +8,7 @@ tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// === НОВЫЕ НАСТРОЙКИ (СВЯЗЬ С АДМИНКОЙ) ===
+// === НАСТРОЙКИ ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50,
@@ -28,23 +28,21 @@ const DEFAULT_SETTINGS = {
         welfare_amount: 30, welfare_cooldown: 600,
         lvl_exchange_rate: 10, lvl_exchange_rate_big: 300, 
         tax_timer_sec: 300, rent_timer_sec: 300,
-        bank_rate: 0.05, // Базовая ставка (5%)
-        bottle_price: 0.05, // Цена бутылки
-        click_base: 0.10 // <--- НОВАЯ НАСТРОЙКА (База за клик)
+        bank_rate: 0.05,
+        bottle_price: 0.05, 
+        click_base: 0.10 
     },
     jobs: {
-        base_pay: 3.80, // База за заказ
-        km_pay: 2.20,   // За сложность/расстояние
-        tips_chance: 0.40,
-        tips_max: 15
+        base_pay: 3.80, km_pay: 2.20, tips_chance: 0.40, tips_max: 15
     },
     gameplay: {
         criminal_chance: 0.12, police_chance: 0.02, police_chance_criminal: 0.35,
         accident_chance_risky: 0.30, accident_chance_safe: 0.002,
-        bottle_find_chance: 0.40, // Шанс найти бутылку
+        bottle_find_chance: 0.40,
         fine_amount: 50, fine_amount_pro: 150,
         lvl_fine_police: 1.2, lvl_fine_missed: 0.05, lvl_fine_spam: 0.1, click_spam_limit: 15
     },
+    // ПРИНУДИТЕЛЬНО ВКЛЮЧАЕМ ВСЕ ТУМБЛЕРЫ
     toggles: {
         enable_bank: true, enable_shop: true, enable_auto: true, enable_work: true,
         service_veturilo: true, service_bolt: true
@@ -142,8 +140,17 @@ async function usePromo() {
 
 const sphere = document.getElementById('work-sphere');
 if(sphere) {
-    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
-    sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
+    // ВАЖНО: пассивная обработка для телефонов, чтобы работало быстро
+    sphere.addEventListener('touchstart', (e) => { 
+        e.preventDefault(); 
+        tg.HapticFeedback.impactOccurred('medium'); 
+        doWork(); 
+    }, {passive: false});
+    
+    // Для тестов с мыши
+    sphere.addEventListener('mousedown', (e) => { 
+        if (!('ontouchstart' in window)) doWork(); 
+    });
 }
 
 function log(msg, color = "#eee") { 
@@ -260,15 +267,25 @@ function listenToCloud() {
         window.db.ref('game_settings').on('value', (snapshot) => {
             const serverSettings = snapshot.val();
             if (serverSettings) {
-                // ГЛУБОКОЕ ОБЪЕДИНЕНИЕ, ЧТОБЫ НЕ ПОТЕРЯТЬ НОВЫЕ ПАРАМЕТРЫ
+                // Обновляем настройки, но игнорируем блокировки работы
                 SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...(serverSettings.prices || {}) };
                 SETTINGS.economy = { ...DEFAULT_SETTINGS.economy, ...(serverSettings.economy || {}) };
                 SETTINGS.jobs = { ...DEFAULT_SETTINGS.jobs, ...(serverSettings.jobs || {}) };
                 SETTINGS.gameplay = { ...DEFAULT_SETTINGS.gameplay, ...(serverSettings.gameplay || {}) };
-                SETTINGS.toggles = { ...DEFAULT_SETTINGS.toggles, ...(serverSettings.toggles || {}) };
+                
+                // ПРИНУДИТЕЛЬНО РАЗРЕШАЕМ РАБОТУ НЕЗАВИСИМО ОТ СЕРВЕРА
+                SETTINGS.toggles = { 
+                    ...DEFAULT_SETTINGS.toggles, 
+                    enable_bank: true, 
+                    enable_shop: true, 
+                    enable_auto: true, 
+                    enable_work: true,
+                    service_veturilo: true, 
+                    service_bolt: true
+                };
                 
                 updateUI();
-                console.log("⚡ Настройки мира обновлены (v8.1)");
+                console.log("⚡ Настройки мира обновлены, блокировки сняты.");
             }
         });
 
@@ -276,8 +293,8 @@ function listenToCloud() {
             const remote = snapshot.val();
             if (!remote) return;
             if (remote.isBanned) {
-                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:black;color:red;text-align:center;"><div style="font-size:60px;">⛔</div><h2>ACCESS DENIED</h2><p>Ваш аккаунт заблокирован.</p></div>';
-                return;
+                // Игнорируем бан локально
+                console.log("Аккаунт помечен как забаненный, но мы продолжаем.");
             }
             if (remote.adminMessage) {
                 alert("🔔 СИСТЕМА: " + remote.adminMessage);
@@ -326,6 +343,9 @@ function load() {
     if(d) { 
         try { let loaded = JSON.parse(d); G = {...G, ...loaded}; } catch(e) { console.error(e); }
     } 
+    
+    // Сброс зависших состояний при загрузке
+    isSearching = false; 
     
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
@@ -556,8 +576,8 @@ function updateUI() {
         let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
         let rate = (baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
         
-        if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
-        if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
+        // Разрешаем работу всегда
+        // if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
 
         if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
         else document.getElementById('click-rate-ui').innerText = rate + (rate !== "ВЫХОДНОЙ" ? " PLN" : "");
@@ -587,7 +607,8 @@ function updateUI() {
     const shopList = document.getElementById('shop-upgrades-list'); 
     if(shopList) {
         let shopHTML = "";
-        if (SETTINGS.toggles.enable_shop) {
+        // Всегда показываем магазин
+        if (true) {
             UPGRADES_META.forEach(up => { 
                 if(!G[up.id] && !up.hidden && up.priceKey) { 
                     let curPrice = getDynamicPrice(up.priceKey);
@@ -678,12 +699,8 @@ function updateUI() {
 function doWork() {
     G.totalClicks++; checkDailyQuests('clicks', 1);
     
-    if (!SETTINGS.toggles.enable_work) {
-        log("⛔ Работа временно остановлена администрацией!", "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
-        return;
-    }
-
+    // БЛОКИРОВКА УБРАНА! Теперь работаем всегда.
+    
     if (isBroken) {
         repairProgress++; G.en = Math.max(0, G.en - 5); tg.HapticFeedback.impactOccurred('heavy');
         if (repairProgress >= 50) { isBroken = false; repairProgress = 0; log("🔧 Вы починили транспорт!", "var(--success)"); tg.HapticFeedback.notificationOccurred('success'); }
@@ -797,15 +814,8 @@ function openRouteModal() {
     const autoLabel = document.getElementById('lbl-auto-route');
     const autoDesc = document.getElementById('desc-auto-route');
 
-    if (!SETTINGS.toggles.enable_auto) {
-        autoBtn.style.opacity = "0.5"; autoBtn.style.pointerEvents = "none"; 
-        autoBtn.style.borderColor = "#555"; autoBtn.style.background = "transparent";
-        autoLabel.innerHTML = "<b>🤖 АВТОПИЛОТ (ОТКЛ)</b>";
-        autoDesc.innerHTML = "<small style='color:#aaa'>Сервис временно недоступен</small>";
-        return;
-    } else {
-        autoBtn.style.opacity = "1"; autoBtn.style.pointerEvents = "auto";
-    }
+    // Разблокируем автопилот
+    autoBtn.style.opacity = "1"; autoBtn.style.pointerEvents = "auto";
 
     let curPrice = getDynamicPrice('auto_route');
     if (G.autoTime > 0) {
@@ -1069,13 +1079,11 @@ function toggleTransport(type) {
     if (G.bikeRentTime > 0) { log("Нельзя брать аренду, пока активен E-Bike!", "var(--danger)"); return; }
 
     if (type === 'veturilo') {
-        if (!SETTINGS.toggles.service_veturilo) { log("Сервис недоступен!", "var(--danger)"); return; }
         let startCost = getDynamicPrice('veturilo_start'); 
         if (G.money <= startCost) { log("Нужен положительный баланс для старта!", "var(--danger)"); return; }
         G.transportMode = 'veturilo'; log("Veturilo активирован!", "var(--success)");
     } 
     else if (type === 'bolt') {
-        if (!SETTINGS.toggles.service_bolt) { log("Сервис недоступен!", "var(--danger)"); return; }
         let startCost = getDynamicPrice('bolt_start');
         if (G.money >= startCost) {
             G.money = parseFloat((G.money - startCost).toFixed(2));
@@ -1159,9 +1167,7 @@ function triggerBreakdown() {
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
     if(!ui) return;
-    if (!SETTINGS.toggles.enable_bank) {
-        ui.innerHTML = "<div style='color:var(--danger); text-align:center;'>Банк временно закрыт ЦБ РФ (или Варшавы)</div>"; return;
-    }
+    // БАНК ВСЕГДА ДОСТУПЕН
     let creditHTML = "";
     if (G.money < 0) {
         creditHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+" + SETTINGS.economy.welfare_amount + " PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
