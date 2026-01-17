@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>WARSZAWA GOD MODE v10.0</title>
+    <title>WARSZAWA GOD MODE v10.1</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -73,7 +73,7 @@
     <div class="app-layout" id="app">
         <div class="header">
             <div>
-                <h2 style="margin:0;">SYSTEM CONTROL <span style="color:var(--gold)">GOD MODE v10.0</span></h2>
+                <h2 style="margin:0;">SYSTEM CONTROL <span style="color:var(--gold)">GOD MODE v10.1</span></h2>
                 <div style="font-size:11px; color:#64748b; margin-top:5px;">Firebase Status: <span style="color:var(--success)">Connected</span></div>
             </div>
             <button class="btn-danger" onclick="location.reload()">Выход</button>
@@ -97,6 +97,8 @@
 
                 <div class="card" style="border-color: var(--gold);">
                     <h3>💰 Экономика (Бабушка / Банк)</h3>
+                    <div class="field-row"><label>База за клик (PLN)</label><input type="number" step="0.01" data-path="economy.click_base" data-type="float"></div>
+                    
                     <div class="field-row"><label>Налог на богатство (%) <span class="input-suffix">%</span></label><input type="number" data-path="economy.tax_rate" data-type="percent"></div>
                     <div class="field-row"><label>Порог налога (PLN)</label><input type="number" data-path="economy.tax_threshold" data-type="float"></div>
                     <div class="field-row"><label>Инфляция (%) <span class="input-suffix">%</span></label><input type="number" data-path="economy.inflation_rate" data-type="percent"></div>
