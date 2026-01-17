@@ -1,15 +1,17 @@
 // --- logic.js ---
-// VERSION: 9.5 (REAL TRADING LOGIC)
-// Прибыль теперь идет только от продажи товара. 
-// Цены вынесены в настройки для будущего управления через Админку.
+// VERSION: 9.7 (FIXED & RESTORED)
+// Ключ сохранения WARSZAWA_FOREVER (старый прогресс возвращен).
+// Вся старая механика (Сфера, Вода, Бутылки) на месте.
+// Добавлен Бизнес с Хардкорными ценами и защитой от сбоев.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
 
+// ВОЗВРАЩАЕМ СТАРЫЙ КЛЮЧ
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// === НАСТРОЙКИ (ТЕПЕРЬ С КОНТРОЛЕМ БИЗНЕСА) ===
+// === НАСТРОЙКИ ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50, coffee: 5.00, energy: 12.00,
@@ -18,13 +20,12 @@ const DEFAULT_SETTINGS = {
         bolt_start: 2.00, bolt_min: 2.50,
         bag: 350, phone: 1200, scooter: 500, helmet: 250, raincoat: 180, powerbank: 400, abibas: 50, jorban: 250
     },
-    // НОВАЯ СЕКЦИЯ: Настройки товаров бизнеса (для Админки)
-    // Buy = за сколько покупаем мы (опт). Sell = за сколько продаем людям (розница).
+    // Цены для бизнеса (Закупка / Продажа)
     business_goods: {
-        vending_buy: 8.0, vending_sell: 12.0, // Маржа 4.0
-        vege_buy: 15.0, vege_sell: 25.0,      // Маржа 10.0
-        kebab_buy: 40.0, kebab_sell: 75.0,    // Маржа 35.0
-        zabka_buy: 100.0, zabka_sell: 180.0   // Маржа 80.0
+        vending_buy: 8.0, vending_sell: 12.0, 
+        vege_buy: 15.0, vege_sell: 25.0,      
+        kebab_buy: 40.0, kebab_sell: 75.0,    
+        zabka_buy: 100.0, zabka_sell: 180.0   
     },
     economy: {
         tax_rate: 0.15, tax_threshold: 200, inflation_rate: 0.40, 
@@ -43,15 +44,14 @@ const DEFAULT_SETTINGS = {
     toggles: { enable_bank: true, enable_shop: true, enable_auto: true, enable_work: true, service_veturilo: true, service_bolt: true }
 };
 
-// === БИЗНЕС МЕТАДАННЫЕ ===
-// Теперь тут ссылки на настройки цен, а не жесткие цифры
+// === БИЗНЕС МЕТАДАННЫЕ (ХАРДКОР ЦЕНЫ) ===
 const BUSINESS_META = [
     { 
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
-        basePrice: 5000, 
+        basePrice: 5000, // Высокая цена
         minLvl: 5.0, 
         taxRate: 0.18, 
-        stockConsume: 1, // Продает 1 шоколадку в сек
+        stockConsume: 1, 
         maxStock: 500, 
         maxCash: 2000, 
         priceKeys: { buy: 'vending_buy', sell: 'vending_sell' },
@@ -101,6 +101,7 @@ const RANKS = [
     { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
 ];
 
+// Основной объект игры
 let G = { 
     money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 300, 
     waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, totalEarned: 0, 
@@ -146,7 +147,6 @@ function getDynamicPrice(baseValue) {
     if (baseValue === 0) return 0;
     let price = 0;
     if (typeof baseValue === 'string') {
-        // Проверяем и в основных ценах, и в товарах бизнеса
         if (SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
         else if (SETTINGS.business_goods && SETTINGS.business_goods[baseValue] !== undefined) price = SETTINGS.business_goods[baseValue];
         else price = 0;
@@ -301,7 +301,6 @@ function listenToCloud() {
             const serverSettings = snapshot.val();
             if (serverSettings) {
                 SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...(serverSettings.prices || {}) };
-                // Подгружаем настройки товаров бизнеса
                 if (serverSettings.business_goods) {
                     SETTINGS.business_goods = { ...DEFAULT_SETTINGS.business_goods, ...serverSettings.business_goods };
                 }
@@ -353,6 +352,17 @@ function load() {
     
     if(!G.business) G.business = {};
 
+    // ЗАЩИТА: Если есть старый прогресс, но нет полей бизнеса - инициализируем их
+    // Это предотвращает ошибку и сброс игры
+    if(G.business) {
+        for(let key in G.business) {
+            if(G.business[key]) {
+                if(G.business[key].stock === undefined) G.business[key].stock = 0;
+                if(G.business[key].cash === undefined) G.business[key].cash = 0;
+            }
+        }
+    }
+
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(isNaN(G.en)) G.en = 2000;
@@ -379,23 +389,22 @@ function load() {
     updateUI(); 
 }
 
-// === ЛОГИКА БИЗНЕСА (REAL TRADING) ===
+// === ЛОГИКА БИЗНЕСА (SAFE & HARDCORE) ===
 
 function renderBusiness() {
     const list = document.getElementById('business-list');
     if(!list) return;
 
     let html = "";
-    // Проверка наличия жилья
     let hasHouse = G.housing && G.housing.id !== -1;
 
     BUSINESS_META.forEach(biz => {
+        if (!G.business[biz.id]) G.business[biz.id] = null; 
         let userBiz = G.business[biz.id];
         let isOwned = !!userBiz;
         let currentPrice = getBusinessPrice(biz.basePrice);
         let hasLvl = G.lvl >= biz.minLvl;
         
-        // Цены товара
         let buyCost = getDynamicPrice(biz.priceKeys.buy);
         let sellPrice = getDynamicPrice(biz.priceKeys.sell);
 
@@ -431,14 +440,17 @@ function renderBusiness() {
                 </div>
             </div>`;
         } else {
+            // FIX: Если данные были повреждены или старые
+            if(userBiz.stock === undefined) userBiz.stock = 0;
+            if(userBiz.cash === undefined) userBiz.cash = 0;
+
             let stockPct = (userBiz.stock / biz.maxStock) * 100;
             let cashPct = (userBiz.cash / biz.maxCash) * 100;
             let isStockEmpty = userBiz.stock <= 0;
             let isCashFull = userBiz.cash >= biz.maxCash;
 
-            // Расчет потенциальной прибыли с единицы (для инфо)
             let taxPerUnit = sellPrice * biz.taxRate;
-            let netPerUnit = sellPrice - taxPerUnit; // Чистыми с продажи 1 шт
+            let netPerUnit = sellPrice - taxPerUnit;
 
             html += `
             <div class="biz-card">
@@ -520,6 +532,8 @@ function restockBusiness(id) {
 
     if (G.money >= totalCost) {
         G.money = parseFloat((G.money - totalCost).toFixed(2));
+        if(userBiz.stock === undefined) userBiz.stock = 0;
+        
         userBiz.stock = Math.min(biz.maxStock, userBiz.stock + batchSize); 
         addHistory('📦 ЗАКУПКА', totalCost, 'minus');
         save(); updateUI();
@@ -530,7 +544,7 @@ function restockBusiness(id) {
 
 function collectBusiness(id) {
     let userBiz = G.business[id];
-    if (userBiz.cash <= 0.1) {
+    if (!userBiz || userBiz.cash <= 0.1) {
         log("В сейфе пусто!", "#aaa");
         return;
     }
@@ -551,19 +565,14 @@ function processBusinessLogic() {
     BUSINESS_META.forEach(biz => {
         let userBiz = G.business[biz.id];
         if (userBiz) {
-            // Если есть товар и место в кассе
+            // АВТО-ФИКС ДЛЯ СТАРЫХ СОХРАНЕНИЙ
+            if(userBiz.stock === undefined) userBiz.stock = 0;
+            if(userBiz.cash === undefined) userBiz.cash = 0;
+
             if (userBiz.stock >= 1 && userBiz.cash < biz.maxCash) {
-                // Пытаемся продать stockConsume товаров в секунду
-                // Но не больше, чем есть на складе
                 let soldAmount = Math.min(userBiz.stock, biz.stockConsume);
-                
-                // Цена продажи 1 шт
                 let sellPrice = getDynamicPrice(biz.priceKeys.sell);
-                
-                // Выручка
                 let revenue = soldAmount * sellPrice;
-                
-                // Налог сразу вычитаем
                 let tax = revenue * biz.taxRate;
                 let netProfit = revenue - tax;
 
@@ -575,327 +584,329 @@ function processBusinessLogic() {
 }
 
 function updateUI() {
-    const moneyEl = document.getElementById('money-val');
-    if(!moneyEl) return; 
+    try {
+        const moneyEl = document.getElementById('money-val');
+        if(!moneyEl) return; 
 
-    const isBlind = G.blindTime > 0; 
-    if (isBlind) {
-        let bMin = Math.floor(G.blindTime / 60);
-        let bSec = G.blindTime % 60;
-        moneyEl.innerText = "🔒 " + bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
-        moneyEl.style.color = "#aaa";
-    } else {
-        moneyEl.innerText = G.money.toFixed(2) + " PLN";
-        moneyEl.style.color = G.money < 0 ? "var(--danger)" : "var(--success)";
-    }
-
-    const lvlEl = document.getElementById('lvl-val');
-    if(lvlEl) {
-        let houseIcon = (G.housing && G.housing.id !== -1) ? " 🏠" : "";
-        lvlEl.innerText = "LVL " + G.lvl.toFixed(6) + houseIcon;
-    }
-
-    document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
-    document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
-    document.getElementById('water-val').innerText = Math.floor(G.waterStock);
-    
-    document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
-    document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
-    if(weather === "Дождь") document.body.classList.add('rain-mode');
-    else document.body.classList.remove('rain-mode');
-    
-    const autoStatus = document.getElementById('auto-status-ui');
-    if(autoStatus) {
-        autoStatus.style.display = G.autoTime > 0 ? 'block' : 'none';
-        if(G.autoTime > 0) autoStatus.innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
-    }
-    
-    const bikeStatus = document.getElementById('bike-status-ui');
-    if(bikeStatus) {
-        let rentShow = false; let text = "";
-        if (G.transportMode === 'veturilo') { rentShow = true; text = "🚲 VETURILO"; } 
-        else if (G.transportMode === 'bolt') { rentShow = true; text = "🛴 BOLT"; } 
-        else if (G.bikeRentTime > 0) { rentShow = true; text = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60); }
-        bikeStatus.style.display = rentShow ? 'block' : 'none';
-        bikeStatus.innerText = text;
-    }
-
-    const buffUI = document.getElementById('buff-status-ui'); 
-    if(buffUI) {
-        buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
-        if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
-    }
-    
-    const hiddenPrice = isBlind ? "???" : null;
-    const setBtnText = (id, priceStr) => {
-        const btn = document.getElementById(id);
-        if(btn) btn.innerText = (hiddenPrice || priceStr) + " PLN";
-    };
-
-    setBtnText('btn-buy-water', getDynamicPrice('water').toFixed(2));
-    setBtnText('btn-buy-coffee', getDynamicPrice('coffee').toFixed(2));
-    setBtnText('btn-buy-energy', getDynamicPrice('energy').toFixed(2));
-    setBtnText('btn-buy-abibas', getDynamicPrice('abibas').toFixed(2));
-    setBtnText('btn-buy-jorban', getDynamicPrice('jorban').toFixed(2));
-    
-    const energyItemDesc = document.querySelector('.item-energy .shop-desc span');
-    if (energyItemDesc) energyItemDesc.innerText = "Пауза расхода энергии. (Вода продолжает тратиться!)";
-
-    const btnVeturilo = document.getElementById('btn-veturilo');
-    if(btnVeturilo) {
-        let rate = getDynamicPrice('veturilo_min');
-        if(G.transportMode === 'veturilo') {
-            btnVeturilo.innerText = "СТОП (АКТИВНО)";
-            btnVeturilo.style.background = "#faa";
+        const isBlind = G.blindTime > 0; 
+        if (isBlind) {
+            let bMin = Math.floor(G.blindTime / 60);
+            let bSec = G.blindTime % 60;
+            moneyEl.innerText = "🔒 " + bMin + ":" + (bSec < 10 ? '0' : '') + bSec;
+            moneyEl.style.color = "#aaa";
         } else {
-            if (!SETTINGS.toggles.service_veturilo) {
-                 btnVeturilo.innerText = "НЕДОСТУПНО"; btnVeturilo.disabled = true; btnVeturilo.style.opacity = "0.5";
-            } else {
-                 btnVeturilo.disabled = false; btnVeturilo.style.opacity = "1";
-                 btnVeturilo.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
-                 btnVeturilo.style.background = "#ddd";
-            }
+            moneyEl.innerText = G.money.toFixed(2) + " PLN";
+            moneyEl.style.color = G.money < 0 ? "var(--danger)" : "var(--success)";
         }
-    }
 
-    const btnBolt = document.getElementById('btn-bolt');
-    if(btnBolt) {
-        let rate = getDynamicPrice('bolt_min');
-        if(G.transportMode === 'bolt') {
-            btnBolt.innerText = "СТОП (АКТИВНО)";
-            btnBolt.style.background = "#faa";
-        } else {
-            if (!SETTINGS.toggles.service_bolt) {
-                 btnBolt.innerText = "НЕДОСТУПНО"; btnBolt.disabled = true; btnBolt.style.opacity = "0.5";
-            } else {
-                 btnBolt.disabled = false; btnBolt.style.opacity = "1";
-                 btnBolt.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
-                 btnBolt.style.background = "var(--success)";
-            }
+        const lvlEl = document.getElementById('lvl-val');
+        if(lvlEl) {
+            let houseIcon = (G.housing && G.housing.id !== -1) ? " 🏠" : "";
+            lvlEl.innerText = "LVL " + G.lvl.toFixed(6) + houseIcon;
         }
-    }
 
-    const rentBikeBtn = document.getElementById('buy-bike-rent');
-    if(rentBikeBtn) {
-        if(G.bikeRentTime > 0) {
-            rentBikeBtn.innerText = "ОТМЕНИТЬ (" + Math.floor(G.bikeRentTime/60) + "м)";
-            rentBikeBtn.style.background = "#ef4444"; 
-            rentBikeBtn.onclick = cancelBikeRent;
-        } else {
-            rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice('bike_rent').toFixed(2)) + " PLN)";
-            rentBikeBtn.style.background = ""; 
-            rentBikeBtn.onclick = rentBike;
-        }
-    }
-
-    const autoPriceLabel = document.getElementById('price-auto');
-    if(autoPriceLabel) autoPriceLabel.innerText = "(" + (hiddenPrice || getDynamicPrice('auto_route').toFixed(2)) + " PLN)";
-
-    const repairBtn = document.getElementById('btn-repair-express');
-    if(repairBtn) repairBtn.innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice('repair_express').toFixed(2)) + " PLN)";
-
-    let shoeNameDisplay = G.shoes.name;
-    let shoeBar = document.getElementById('shoe-bar');
-    if(shoeBar) {
-        if (G.shoes.dur <= 0) {
-            shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
-            shoeBar.style.width = "100%"; shoeBar.style.background = "var(--danger)"; shoeBar.style.opacity = "0.3"; 
-        } else {
-            const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
-            shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
-            shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
-            shoeBar.style.opacity = "1";
-        }
-        document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
-    }
-
-    let currentRank = RANKS[0]; let nextRank = null;
-    if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
-    else if (G.totalOrders < RANKS[1].max) { currentRank = RANKS[1]; nextRank = RANKS[2]; }
-    else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
-    else { currentRank = RANKS[3]; nextRank = null; }
-
-    const rIcon = document.getElementById('rank-icon');
-    if(rIcon) {
-        rIcon.innerText = currentRank.icon;
-        document.getElementById('rank-name').innerText = currentRank.name;
-        document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
-        if (nextRank) {
-            let prevMax = (currentRank.name === "Бывалый") ? RANKS[0].max : (currentRank.name === "Профи") ? RANKS[1].max : 0;
-            let progress = ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100;
-            document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, progress)) + "%";
-            document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders) + " заказов";
-        } else {
-            document.getElementById('rank-progress').style.width = "100%";
-            document.getElementById('rank-next').innerText = "Вы достигли вершины!";
-        }
-    }
-
-    let questsHTML = "";
-    if(G.dailyQuests) {
-        G.dailyQuests.forEach(q => {
-            let btn = "";
-            let progressPct = (q.current / q.target) * 100;
-            if (q.claimed) { btn = "<span style='color:var(--success)'>✅</span>"; } 
-            else if (q.current >= q.target) { btn = "<button class='btn-action' style='width:auto; padding:4px 8px; font-size:10px; background:var(--gold); color:black;' onclick='claimDaily(" + q.id + ")'>ЗАБРАТЬ " + q.reward + "</button>"; } 
-            else { btn = "<small>" + parseFloat(q.current).toFixed(0) + "/" + q.target + "</small>"; }
-            questsHTML += "<div class='daily-quest-item'><div class='daily-quest-info'><b>" + q.text + "</b><br><div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + Math.min(100, progressPct) + "%'></div></div></div><div style='margin-left:10px;'>" + btn + "</div></div>";
-        });
-    }
-    const qList = document.getElementById('daily-quests-list');
-    if(qList) qList.innerHTML = questsHTML;
-
-    document.getElementById('stat-orders').innerText = G.totalOrders || 0;
-    document.getElementById('stat-clicks').innerText = G.totalClicks || 0;
-    document.getElementById('stat-bottles').innerText = G.totalBottles || 0;
-    document.getElementById('stat-earned').innerText = (G.totalEarned || 0).toFixed(2) + " PLN";
-    
-    let timeLeft = (G.lastDailyUpdate + 86400000) - Date.now();
-    if(timeLeft < 0) timeLeft = 0;
-    let hours = Math.floor(timeLeft / (1000 * 60 * 60));
-    let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-    document.getElementById('daily-timer').innerText = "Обновление: " + hours + "ч " + mins + "м";
-
-    if (isBroken) {
-        sphere.classList.add('broken');
-        document.getElementById('sphere-text').innerText = "ЧИНИТЬ";
-        document.getElementById('repair-express-btn').style.display = 'block';
-        document.getElementById('click-rate-ui').innerText = repairProgress + " / 50";
-        document.getElementById('repair-progress').style.height = (repairProgress * 2) + "%";
-    } else {
-        sphere.classList.remove('broken');
-        document.getElementById('sphere-text').innerText = "РАБОТАТЬ";
-        document.getElementById('repair-express-btn').style.display = 'none';
-        document.getElementById('repair-progress').style.height = "0%";
+        document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
+        document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
+        document.getElementById('water-val').innerText = Math.floor(G.waterStock);
         
-        let rankBonus = 0;
-        if (G.totalOrders >= 50) rankBonus = 0.05;
-        if (G.totalOrders >= 150) rankBonus = 0.10;
-        if (G.totalOrders >= 400) rankBonus = 0.20;
-
-        let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
-        let rate = (baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
+        document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
+        document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
+        if(weather === "Дождь") document.body.classList.add('rain-mode');
+        else document.body.classList.remove('rain-mode');
         
-        if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
-        if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
+        const autoStatus = document.getElementById('auto-status-ui');
+        if(autoStatus) {
+            autoStatus.style.display = G.autoTime > 0 ? 'block' : 'none';
+            if(G.autoTime > 0) autoStatus.innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
+        }
+        
+        const bikeStatus = document.getElementById('bike-status-ui');
+        if(bikeStatus) {
+            let rentShow = false; let text = "";
+            if (G.transportMode === 'veturilo') { rentShow = true; text = "🚲 VETURILO"; } 
+            else if (G.transportMode === 'bolt') { rentShow = true; text = "🛴 BOLT"; } 
+            else if (G.bikeRentTime > 0) { rentShow = true; text = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60); }
+            bikeStatus.style.display = rentShow ? 'block' : 'none';
+            bikeStatus.innerText = text;
+        }
 
-        if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
-        else document.getElementById('click-rate-ui').innerText = rate + (rate !== "ВЫХОДНОЙ" ? " PLN" : "");
-    }
+        const buffUI = document.getElementById('buff-status-ui'); 
+        if(buffUI) {
+            buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
+            if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
+        }
+        
+        const hiddenPrice = isBlind ? "???" : null;
+        const setBtnText = (id, priceStr) => {
+            const btn = document.getElementById(id);
+            if(btn) btn.innerText = (hiddenPrice || priceStr) + " PLN";
+        };
 
-    const myItemsList = document.getElementById('my-items-list');
-    if (myItemsList) {
-        let invHTML = "";
-        let shoeStatusText = Math.floor(G.shoes.dur) + "%";
-        let isShoesBroken = G.shoes.dur <= 0;
-        invHTML += `<div class="shop-item item-shoes ${isShoesBroken ? 'item-broken' : ''}" ${isShoesBroken ? 'onclick="switchTab(\'shop\', document.querySelectorAll(\'.tab-item\')[2])"' : ''}><div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div></div>`;
+        setBtnText('btn-buy-water', getDynamicPrice('water').toFixed(2));
+        setBtnText('btn-buy-coffee', getDynamicPrice('coffee').toFixed(2));
+        setBtnText('btn-buy-energy', getDynamicPrice('energy').toFixed(2));
+        setBtnText('btn-buy-abibas', getDynamicPrice('abibas').toFixed(2));
+        setBtnText('btn-buy-jorban', getDynamicPrice('jorban').toFixed(2));
+        
+        const energyItemDesc = document.querySelector('.item-energy .shop-desc span');
+        if (energyItemDesc) energyItemDesc.innerText = "Пауза расхода энергии. (Вода продолжает тратиться!)";
 
-        UPGRADES_META.forEach(up => {
-            if(G[up.id]) {
-                const item = G[up.id];
-                const isBroken = item.dur <= 0;
-                let conf = UPGRADES_META.find(u => u.id === up.id);
-                let max = conf ? conf.maxDur : 100;
-                const pct = Math.floor((item.dur / max) * 100);
-                let repairPriceVal = (typeof up.repairPriceKey === 'string') ? getDynamicPrice(up.repairPriceKey) : getDynamicPrice(up.repairPriceKey || 10);
-                invHTML += `<div class="shop-item ${isBroken ? 'item-broken' : ''}"><div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairPriceVal}, true)">🛠️ ${hiddenPrice || repairPriceVal.toFixed(2)}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}')">💸 ПРОДАТЬ</button></div></div>`;
+        const btnVeturilo = document.getElementById('btn-veturilo');
+        if(btnVeturilo) {
+            let rate = getDynamicPrice('veturilo_min');
+            if(G.transportMode === 'veturilo') {
+                btnVeturilo.innerText = "СТОП (АКТИВНО)";
+                btnVeturilo.style.background = "#faa";
+            } else {
+                if (!SETTINGS.toggles.service_veturilo) {
+                    btnVeturilo.innerText = "НЕДОСТУПНО"; btnVeturilo.disabled = true; btnVeturilo.style.opacity = "0.5";
+                } else {
+                    btnVeturilo.disabled = false; btnVeturilo.style.opacity = "1";
+                    btnVeturilo.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
+                    btnVeturilo.style.background = "#ddd";
+                }
             }
-        });
-        if (myItemsList.innerHTML !== invHTML) myItemsList.innerHTML = invHTML;
-    }
+        }
 
-    const shopList = document.getElementById('shop-upgrades-list'); 
-    if(shopList) {
-        let shopHTML = "";
-        if (SETTINGS.toggles.enable_shop) {
-            UPGRADES_META.forEach(up => { 
-                if(!G[up.id] && !up.hidden && up.priceKey) { 
-                    let curPrice = getDynamicPrice(up.priceKey);
-                    shopHTML += `<div class="card" style="margin-bottom: 8px;"><b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', '${up.priceKey}')">КУПИТЬ (${hiddenPrice || curPrice} PLN)</button></div>`; 
+        const btnBolt = document.getElementById('btn-bolt');
+        if(btnBolt) {
+            let rate = getDynamicPrice('bolt_min');
+            if(G.transportMode === 'bolt') {
+                btnBolt.innerText = "СТОП (АКТИВНО)";
+                btnBolt.style.background = "#faa";
+            } else {
+                if (!SETTINGS.toggles.service_bolt) {
+                    btnBolt.innerText = "НЕДОСТУПНО"; btnBolt.disabled = true; btnBolt.style.opacity = "0.5";
+                } else {
+                    btnBolt.disabled = false; btnBolt.style.opacity = "1";
+                    btnBolt.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
+                    btnBolt.style.background = "var(--success)";
+                }
+            }
+        }
+
+        const rentBikeBtn = document.getElementById('buy-bike-rent');
+        if(rentBikeBtn) {
+            if(G.bikeRentTime > 0) {
+                rentBikeBtn.innerText = "ОТМЕНИТЬ (" + Math.floor(G.bikeRentTime/60) + "м)";
+                rentBikeBtn.style.background = "#ef4444"; 
+                rentBikeBtn.onclick = cancelBikeRent;
+            } else {
+                rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice('bike_rent').toFixed(2)) + " PLN)";
+                rentBikeBtn.style.background = ""; 
+                rentBikeBtn.onclick = rentBike;
+            }
+        }
+
+        const autoPriceLabel = document.getElementById('price-auto');
+        if(autoPriceLabel) autoPriceLabel.innerText = "(" + (hiddenPrice || getDynamicPrice('auto_route').toFixed(2)) + " PLN)";
+
+        const repairBtn = document.getElementById('btn-repair-express');
+        if(repairBtn) repairBtn.innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice('repair_express').toFixed(2)) + " PLN)";
+
+        let shoeNameDisplay = G.shoes.name;
+        let shoeBar = document.getElementById('shoe-bar');
+        if(shoeBar) {
+            if (G.shoes.dur <= 0) {
+                shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
+                shoeBar.style.width = "100%"; shoeBar.style.background = "var(--danger)"; shoeBar.style.opacity = "0.3"; 
+            } else {
+                const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
+                shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
+                shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
+                shoeBar.style.opacity = "1";
+            }
+            document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
+        }
+
+        let currentRank = RANKS[0]; let nextRank = null;
+        if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
+        else if (G.totalOrders < RANKS[1].max) { currentRank = RANKS[1]; nextRank = RANKS[2]; }
+        else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
+        else { currentRank = RANKS[3]; nextRank = null; }
+
+        const rIcon = document.getElementById('rank-icon');
+        if(rIcon) {
+            rIcon.innerText = currentRank.icon;
+            document.getElementById('rank-name').innerText = currentRank.name;
+            document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
+            if (nextRank) {
+                let prevMax = (currentRank.name === "Бывалый") ? RANKS[0].max : (currentRank.name === "Профи") ? RANKS[1].max : 0;
+                let progress = ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100;
+                document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, progress)) + "%";
+                document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders) + " заказов";
+            } else {
+                document.getElementById('rank-progress').style.width = "100%";
+                document.getElementById('rank-next').innerText = "Вы достигли вершины!";
+            }
+        }
+
+        let questsHTML = "";
+        if(G.dailyQuests) {
+            G.dailyQuests.forEach(q => {
+                let btn = "";
+                let progressPct = (q.current / q.target) * 100;
+                if (q.claimed) { btn = "<span style='color:var(--success)'>✅</span>"; } 
+                else if (q.current >= q.target) { btn = "<button class='btn-action' style='width:auto; padding:4px 8px; font-size:10px; background:var(--gold); color:black;' onclick='claimDaily(" + q.id + ")'>ЗАБРАТЬ " + q.reward + "</button>"; } 
+                else { btn = "<small>" + parseFloat(q.current).toFixed(0) + "/" + q.target + "</small>"; }
+                questsHTML += "<div class='daily-quest-item'><div class='daily-quest-info'><b>" + q.text + "</b><br><div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + Math.min(100, progressPct) + "%'></div></div></div><div style='margin-left:10px;'>" + btn + "</div></div>";
+            });
+        }
+        const qList = document.getElementById('daily-quests-list');
+        if(qList) qList.innerHTML = questsHTML;
+
+        document.getElementById('stat-orders').innerText = G.totalOrders || 0;
+        document.getElementById('stat-clicks').innerText = G.totalClicks || 0;
+        document.getElementById('stat-bottles').innerText = G.totalBottles || 0;
+        document.getElementById('stat-earned').innerText = (G.totalEarned || 0).toFixed(2) + " PLN";
+        
+        let timeLeft = (G.lastDailyUpdate + 86400000) - Date.now();
+        if(timeLeft < 0) timeLeft = 0;
+        let hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        document.getElementById('daily-timer').innerText = "Обновление: " + hours + "ч " + mins + "м";
+
+        if (isBroken) {
+            sphere.classList.add('broken');
+            document.getElementById('sphere-text').innerText = "ЧИНИТЬ";
+            document.getElementById('repair-express-btn').style.display = 'block';
+            document.getElementById('click-rate-ui').innerText = repairProgress + " / 50";
+            document.getElementById('repair-progress').style.height = (repairProgress * 2) + "%";
+        } else {
+            sphere.classList.remove('broken');
+            document.getElementById('sphere-text').innerText = "РАБОТАТЬ";
+            document.getElementById('repair-express-btn').style.display = 'none';
+            document.getElementById('repair-progress').style.height = "0%";
+            
+            let rankBonus = 0;
+            if (G.totalOrders >= 50) rankBonus = 0.05;
+            if (G.totalOrders >= 150) rankBonus = 0.10;
+            if (G.totalOrders >= 400) rankBonus = 0.20;
+
+            let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
+            let rate = (baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
+            
+            if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
+            if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
+
+            if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
+            else document.getElementById('click-rate-ui').innerText = rate + (rate !== "ВЫХОДНОЙ" ? " PLN" : "");
+        }
+
+        const myItemsList = document.getElementById('my-items-list');
+        if (myItemsList) {
+            let invHTML = "";
+            let shoeStatusText = Math.floor(G.shoes.dur) + "%";
+            let isShoesBroken = G.shoes.dur <= 0;
+            invHTML += `<div class="shop-item item-shoes ${isShoesBroken ? 'item-broken' : ''}" ${isShoesBroken ? 'onclick="switchTab(\'shop\', document.querySelectorAll(\'.tab-item\')[2])"' : ''}><div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div></div>`;
+
+            UPGRADES_META.forEach(up => {
+                if(G[up.id]) {
+                    const item = G[up.id];
+                    const isBroken = item.dur <= 0;
+                    let conf = UPGRADES_META.find(u => u.id === up.id);
+                    let max = conf ? conf.maxDur : 100;
+                    const pct = Math.floor((item.dur / max) * 100);
+                    let repairPriceVal = (typeof up.repairPriceKey === 'string') ? getDynamicPrice(up.repairPriceKey) : getDynamicPrice(up.repairPriceKey || 10);
+                    invHTML += `<div class="shop-item ${isBroken ? 'item-broken' : ''}"><div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairPriceVal}, true)">🛠️ ${hiddenPrice || repairPriceVal.toFixed(2)}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}')">💸 ПРОДАТЬ</button></div></div>`;
                 }
             });
-        } else { shopHTML = "<div style='text-align:center; padding:20px; color:#666;'>Магазин закрыт на учет</div>"; }
-        if (shopList.innerHTML !== shopHTML) shopList.innerHTML = shopHTML;
-    }
-    
-    const distContainer = document.getElementById('districts-list-container');
-    if (distContainer) {
-        let distHTML = "";
-        DISTRICTS.forEach((d, i) => {
-            let isCurrent = G.district === i;
-            let isOwner = G.housing && G.housing.id === i;
-            let moveBtn = isCurrent ? `<button class="btn-action btn-secondary" style="margin-top:8px; opacity:0.7;">ВЫ ЗДЕСЬ</button>` : `<button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(${i})">ПЕРЕЕХАТЬ ${d.price > 0 ? '('+d.price+' PLN)' : ''}</button>`;
-            let houseBtn = isOwner ? `<button class="btn-action" style="margin-top:5px; background:var(--gold); color:black; font-weight:800;">🏠 ВЫ ВЛАДЕЛЕЦ</button>` : `<button class="btn-action" style="margin-top:5px; background:rgba(251, 191, 36, 0.1); color:var(--accent-gold); border:1px solid var(--accent-gold);" onclick="buyHouse(${i})">КУПИТЬ ЖИЛЬЕ (${(d.housePrice/1000).toFixed(0)}k PLN)</button>`;
-            distHTML += `<div class="card" style="border: ${isOwner ? '1px solid var(--gold)' : 'none'};"><div style="display:flex; justify-content:space-between;"><b>${d.name} ${i>0 ? `<span style="color:var(--accent-gold); font-size:10px;">(LVL ${d.minLvl}+)</span>` : ''}</b>${isOwner ? '⭐' : ''}</div><small style="color:var(--text-secondary);">${isOwner ? `<span style="color:var(--success)">Квартплата (Czynsz): ${getDynamicPrice(d.czynszBase)} PLN</span>` : `Аренда: ${(d.rentPct*100).toFixed(0)}% от баланса`}<br>Доход: x${d.mult}</small>${moveBtn}${houseBtn}</div>`;
-        });
-        if(distContainer.innerHTML !== distHTML) distContainer.innerHTML = distHTML;
-    }
-    
-    const qBar = document.getElementById('quest-bar'); 
-    if (order.visible && curView === 'main') { 
-        qBar.style.display = 'block'; 
-        if (order.active) { 
-            document.getElementById('quest-actions-choice').style.display = 'none'; 
-            document.getElementById('quest-active-ui').style.display = 'block'; 
-            document.getElementById('quest-timer-ui').innerText = Math.floor(order.time/60) + ":" + ((order.time%60<10?'0':'')+order.time%60); 
-            document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%"; 
-        } else { 
-            document.getElementById('quest-actions-choice').style.display = 'flex'; 
-            document.getElementById('quest-active-ui').style.display = 'none'; 
-            document.getElementById('quest-timer-ui').innerText = "0:" + ((order.offerTimer<10?'0':'')+order.offerTimer); 
-            if(isBlind) document.getElementById('quest-pay').innerText = "?.??";
-            else document.getElementById('quest-pay').innerText = order.reward.toFixed(2);
-        } 
-    } else { qBar.style.display = 'none'; }
-    
-    document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + (isBlind ? '?' : h.val) + "</b></div>").join('');
-    
-    renderBank(); renderBankFull(); renderMilestones();
-    
-    // Рендер бизнеса
-    if (curView === 'business') renderBusiness();
-
-    const taxTimer = document.getElementById('tax-timer');
-    const rentTimer = document.getElementById('rent-timer');
-    let currentTaxRate = (SETTINGS.economy.tax_rate * 100).toFixed(0);
-    
-    if(taxTimer) {
-        let taxText = G.money > SETTINGS.economy.tax_threshold ? currentTaxRate + "%" : "FREE";
-        taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
-    }
-    
-    if(rentTimer) {
-        let isOwner = G.housing && G.housing.id === G.district;
-        if (isOwner) {
-            let czynszCost = getDynamicPrice(DISTRICTS[G.district].czynszBase);
-            rentTimer.innerText = "Квартплата (" + czynszCost.toFixed(0) + " PLN): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
-            rentTimer.style.color = "var(--success)";
-        } else {
-            let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
-            rentTimer.innerText = "Аренда (" + rentP + "%): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
-            rentTimer.style.color = "var(--danger)";
+            if (myItemsList.innerHTML !== invHTML) myItemsList.innerHTML = invHTML;
         }
-    }
-    
-    const btnLvlSmall = document.getElementById('btn-lvl-small');
-    if (btnLvlSmall) btnLvlSmall.innerText = `ОБМЕН -0.05 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate} PLN`;
-    
-    const btnLvlBig = document.getElementById('btn-lvl-big');
-    if (btnLvlBig) btnLvlBig.innerText = `ОБМЕН -1.00 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate_big} PLN`;
-    
-    const planRate1 = document.getElementById('plan-rate-1');
-    if (planRate1) planRate1.innerText = "+" + (SETTINGS.economy.bank_rate * 100).toFixed(0) + "%";
-    
-    const planRate2 = document.getElementById('plan-rate-2');
-    if (planRate2) planRate2.innerText = "+" + (SETTINGS.economy.bank_rate * 3 * 100).toFixed(0) + "%";
-    
-    const planRate3 = document.getElementById('plan-rate-3');
-    if (planRate3) planRate3.innerText = "+" + (SETTINGS.economy.bank_rate * 8 * 100).toFixed(0) + "%";
-    
-    const btnBottles = document.querySelector("button[onclick='collectBottles()']");
-    if (btnBottles && !isSearching) {
-        btnBottles.innerText = `♻️ СБОР БУТЫЛОК (+${SETTINGS.economy.bottle_price.toFixed(2)})`;
-    }
+
+        const shopList = document.getElementById('shop-upgrades-list'); 
+        if(shopList) {
+            let shopHTML = "";
+            if (SETTINGS.toggles.enable_shop) {
+                UPGRADES_META.forEach(up => { 
+                    if(!G[up.id] && !up.hidden && up.priceKey) { 
+                        let curPrice = getDynamicPrice(up.priceKey);
+                        shopHTML += `<div class="card" style="margin-bottom: 8px;"><b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', '${up.priceKey}')">КУПИТЬ (${hiddenPrice || curPrice} PLN)</button></div>`; 
+                    }
+                });
+            } else { shopHTML = "<div style='text-align:center; padding:20px; color:#666;'>Магазин закрыт на учет</div>"; }
+            if (shopList.innerHTML !== shopHTML) shopList.innerHTML = shopHTML;
+        }
+        
+        const distContainer = document.getElementById('districts-list-container');
+        if (distContainer) {
+            let distHTML = "";
+            DISTRICTS.forEach((d, i) => {
+                let isCurrent = G.district === i;
+                let isOwner = G.housing && G.housing.id === i;
+                let moveBtn = isCurrent ? `<button class="btn-action btn-secondary" style="margin-top:8px; opacity:0.7;">ВЫ ЗДЕСЬ</button>` : `<button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(${i})">ПЕРЕЕХАТЬ ${d.price > 0 ? '('+d.price+' PLN)' : ''}</button>`;
+                let houseBtn = isOwner ? `<button class="btn-action" style="margin-top:5px; background:var(--gold); color:black; font-weight:800;">🏠 ВЫ ВЛАДЕЛЕЦ</button>` : `<button class="btn-action" style="margin-top:5px; background:rgba(251, 191, 36, 0.1); color:var(--accent-gold); border:1px solid var(--accent-gold);" onclick="buyHouse(${i})">КУПИТЬ ЖИЛЬЕ (${(d.housePrice/1000).toFixed(0)}k PLN)</button>`;
+                distHTML += `<div class="card" style="border: ${isOwner ? '1px solid var(--gold)' : 'none'};"><div style="display:flex; justify-content:space-between;"><b>${d.name} ${i>0 ? `<span style="color:var(--accent-gold); font-size:10px;">(LVL ${d.minLvl}+)</span>` : ''}</b>${isOwner ? '⭐' : ''}</div><small style="color:var(--text-secondary);">${isOwner ? `<span style="color:var(--success)">Квартплата (Czynsz): ${getDynamicPrice(d.czynszBase)} PLN</span>` : `Аренда: ${(d.rentPct*100).toFixed(0)}% от баланса`}<br>Доход: x${d.mult}</small>${moveBtn}${houseBtn}</div>`;
+            });
+            if(distContainer.innerHTML !== distHTML) distContainer.innerHTML = distHTML;
+        }
+        
+        const qBar = document.getElementById('quest-bar'); 
+        if (order.visible && curView === 'main') { 
+            qBar.style.display = 'block'; 
+            if (order.active) { 
+                document.getElementById('quest-actions-choice').style.display = 'none'; 
+                document.getElementById('quest-active-ui').style.display = 'block'; 
+                document.getElementById('quest-timer-ui').innerText = Math.floor(order.time/60) + ":" + ((order.time%60<10?'0':'')+order.time%60); 
+                document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%"; 
+            } else { 
+                document.getElementById('quest-actions-choice').style.display = 'flex'; 
+                document.getElementById('quest-active-ui').style.display = 'none'; 
+                document.getElementById('quest-timer-ui').innerText = "0:" + ((order.offerTimer<10?'0':'')+order.offerTimer); 
+                if(isBlind) document.getElementById('quest-pay').innerText = "?.??";
+                else document.getElementById('quest-pay').innerText = order.reward.toFixed(2);
+            } 
+        } else { qBar.style.display = 'none'; }
+        
+        document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + (isBlind ? '?' : h.val) + "</b></div>").join('');
+        
+        renderBank(); renderBankFull(); renderMilestones();
+        
+        // Рендер бизнеса
+        if (curView === 'business') renderBusiness();
+
+        const taxTimer = document.getElementById('tax-timer');
+        const rentTimer = document.getElementById('rent-timer');
+        let currentTaxRate = (SETTINGS.economy.tax_rate * 100).toFixed(0);
+        
+        if(taxTimer) {
+            let taxText = G.money > SETTINGS.economy.tax_threshold ? currentTaxRate + "%" : "FREE";
+            taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
+        }
+        
+        if(rentTimer) {
+            let isOwner = G.housing && G.housing.id === G.district;
+            if (isOwner) {
+                let czynszCost = getDynamicPrice(DISTRICTS[G.district].czynszBase);
+                rentTimer.innerText = "Квартплата (" + czynszCost.toFixed(0) + " PLN): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
+                rentTimer.style.color = "var(--success)";
+            } else {
+                let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
+                rentTimer.innerText = "Аренда (" + rentP + "%): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
+                rentTimer.style.color = "var(--danger)";
+            }
+        }
+        
+        const btnLvlSmall = document.getElementById('btn-lvl-small');
+        if (btnLvlSmall) btnLvlSmall.innerText = `ОБМЕН -0.05 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate} PLN`;
+        
+        const btnLvlBig = document.getElementById('btn-lvl-big');
+        if (btnLvlBig) btnLvlBig.innerText = `ОБМЕН -1.00 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate_big} PLN`;
+        
+        const planRate1 = document.getElementById('plan-rate-1');
+        if (planRate1) planRate1.innerText = "+" + (SETTINGS.economy.bank_rate * 100).toFixed(0) + "%";
+        
+        const planRate2 = document.getElementById('plan-rate-2');
+        if (planRate2) planRate2.innerText = "+" + (SETTINGS.economy.bank_rate * 3 * 100).toFixed(0) + "%";
+        
+        const planRate3 = document.getElementById('plan-rate-3');
+        if (planRate3) planRate3.innerText = "+" + (SETTINGS.economy.bank_rate * 8 * 100).toFixed(0) + "%";
+        
+        const btnBottles = document.querySelector("button[onclick='collectBottles()']");
+        if (btnBottles && !isSearching) {
+            btnBottles.innerText = `♻️ СБОР БУТЫЛОК (+${SETTINGS.economy.bottle_price.toFixed(2)})`;
+        }
+    } catch (e) { console.error(e); }
 }
 
 function doWork() {
@@ -1563,6 +1574,9 @@ setInterval(() => {
     if (G.buffTime > 0) G.buffTime--;
     if (G.blindTime > 0) G.blindTime--; 
     
+    // БИЗНЕС ЛОГИКА (ВЫЗОВ)
+    processBusinessLogic();
+
     generateDailyQuests(); 
 
     if (G.autoTime > 0) { 
@@ -1601,4 +1615,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-"}
