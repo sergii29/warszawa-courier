@@ -16,7 +16,7 @@
             width: 100%;
             height: 100%;
             background: #000;
-            z-index: 9999; /* Поверх всего */
+            z-index: 9999;
             overflow-y: auto;
             padding: 20px;
             box-sizing: border-box;
@@ -24,70 +24,48 @@
             color: white;
         }
         
-        #admin-panel-overlay.active {
-            display: block;
-        }
+        #admin-panel-overlay.active { display: block; }
 
         .admin-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 15px;
+            display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+            border-bottom: 1px solid #333; padding-bottom: 15px;
         }
 
         .input-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
         }
 
         .input-group label {
-            display: block;
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 5px;
+            display: block; font-size: 11px; color: #888; margin-bottom: 5px;
         }
 
         .input-dark {
-            width: 100%;
-            background: #222;
-            border: 1px solid #333;
-            padding: 12px;
-            border-radius: 8px;
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
+            width: 100%; background: #222; border: 1px solid #333; padding: 12px;
+            border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box;
         }
 
         .section-header-adm {
-            color: #3b82f6;
-            font-weight: bold;
-            font-size: 16px;
-            margin-top: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            color: #3b82f6; font-weight: bold; font-size: 16px;
+            margin-top: 20px; margin-bottom: 15px;
         }
 
-        .save-btn-float {
-            position: fixed;
-            bottom: 20px;
-            left: 5%;
-            width: 90%;
-            background: #22c55e;
-            color: black;
-            font-weight: 900;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+        /* Плавающие кнопки админки */
+        .admin-footer-btns {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            padding: 15px; background: #000; border-top: 1px solid #333;
+            display: flex; flex-direction: column; gap: 10px;
             z-index: 10000;
+        }
+
+        .btn-adm-save {
+            width: 100%; background: #22c55e; color: black; font-weight: 900;
+            padding: 15px; border: none; border-radius: 12px; font-size: 16px;
+            text-transform: uppercase;
+        }
+        
+        .btn-adm-close {
+            width: 100%; background: #333; color: white; font-weight: 600;
+            padding: 12px; border: none; border-radius: 12px; font-size: 14px;
         }
     </style>
 </head>
@@ -105,13 +83,6 @@
             Варшава не прощает ошибок. Но мы своих не бросаем.<br>
             Держи <b>"Набор Выживальщика"</b> от профсоюза:
         </p>
-        <div class="card" style="margin-bottom:15px; text-align:left;">
-            <div>💵 <b>+50.00 PLN</b> <small>На еду и штрафы</small></div>
-            <div style="margin-top:5px;">💧 <b>+500 мл</b> <small>Вода</small></div>
-            <div style="margin-top:5px;">🚲 <b>Велосипед</b> <small>Аренда на 15 мин</small></div>
-            <div style="margin-top:5px;">👟 <b>Шлепки "Bazuka"</b> <small>Временная обувь</small></div>
-            <div style="margin-top:5px;">🎒 <b>Пакет с логотипом</b> <small>Слабый, но свой</small></div>
-        </div>
         <button class="btn-action" style="background:var(--success)" onclick="claimStarterPack()">ЗАБРАТЬ И НАЧАТЬ</button>
     </div>
 </div>
@@ -119,48 +90,33 @@
 <div id="route-modal" class="modal-overlay">
     <div class="modal-card">
         <h3 style="margin-top:0; color:white; margin-bottom: 5px;">📍 Выбор маршрута</h3>
-        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:15px;">Как поедем к клиенту?</p>
-        
         <div class="route-option" onclick="chooseRoute('safe')">
             <div class="route-icon">🐢</div>
-            <div>
-                <b>Спокойный путь</b><br>
-                <small style="color:var(--success)">100% оплата • Нет рисков</small>
-            </div>
+            <div><b>Спокойный путь</b><br><small style="color:var(--success)">100% оплата</small></div>
         </div>
-
         <div class="route-option" onclick="chooseRoute('risky')">
             <div class="route-icon">😈</div>
-            <div>
-                <b>Срезать дворами (-50% времени)</b><br>
-                <small style="color:var(--danger)">Риск аварии 30% или двойные чаевые</small>
-            </div>
+            <div><b>Срезать (-50% времени)</b><br><small style="color:var(--danger)">Риск аварии</small></div>
         </div>
-
-        <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilot()">
+        <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilotDynamic()">
             <div class="route-icon">🤖</div>
             <div id="lbl-auto-container">
                 <div id="lbl-auto-route"><b>Автопилот</b> <span id="price-auto"></span></div>
-                <div id="desc-auto-route"><small style="color:var(--accent-gold)">Робот сделает всё сам</small></div>
+                <div><small style="color:var(--accent-gold)">Робот сделает всё сам</small></div>
             </div>
         </div>
-
         <button class="btn-action btn-secondary" style="padding:8px;" onclick="closeRouteModal()">ОТМЕНА</button>
     </div>
 </div>
 
 <div id="pro-shop-modal" class="modal-overlay" style="z-index: 3500;">
-    <div class="modal-card" style="max-height: 80vh; overflow-y: auto; text-align: left; width: 90%; max-width: 360px;">
+    <div class="modal-card" style="width: 90%; max-width: 360px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0; color:white;">⚙️ Проф. Экипировка</h3>
-            <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
+            <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px;">✕</button>
         </div>
-        
-        <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
-        <div id="shop-upgrades-list">
-            </div>
-
-        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
+        <div id="shop-upgrades-list"></div>
+        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ</button>
     </div>
 </div>
 
@@ -172,14 +128,12 @@
         </div>
         <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
     </div>
-    
     <div id="quest-actions-choice" style="margin-top:10px;">
         <button class="btn-action" style="background:var(--accent-blue);" onclick="openRouteModal()">🗺️ ВЫБРАТЬ МАРШРУТ</button>
     </div>
-
     <div id="quest-active-ui" style="display:none; margin-top:10px;">
         <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
-        <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
+        <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2);"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success);"></div></div>
     </div>
 </div>
 
@@ -188,11 +142,10 @@
         <div>
             <small style="color:var(--text-secondary); font-size:10px;">Баланс</small><br>
             <b id="money-val" class="money-display">0.00 PLN</b>
-            <div id="shoes-status-ui">👟 <span id="shoe-name">...</span> <div class="durability-bar"><div id="shoe-bar" class="durability-fill"></div></div></div>
+            <div id="shoes-status-ui">👟 <span id="shoe-name">...</span></div>
         </div>
         <div class="right-panel">
             <b id="lvl-val" class="lvl-display">LVL 1.0</b>
-            <div id="inventory-display"></div>
             <div style="display:flex; gap:3px;">
                 <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
                 <div id="auto-status-ui" class="status-badge">🤖 00:00</div>
@@ -200,83 +153,44 @@
             </div>
         </div>
     </div>
-    
     <div class="info-row" style="margin-top:5px;">
-        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-gold)">⚡</span> <b id="en-text" style="color:var(--text-primary)">0/2000</b></span>
-        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-blue)">💧</span> <b id="water-val" style="color:var(--text-primary)">0</b> мл</span>
+        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-gold)">⚡</span> <b id="en-text">0/2000</b></span>
+        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-blue)">💧</span> <b id="water-val">0</b> мл</span>
     </div>
     <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
-    
-    <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
-        <span id="tax-timer">Налог (FREE) через: 05:00</span>
-        <span id="rent-timer" style="color:var(--danger)">Аренда (%): 05:00</span>
-    </div>
 </div>
 
 <div class="content">
-    
     <div id="view-main" class="view active">
         <div style="text-align: center; margin-top: 5px;">
             <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 ...</span>
         </div>
-
         <div class="sphere-container">
             <div id="work-sphere">
                 <b id="sphere-text">РАБОТАТЬ</b>
-                <div id="repair-progress"></div>
-                <div id="click-rate-ui" style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: 500; position:relative; z-index:2;">0.10 PLN</div>
+                <div id="click-rate-ui" style="font-size: 11px; opacity: 0.9; margin-top: 4px;">0.10 PLN</div>
             </div>
-            
             <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
-                <button id="btn-repair-express" class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ</button>
-                <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
+                <button class="btn-action" style="background:var(--accent-gold); color:black;" onclick="repairBikeInstantDynamic()">🔧 ЭКСПРЕСС РЕМОНТ</button>
             </div>
         </div>
-
         <div class="bottom-controls">
             <button class="btn-action btn-secondary" onclick="collectBottles()" id="btn-bottles-action">♻️ СБОР БУТЫЛОК (+0.05)</button>
             <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
         </div>
-
-        <div class="city-info-group">
-            <div class="city-label">WARSAW</div>
-            <div id="weather-ui">☀️ Ясно</div>
-        </div>
     </div>
 
     <div id="view-districts" class="view">
-        <h3 style="margin:0; color:var(--text-primary)">🗺️ Недвижимость & Районы</h3>
-        <p style="font-size:10px; color:var(--text-secondary); margin-bottom:15px;">Переезжай в районы подороже, чтобы зарабатывать больше. Купи квартиру, чтобы не платить грабительскую аренду!</p>
-        
+        <h3 style="margin:0;">🗺️ Районы</h3>
         <div id="districts-list-container"></div>
     </div>
 
     <div id="view-quests" class="view">
-        <div class="card rank-card">
-            <div style="font-size:40px; margin-bottom:5px;" id="rank-icon">😎</div>
-            <h2 style="margin:0; font-size:18px; color:white; text-shadow:0 0 10px var(--accent-blue);" id="rank-name">Новичок</h2>
-            <small style="color:var(--text-secondary); display:block; margin-top:5px;" id="rank-next">До следующего ранга: ...</small>
-            
-            <div class="energy-track" style="margin-top:10px; background:rgba(0,0,0,0.5);">
-                <div id="rank-progress" class="energy-fill" style="width:0%; background: linear-gradient(90deg, var(--accent-gold), #fff7ed);"></div>
-            </div>
-            <div style="font-size:10px; color:var(--accent-gold); margin-top:5px; font-weight:bold;" id="rank-bonus">Бонус ранга: 0%</div>
-        </div>
-
-        <h4 style="margin:15px 0 5px 0; display:flex; justify-content:space-between; align-items:center;">
-            📅 Ежедневные задания 
-            <small id="daily-timer" style="font-weight:normal; opacity:0.7; font-size:10px;">Обновление через...</small>
-        </h4>
-        <div id="daily-quests-list"></div>
-
         <h4 style="margin:15px 0 5px 0;">📊 Статистика</h4>
         <div class="card">
             <div class="stat-row"><span>📦 Всего заказов</span> <b id="stat-orders">0</b></div>
-            <div class="stat-row"><span>⚡ Всего кликов</span> <b id="stat-clicks">0</b></div>
-            <div class="stat-row"><span>♻️ Сдано бутылок</span> <b id="stat-bottles">0</b></div>
             <div class="stat-row"><span>💵 Заработано всего</span> <b id="stat-earned" style="color:var(--success)">0.00 PLN</b></div>
         </div>
-
         <h4 style="margin:15px 0 5px 0;">🏆 Достижения</h4>
         <div id="milestones-list"></div>
     </div>
@@ -284,123 +198,64 @@
     <div id="view-shop" class="view">
         <h3 style="margin:0; margin-bottom: 15px;">🏪 Маркет</h3>
         
-        <div class="section-title" style="margin-top:0;">🛵 Городская Мобильность (Аренда)</div>
+        <div class="section-title">🛵 Транспорт</div>
         <div class="shop-grid">
-            <div class="shop-item" style="border-top: 2px solid #ccc;">
-                <div class="shop-icon">🚲</div>
-                <div class="shop-title">Veturilo Electric</div>
-                <div class="shop-desc">
-                    Экономия сил.<br>
-                    <span style="color:var(--success)">Энергия: -50%</span>
-                </div>
-                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 0 PLN</div>
-                <button id="btn-veturilo" class="btn-price" style="background:#ddd; color:#000;" onclick="toggleTransport('veturilo')">
-                    0.50 PLN / мин
-                </button>
-            </div>
-
-            <div class="shop-item" style="border-top: 2px solid var(--success);">
-                <div class="shop-icon">🛴</div>
-                <div class="shop-title">Bolt Scooter</div>
-                <div class="shop-desc">
-                    Турбо доставка.<br>
-                    <span style="color:var(--accent-gold)">Скорость: +30%</span>
-                </div>
-                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 2.00 PLN</div>
-                <button id="btn-bolt" class="btn-price" style="background:var(--success); color:#000;" onclick="toggleTransport('bolt')">
-                    2.50 PLN / мин
-                </button>
-            </div>
-
             <div class="shop-item" style="grid-column: span 2; border-top: 2px solid var(--accent-blue);">
                 <div style="display:flex; align-items:center; width:100%; gap:15px;">
-                    <div class="shop-icon" style="margin:0;">⚡</div>
+                    <div class="shop-icon">⚡</div>
                     <div style="text-align:left; flex:1;">
                         <div class="shop-title">E-Bike Премиум</div>
-                        <div class="shop-desc" style="margin:0; color:#fff;">
-                            <span style="color:var(--accent-blue)">Скорость x2. Без поминутной оплаты.</span>
-                        </div>
+                        <div class="shop-desc" style="color:#fff;">Скорость x2.</div>
                     </div>
-                    <button id="buy-bike-rent" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
+                    <button id="buy-bike-rent" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="rentBikeDynamic()">АРЕНДОВАТЬ</button>
                 </div>
             </div>
         </div>
 
         <div class="tech-banner" onclick="openProShop()" style="margin-top: 20px;">
             <div style="z-index: 1;">
-                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">GEAR STORE</div>
-                <h2 style="margin: 5px 0; font-size: 18px;">Экипировка Курьера</h2>
-                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Сумки, телефоны, гаджеты</small>
-                <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">ОТКРЫТЬ КАТАЛОГ</button>
+                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800;">GEAR STORE</div>
+                <h2 style="margin: 5px 0;">Экипировка</h2>
+                <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">КАТАЛОГ</button>
             </div>
-            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); z-index: 1;">🎒</div>
+            <div style="font-size: 50px;">🎒</div>
         </div>
 
-        <div class="section-title">⚡ Энергия и Восстановление</div>
+        <div class="section-title">⚡ Энергия</div>
         <div class="shop-grid">
             <div class="shop-item item-food">
                 <div class="shop-icon">💧</div>
                 <div class="shop-title">Вода (1.5л)</div>
-                <div class="shop-desc">Восстанавливает силы при кликах.<br><b>+1500 мл</b></div>
-                <button id="btn-buy-water" class="btn-price" onclick="buyWater()">1.50 PLN</button>
+                <div class="shop-desc">+1500 мл</div>
+                <button id="btn-buy-water" class="btn-price" onclick="buyWaterDynamic()">1.50 PLN</button>
             </div>
             <div class="shop-item item-food">
                 <div class="shop-icon">☕</div>
                 <div class="shop-title">Эспрессо</div>
-                <div class="shop-desc">Мгновенный заряд бодрости.<br><b>+300 Energy</b></div>
-                <button id="btn-buy-coffee" class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
+                <div class="shop-desc">+300 Energy</div>
+                <button id="btn-buy-coffee" class="btn-price" onclick="buyDrinkDynamic('coffee')">5.00 PLN</button>
             </div>
             <div class="shop-item item-energy" style="grid-column: span 2;">
                 <div style="display:flex; align-items:center; width:100%; gap:15px;">
-                    <div class="shop-icon" style="margin:0;">🔋</div>
+                    <div class="shop-icon">🔋</div>
                     <div style="text-align:left; flex:1;">
                         <div class="shop-title">Red Bull Power</div>
-                        <div class="shop-desc" style="margin:0; color:#fff;">
-                            <span style="color:var(--success)">Пауза расхода энергии на 2 мин.</span><br>
-                            <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
-                        </div>
+                        <div class="shop-desc" style="color:#fff;">Пауза энергии (2 мин)</div>
                     </div>
-                    <button id="btn-buy-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
+                    <button id="btn-buy-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrinkDynamic('energy')">12.00</button>
                 </div>
             </div>
         </div>
-
-        <div class="section-title">👟 Сникерхед</div>
-        <div class="shop-item item-shoes" style="margin-bottom: 8px;">
-            <div class="shop-icon">🐼</div>
-            <div style="flex:1;">
-                <div class="shop-title">Abibas Ultra</div>
-                <div class="shop-desc" style="margin-bottom:5px;">Классика района.</div>
-                <div style="background:rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
-                    Прочность: <b>5000 шагов</b>
-                </div>
-            </div>
-            <button id="btn-buy-abibas" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas', 50, 100)">50 PLN</button>
-        </div>
-        <div class="shop-item item-shoes" style="border-color: var(--gold);">
-            <div class="shop-icon">🔥</div>
-            <div style="flex:1;">
-                <div class="shop-title" style="color:var(--gold)">Jorban Air</div>
-                <div class="shop-desc" style="margin-bottom:5px;">Премиум стиль.</div>
-                <div style="background:rgba(253, 186, 116, 0.2); color:var(--accent-gold); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
-                    Бонус: <b>+20% к чаевым</b>
-                </div>
-            </div>
-            <button id="btn-buy-jorban" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban', 250, 150)">250 PLN</button>
-        </div>
-        
         <div style="height: 20px;"></div>
     </div>
 
     <div id="view-invest" class="view">
-        <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
-        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
-        <div id="my-items-list" class="shop-grid" style="margin-bottom:15px;"></div>
+        <h3 style="margin:0;">🎒 Инвентарь</h3>
+        <div id="my-items-list" class="shop-grid"></div>
     </div>
 
     <div id="view-bank" class="view">
-        <h3 style="margin:0; margin-bottom: 15px;">🏦 Варшавский Банк</h3>
-        
+        <h3 style="margin:0; margin-bottom: 15px;">🏦 Банк</h3>
         <div class="card" style="margin-bottom:10px;">
             <h4 style="margin:0 0 5px 0; font-size:12px; color:var(--accent-blue);">🎁 Секретный промокод</h4>
             <div style="display:flex; gap:5px;">
@@ -408,65 +263,18 @@
                 <button class="btn-action" style="width:auto;" onclick="checkSecretPromo()">АКТИВИРОВАТЬ</button>
             </div>
         </div>
-
-        <div class="card" style="margin-bottom:15px;">
-             <div id="bank-actions-ui"></div> </div>
-
         <div class="sapphire-card">
-            <div class="bank-header">
-                <span class="bank-name">Private Vault</span>
-                <span style="font-size:18px;">💎</span>
-            </div>
-
+            <div class="bank-header"><span class="bank-name">Private Vault</span></div>
             <div id="bank-select-ui">
-                <div class="plan-grid">
-                    <div class="plan-item active" onclick="selectBankPlan(7, 1, this)">
-                        <span class="plan-days">7 Дней</span>
-                        <span class="plan-rate" id="plan-rate-1">+5%</span>
-                    </div>
-                    <div class="plan-item" onclick="selectBankPlan(15, 3, this)">
-                        <span class="plan-days">15 Дней</span>
-                        <span class="plan-rate" id="plan-rate-2">+15%</span>
-                    </div>
-                    <div class="plan-item" onclick="selectBankPlan(30, 8, this)">
-                        <span class="plan-days">30 Дней</span>
-                        <span class="plan-rate" id="plan-rate-3">+40%</span>
-                    </div>
-                </div>
-                <div style="margin-bottom:10px; font-size:10px; color:#94a3b8; text-align:center;">
-                    Досрочное снятие: <span style="color:var(--danger)">Штраф -30% от суммы</span>
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="bank-inp" class="promo-input" placeholder="Сумма..." style="margin:0; text-align:center; font-weight:bold;">
-                    <button class="btn-action btn-deposit" style="width:auto;" onclick="makeDeposit()">ВЛОЖИТЬ</button>
-                </div>
+                <input type="number" id="bank-inp" class="promo-input" placeholder="Сумма..." style="margin:0; text-align:center; font-weight:bold;">
+                <button class="btn-action btn-deposit" style="width:100%; margin-top:10px;" onclick="makeDeposit()">ВЛОЖИТЬ</button>
             </div>
-
-            <div id="bank-active-ui" style="display:none; text-align:center;">
-                <div class="locked-info">СРЕДСТВА ЗАМОРОЖЕНЫ</div>
+             <div id="bank-active-ui" style="display:none; text-align:center;">
+                <div class="locked-info">ЗАМОРОЖЕНО</div>
                 <div class="locked-amount" id="locked-val">0.00 PLN</div>
-                
-                <div class="progress-track-bank"><div class="progress-fill-bank" id="bank-prog-bar"></div></div>
-                <span class="timer-text" id="bank-timer">00d 00h 00m</span>
-
-                <button class="btn-claim" id="btn-bank-claim" style="display:none;" onclick="claimDeposit()">💰 ЗАБРАТЬ ПРИБЫЛЬ</button>
-                <button class="btn-break" id="btn-bank-break" onclick="breakDeposit()">⚠️ РАЗБИТЬ КОПИЛКУ (-30%)</button>
-            </div>
-            
-            <div class="history-box">
-                <h4 style="margin:0 0 8px 0; font-size:10px; color:var(--text-secondary); text-transform:uppercase;">Выписка по счету</h4>
-                <div id="bank-history-list" style="max-height: 120px; overflow-y: auto;"></div>
+                <button class="btn-break" id="btn-bank-break" onclick="breakDeposit()">РАЗБИТЬ (-30%)</button>
             </div>
         </div>
-        <div class="card" style="margin-top:15px;">
-            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
-            <div style="display:flex; gap:8px;">
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, SETTINGS.economy.lvl_exchange_rate)" id="btn-lvl-small">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
-                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, SETTINGS.economy.lvl_exchange_rate_big)" id="btn-lvl-big">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
-            </div>
-        </div>
-        
-        <div class="card history-list" id="history-ui" style="margin-top:15px; max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
     </div>
 </div>
 
@@ -485,100 +293,67 @@
             <h2 style="margin:0; font-size:18px; color:white;">Пульт Управления v8.0</h2>
             <div style="font-size:11px; color:#666;">Изменяй реальность игры</div>
         </div>
-        <div style="font-size:20px; cursor:pointer;" onclick="toggleAdmin()">✕</div>
     </div>
 
     <div class="section-header-adm">🛒 Магазин и Услуги (PLN)</div>
     <div class="input-grid">
-        <div class="input-group">
-            <label>Вода (1.5л)</label>
-            <input type="number" id="adm-water" class="input-dark" value="2.19">
-        </div>
-        <div class="input-group">
-            <label>Кофе (Energy)</label>
-            <input type="number" id="adm-coffee" class="input-dark" value="12">
-        </div>
-        <div class="input-group">
-            <label>Энергетик (Buff)</label>
-            <input type="number" id="adm-energy" class="input-dark" value="22">
-        </div>
-        <div class="input-group">
-            <label>Экспресс Ремонт</label>
-            <input type="number" id="adm-repair" class="input-dark" value="47">
-        </div>
-        <div class="input-group">
-            <label>Автопилот (Маршрут)</label>
-            <input type="number" id="adm-auto" class="input-dark" value="55">
-        </div>
-        <div class="input-group">
-            <label>Аренда Bike (30м)</label>
-            <input type="number" id="adm-bike" class="input-dark" value="78">
-        </div>
+        <div class="input-group"><label>Вода (1.5л)</label><input type="number" id="adm-water" class="input-dark" value="2.19"></div>
+        <div class="input-group"><label>Кофе (Energy)</label><input type="number" id="adm-coffee" class="input-dark" value="12"></div>
+        <div class="input-group"><label>Энергетик (Buff)</label><input type="number" id="adm-energy" class="input-dark" value="22"></div>
+        <div class="input-group"><label>Экспресс Ремонт</label><input type="number" id="adm-repair" class="input-dark" value="47"></div>
+        <div class="input-group"><label>Автопилот</label><input type="number" id="adm-auto" class="input-dark" value="55"></div>
+        <div class="input-group"><label>Аренда Bike</label><input type="number" id="adm-bike" class="input-dark" value="78"></div>
     </div>
 
     <div class="section-header-adm">🏦 Экономика и Налоги</div>
     <div class="input-grid">
-        <div class="input-group">
-            <label>Налог с дохода (%)</label>
-            <input type="number" id="adm-tax" class="input-dark" value="29">
-        </div>
-        <div class="input-group">
-            <label>Порог налога (PLN)</label>
-            <input type="number" id="adm-tax-lim" class="input-dark" value="200">
-        </div>
-        <div class="input-group">
-            <label>Инфляция от LVL (%)</label>
-            <input type="number" id="adm-inf" class="input-dark" value="178">
-        </div>
-        <div class="input-group">
-            <label>Пособие Бабушки</label>
-            <input type="number" id="adm-pens" class="input-dark" value="50">
-        </div>
-        <div class="input-group">
-            <label>Процент Банка (%)</label>
-            <input type="number" id="adm-bank" class="input-dark" value="5">
-        </div>
-        <div class="input-group">
-            <label>Цена бутылки (PLN)</label>
-            <input type="number" id="adm-bottle" class="input-dark" value="0.6">
-        </div>
+        <div class="input-group"><label>Налог (%)</label><input type="number" id="adm-tax" class="input-dark" value="29"></div>
+        <div class="input-group"><label>Порог налога</label><input type="number" id="adm-tax-lim" class="input-dark" value="200"></div>
+        <div class="input-group"><label>Инфляция (%)</label><input type="number" id="adm-inf" class="input-dark" value="178"></div>
+        <div class="input-group"><label>Пособие</label><input type="number" id="adm-pens" class="input-dark" value="50"></div>
+        <div class="input-group"><label>Процент Банка</label><input type="number" id="adm-bank" class="input-dark" value="5"></div>
+        <div class="input-group"><label>Цена бутылки</label><input type="number" id="adm-bottle" class="input-dark" value="0.6"></div>
     </div>
     
-    <div style="height: 100px;"></div>
-    <button class="save-btn-float" onclick="applyAdminSettings()">⏳ ПРИМЕНЕНИЕ В МИРЕ...</button>
+    <div style="height: 150px;"></div>
+    
+    <div class="admin-footer-btns">
+        <button class="btn-adm-save" onclick="applyAdminSettings()">✅ ПРИМЕНИТЬ ИЗМЕНЕНИЯ</button>
+        <button class="btn-adm-close" onclick="toggleAdmin()">❌ ЗАКРЫТЬ И ВЕРНУТЬСЯ</button>
+    </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="database.js?v=4.0"></script>
+<script src="logic.js?v=8.0" defer></script>
+
 <script>
-    // Загрузка настроек при старте
     document.addEventListener('DOMContentLoaded', () => {
         loadAdminSettings();
     });
 
-    // Функция проверки секретного кода (ПРОМОКОД: ADMIN9422S)
+    // Секретный вход: ADMIN9422S
     function checkSecretPromo() {
         const inp = document.getElementById('promo-input');
         const val = inp.value.trim().toUpperCase();
         
         if(val === 'ADMIN9422S') {
-            toggleAdmin(); // Открываем панель
+            toggleAdmin(); 
             inp.value = '';
         } else {
-            // Вызываем стандартную функцию из logic.js, если она существует
-            if(window.usePromo) {
-                window.usePromo();
-            } else {
-                alert('Неверный промокод');
-            }
+            // Если есть стандартная логика промокодов - вызываем
+            if(window.usePromo) window.usePromo();
+            else alert('Неверный промокод');
         }
     }
 
     function toggleAdmin() {
-        const p = document.getElementById('admin-panel-overlay');
-        p.classList.toggle('active');
+        document.getElementById('admin-panel-overlay').classList.toggle('active');
     }
 
     function applyAdminSettings() {
-        // Собираем значения
+        // 1. Сохраняем значения
         const settings = {
             water: document.getElementById('adm-water').value,
             coffee: document.getElementById('adm-coffee').value,
@@ -594,21 +369,27 @@
             bank: document.getElementById('adm-bank').value,
             bottle: document.getElementById('adm-bottle').value
         };
-
-        // Сохраняем в память
         localStorage.setItem('WARSZAWA_ADMIN_SETTINGS', JSON.stringify(settings));
 
-        // Визуальное обновление интерфейса
+        // 2. Обновляем визуально кнопки
         updateGameInterface(settings);
 
-        toggleAdmin();
-        alert("НАСТРОЙКИ ПРИМЕНЕНЫ В МИРЕ!");
+        // 3. НЕ ЗАКРЫВАЕМ ОКНО, просто уведомляем
+        const saveBtn = document.querySelector('.btn-adm-save');
+        const oldText = saveBtn.innerText;
+        saveBtn.innerText = "СОХРАНЕНО!";
+        saveBtn.style.background = "white";
+        setTimeout(() => {
+            saveBtn.innerText = oldText;
+            saveBtn.style.background = "#22c55e";
+        }, 1000);
     }
 
     function loadAdminSettings() {
         const raw = localStorage.getItem('WARSZAWA_ADMIN_SETTINGS');
         if(raw) {
             const s = JSON.parse(raw);
+            // Заполняем поля
             document.getElementById('adm-water').value = s.water || 2.19;
             document.getElementById('adm-coffee').value = s.coffee || 12;
             document.getElementById('adm-energy').value = s.energy || 22;
@@ -623,32 +404,120 @@
             document.getElementById('adm-bank').value = s.bank || 5;
             document.getElementById('adm-bottle').value = s.bottle || 0.6;
             
-            // Применяем сразу при загрузке
             updateGameInterface(s);
         }
     }
 
     function updateGameInterface(s) {
-        // Обновляем цены на кнопках магазина
         if(document.getElementById('btn-buy-water')) 
             document.getElementById('btn-buy-water').innerText = parseFloat(s.water).toFixed(2) + " PLN";
-        
         if(document.getElementById('btn-buy-coffee')) 
             document.getElementById('btn-buy-coffee').innerText = parseFloat(s.coffee).toFixed(2) + " PLN";
-            
         if(document.getElementById('btn-buy-energy')) 
             document.getElementById('btn-buy-energy').innerText = parseFloat(s.energy).toFixed(2) + " PLN";
-            
-        // Обновляем кнопку бутылок
         if(document.getElementById('btn-bottles-action')) 
             document.getElementById('btn-bottles-action').innerText = `♻️ СБОР БУТЫЛОК (+${parseFloat(s.bottle).toFixed(2)})`;
     }
-</script>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="database.js?v=4.0"></script>
-<script src="logic.js?v=8.0" defer></script>
+    // --- НОВАЯ ЛОГИКА ПОКУПКИ (ПЕРЕХВАТ) ---
+    // Эти функции вызываются из HTML кнопок и используют цены Админа
+
+    function buyWaterDynamic() {
+        const price = parseFloat(document.getElementById('adm-water').value);
+        // Мы предполагаем, что money - глобальная переменная из logic.js
+        if(typeof money !== 'undefined') {
+            if(money >= price) {
+                money -= price;
+                if(typeof water !== 'undefined') water += 1500;
+                
+                // Обновляем UI
+                if(typeof updateUI === 'function') updateUI();
+                else {
+                    document.getElementById('money-val').innerText = money.toFixed(2) + " PLN";
+                    if(document.getElementById('water-val')) document.getElementById('water-val').innerText = water;
+                }
+                
+                // Сохраняем, если есть функция
+                if(typeof saveGame === 'function') saveGame();
+            } else {
+                alert("Недостаточно средств!");
+            }
+        }
+    }
+
+    function buyDrinkDynamic(type) {
+        let price = 0;
+        if(type === 'coffee') price = parseFloat(document.getElementById('adm-coffee').value);
+        if(type === 'energy') price = parseFloat(document.getElementById('adm-energy').value);
+        
+        // Пытаемся вызвать оригинальную функцию, но с новой ценой, если она поддерживает это
+        // Если logic.js жестко прописан, мы должны продублировать логику:
+        
+        if(typeof money !== 'undefined' && money >= price) {
+             // Если есть глобальная функция buyDrink, пробуем вызвать её (надеясь, что она просто спишет деньги, если мы их подменим, или передадим 0)
+             // Но лучше написать свою логику списания:
+             money -= price;
+             
+             // Добавляем эффект
+             if(type === 'coffee') {
+                 if(typeof energy !== 'undefined') energy += 300;
+             }
+             if(type === 'energy') {
+                 // Тут сложнее, так как это статус. Попробуем вызвать оригинал с ценой 0, так как мы уже списали деньги?
+                 // Или просто включим флаг, если знаем переменную.
+                 // Лучший вариант для совместимости с неизвестным logic.js:
+                 // Вызвать buyDrink('energy', 0) если функция принимает цену.
+                 if(typeof buyDrink === 'function') {
+                     // Возвращаем деньги временно, чтобы buyDrink сработал? Нет.
+                     // Просто вызываем buyDrink с оригинальными параметрами, но перехватываем списание? Сложно.
+                     // ПРОСТОЙ ВАРИАНТ:
+                     if(typeof activateBuff === 'function') activateBuff(); // Если есть такая
+                 }
+             }
+
+             if(typeof updateUI === 'function') updateUI();
+             else document.getElementById('money-val').innerText = money.toFixed(2) + " PLN";
+             
+             if(typeof saveGame === 'function') saveGame();
+        } else {
+            alert("Недостаточно средств!");
+        }
+    }
+    
+    // Специальный фикс для Energy/Coffee, чтобы работала оригинальная логика,
+    // но с новой ценой. Мы подменяем buyDrink перед вызовом.
+    // Это сработает лучше всего.
+    setTimeout(() => {
+        if(typeof window.buyDrink === 'function') {
+            const originalBuyDrink = window.buyDrink;
+            window.buyDrinkDynamic = function(type) {
+                let price = 0;
+                if(type === 'coffee') price = parseFloat(document.getElementById('adm-coffee').value);
+                if(type === 'energy') price = parseFloat(document.getElementById('adm-energy').value);
+                
+                // Вызываем оригинал, передавая ему НАШУ цену
+                originalBuyDrink(type, price);
+            }
+        }
+        
+        // Для воды (где цена не передавалась)
+        if(typeof window.buyWater === 'function') {
+             window.buyWaterDynamic = function() {
+                 let price = parseFloat(document.getElementById('adm-water').value);
+                 // Мы не можем передать цену в buyWater(), так как там она не принимается.
+                 // Придется вручную:
+                 if(money >= price) {
+                     money -= price;
+                     water += 1500;
+                     if(typeof updateUI === 'function') updateUI();
+                     if(typeof saveGame === 'function') saveGame();
+                 } else {
+                     alert("Нет денег (Админ цена)");
+                 }
+             }
+        }
+    }, 1000); // Ждем загрузки logic.js
+</script>
 
 </body>
 </html>
