@@ -1,13 +1,24 @@
 // --- logic.js ---
-// VERSION: 13.0 (CLEAN UI & TAX WARNING)
+// VERSION: 16.0 (FINAL FIX: ENERGY IS WATER)
 // Ключ сохранения WARSZAWA_FOREVER.
-// Убрана лишняя панель "Империя". Добавлено предупреждение о налогах.
+// Исправлено: Бизнес тратит только G.en (Полоску гидратации).
+// Никаких скрытых списаний. Визуал и механики на месте.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
+
+// === CSS АНИМАЦИИ (ВШИТЫ) ===
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+    @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+    @keyframes shakeScreen { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+    .floating-text { position: absolute; font-weight: 900; font-size: 16px; pointer-events: none; z-index: 9999; text-shadow: 0 2px 4px rgba(0,0,0,0.8); animation: floatUp 1s ease-out forwards; }
+    .shake-mode { animation: shakeScreen 0.5s; }
+`;
+document.head.appendChild(styleSheet);
 
 // === НАСТРОЙКИ ===
 const DEFAULT_SETTINGS = {
@@ -20,7 +31,7 @@ const DEFAULT_SETTINGS = {
     },
     economy: {
         tax_rate: 0.15, tax_threshold: 200, inflation_rate: 0.40, 
-        business_tax: 0.19, // Налог на прибыль бизнеса (19%)
+        business_tax: 0.19, 
         welfare_amount: 30, welfare_cooldown: 600,
         lvl_exchange_rate: 10, lvl_exchange_rate_big: 300, 
         tax_timer_sec: 300, rent_timer_sec: 300,
@@ -44,15 +55,15 @@ const BUSINESS_META = [
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
         basePrice: 5000, 
         minLvl: 5.0, 
-        type: 'maintenance', // Тип механики: Обслуживание
-        dealCost: 50, // Стоимость действия
+        type: 'maintenance', 
+        dealCost: 50, 
         desc: "Простой доход. Требует пинка."
     },
     { 
         id: 'vege', name: 'Warzywniak', icon: '🥦', 
         basePrice: 20000, 
         minLvl: 10.0,
-        type: 'lottery', // Тип механики: Лотерея качества
+        type: 'lottery', 
         dealCost: 300,
         desc: "Овощи. Риск гнилой партии."
     },
@@ -60,15 +71,15 @@ const BUSINESS_META = [
         id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', 
         basePrice: 75000, 
         minLvl: 20.0,
-        type: 'strategy', // Тип механики: Выбор риска
-        dealCost: 0, // Динамическая стоимость
+        type: 'strategy', 
+        dealCost: 0, 
         desc: "Выбор ингредиентов. Опасайся Sanepid."
     },
     { 
         id: 'zabka', name: 'Żabka Franchise', icon: '🐸', 
         basePrice: 300000, 
         minLvl: 30.0, 
-        type: 'high_stakes', // Тип механики: Всё или ничего
+        type: 'high_stakes', 
         dealCost: 5000,
         desc: "Выполнение корп. плана. Крупные ставки."
     }
@@ -105,6 +116,7 @@ let order = { visible: false, active: false, steps: 0, target: 100, time: 0, rew
 let curView = 'main', weather = "Ясно", isBroken = false;
 let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bonusActive = false;
 let isSearching = false; let spamCounter = 0;
+let isBusinessBusy = false; 
 
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairPriceKey: null, hidden: true },
@@ -152,24 +164,39 @@ function log(msg, color = "#eee") {
     console.log(`%c ${msg}`, `color: ${color}`);
 }
 
-// --- БИЗНЕС ЛОГИКА ---
+// === ЭФФЕКТЫ ===
+
+function triggerFloatingText(text, color, element) {
+    const rect = element.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.innerText = text;
+    el.style.color = color;
+    el.className = 'floating-text';
+    el.style.left = (rect.left + rect.width / 2 - 20) + 'px';
+    el.style.top = (rect.top - 20) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+function triggerShake() {
+    document.body.classList.add('shake-mode');
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(200);
+    setTimeout(() => document.body.classList.remove('shake-mode'), 500);
+}
+
+// === БИЗНЕС ЛОГИКА ===
 
 function renderBusiness() {
-    // 1. СКРЫВАЕМ СТАРУЮ ПАНЕЛЬ "ИМПЕРИЯ" (Если она есть в HTML)
     const oldDash = document.getElementById('biz-total-cash');
-    if(oldDash) {
-        let card = oldDash.closest('.card');
-        if(card) card.style.display = 'none';
-    }
+    if(oldDash) { let card = oldDash.closest('.card'); if(card) card.style.display = 'none'; }
 
     const list = document.getElementById('business-list');
     if(!list) return;
 
-    // 2. ДОБАВЛЯЕМ ПРЕДУПРЕЖДЕНИЕ О НАЛОГАХ
     let html = `
     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-bottom:15px; border-left: 3px solid var(--danger); font-size:11px; color:#aaa; line-height:1.4;">
         🏛️ <b>МУНИЦИПАЛЬНЫЙ ЗАКОН:</b><br>
-        Прибыль от ведения бизнеса облагается налогом <b>${(SETTINGS.economy.business_tax*100).toFixed(0)}%</b>. Налог списывается автоматически при получении выручки.
+        Прибыль от ведения бизнеса облагается налогом <b>${(SETTINGS.economy.business_tax*100).toFixed(0)}%</b>. Налог списывается автоматически.
     </div>`;
 
     let hasHouse = G.housing && G.housing.id !== -1;
@@ -180,7 +207,6 @@ function renderBusiness() {
         let isOwned = !!userBiz;
         let currentPrice = getBusinessPrice(biz.basePrice);
         let hasLvl = G.lvl >= biz.minLvl;
-        
         let dealCost = getDynamicPrice(biz.dealCost);
 
         if (!isOwned) {
@@ -213,27 +239,17 @@ function renderBusiness() {
             let controls = "";
 
             if (biz.type === 'maintenance') {
-                controls = `
-                    <button class="btn-action" style="background:var(--accent-blue);" onclick="runVendingDeal('${biz.id}')">
-                        🔧 ОБСЛУЖИТЬ АВТОМАТ (-${dealCost.toFixed(0)} PLN)
-                    </button>`;
+                controls = `<button id="btn-${biz.id}" class="btn-action" style="background:var(--accent-blue);" onclick="runVendingDeal('${biz.id}', this)">🔧 ОБСЛУЖИТЬ АВТОМАТ (-${dealCost.toFixed(0)} PLN)</button>`;
             } else if (biz.type === 'lottery') {
-                controls = `
-                    <button class="btn-action" style="background:var(--success); color:black;" onclick="runVegeGamble('${biz.id}')">
-                        🎲 КУПИТЬ ПАРТИЮ И ПРОВЕРИТЬ (-${dealCost.toFixed(0)})
-                    </button>`;
+                controls = `<button id="btn-${biz.id}" class="btn-action" style="background:var(--success); color:black;" onclick="runVegeGamble('${biz.id}', this)">🎲 КУПИТЬ ПАРТИЮ И ПРОВЕРИТЬ (-${dealCost.toFixed(0)})</button>`;
             } else if (biz.type === 'strategy') {
-                controls = `
-                    <div style="display:flex; gap:5px;">
-                        <button class="btn-action" style="flex:1; font-size:10px; background:#475569;" onclick="runKebabStrategy('${biz.id}', 'safe')">ЛЕГАЛЬНО<br>Safe</button>
-                        <button class="btn-action" style="flex:1; font-size:10px; background:var(--accent-gold); color:black;" onclick="runKebabStrategy('${biz.id}', 'normal')">ОБЫЧНО<br>Mix</button>
-                        <button class="btn-action" style="flex:1; font-size:10px; background:var(--danger);" onclick="runKebabStrategy('${biz.id}', 'risky')">ОПАСНО<br>Illegal</button>
+                controls = `<div style="display:flex; gap:5px;">
+                        <button id="btn-${biz.id}-safe" class="btn-action" style="flex:1; font-size:10px; background:#475569;" onclick="runKebabStrategy('${biz.id}', 'safe', this)">ЛЕГАЛЬНО<br>Safe</button>
+                        <button id="btn-${biz.id}-normal" class="btn-action" style="flex:1; font-size:10px; background:var(--accent-gold); color:black;" onclick="runKebabStrategy('${biz.id}', 'normal', this)">ОБЫЧНО<br>Mix</button>
+                        <button id="btn-${biz.id}-risky" class="btn-action" style="flex:1; font-size:10px; background:var(--danger);" onclick="runKebabStrategy('${biz.id}', 'risky', this)">ОПАСНО<br>Illegal</button>
                     </div>`;
             } else if (biz.type === 'high_stakes') {
-                controls = `
-                    <button class="btn-action" style="background:linear-gradient(45deg, #16a34a, #15803d);" onclick="runZabkaContract('${biz.id}')">
-                        📝 ПОДПИСАТЬ ПЛАН ПРОДАЖ (-${dealCost.toFixed(0)} PLN)
-                    </button>`;
+                controls = `<button id="btn-${biz.id}" class="btn-action" style="background:linear-gradient(45deg, #16a34a, #15803d);" onclick="runZabkaContract('${biz.id}', this)">📝 ПОДПИСАТЬ ПЛАН ПРОДАЖ (-${dealCost.toFixed(0)} PLN)</button>`;
             }
 
             html += `
@@ -247,18 +263,14 @@ function renderBusiness() {
                         </div>
                     </div>
                 </div>
-                
                 <div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin:10px 0; min-height:40px; display:flex; align-items:center; justify-content:center; text-align:center;">
                     <span style="font-size:11px; font-weight:700; color:${lastRes.color}; animation:fadeIn 0.5s;">${lastRes.msg}</span>
                 </div>
-
-                <div class="biz-actions" style="flex-direction:column;">
-                    ${controls}
-                </div>
+                <div class="biz-actions" style="flex-direction:column;">${controls}</div>
+                <div style="text-align:center; font-size:9px; color:#555; margin-top:5px;">Расход: ⚡25 (вода), 👟 обувь</div>
             </div>`;
         }
     });
-    
     if (list.innerHTML !== html) list.innerHTML = html;
 }
 
@@ -274,7 +286,6 @@ function buyBusiness(id) {
     if (G.housing.id === -1) { log("⛔ Сначала купите квартиру!", "var(--danger)"); return; }
     let biz = BUSINESS_META.find(b => b.id === id);
     if (G.lvl < biz.minLvl) { log(`⛔ Нужен уровень ${biz.minLvl}!`, "var(--danger)"); return; }
-
     let price = getBusinessPrice(biz.basePrice);
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
@@ -288,121 +299,108 @@ function buyBusiness(id) {
     }
 }
 
-// === 1. VENDING (Просто) ===
-function runVendingDeal(id) {
-    let biz = BUSINESS_META.find(b => b.id === id);
-    let cost = getDynamicPrice(biz.dealCost);
+// === ЛОГИКА АНИМАЦИИ И СПИСАНИЯ ===
+function runBusinessAction(id, cost, btnEl, callback) {
+    if (isBusinessBusy) return;
+    if(G.money < cost) { log(`Не хватает средств! (${cost.toFixed(0)} PLN)`, "var(--danger)"); triggerShake(); return; }
     
-    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
-    G.money -= cost;
-
-    let r = Math.random();
-    let profit = 0; let msg = ""; let color = "";
-
-    if (r < 0.2) {
-        profit = 0; msg = "⚠️ Монетоприемник сломался. Дохода нет."; color = "var(--danger)";
-    } else if (r < 0.7) {
-        profit = cost * 1.5; msg = "✅ Стабильные продажи."; color: "var(--success)";
-    } else {
-        profit = cost * 3.0; msg = "🔥 Офисный жор! Автомат пуст!"; color: "var(--accent-gold)";
+    // ПРОВЕРКА ПОЛОСКИ ГИДРАТАЦИИ (ЭНЕРГИИ)
+    if (G.en < 25) { 
+        log("⚡ Вы обезвожены! Попейте воды.", "var(--danger)"); 
+        triggerShake(); 
+        return; 
     }
 
-    applyBusinessResult(id, profit, cost, msg, color);
+    isBusinessBusy = true;
+    G.money = parseFloat((G.money - cost).toFixed(2));
+    
+    // СПИСЫВАЕМ ТОЛЬКО ПОЛОСКУ (ВОДУ)
+    G.en -= 25; 
+    
+    if (G.shoes && G.shoes.dur > 0) G.shoes.dur = Math.max(0, G.shoes.dur - 0.02);
+    
+    save(); updateUI();
+
+    const originalText = btnEl.innerHTML;
+    btnEl.innerHTML = "⏳ СДЕЛКА...";
+    btnEl.style.opacity = "0.7";
+
+    setTimeout(() => {
+        isBusinessBusy = false;
+        btnEl.innerHTML = originalText;
+        btnEl.style.opacity = "1";
+        callback();
+    }, 1500); 
 }
 
-// === 2. VEGE (Лотерея) ===
-function runVegeGamble(id) {
+function runVendingDeal(id, btnEl) {
     let biz = BUSINESS_META.find(b => b.id === id);
     let cost = getDynamicPrice(biz.dealCost);
-    
-    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
-    G.money -= cost;
-
-    let r = Math.random();
-    let profit = 0; let msg = ""; let color = "";
-
-    if (r < 0.35) { // 35% Гниль
-        profit = cost * 0.2; msg = "🤢 Партия гнилая. Убыток."; color = "var(--danger)";
-    } else if (r < 0.85) { // 50% Норма
-        profit = cost * 1.6; msg = "🥦 Свежие овощи. Хорошая выручка."; color: "#fff";
-    } else { // 15% Премиум
-        profit = cost * 4.0; msg = "💎 ЭКО-БИО Партия! Тройная цена!"; color: "var(--accent-gold)";
-    }
-
-    applyBusinessResult(id, profit, cost, msg, color);
+    runBusinessAction(id, cost, btnEl, () => {
+        let r = Math.random();
+        let profit = 0; let msg = ""; let color = "";
+        if (r < 0.2) { profit = 0; msg = "⚠️ Монетоприемник сломался. Дохода нет."; color = "var(--danger)"; } 
+        else if (r < 0.7) { profit = cost * 1.5; msg = "✅ Стабильные продажи."; color = "var(--success)"; } 
+        else { profit = cost * 3.0; msg = "🔥 Офисный жор! Автомат пуст!"; color = "var(--accent-gold)"; }
+        applyBusinessResult(id, profit, cost, msg, color, btnEl);
+    });
 }
 
-// === 3. KEBAB (Стратегия) ===
-function runKebabStrategy(id, mode) {
+function runVegeGamble(id, btnEl) {
     let biz = BUSINESS_META.find(b => b.id === id);
-    let baseCost = 800; // Базовая цена мяса
+    let cost = getDynamicPrice(biz.dealCost);
+    runBusinessAction(id, cost, btnEl, () => {
+        let r = Math.random();
+        let profit = 0; let msg = ""; let color = "";
+        if (r < 0.35) { profit = cost * 0.2; msg = "🤢 Партия гнилая. Убыток."; color = "var(--danger)"; } 
+        else if (r < 0.85) { profit = cost * 1.6; msg = "🥦 Свежие овощи. Хорошая выручка."; color = "#fff"; } 
+        else { profit = cost * 4.0; msg = "💎 ЭКО-БИО Партия! Тройная цена!"; color = "var(--accent-gold)"; }
+        applyBusinessResult(id, profit, cost, msg, color, btnEl);
+    });
+}
+
+function runKebabStrategy(id, mode, btnEl) {
+    let biz = BUSINESS_META.find(b => b.id === id);
+    let baseCost = 800;
     let cost = getDynamicPrice(baseCost);
-    
-    if (mode === 'safe') cost *= 1.5; // Дорогое хорошее мясо
-    if (mode === 'risky') cost *= 0.3; // Дешевое "мясо" (голуби?)
+    if (mode === 'safe') cost *= 1.5; 
+    if (mode === 'risky') cost *= 0.3;
 
-    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
-    G.money -= cost;
-
-    let profit = 0; let msg = ""; let color = "";
-    let r = Math.random();
-
-    if (mode === 'safe') {
-        profit = cost * 1.3; msg = "🛡️ Легальное мясо. Спокойный доход."; color: "#fff";
-    } else if (mode === 'normal') {
-        if (r < 0.2) {
-            profit = cost * 0.5; msg = "📉 Мясо жесткое. Клиенты недовольны."; color: "#aaa";
-        } else {
-            profit = cost * 2.5; msg = "🥙 Вкусный кебаб. Хорошая касса."; color: "var(--success)";
+    runBusinessAction(id, cost, btnEl, () => {
+        let profit = 0; let msg = ""; let color = ""; let r = Math.random();
+        if (mode === 'safe') { profit = cost * 1.3; msg = "🛡️ Легальное мясо. Спокойный доход."; color = "#fff"; } 
+        else if (mode === 'normal') {
+            if (r < 0.2) { profit = cost * 0.5; msg = "📉 Мясо жесткое. Клиенты недовольны."; color = "#aaa"; } 
+            else { profit = cost * 2.5; msg = "🥙 Вкусный кебаб. Хорошая касса."; color = "var(--success)"; }
+        } else if (mode === 'risky') {
+            if (r < 0.5) { profit = 0; msg = "🚓 SANEPID! Нашли голубя. Конфискация!"; color = "var(--danger)"; } 
+            else { profit = cost * 8.0; msg = "💰 Дешевое мясо - супер навар!"; color = "var(--purple)"; }
         }
-    } else if (mode === 'risky') {
-        if (r < 0.5) { // 50% шанс проверки
-            profit = 0; msg = "🚓 SANEPID! Нашли голубя. Конфискация!"; color: "var(--danger)";
-        } else {
-            profit = cost * 8.0; msg = "💰 Дешевое мясо - супер навар!"; color: "var(--purple)";
-        }
-    }
-
-    applyBusinessResult(id, profit, cost, msg, color);
+        applyBusinessResult(id, profit, cost, msg, color, btnEl);
+    });
 }
 
-// === 4. ZABKA (Ставки) ===
-function runZabkaContract(id) {
+function runZabkaContract(id, btnEl) {
     let biz = BUSINESS_META.find(b => b.id === id);
     let cost = getDynamicPrice(biz.dealCost);
-    
-    if(G.money < cost) { log("Нет средств!", "var(--danger)"); return; }
-    G.money -= cost;
-
-    let successChance = 0.4 + (G.lvl * 0.01); // Шанс растет с уровнем
-    if (successChance > 0.8) successChance = 0.8;
-
-    let r = Math.random();
-    let profit = 0; let msg = ""; let color = "";
-
-    if (r < successChance) {
-        profit = cost * 2.5; msg = "📈 ПЛАН ВЫПОЛНЕН! Бонус от офиса."; color: "var(--accent-gold)";
-    } else {
-        profit = cost * 0.5; msg = "📉 План провален. Штрафные санкции."; color: "var(--danger)";
-    }
-
-    applyBusinessResult(id, profit, cost, msg, color);
+    runBusinessAction(id, cost, btnEl, () => {
+        let successChance = 0.4 + (G.lvl * 0.01);
+        if (successChance > 0.8) successChance = 0.8;
+        let r = Math.random();
+        let profit = 0; let msg = ""; let color = "";
+        if (r < successChance) { profit = cost * 2.5; msg = "📈 ПЛАН ВЫПОЛНЕН! Бонус от офиса."; color = "var(--accent-gold)"; } 
+        else { profit = cost * 0.5; msg = "📉 План провален. Штрафные санкции."; color = "var(--danger)"; }
+        applyBusinessResult(id, profit, cost, msg, color, btnEl);
+    });
 }
 
-// === ОБЩАЯ ФУНКЦИЯ РАСЧЕТА И НАЛОГОВ ===
-function applyBusinessResult(id, revenue, cost, text, color) {
-    let grossProfit = revenue - cost; // Грязная прибыль
+function applyBusinessResult(id, revenue, cost, text, color, btnEl) {
+    let grossProfit = revenue - cost; 
     let tax = 0;
-    
-    // Налог 19% только с прибыли
-    if (grossProfit > 0) {
-        tax = grossProfit * SETTINGS.economy.business_tax;
-        revenue -= tax;
-    }
+    if (grossProfit > 0) { tax = grossProfit * SETTINGS.economy.business_tax; revenue -= tax; }
 
     G.money = parseFloat((G.money + revenue).toFixed(2));
     let netProfit = revenue - cost;
-    
     if (netProfit > 0) G.totalEarned += netProfit;
 
     let sign = netProfit >= 0 ? "+" : "";
@@ -413,17 +411,18 @@ function applyBusinessResult(id, revenue, cost, text, color) {
 
     if (netProfit > 0) {
         addHistory('💰 БИЗНЕС', netProfit, 'plus');
+        triggerFloatingText(`+${netProfit.toFixed(0)} PLN 💸`, "var(--success)", btnEl);
         tg.HapticFeedback.notificationOccurred('success');
     } else {
         addHistory('📉 УБЫТОК', Math.abs(netProfit), 'minus');
-        tg.HapticFeedback.notificationOccurred('warning');
+        triggerFloatingText(`${netProfit.toFixed(0)} PLN 😡`, "var(--danger)", btnEl);
+        triggerShake(); 
+        tg.HapticFeedback.notificationOccurred('error');
     }
-    
     save(); updateUI();
 }
 
-
-// --- СТАНДАРТНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ) ---
+// --- СТАНДАРТНАЯ ЛОГИКА ---
 
 async function usePromo() {
     const inputField = document.getElementById('promo-input');
@@ -598,10 +597,7 @@ function load() {
     if(d) { 
         try { let loaded = JSON.parse(d); G = {...G, ...loaded}; } catch(e) { console.error(e); }
     } 
-    
-    // Очистка старых данных бизнеса (безопасно)
     if(!G.business) G.business = {};
-
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
     if(isNaN(G.en)) G.en = 2000;
@@ -613,14 +609,11 @@ function load() {
     if(!G.blindTime) G.blindTime = 0;
     if (!G.deposit) G.deposit = null;
     if (!G.bankHistory) G.bankHistory = [];
-
     ['bag', 'phone', 'scooter', 'helmet', 'raincoat', 'powerbank'].forEach(item => {
         if (G[item] === true) G[item] = { active: true, dur: 100 };
     });
-
     if (!G.bag && !G.starter_bag) G.starter_bag = { active: true, dur: 50 };
     if (!G.phone && !G.starter_phone) G.starter_phone = { active: true, dur: 50 };
-
     validateInventory(); 
     checkStarterPack();
     generateDailyQuests();
@@ -632,7 +625,6 @@ function updateUI() {
     try {
         const moneyEl = document.getElementById('money-val');
         if(!moneyEl) return; 
-
         const isBlind = G.blindTime > 0; 
         if (isBlind) {
             let bMin = Math.floor(G.blindTime / 60);
@@ -643,17 +635,14 @@ function updateUI() {
             moneyEl.innerText = G.money.toFixed(2) + " PLN";
             moneyEl.style.color = G.money < 0 ? "var(--danger)" : "var(--success)";
         }
-
         const lvlEl = document.getElementById('lvl-val');
         if(lvlEl) {
             let houseIcon = (G.housing && G.housing.id !== -1) ? " 🏠" : "";
             lvlEl.innerText = "LVL " + G.lvl.toFixed(6) + houseIcon;
         }
-
         document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
         document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
         document.getElementById('water-val').innerText = Math.floor(G.waterStock);
-        
         document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
         document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
         if(weather === "Дождь") document.body.classList.add('rain-mode');
@@ -664,7 +653,6 @@ function updateUI() {
             autoStatus.style.display = G.autoTime > 0 ? 'block' : 'none';
             if(G.autoTime > 0) autoStatus.innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
         }
-        
         const bikeStatus = document.getElementById('bike-status-ui');
         if(bikeStatus) {
             let rentShow = false; let text = "";
@@ -674,7 +662,6 @@ function updateUI() {
             bikeStatus.style.display = rentShow ? 'block' : 'none';
             bikeStatus.innerText = text;
         }
-
         const buffUI = document.getElementById('buff-status-ui'); 
         if(buffUI) {
             buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
@@ -686,13 +673,11 @@ function updateUI() {
             const btn = document.getElementById(id);
             if(btn) btn.innerText = (hiddenPrice || priceStr) + " PLN";
         };
-
         setBtnText('btn-buy-water', getDynamicPrice('water').toFixed(2));
         setBtnText('btn-buy-coffee', getDynamicPrice('coffee').toFixed(2));
         setBtnText('btn-buy-energy', getDynamicPrice('energy').toFixed(2));
         setBtnText('btn-buy-abibas', getDynamicPrice('abibas').toFixed(2));
         setBtnText('btn-buy-jorban', getDynamicPrice('jorban').toFixed(2));
-        
         const energyItemDesc = document.querySelector('.item-energy .shop-desc span');
         if (energyItemDesc) energyItemDesc.innerText = "Пауза расхода энергии. (Вода продолжает тратиться!)";
 
@@ -712,7 +697,6 @@ function updateUI() {
                 }
             }
         }
-
         const btnBolt = document.getElementById('btn-bolt');
         if(btnBolt) {
             let rate = getDynamicPrice('bolt_min');
@@ -729,7 +713,6 @@ function updateUI() {
                 }
             }
         }
-
         const rentBikeBtn = document.getElementById('buy-bike-rent');
         if(rentBikeBtn) {
             if(G.bikeRentTime > 0) {
@@ -742,10 +725,8 @@ function updateUI() {
                 rentBikeBtn.onclick = rentBike;
             }
         }
-
         const autoPriceLabel = document.getElementById('price-auto');
         if(autoPriceLabel) autoPriceLabel.innerText = "(" + (hiddenPrice || getDynamicPrice('auto_route').toFixed(2)) + " PLN)";
-
         const repairBtn = document.getElementById('btn-repair-express');
         if(repairBtn) repairBtn.innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice('repair_express').toFixed(2)) + " PLN)";
 
@@ -763,13 +744,11 @@ function updateUI() {
             }
             document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
         }
-
         let currentRank = RANKS[0]; let nextRank = null;
         if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
         else if (G.totalOrders < RANKS[1].max) { currentRank = RANKS[1]; nextRank = RANKS[2]; }
         else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
         else { currentRank = RANKS[3]; nextRank = null; }
-
         const rIcon = document.getElementById('rank-icon');
         if(rIcon) {
             rIcon.innerText = currentRank.icon;
@@ -785,7 +764,6 @@ function updateUI() {
                 document.getElementById('rank-next').innerText = "Вы достигли вершины!";
             }
         }
-
         let questsHTML = "";
         if(G.dailyQuests) {
             G.dailyQuests.forEach(q => {
@@ -799,18 +777,15 @@ function updateUI() {
         }
         const qList = document.getElementById('daily-quests-list');
         if(qList) qList.innerHTML = questsHTML;
-
         document.getElementById('stat-orders').innerText = G.totalOrders || 0;
         document.getElementById('stat-clicks').innerText = G.totalClicks || 0;
         document.getElementById('stat-bottles').innerText = G.totalBottles || 0;
         document.getElementById('stat-earned').innerText = (G.totalEarned || 0).toFixed(2) + " PLN";
-        
         let timeLeft = (G.lastDailyUpdate + 86400000) - Date.now();
         if(timeLeft < 0) timeLeft = 0;
         let hours = Math.floor(timeLeft / (1000 * 60 * 60));
         let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
         document.getElementById('daily-timer').innerText = "Обновление: " + hours + "ч " + mins + "м";
-
         if (isBroken) {
             sphere.classList.add('broken');
             document.getElementById('sphere-text').innerText = "ЧИНИТЬ";
@@ -822,29 +797,23 @@ function updateUI() {
             document.getElementById('sphere-text').innerText = "РАБОТАТЬ";
             document.getElementById('repair-express-btn').style.display = 'none';
             document.getElementById('repair-progress').style.height = "0%";
-            
             let rankBonus = 0;
             if (G.totalOrders >= 50) rankBonus = 0.05;
             if (G.totalOrders >= 150) rankBonus = 0.10;
             if (G.totalOrders >= 400) rankBonus = 0.20;
-
             let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
             let rate = (baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
-            
             if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
             if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
-
             if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
             else document.getElementById('click-rate-ui').innerText = rate + (rate !== "ВЫХОДНОЙ" ? " PLN" : "");
         }
-
         const myItemsList = document.getElementById('my-items-list');
         if (myItemsList) {
             let invHTML = "";
             let shoeStatusText = Math.floor(G.shoes.dur) + "%";
             let isShoesBroken = G.shoes.dur <= 0;
             invHTML += `<div class="shop-item item-shoes ${isShoesBroken ? 'item-broken' : ''}" ${isShoesBroken ? 'onclick="switchTab(\'shop\', document.querySelectorAll(\'.tab-item\')[2])"' : ''}><div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div></div>`;
-
             UPGRADES_META.forEach(up => {
                 if(G[up.id]) {
                     const item = G[up.id];
@@ -858,7 +827,6 @@ function updateUI() {
             });
             if (myItemsList.innerHTML !== invHTML) myItemsList.innerHTML = invHTML;
         }
-
         const shopList = document.getElementById('shop-upgrades-list'); 
         if(shopList) {
             let shopHTML = "";
@@ -872,7 +840,6 @@ function updateUI() {
             } else { shopHTML = "<div style='text-align:center; padding:20px; color:#666;'>Магазин закрыт на учет</div>"; }
             if (shopList.innerHTML !== shopHTML) shopList.innerHTML = shopHTML;
         }
-        
         const distContainer = document.getElementById('districts-list-container');
         if (distContainer) {
             let distHTML = "";
@@ -885,7 +852,6 @@ function updateUI() {
             });
             if(distContainer.innerHTML !== distHTML) distContainer.innerHTML = distHTML;
         }
-        
         const qBar = document.getElementById('quest-bar'); 
         if (order.visible && curView === 'main') { 
             qBar.style.display = 'block'; 
@@ -902,23 +868,16 @@ function updateUI() {
                 else document.getElementById('quest-pay').innerText = order.reward.toFixed(2);
             } 
         } else { qBar.style.display = 'none'; }
-        
         document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + (isBlind ? '?' : h.val) + "</b></div>").join('');
-        
         renderBank(); renderBankFull(); renderMilestones();
-        
-        // Рендер бизнеса
         if (curView === 'business') renderBusiness();
-
         const taxTimer = document.getElementById('tax-timer');
         const rentTimer = document.getElementById('rent-timer');
         let currentTaxRate = (SETTINGS.economy.tax_rate * 100).toFixed(0);
-        
         if(taxTimer) {
             let taxText = G.money > SETTINGS.economy.tax_threshold ? currentTaxRate + "%" : "FREE";
             taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
         }
-        
         if(rentTimer) {
             let isOwner = G.housing && G.housing.id === G.district;
             if (isOwner) {
@@ -931,22 +890,16 @@ function updateUI() {
                 rentTimer.style.color = "var(--danger)";
             }
         }
-        
         const btnLvlSmall = document.getElementById('btn-lvl-small');
         if (btnLvlSmall) btnLvlSmall.innerText = `ОБМЕН -0.05 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate} PLN`;
-        
         const btnLvlBig = document.getElementById('btn-lvl-big');
         if (btnLvlBig) btnLvlBig.innerText = `ОБМЕН -1.00 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate_big} PLN`;
-        
         const planRate1 = document.getElementById('plan-rate-1');
         if (planRate1) planRate1.innerText = "+" + (SETTINGS.economy.bank_rate * 100).toFixed(0) + "%";
-        
         const planRate2 = document.getElementById('plan-rate-2');
         if (planRate2) planRate2.innerText = "+" + (SETTINGS.economy.bank_rate * 3 * 100).toFixed(0) + "%";
-        
         const planRate3 = document.getElementById('plan-rate-3');
         if (planRate3) planRate3.innerText = "+" + (SETTINGS.economy.bank_rate * 8 * 100).toFixed(0) + "%";
-        
         const btnBottles = document.querySelector("button[onclick='collectBottles()']");
         if (btnBottles && !isSearching) {
             btnBottles.innerText = `♻️ СБОР БУТЫЛОК (+${SETTINGS.economy.bottle_price.toFixed(2)})`;
@@ -956,25 +909,19 @@ function updateUI() {
 
 function doWork() {
     G.totalClicks++; checkDailyQuests('clicks', 1);
-    
-    if (!SETTINGS.toggles.enable_work) {
-        log("⛔ Работа временно остановлена администрацией!", "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
-        return;
-    }
-
+    if (!SETTINGS.toggles.enable_work) { log("⛔ Работа временно остановлена администрацией!", "var(--danger)"); tg.HapticFeedback.notificationOccurred('error'); return; }
     if (isBroken) {
         repairProgress++; G.en = Math.max(0, G.en - 5); tg.HapticFeedback.impactOccurred('heavy');
         if (repairProgress >= 50) { isBroken = false; repairProgress = 0; log("🔧 Вы починили транспорт!", "var(--success)"); tg.HapticFeedback.notificationOccurred('success'); }
         updateUI(); save(); return;
     }
     if (bonusActive) { G.en = Math.max(0, G.en - 50); tg.HapticFeedback.notificationOccurred('error'); updateUI(); return; }
-    
     let now = Date.now();
     if (now - lastClickTime < 80) return; 
     lastClickTime = now;
-    
     if (order.visible && !order.active) { G.en = Math.max(0, G.en - 25); updateUI(); tg.HapticFeedback.notificationOccurred('error'); return; }
+    
+    // АВТО-ПИТЬЕ (Логика пополнения полоски из запасов)
     if (G.waterStock > 0 && G.en < (G.maxEn - 10)) { 
         let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
         if (G.housing && G.housing.id === G.district) eff *= 1.2;
@@ -986,9 +933,7 @@ function doWork() {
     
     clicksSinceBonus++;
     if (clicksSinceBonus > (300 + Math.random() * 100)) { showBonus(); clicksSinceBonus = 0; }
-
     if (G.shoes.dur > 0) { G.shoes.dur -= 0.05; if(G.shoes.dur < 0) G.shoes.dur = 0; }
-
     UPGRADES_META.forEach(up => {
         if (G[up.id] && G[up.id].dur > 0) {
             let wear = 0.02; 
@@ -998,45 +943,38 @@ function doWork() {
             if (G[up.id].dur <= 0) { G[up.id].dur = 0; if (Math.random() < 0.05) log("⚠️ " + up.name + " сломан! Зашей его!", "var(--danger)"); }
         }
     });
-
     if(order.active) { 
         consumeResources(true); 
         let speed = (G.bikeRentTime > 0 ? 2 : 1);
         if (order.isRiskyRoute) speed *= 2; 
         if (G.transportMode === 'bolt') speed *= 1.3;
         if (G.shoes.dur <= 0) speed *= 0.7; 
-
         order.steps += speed;
         if (G.bikeRentTime > 0 && Math.random() < SETTINGS.gameplay.accident_chance_safe) { triggerBreakdown(); return; } 
         if(order.steps >= order.target) finishOrder(true); 
         updateUI(); save(); return; 
     }
-    
     if(!order.visible) { if(Math.random() < (G.phone ? 0.35 : 0.18)) generateOrder(); }
     consumeResources(false);
-    
     let rankBonus = 0;
     if (G.totalOrders >= 50) rankBonus = 0.05;
     if (G.totalOrders >= 150) rankBonus = 0.10;
     if (G.totalOrders >= 400) rankBonus = 0.20;
-
     let bagBonus = 1;
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
-
     let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
     let gain = baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
-    
     G.money = parseFloat((G.money + gain).toFixed(2)); G.totalEarned += gain; checkDailyQuests('earn', gain); 
     G.lvl += 0.00025; checkMilestones(); updateUI(); save();
 }
 
 function consumeResources(isOrder) {
+    // ВНИМАНИЕ: ЗДЕСЬ СПИСАНИЕ ЗАПАСОВ ВОДЫ ПРИ ДОСТАВКЕ/КЛИКЕ
     let waterCost = isOrder ? 10 : 3;
     if (G.buffTime > 0) waterCost = isOrder ? 8 : 2; 
-    G.waterStock = Math.max(0, G.waterStock - waterCost);
-    if (G.buffTime > 0) return; 
-
+    
+    // G.en (Полоска) падает
     let cost = (G.scooter ? 7 : 10); 
     if (G.bikeRentTime > 0) cost *= 0.5; 
     if (G.transportMode === 'veturilo') cost *= 0.5;
@@ -1052,15 +990,12 @@ function generateOrder() {
     order.isCriminal = Math.random() < SETTINGS.gameplay.criminal_chance; 
     if (order.isCriminal) { tg.HapticFeedback.notificationOccurred('error'); } 
     else { tg.HapticFeedback.notificationOccurred('success'); }
-
     let d = 0.5 + Math.random() * 3.5; 
     let bagBonus = 1;
     if (G.bag && G.bag.dur > 0) bagBonus = 1.15;
     else if (G.starter_bag && G.starter_bag.dur > 0) bagBonus = 1.02;
-
     let base = SETTINGS.jobs.base_pay || 3.80;
     let perKm = SETTINGS.jobs.km_pay || 2.20;
-
     let baseRew = (base + d * perKm) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * bagBonus * (weather === "Дождь" ? 1.5 : 1); 
     if(order.isCriminal) { baseRew *= 6.5; order.offerTimer = 12; } 
     order.baseReward = baseRew; order.reward = baseRew;
@@ -1074,7 +1009,6 @@ function openRouteModal() {
     const autoBtn = document.getElementById('btn-auto-route');
     const autoLabel = document.getElementById('lbl-auto-route');
     const autoDesc = document.getElementById('desc-auto-route');
-
     if (!SETTINGS.toggles.enable_auto) {
         autoBtn.style.opacity = "0.5"; autoBtn.style.pointerEvents = "none"; 
         autoBtn.style.borderColor = "#555"; autoBtn.style.background = "transparent";
@@ -1084,7 +1018,6 @@ function openRouteModal() {
     } else {
         autoBtn.style.opacity = "1"; autoBtn.style.pointerEvents = "auto";
     }
-
     let curPrice = getDynamicPrice('auto_route');
     if (G.autoTime > 0) {
         autoLabel.innerHTML = "<b>🤖 ПОРУЧИТЬ РОБОТУ</b>";
@@ -1231,7 +1164,6 @@ function finishOrder(win) {
             addHistory(order.isCriminal ? '☠️ КРИМИНАЛ' : '📦 ЗАКАЗ', order.reward.toFixed(2), 'plus');
             G.lvl += (order.isCriminal ? 0.12 : 0.015); G.totalOrders++; 
             checkDailyQuests('orders', 1); checkDailyQuests('earn', order.reward); 
-            
             let chance = SETTINGS.jobs.tips_chance || 0.40;
             if(Math.random() < chance) { 
                 let maxTip = SETTINGS.jobs.tips_max || 15;
@@ -1300,17 +1232,13 @@ function collectBottles() {
 
     setTimeout(() => {
         let price = SETTINGS.economy.bottle_price || 0.05;
-        
         if (Math.random() < (SETTINGS.gameplay.bottle_find_chance || 0.40)) {
             G.money = parseFloat((G.money + price).toFixed(2)); G.totalEarned += price;
             checkDailyQuests('earn', price); G.totalBottles++; 
             let repGain = (G.lvl < 1.0) ? 0.02 : 0.002;
             if (Math.random() < 0.10) { repGain *= 3; log("💎 Нашел стеклотару! Респект x3", "var(--success)"); }
             G.lvl += repGain;
-        } else {
-             log("🗑️ Пусто...", "#aaa");
-        }
-        
+        } else { log("🗑️ Пусто...", "#aaa"); }
         checkMilestones(); save(); updateUI(); 
         isSearching = false;
         if(btn) { btn.innerText = originalText; btn.style.opacity = "1"; }
@@ -1339,13 +1267,9 @@ function buyDrink(type, basePriceVal) {
 }
 
 function toggleTransport(type) {
-    if (G.transportMode === type) {
-        G.transportMode = 'none'; log(type.toUpperCase() + " остановлен.", "var(--text-secondary)");
-        updateUI(); save(); return;
-    }
+    if (G.transportMode === type) { G.transportMode = 'none'; log(type.toUpperCase() + " остановлен.", "var(--text-secondary)"); updateUI(); save(); return; }
     if (G.transportMode !== 'none') { log("Сначала завершите текущую аренду!", "var(--danger)"); return; }
     if (G.bikeRentTime > 0) { log("Нельзя брать аренду, пока активен E-Bike!", "var(--danger)"); return; }
-
     if (type === 'veturilo') {
         if (!SETTINGS.toggles.service_veturilo) { log("Сервис недоступен!", "var(--danger)"); return; }
         let startCost = getDynamicPrice('veturilo_start'); 
@@ -1393,17 +1317,12 @@ function buyHouse(distId) {
             tg.HapticFeedback.notificationOccurred('success');
             save(); updateUI();
         }
-    } else {
-        log(`Не хватает денег! Нужно ${housePrice} PLN`, "var(--danger)");
-        tg.HapticFeedback.notificationOccurred('error');
-    }
+    } else { log(`Не хватает денег! Нужно ${housePrice} PLN`, "var(--danger)"); tg.HapticFeedback.notificationOccurred('error'); }
 }
 
 function exchangeLvl(l, m) { 
     if(G.lvl >= l) { 
-        if (m > 200 && Math.random() < 0.3) {
-            G.blindTime = 600; log("👁️ БАНК СКРЫЛ СЧЕТА НА 10 МИН!", "var(--danger)");
-        }
+        if (m > 200 && Math.random() < 0.3) { G.blindTime = 600; log("👁️ БАНК СКРЫЛ СЧЕТА НА 10 МИН!", "var(--danger)"); }
         G.lvl -= l; G.money = parseFloat((G.money + m).toFixed(2)); 
         G.totalEarned += m; checkDailyQuests('earn', m);
         addHistory('💎 ОБМЕН', m, 'plus'); save(); updateUI(); 
@@ -1437,9 +1356,7 @@ function triggerBreakdown() {
 function renderBank() { 
     const ui = document.getElementById('bank-actions-ui'); 
     if(!ui) return;
-    if (!SETTINGS.toggles.enable_bank) {
-        ui.innerHTML = "<div style='color:var(--danger); text-align:center;'>Банк временно закрыт ЦБ РФ (или Варшавы)</div>"; return;
-    }
+    if (!SETTINGS.toggles.enable_bank) { ui.innerHTML = "<div style='color:var(--danger); text-align:center;'>Банк временно закрыт ЦБ РФ (или Варшавы)</div>"; return; }
     let creditHTML = "";
     if (G.money < 0) {
         creditHTML = "<button class='btn-action' style='background:var(--purple)' onclick='getWelfare()'>📞 ПОЗВОНИТЬ БАБУШКЕ (+" + SETTINGS.economy.welfare_amount + " PLN)</button><small style='color:#aaa; display:block; margin-top:5px; text-align:center;'>Только если баланс меньше нуля.</small>";
@@ -1472,18 +1389,11 @@ function makeDeposit() {
     if (!val || val <= 0) { log("Введите сумму!", "var(--danger)"); return; }
     if (val > G.money) { log("Не хватает денег!", "var(--danger)"); return; }
     if (val < 100) { log("Минимальный вклад 100 PLN", "var(--danger)"); return; }
-    
     let baseRate = SETTINGS.economy.bank_rate || 0.05;
     let finalRate = baseRate * selectedBankPlan.mult; 
-
     G.money = parseFloat((G.money - val).toFixed(2));
     let durationMs = selectedBankPlan.days * 86400000; 
-    G.deposit = {
-        amount: val, start: Date.now(), end: Date.now() + durationMs, 
-        rate: finalRate,
-        profit: val * finalRate, 
-        penalty: val * 0.30 
-    };
+    G.deposit = { amount: val, start: Date.now(), end: Date.now() + durationMs, rate: finalRate, profit: val * finalRate, penalty: val * 0.30 };
     addBankLog("Вклад " + selectedBankPlan.days + "дн", val, "minus");
     log("💎 Средства заморожены в Royal Bank", "var(--accent-blue)");
     tg.HapticFeedback.notificationOccurred('success');
@@ -1619,7 +1529,7 @@ setInterval(() => {
     if (G.buffTime > 0) G.buffTime--;
     if (G.blindTime > 0) G.blindTime--; 
     
-    // БИЗНЕС ЛОГИКА (ВЫЗОВ) - ОТКЛЮЧЕНА (Все на кнопках)
+    // БИЗНЕС ЛОГИКА ТЕПЕРЬ ТОЛЬКО НА КНОПКАХ
 
     generateDailyQuests(); 
 
@@ -1628,6 +1538,7 @@ setInterval(() => {
         if (order.active && !isBroken) {
             for(let i=0; i<10; i++) {
                 if(!order.active || isBroken) break;
+                // АВТО-ПИТЬЕ ПРИ РАБОТЕ РОБОТА
                 if (G.waterStock > 0 && G.en < 600) { 
                     let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
                     G.en = Math.min(G.maxEn, G.en + (15 * eff)); G.waterStock -= 15; 
@@ -1659,3 +1570,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+
