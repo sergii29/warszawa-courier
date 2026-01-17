@@ -17,7 +17,6 @@
             color: white;
         }
         #admin-panel-overlay.active { display: block; }
-
         .admin-header {
             display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
             border-bottom: 1px solid #333; padding-bottom: 15px;
@@ -92,7 +91,7 @@
             </div>
         </div>
 
-        <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilotDynamic()">
+        <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilot()">
             <div class="route-icon">🤖</div>
             <div id="lbl-auto-container">
                 <div id="lbl-auto-route"><b>Автопилот</b> <span id="price-auto"></span></div>
@@ -183,13 +182,13 @@
             </div>
             
             <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
-                <button id="btn-repair-express" class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstantDynamic()">🔧 ЭКСПРЕСС РЕМОНТ</button>
+                <button id="btn-repair-express" class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ</button>
                 <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
             </div>
         </div>
 
         <div class="bottom-controls">
-            <button class="btn-action btn-secondary" onclick="collectBottles()" id="btn-bottles-action">♻️ СБОР БУТЫЛОК (+0.05)</button>
+            <button class="btn-action btn-secondary" onclick="collectBottles()" id="btn-bottles-action">♻️ СБОР БУТЫЛОК</button>
             <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
         </div>
 
@@ -276,7 +275,7 @@
                             <span style="color:var(--accent-blue)">Скорость x2. Без поминутной оплаты.</span>
                         </div>
                     </div>
-                    <button id="buy-bike-rent" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="rentBikeDynamic()">АРЕНДОВАТЬ</button>
+                    <button id="buy-bike-rent" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
                 </div>
             </div>
         </div>
@@ -297,13 +296,13 @@
                 <div class="shop-icon">💧</div>
                 <div class="shop-title">Вода (1.5л)</div>
                 <div class="shop-desc">Восстанавливает силы при кликах.<br><b>+1500 мл</b></div>
-                <button id="btn-buy-water" class="btn-price" onclick="buyWaterDynamic()">1.50 PLN</button>
+                <button id="btn-buy-water" class="btn-price" onclick="buyWater()">1.50 PLN</button>
             </div>
             <div class="shop-item item-food">
                 <div class="shop-icon">☕</div>
                 <div class="shop-title">Эспрессо</div>
                 <div class="shop-desc">Мгновенный заряд бодрости.<br><b>+300 Energy</b></div>
-                <button id="btn-buy-coffee" class="btn-price" onclick="buyDrinkDynamic('coffee')">5.00 PLN</button>
+                <button id="btn-buy-coffee" class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
             </div>
             <div class="shop-item item-energy" style="grid-column: span 2;">
                 <div style="display:flex; align-items:center; width:100%; gap:15px;">
@@ -315,7 +314,7 @@
                             <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
                         </div>
                     </div>
-                    <button id="btn-buy-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrinkDynamic('energy')">12.00</button>
+                    <button id="btn-buy-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
                 </div>
             </div>
         </div>
@@ -444,22 +443,18 @@
 
     <div class="section-header-adm">🛒 Магазин и Услуги (PLN)</div>
     <div class="input-grid">
-        <div class="input-group"><label>Вода (1.5л)</label><input type="number" id="adm-water" class="input-dark" value="2.19"></div>
-        <div class="input-group"><label>Кофе (Energy)</label><input type="number" id="adm-coffee" class="input-dark" value="12"></div>
-        <div class="input-group"><label>Энергетик (Buff)</label><input type="number" id="adm-energy" class="input-dark" value="22"></div>
+        <div class="input-group"><label>Вода (1.5л)</label><input type="number" id="adm-water" class="input-dark" value="1.50"></div>
+        <div class="input-group"><label>Кофе (Energy)</label><input type="number" id="adm-coffee" class="input-dark" value="5.00"></div>
+        <div class="input-group"><label>Энергетик (Buff)</label><input type="number" id="adm-energy" class="input-dark" value="12.00"></div>
         <div class="input-group"><label>Экспресс Ремонт</label><input type="number" id="adm-repair" class="input-dark" value="47"></div>
         <div class="input-group"><label>Автопилот</label><input type="number" id="adm-auto" class="input-dark" value="55"></div>
         <div class="input-group"><label>Аренда Bike</label><input type="number" id="adm-bike" class="input-dark" value="78"></div>
+        <div class="input-group"><label>Цена бутылки</label><input type="number" id="adm-bottle" class="input-dark" value="0.05"></div>
     </div>
 
-    <div class="section-header-adm">🏦 Экономика и Налоги</div>
+    <div class="section-header-adm">🏦 Экономика (Визуально)</div>
     <div class="input-grid">
-        <div class="input-group"><label>Налог (%)</label><input type="number" id="adm-tax" class="input-dark" value="29"></div>
-        <div class="input-group"><label>Порог налога</label><input type="number" id="adm-tax-lim" class="input-dark" value="200"></div>
-        <div class="input-group"><label>Инфляция (%)</label><input type="number" id="adm-inf" class="input-dark" value="178"></div>
-        <div class="input-group"><label>Пособие</label><input type="number" id="adm-pens" class="input-dark" value="50"></div>
-        <div class="input-group"><label>Процент Банка</label><input type="number" id="adm-bank" class="input-dark" value="5"></div>
-        <div class="input-group"><label>Цена бутылки</label><input type="number" id="adm-bottle" class="input-dark" value="0.6"></div>
+        <div class="input-group"><label>Налог (%)</label><input type="number" id="adm-tax" class="input-dark" value="27"></div>
     </div>
     
     <div style="height: 150px;"></div>
@@ -478,6 +473,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         loadAdminSettings();
+        // Запуск принудительного обновления цен
+        setInterval(enforceAdminPrices, 1000);
     });
 
     // Секретный вход: ADMIN9422S
@@ -489,7 +486,8 @@
             toggleAdmin(); 
             inp.value = '';
         } else {
-            if(window.usePromo) window.usePromo();
+            // Вызываем стандартную функцию если есть
+            if(typeof usePromo !== 'undefined') usePromo();
             else alert('Неверный промокод');
         }
     }
@@ -506,16 +504,12 @@
             repair: document.getElementById('adm-repair').value,
             auto: document.getElementById('adm-auto').value,
             bike: document.getElementById('adm-bike').value,
-            tax: document.getElementById('adm-tax').value,
-            taxLimit: document.getElementById('adm-tax-lim').value,
-            inflation: document.getElementById('adm-inf').value,
-            pension: document.getElementById('adm-pens').value,
-            bank: document.getElementById('adm-bank').value,
-            bottle: document.getElementById('adm-bottle').value
+            bottle: document.getElementById('adm-bottle').value,
+            tax: document.getElementById('adm-tax').value
         };
         localStorage.setItem('WARSZAWA_ADMIN_SETTINGS', JSON.stringify(settings));
-        updateGameInterface(settings);
-
+        
+        // Визуальное подтверждение
         const saveBtn = document.querySelector('.btn-adm-save');
         const oldText = saveBtn.innerText;
         saveBtn.innerText = "СОХРАНЕНО!";
@@ -524,87 +518,112 @@
             saveBtn.innerText = oldText;
             saveBtn.style.background = "#22c55e";
         }, 1000);
+        
+        // Применяем сразу
+        enforceAdminPrices();
     }
 
     function loadAdminSettings() {
         const raw = localStorage.getItem('WARSZAWA_ADMIN_SETTINGS');
         if(raw) {
             const s = JSON.parse(raw);
-            document.getElementById('adm-water').value = s.water || 2.19;
-            document.getElementById('adm-coffee').value = s.coffee || 12;
-            document.getElementById('adm-energy').value = s.energy || 22;
-            document.getElementById('adm-repair').value = s.repair || 47;
-            document.getElementById('adm-auto').value = s.auto || 55;
-            document.getElementById('adm-bike').value = s.bike || 78;
-            document.getElementById('adm-tax').value = s.tax || 29;
-            document.getElementById('adm-tax-lim').value = s.taxLimit || 200;
-            document.getElementById('adm-inf').value = s.inflation || 178;
-            document.getElementById('adm-pens').value = s.pension || 50;
-            document.getElementById('adm-bank').value = s.bank || 5;
-            document.getElementById('adm-bottle').value = s.bottle || 0.6;
-            
-            updateGameInterface(s);
+            if(s.water) document.getElementById('adm-water').value = s.water;
+            if(s.coffee) document.getElementById('adm-coffee').value = s.coffee;
+            if(s.energy) document.getElementById('adm-energy').value = s.energy;
+            if(s.repair) document.getElementById('adm-repair').value = s.repair;
+            if(s.auto) document.getElementById('adm-auto').value = s.auto;
+            if(s.bike) document.getElementById('adm-bike').value = s.bike;
+            if(s.bottle) document.getElementById('adm-bottle').value = s.bottle;
+            if(s.tax) document.getElementById('adm-tax').value = s.tax;
         }
     }
 
-    function updateGameInterface(s) {
-        if(document.getElementById('btn-buy-water')) document.getElementById('btn-buy-water').innerText = parseFloat(s.water).toFixed(2) + " PLN";
-        if(document.getElementById('btn-buy-coffee')) document.getElementById('btn-buy-coffee').innerText = parseFloat(s.coffee).toFixed(2) + " PLN";
-        if(document.getElementById('btn-buy-energy')) document.getElementById('btn-buy-energy').innerText = parseFloat(s.energy).toFixed(2) + " PLN";
-        if(document.getElementById('btn-bottles-action')) document.getElementById('btn-bottles-action').innerText = `♻️ СБОР БУТЫЛОК (+${parseFloat(s.bottle).toFixed(2)})`;
+    // ГЛАВНАЯ ФУНКЦИЯ: Принудительно меняет текст на кнопках в соответствии с админкой
+    function enforceAdminPrices() {
+        const s = {
+            water: parseFloat(document.getElementById('adm-water').value) || 1.50,
+            coffee: parseFloat(document.getElementById('adm-coffee').value) || 5.00,
+            energy: parseFloat(document.getElementById('adm-energy').value) || 12.00,
+            bottle: parseFloat(document.getElementById('adm-bottle').value) || 0.05,
+            bike: parseFloat(document.getElementById('adm-bike').value) || 0, // У байка в дизайне нет цены на кнопке, он в аренде
+            auto: parseFloat(document.getElementById('adm-auto').value) || 0
+        };
+
+        // Обновляем текст на кнопках (Описание)
+        if(document.getElementById('btn-buy-water')) 
+            document.getElementById('btn-buy-water').innerText = s.water.toFixed(2) + " PLN";
+            
+        if(document.getElementById('btn-buy-coffee')) 
+            document.getElementById('btn-buy-coffee').innerText = s.coffee.toFixed(2) + " PLN";
+            
+        if(document.getElementById('btn-buy-energy')) 
+            document.getElementById('btn-buy-energy').innerText = s.energy.toFixed(2); // В дизайне просто число
+            
+        if(document.getElementById('btn-bottles-action')) 
+            document.getElementById('btn-bottles-action').innerText = `♻️ СБОР БУТЫЛОК (+${s.bottle.toFixed(2)})`;
+            
+        // Если есть элемент цены автопилота
+        if(document.getElementById('price-auto'))
+            document.getElementById('price-auto').innerText = s.auto > 0 ? `(${s.auto} PLN)` : "";
     }
 
-    // --- ПЕРЕХВАТ ЛОГИКИ ПОКУПОК ---
-    function buyWaterDynamic() {
-        const price = parseFloat(document.getElementById('adm-water').value);
-        if(typeof money !== 'undefined') {
-            if(money >= price) {
+    // --- ПЕРЕОПРЕДЕЛЕНИЕ ФУНКЦИЙ (ЧТОБЫ ЦЕНА РЕАЛЬНО СПИСЫВАЛАСЬ) ---
+    // Мы ждем, пока загрузится logic.js, и подменяем функции
+    
+    window.onload = function() {
+        // Сохраняем оригиналы, если нужно, но проще переписать логику списания
+        
+        // ВОДА
+        const oldBuyWater = window.buyWater;
+        window.buyWater = function() {
+            const price = parseFloat(document.getElementById('adm-water').value) || 1.50;
+            // Проверяем деньги (предполагаем переменную money из logic.js)
+            if(typeof money !== 'undefined' && money >= price) {
                 money -= price;
                 if(typeof water !== 'undefined') water += 1500;
-                if(typeof updateUI === 'function') updateUI();
-                if(typeof saveGame === 'function') saveGame();
-            } else { alert("Недостаточно средств!"); }
+                // Обновляем UI оригинальной функцией updateUI, если есть
+                if(typeof updateUI !== 'undefined') updateUI();
+                else document.getElementById('money-val').innerText = money.toFixed(2) + " PLN";
+            } else {
+                alert("Недостаточно средств!");
+            }
         }
-    }
 
-    function buyDrinkDynamic(type) {
-        let price = 0;
-        if(type === 'coffee') price = parseFloat(document.getElementById('adm-coffee').value);
-        if(type === 'energy') price = parseFloat(document.getElementById('adm-energy').value);
-        
-        if(typeof money !== 'undefined' && money >= price) {
-             money -= price;
-             if(type === 'coffee' && typeof energy !== 'undefined') energy += 300;
-             if(type === 'energy' && typeof activateBuff === 'function') activateBuff();
-             if(typeof updateUI === 'function') updateUI();
-             if(typeof saveGame === 'function') saveGame();
-        } else { alert("Недостаточно средств!"); }
-    }
-    
-    function rentBikeDynamic() {
-         const price = parseFloat(document.getElementById('adm-bike').value);
-         if(typeof money !== 'undefined' && money >= price) {
-             money -= price;
-             if(typeof rentBike === 'function') {
-                 // Тут хитрость: вызываем оригинал, но восстанавливаем деньги, т.к. мы их уже списали?
-                 // Лучше просто продублировать логику:
-                 bikeTimer = 1800; 
-                 if(typeof updateUI === 'function') updateUI();
-                 if(typeof saveGame === 'function') saveGame();
-             }
-         } else { alert("Недостаточно средств!"); }
-    }
-    
-    function repairBikeInstantDynamic() {
-        const price = parseFloat(document.getElementById('adm-repair').value);
-        if(typeof money !== 'undefined' && money >= price) {
-            money -= price;
-            if(typeof repairBikeInstant === 'function') repairBikeInstant(true); // true = skip money check inside logic if possible, or just accept double charge risk? 
-            // Better: manipulate logic.js variable directly if possible. Assuming standard logic:
-            if(typeof durability !== 'undefined') durability = 100;
-            if(typeof updateUI === 'function') updateUI();
+        // НАПИТКИ (Кофе, Энергетик)
+        const oldBuyDrink = window.buyDrink;
+        window.buyDrink = function(type, originalPrice) {
+            let price = originalPrice;
+            if(type === 'coffee') price = parseFloat(document.getElementById('adm-coffee').value) || 5.00;
+            if(type === 'energy') price = parseFloat(document.getElementById('adm-energy').value) || 12.00;
+            
+            if(typeof money !== 'undefined' && money >= price) {
+                money -= price;
+                if(type === 'coffee' && typeof energy !== 'undefined') energy += 300;
+                // Для энергетика сложнее логика (бафф), попробуем вызвать оригинал с хаком или просто включить флаг
+                if(type === 'energy') {
+                    // Пытаемся вызвать внутреннюю логику баффа
+                    if(typeof activateBuff === 'function') activateBuff();
+                }
+                if(typeof updateUI !== 'undefined') updateUI();
+            } else {
+                alert("Недостаточно средств!");
+            }
         }
-    }
+
+        // СБОР БУТЫЛОК
+        const oldCollectBottles = window.collectBottles;
+        window.collectBottles = function() {
+            const price = parseFloat(document.getElementById('adm-bottle').value) || 0.05;
+            // Энергия
+            if(typeof energy !== 'undefined' && energy >= 2) {
+                 energy -= 2;
+                 if(typeof money !== 'undefined') money += price;
+                 if(typeof updateUI !== 'undefined') updateUI();
+            } else {
+                alert("Мало энергии");
+            }
+        }
+    };
 </script>
 
 </body>
