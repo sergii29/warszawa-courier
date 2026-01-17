@@ -1,8 +1,7 @@
 // --- logic.js ---
-// VERSION: 10.1 (MANAGEMENT & BANKING)
-// - Ручные продажи и найм сотрудников (Автопилот).
-// - Лимит 3 бесплатных вывода в сутки, далее 15%.
-// - Защита сохранений (Auto-Fix) для предотвращения сбоев.
+// VERSION: 10.2 (STABLE RESCUE)
+// Исправлены вылеты интерфейса. Добавлена защита (try-catch) для всех UI элементов.
+// Ключ WARSZAWA_FOREVER. Весь функционал бизнеса сохранен.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -19,14 +18,12 @@ const DEFAULT_SETTINGS = {
         bolt_start: 2.00, bolt_min: 2.50,
         bag: 350, phone: 1200, scooter: 500, helmet: 250, raincoat: 180, powerbank: 400, abibas: 50, jorban: 250
     },
-    // Цены товаров: buy = закупка, sell = продажа
     business_goods: {
         vending_buy: 8.0, vending_sell: 12.0, 
         vege_buy: 15.0, vege_sell: 25.0,      
         kebab_buy: 40.0, kebab_sell: 75.0,    
         zabka_buy: 100.0, zabka_sell: 180.0   
     },
-    // Зарплата сотрудника (базовая)
     business_costs: {
         employee_base: 150 
     },
@@ -36,7 +33,7 @@ const DEFAULT_SETTINGS = {
         lvl_exchange_rate: 10, lvl_exchange_rate_big: 300, 
         tax_timer_sec: 300, rent_timer_sec: 300,
         bank_rate: 0.05, bottle_price: 0.05, click_base: 0.10,
-        transfer_fee: 0.15 // 15% комиссия после лимита
+        transfer_fee: 0.15
     },
     jobs: { base_pay: 3.80, km_pay: 2.20, tips_chance: 0.40, tips_max: 15 },
     gameplay: {
@@ -53,38 +50,30 @@ const BUSINESS_META = [
     { 
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
         basePrice: 5000, minLvl: 5.0, taxRate: 0.18, 
-        stockConsume: 1, // Скорость авто-продаж (1 шт/сек)
-        maxStock: 500, maxCash: 2000, 
+        stockConsume: 1, maxStock: 500, maxCash: 2000, 
         priceKeys: { buy: 'vending_buy', sell: 'vending_sell' },
-        hireCostMult: 1, // Множитель зарплаты (1x)
-        desc: "Автомат. Купи сникерсы оптом, продай в розницу."
+        hireCostMult: 1, desc: "Автомат. Купи сникерсы оптом, продай в розницу."
     },
     { 
         id: 'vege', name: 'Warzywniak', icon: '🥦', 
         basePrice: 20000, minLvl: 10.0, taxRate: 0.23, 
-        stockConsume: 2, 
-        maxStock: 1500, maxCash: 8000, 
+        stockConsume: 2, maxStock: 1500, maxCash: 8000, 
         priceKeys: { buy: 'vege_buy', sell: 'vege_sell' },
-        hireCostMult: 2, // Зарплата 2x
-        desc: "Овощи гниют быстро, но наценка хорошая."
+        hireCostMult: 2, desc: "Овощи гниют быстро, но наценка хорошая."
     },
     { 
         id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', 
         basePrice: 75000, minLvl: 20.0, taxRate: 0.30, 
-        stockConsume: 4, 
-        maxStock: 4000, maxCash: 25000, 
+        stockConsume: 4, maxStock: 4000, maxCash: 25000, 
         priceKeys: { buy: 'kebab_buy', sell: 'kebab_sell' },
-        hireCostMult: 5, // Зарплата 5x
-        desc: "Мясо, лаваш, соус. Клиенты идут потоком."
+        hireCostMult: 5, desc: "Мясо, лаваш, соус. Клиенты идут потоком."
     },
     { 
         id: 'zabka', name: 'Żabka Franchise', icon: '🐸', 
         basePrice: 300000, minLvl: 30.0, taxRate: 0.40, 
-        stockConsume: 8, 
-        maxStock: 20000, maxCash: 150000, 
+        stockConsume: 8, maxStock: 20000, maxCash: 150000, 
         priceKeys: { buy: 'zabka_buy', sell: 'zabka_sell' },
-        hireCostMult: 10, // Зарплата 10x
-        desc: "Высокие обороты. Главное успевать завозить товар."
+        hireCostMult: 10, desc: "Высокие обороты. Главное успевать завозить товар."
     }
 ];
 
@@ -97,7 +86,6 @@ const RANKS = [
     { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
 ];
 
-// ГЛОБАЛЬНОЕ СОСТОЯНИЕ
 let G = { 
     money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 300, 
     waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, totalEarned: 0, 
@@ -109,10 +97,9 @@ let G = {
     bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
     deposit: null, bankHistory: [], dailyQuests: [], lastDailyUpdate: 0,
     activeMilestones: [],
-    // Бизнес данные
     business: {}, 
-    dailyBizWithdrawals: 0, // Счетчик выводов за сегодня
-    lastBizWithdrawalDay: null, // День последнего вывода
+    dailyBizWithdrawals: 0,
+    lastBizWithdrawalDay: null,
     lastActive: Date.now()
 };
 
@@ -121,7 +108,7 @@ let curView = 'main', weather = "Ясно", isBroken = false;
 let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bonusActive = false;
 let isSearching = false; let spamCounter = 0;
 let gameLoaded = false;
-let activeBizModalId = null; // ID открытого окна управления
+let activeBizModalId = null; 
 
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairPriceKey: null, hidden: true },
@@ -141,15 +128,17 @@ const DISTRICTS = [
 ];
 
 function getDynamicPrice(baseValue) {
-    if (baseValue === 0) return 0;
-    let price = 0;
-    if (typeof baseValue === 'string') {
-        if (SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
-        else if (SETTINGS.business_goods && SETTINGS.business_goods[baseValue] !== undefined) price = SETTINGS.business_goods[baseValue];
-        else price = 0;
-    } else { price = baseValue; }
-    let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * SETTINGS.economy.inflation_rate;
-    return parseFloat((price * multiplier).toFixed(2));
+    try {
+        if (baseValue === 0) return 0;
+        let price = 0;
+        if (typeof baseValue === 'string') {
+            if (SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
+            else if (SETTINGS.business_goods && SETTINGS.business_goods[baseValue] !== undefined) price = SETTINGS.business_goods[baseValue];
+            else price = 0;
+        } else { price = baseValue; }
+        let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * SETTINGS.economy.inflation_rate;
+        return parseFloat((price * multiplier).toFixed(2));
+    } catch(e) { return 0; }
 }
 
 function getBusinessPrice(basePrice) {
@@ -158,10 +147,12 @@ function getBusinessPrice(basePrice) {
 }
 
 function addHistory(msg, val, type = 'plus') {
-    const time = new Date().toLocaleTimeString().split(' ')[0];
-    if (!G.history) G.history = [];
-    G.history.unshift({ time, msg, val, type });
-    if (G.history.length > 20) G.history.pop();
+    try {
+        const time = new Date().toLocaleTimeString().split(' ')[0];
+        if (!G.history) G.history = [];
+        G.history.unshift({ time, msg, val, type });
+        if (G.history.length > 20) G.history.pop();
+    } catch(e) {}
 }
 
 async function usePromo() {
@@ -356,16 +347,14 @@ function load() {
             G = {...G, ...loaded}; 
         } 
         
-        // AUTO-FIX: Инициализация полей, которых может не быть в старом сохранении
+        // AUTO-FIX SAVE STRUCTURE
         if(!G.business) G.business = {};
         if(!G.housing) G.housing = { id: -1 };
         if(isNaN(G.money)) G.money = 10;
         
-        // Гарантируем поля бизнеса
         BUSINESS_META.forEach(biz => {
             if(!G.business[biz.id]) G.business[biz.id] = null; 
             else {
-                // Если бизнес есть, проверяем новые поля
                 let b = G.business[biz.id];
                 if(b.stock === undefined) b.stock = 0;
                 if(b.cash === undefined) b.cash = 0;
@@ -373,7 +362,6 @@ function load() {
             }
         });
 
-        // Гарантируем поля банковских лимитов
         if (G.dailyBizWithdrawals === undefined) G.dailyBizWithdrawals = 0;
         if (G.lastBizWithdrawalDay === undefined) G.lastBizWithdrawalDay = null;
 
@@ -398,13 +386,12 @@ function load() {
         updateUI(); 
     } catch(e) {
         console.error("Load error:", e);
-        // Если ошибка - аварийный сброс, чтобы не висело
         localStorage.removeItem(SAVE_KEY);
         location.reload();
     }
 }
 
-// === УПРАВЛЕНИЕ БИЗНЕСОМ (UI И ФУНКЦИИ) ===
+// === УПРАВЛЕНИЕ БИЗНЕСОМ ===
 
 function renderBusiness() {
     const list = document.getElementById('business-list');
@@ -458,7 +445,6 @@ function renderBusiness() {
                 </div>
             </div>`;
         } else {
-            // КАРТОЧКА ВЛАДЕЛЬЦА - ТОЛЬКО КНОПКА ОТКРЫТИЯ МОДАЛКИ
             html += `
             <div class="biz-card" style="border:1px solid var(--success);">
                 <div class="biz-header">
@@ -481,87 +467,102 @@ function renderBusiness() {
     
     if (list.innerHTML !== html) list.innerHTML = html;
 
+    // SAFE UI UPDATE
     const bizTotalCash = document.getElementById('biz-total-cash');
     const bizTotalValue = document.getElementById('biz-total-value');
     if(bizTotalCash) bizTotalCash.innerText = totalCash.toFixed(2) + " PLN";
     if(bizTotalValue) bizTotalValue.innerText = totalValue.toFixed(0) + " PLN";
 }
 
-// === НОВЫЕ ФУНКЦИИ МОДАЛКИ И ПРОДАЖ ===
+// === ФУНКЦИИ МОДАЛКИ И ПРОДАЖ ===
 
 function openBusinessModal(id) {
-    activeBizModalId = id;
-    let biz = BUSINESS_META.find(b => b.id === id);
-    
-    document.getElementById('bm-title').innerText = biz.name;
-    document.getElementById('bm-desc').innerText = biz.desc;
-    document.getElementById('business-modal').style.display = 'flex';
-    
-    // Расчет цены найма
-    let baseHire = SETTINGS.business_costs?.employee_base || 100;
-    let hirePrice = (baseHire * (biz.hireCostMult || 1)).toFixed(0);
-    document.getElementById('hire-price').innerText = hirePrice + " PLN";
+    try {
+        activeBizModalId = id;
+        let biz = BUSINESS_META.find(b => b.id === id);
+        
+        const titleEl = document.getElementById('bm-title');
+        const descEl = document.getElementById('bm-desc');
+        const modalEl = document.getElementById('business-modal');
+        const priceEl = document.getElementById('hire-price');
 
-    updateBusinessModal();
+        if(titleEl) titleEl.innerText = biz.name;
+        if(descEl) descEl.innerText = biz.desc;
+        if(modalEl) modalEl.style.display = 'flex';
+        
+        let baseHire = SETTINGS.business_costs?.employee_base || 100;
+        let hirePrice = (baseHire * (biz.hireCostMult || 1)).toFixed(0);
+        if(priceEl) priceEl.innerText = hirePrice + " PLN";
+
+        updateBusinessModal();
+    } catch(e) { console.error("Modal Error", e); }
 }
 
 function closeBusinessModal() {
-    document.getElementById('business-modal').style.display = 'none';
+    const modalEl = document.getElementById('business-modal');
+    if(modalEl) modalEl.style.display = 'none';
     activeBizModalId = null;
 }
 
 function updateBusinessModal() {
     if (!activeBizModalId) return;
-    let id = activeBizModalId;
-    let userBiz = G.business[id];
-    let biz = BUSINESS_META.find(b => b.id === id);
+    try {
+        let id = activeBizModalId;
+        let userBiz = G.business[id];
+        let biz = BUSINESS_META.find(b => b.id === id);
 
-    // Обновляем цифры
-    document.getElementById('bm-stock').innerText = userBiz.stock.toFixed(0) + " / " + biz.maxStock;
-    document.getElementById('bm-cash').innerText = userBiz.cash.toFixed(2) + " PLN";
+        const stockEl = document.getElementById('bm-stock');
+        const cashEl = document.getElementById('bm-cash');
+        const timerEl = document.getElementById('emp-timer-ui');
+        const hireBtn = document.getElementById('btn-hire-emp');
+        const limitEl = document.getElementById('bm-withdraw-limit');
+        const feeEl = document.getElementById('bm-fee-warn');
 
-    // Логика кнопки найма / таймера
-    let timerUI = document.getElementById('emp-timer-ui');
-    let hireBtn = document.getElementById('btn-hire-emp');
-    
-    if (userBiz.employeeTime > 0) {
-        hireBtn.disabled = true;
-        hireBtn.style.opacity = "0.5";
-        hireBtn.style.background = "#334155";
-        
-        timerUI.style.display = "block";
-        let m = Math.floor(userBiz.employeeTime / 60);
-        let s = userBiz.employeeTime % 60;
-        timerUI.innerText = `ПРОДАВЕЦ РАБОТАЕТ: ${m}:${s<10?'0':''}${s}`;
-    } else {
-        hireBtn.disabled = false;
-        hireBtn.style.opacity = "1";
-        hireBtn.style.background = "var(--purple)";
-        timerUI.style.display = "none";
-    }
+        if(stockEl) stockEl.innerText = userBiz.stock.toFixed(0) + " / " + biz.maxStock;
+        if(cashEl) cashEl.innerText = userBiz.cash.toFixed(2) + " PLN";
 
-    // Логика лимитов вывода
-    let limitUI = document.getElementById('bm-withdraw-limit');
-    let feeUI = document.getElementById('bm-fee-warn');
-    
-    if (G.dailyBizWithdrawals < 3) {
-        limitUI.innerText = `Лимит: ${3 - G.dailyBizWithdrawals}/3 FREE`;
-        limitUI.style.color = "var(--success)";
-        feeUI.innerText = "0% (Бесплатно)";
-        feeUI.style.color = "var(--success)";
-    } else {
-        limitUI.innerText = "Лимит исчерпан";
-        limitUI.style.color = "var(--danger)";
-        feeUI.innerText = `${(SETTINGS.economy.transfer_fee*100).toFixed(0)}% (Комиссия)`;
-        feeUI.style.color = "var(--danger)";
-    }
+        if (userBiz.employeeTime > 0) {
+            if(hireBtn) {
+                hireBtn.disabled = true;
+                hireBtn.style.opacity = "0.5";
+                hireBtn.style.background = "#334155";
+            }
+            if(timerEl) {
+                timerEl.style.display = "block";
+                let m = Math.floor(userBiz.employeeTime / 60);
+                let s = userBiz.employeeTime % 60;
+                timerEl.innerText = `ПРОДАВЕЦ РАБОТАЕТ: ${m}:${s<10?'0':''}${s}`;
+            }
+        } else {
+            if(hireBtn) {
+                hireBtn.disabled = false;
+                hireBtn.style.opacity = "1";
+                hireBtn.style.background = "var(--purple)";
+            }
+            if(timerEl) timerEl.style.display = "none";
+        }
+
+        if (limitEl && feeEl) {
+            if (G.dailyBizWithdrawals < 3) {
+                limitEl.innerText = `Лимит: ${3 - G.dailyBizWithdrawals}/3 FREE`;
+                limitEl.style.color = "var(--success)";
+                feeEl.innerText = "0% (Бесплатно)";
+                feeEl.style.color = "var(--success)";
+            } else {
+                limitEl.innerText = "Лимит исчерпан";
+                limitEl.style.color = "var(--danger)";
+                feeEl.innerText = `${(SETTINGS.economy.transfer_fee*100).toFixed(0)}% (Комиссия)`;
+                feeEl.style.color = "var(--danger)";
+            }
+        }
+    } catch(e) { console.error("Update Modal Error", e); }
 }
 
 function manualSell() {
     if (!activeBizModalId) return;
     let success = performSale(activeBizModalId, 1); 
     if(success) tg.HapticFeedback.impactOccurred('light');
-    else tg.HapticFeedback.notificationOccurred('error'); // Если нет товара
+    else tg.HapticFeedback.notificationOccurred('error'); 
 }
 
 function hireEmployee() {
@@ -574,7 +575,7 @@ function hireEmployee() {
 
     if (G.money >= cost) {
         G.money = parseFloat((G.money - cost).toFixed(2));
-        G.business[id].employeeTime = 600; // 10 минут
+        G.business[id].employeeTime = 600; 
         addHistory('🤝 СОТРУДНИК', cost, 'minus');
         tg.HapticFeedback.notificationOccurred('success');
         save(); updateUI(); updateBusinessModal();
@@ -595,8 +596,8 @@ function withdrawFromModal() {
     updateBusinessModal();
 }
 
-// Универсальная функция продажи (для клика и авто)
 function performSale(id, amount) {
+    if(!G.business[id]) return false;
     let userBiz = G.business[id];
     let biz = BUSINESS_META.find(b => b.id === id);
 
@@ -609,14 +610,11 @@ function performSale(id, amount) {
         userBiz.stock -= amount;
         userBiz.cash = Math.min(biz.maxCash, userBiz.cash + netProfit);
         
-        // Если окно открыто - обновляем цифры сразу
         if(activeBizModalId === id) updateBusinessModal();
         return true;
     } 
     return false;
 }
-
-// === СТАНДАРТНЫЕ ФУНКЦИИ (ПОКУПКА БИЗНЕСА И Т.Д.) ===
 
 function buyBusiness(id) {
     if (G.housing.id === -1) { log("⛔ Сначала купите квартиру!", "var(--danger)"); return; }
@@ -628,7 +626,7 @@ function buyBusiness(id) {
 
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
-        G.business[id] = { stock: 50, cash: 0, employeeTime: 0 }; // Старт с 50 ед товара
+        G.business[id] = { stock: 50, cash: 0, employeeTime: 0 }; 
         addHistory('🏗️ БИЗНЕС', price, 'minus');
         tg.HapticFeedback.notificationOccurred('success');
         save(); updateUI();
@@ -662,7 +660,6 @@ function collectBusiness(id) {
     let userBiz = G.business[id];
     if (!userBiz || userBiz.cash <= 0.1) { log("Сейф пуст!", "#aaa"); return; }
     
-    // BANKING LOGIC
     let today = new Date().toDateString();
     if (G.lastBizWithdrawalDay !== today) {
         G.dailyBizWithdrawals = 0;
@@ -683,12 +680,12 @@ function collectBusiness(id) {
     G.dailyBizWithdrawals++; 
 
     if (fee > 0) {
-        addHistory('🏦 КОМИССИЯ', fee, 'minus'); // Лог комиссии
+        addHistory('🏦 КОМИССИЯ', fee, 'minus');
         addHistory('💰 ПРИБЫЛЬ', amount, 'plus');
-        log(`Вывод: +${amount.toFixed(2)} (Комиссия -${fee.toFixed(2)})`, "var(--accent-gold)");
+        log(`Вывод: +${amount.toFixed(2)} PLN (Комиссия: ${fee.toFixed(2)})`, "var(--accent-gold)");
     } else {
         addHistory('💰 ПРИБЫЛЬ', amount, 'plus');
-        log(`Вывод: +${amount.toFixed(2)} (Бесплатно)`, "var(--success)");
+        log(`Вывод: +${amount.toFixed(2)} PLN (Бесплатно ${G.dailyBizWithdrawals}/3)`, "var(--success)");
     }
 
     tg.HapticFeedback.notificationOccurred('success');
@@ -724,7 +721,6 @@ function updateUI() {
             if(G.autoTime > 0) autoStatus.innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
         }
         
-        // ... (Остальной UI код: транспорт, энергия, шмот и т.д. без изменений) ...
         const bikeStatus = document.getElementById('bike-status-ui');
         if(bikeStatus) {
             let rentShow = false; let text = "";
@@ -735,13 +731,285 @@ function updateUI() {
             bikeStatus.innerText = text;
         }
 
-        // Рендер бизнеса (кнопки в списке)
+        const buffUI = document.getElementById('buff-status-ui'); 
+        if(buffUI) {
+            buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
+            if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
+        }
+        
+        const hiddenPrice = isBlind ? "???" : null;
+        const setBtnText = (id, priceStr) => {
+            const btn = document.getElementById(id);
+            if(btn) btn.innerText = (hiddenPrice || priceStr) + " PLN";
+        };
+
+        setBtnText('btn-buy-water', getDynamicPrice('water').toFixed(2));
+        setBtnText('btn-buy-coffee', getDynamicPrice('coffee').toFixed(2));
+        setBtnText('btn-buy-energy', getDynamicPrice('energy').toFixed(2));
+        setBtnText('btn-buy-abibas', getDynamicPrice('abibas').toFixed(2));
+        setBtnText('btn-buy-jorban', getDynamicPrice('jorban').toFixed(2));
+        
+        const energyItemDesc = document.querySelector('.item-energy .shop-desc span');
+        if (energyItemDesc) energyItemDesc.innerText = "Пауза расхода энергии. (Вода продолжает тратиться!)";
+
+        const btnVeturilo = document.getElementById('btn-veturilo');
+        if(btnVeturilo) {
+            let rate = getDynamicPrice('veturilo_min');
+            if(G.transportMode === 'veturilo') {
+                btnVeturilo.innerText = "СТОП (АКТИВНО)";
+                btnVeturilo.style.background = "#faa";
+            } else {
+                if (!SETTINGS.toggles.service_veturilo) {
+                    btnVeturilo.innerText = "НЕДОСТУПНО"; btnVeturilo.disabled = true; btnVeturilo.style.opacity = "0.5";
+                } else {
+                    btnVeturilo.disabled = false; btnVeturilo.style.opacity = "1";
+                    btnVeturilo.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
+                    btnVeturilo.style.background = "#ddd";
+                }
+            }
+        }
+
+        const btnBolt = document.getElementById('btn-bolt');
+        if(btnBolt) {
+            let rate = getDynamicPrice('bolt_min');
+            if(G.transportMode === 'bolt') {
+                btnBolt.innerText = "СТОП (АКТИВНО)";
+                btnBolt.style.background = "#faa";
+            } else {
+                if (!SETTINGS.toggles.service_bolt) {
+                    btnBolt.innerText = "НЕДОСТУПНО"; btnBolt.disabled = true; btnBolt.style.opacity = "0.5";
+                } else {
+                    btnBolt.disabled = false; btnBolt.style.opacity = "1";
+                    btnBolt.innerText = (hiddenPrice || rate.toFixed(2)) + " PLN / мин";
+                    btnBolt.style.background = "var(--success)";
+                }
+            }
+        }
+
+        const rentBikeBtn = document.getElementById('buy-bike-rent');
+        if(rentBikeBtn) {
+            if(G.bikeRentTime > 0) {
+                rentBikeBtn.innerText = "ОТМЕНИТЬ (" + Math.floor(G.bikeRentTime/60) + "м)";
+                rentBikeBtn.style.background = "#ef4444"; 
+                rentBikeBtn.onclick = cancelBikeRent;
+            } else {
+                rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice('bike_rent').toFixed(2)) + " PLN)";
+                rentBikeBtn.style.background = ""; 
+                rentBikeBtn.onclick = rentBike;
+            }
+        }
+
+        const autoPriceLabel = document.getElementById('price-auto');
+        if(autoPriceLabel) autoPriceLabel.innerText = "(" + (hiddenPrice || getDynamicPrice('auto_route').toFixed(2)) + " PLN)";
+
+        const repairBtn = document.getElementById('btn-repair-express');
+        if(repairBtn) repairBtn.innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice('repair_express').toFixed(2)) + " PLN)";
+
+        let shoeNameDisplay = G.shoes.name;
+        let shoeBar = document.getElementById('shoe-bar');
+        if(shoeBar) {
+            if (G.shoes.dur <= 0) {
+                shoeNameDisplay = "<span style='color:var(--danger); font-size:9px; font-weight:800; animation: pulse 1s infinite;'>⚠️ КУПИ НОВЫЕ В МАГАЗИНЕ!</span>";
+                shoeBar.style.width = "100%"; shoeBar.style.background = "var(--danger)"; shoeBar.style.opacity = "0.3"; 
+            } else {
+                const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
+                shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
+                shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
+                shoeBar.style.opacity = "1";
+            }
+            document.getElementById('shoe-name').innerHTML = shoeNameDisplay;
+        }
+
+        let currentRank = RANKS[0]; let nextRank = null;
+        if (G.totalOrders < RANKS[0].max) { currentRank = RANKS[0]; nextRank = RANKS[1]; }
+        else if (G.totalOrders < RANKS[1].max) { currentRank = RANKS[1]; nextRank = RANKS[2]; }
+        else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
+        else { currentRank = RANKS[3]; nextRank = null; }
+
+        const rIcon = document.getElementById('rank-icon');
+        if(rIcon) {
+            rIcon.innerText = currentRank.icon;
+            document.getElementById('rank-name').innerText = currentRank.name;
+            document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
+            if (nextRank) {
+                let prevMax = (currentRank.name === "Бывалый") ? RANKS[0].max : (currentRank.name === "Профи") ? RANKS[1].max : 0;
+                let progress = ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100;
+                document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, progress)) + "%";
+                document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders) + " заказов";
+            } else {
+                document.getElementById('rank-progress').style.width = "100%";
+                document.getElementById('rank-next').innerText = "Вы достигли вершины!";
+            }
+        }
+
+        let questsHTML = "";
+        if(G.dailyQuests) {
+            G.dailyQuests.forEach(q => {
+                let btn = "";
+                let progressPct = (q.current / q.target) * 100;
+                if (q.claimed) { btn = "<span style='color:var(--success)'>✅</span>"; } 
+                else if (q.current >= q.target) { btn = "<button class='btn-action' style='width:auto; padding:4px 8px; font-size:10px; background:var(--gold); color:black;' onclick='claimDaily(" + q.id + ")'>ЗАБРАТЬ " + q.reward + "</button>"; } 
+                else { btn = "<small>" + parseFloat(q.current).toFixed(0) + "/" + q.target + "</small>"; }
+                questsHTML += "<div class='daily-quest-item'><div class='daily-quest-info'><b>" + q.text + "</b><br><div style='width:100%; height:4px; background:#333; margin-top:4px; border-radius:2px;'><div style='height:100%; background:var(--accent-blue); width:" + Math.min(100, progressPct) + "%'></div></div></div><div style='margin-left:10px;'>" + btn + "</div></div>";
+            });
+        }
+        const qList = document.getElementById('daily-quests-list');
+        if(qList) qList.innerHTML = questsHTML;
+
+        document.getElementById('stat-orders').innerText = G.totalOrders || 0;
+        document.getElementById('stat-clicks').innerText = G.totalClicks || 0;
+        document.getElementById('stat-bottles').innerText = G.totalBottles || 0;
+        document.getElementById('stat-earned').innerText = (G.totalEarned || 0).toFixed(2) + " PLN";
+        
+        let timeLeft = (G.lastDailyUpdate + 86400000) - Date.now();
+        if(timeLeft < 0) timeLeft = 0;
+        let hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        document.getElementById('daily-timer').innerText = "Обновление: " + hours + "ч " + mins + "м";
+
+        if (isBroken) {
+            sphere.classList.add('broken');
+            document.getElementById('sphere-text').innerText = "ЧИНИТЬ";
+            document.getElementById('repair-express-btn').style.display = 'block';
+            document.getElementById('click-rate-ui').innerText = repairProgress + " / 50";
+            document.getElementById('repair-progress').style.height = (repairProgress * 2) + "%";
+        } else {
+            sphere.classList.remove('broken');
+            document.getElementById('sphere-text').innerText = "РАБОТАТЬ";
+            document.getElementById('repair-express-btn').style.display = 'none';
+            document.getElementById('repair-progress').style.height = "0%";
+            
+            let rankBonus = 0;
+            if (G.totalOrders >= 50) rankBonus = 0.05;
+            if (G.totalOrders >= 150) rankBonus = 0.10;
+            if (G.totalOrders >= 400) rankBonus = 0.20;
+
+            let baseClick = SETTINGS.economy.click_base !== undefined ? SETTINGS.economy.click_base : 0.10;
+            let rate = (baseClick * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
+            
+            if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
+            if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
+
+            if (isBlind) document.getElementById('click-rate-ui').innerText = "?.?? PLN";
+            else document.getElementById('click-rate-ui').innerText = rate + (rate !== "ВЫХОДНОЙ" ? " PLN" : "");
+        }
+
+        const myItemsList = document.getElementById('my-items-list');
+        if (myItemsList) {
+            let invHTML = "";
+            let shoeStatusText = Math.floor(G.shoes.dur) + "%";
+            let isShoesBroken = G.shoes.dur <= 0;
+            invHTML += `<div class="shop-item item-shoes ${isShoesBroken ? 'item-broken' : ''}" ${isShoesBroken ? 'onclick="switchTab(\'shop\', document.querySelectorAll(\'.tab-item\')[2])"' : ''}><div class="shop-icon">👟</div><div style="flex:1;"><div class="shop-title">${G.shoes.name}</div><div class="shop-desc" style="margin-bottom:5px;">${isShoesBroken ? '<b style="color:var(--danger)">СЛОМАНО!</b>' : 'Бонус: ' + (G.shoes.bonus*100) + '%'}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${G.shoes.dur}%; background:${isShoesBroken ? 'var(--danger)' : 'var(--success)'}"></div></div></div></div>`;
+
+            UPGRADES_META.forEach(up => {
+                if(G[up.id]) {
+                    const item = G[up.id];
+                    const isBroken = item.dur <= 0;
+                    let conf = UPGRADES_META.find(u => u.id === up.id);
+                    let max = conf ? conf.maxDur : 100;
+                    const pct = Math.floor((item.dur / max) * 100);
+                    let repairPriceVal = (typeof up.repairPriceKey === 'string') ? getDynamicPrice(up.repairPriceKey) : getDynamicPrice(up.repairPriceKey || 10);
+                    invHTML += `<div class="shop-item ${isBroken ? 'item-broken' : ''}"><div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc" style="color:${isBroken ? 'var(--danger)' : 'var(--text-secondary)'}">${isBroken ? 'ТРЕБУЕТ РЕМОНТА' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${pct}%; background:${isBroken ? 'var(--danger)' : 'var(--accent-blue)'}"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairPriceVal}, true)">🛠️ ${hiddenPrice || repairPriceVal.toFixed(2)}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}')">💸 ПРОДАТЬ</button></div></div>`;
+                }
+            });
+            if (myItemsList.innerHTML !== invHTML) myItemsList.innerHTML = invHTML;
+        }
+
+        const shopList = document.getElementById('shop-upgrades-list'); 
+        if(shopList) {
+            let shopHTML = "";
+            if (SETTINGS.toggles.enable_shop) {
+                UPGRADES_META.forEach(up => { 
+                    if(!G[up.id] && !up.hidden && up.priceKey) { 
+                        let curPrice = getDynamicPrice(up.priceKey);
+                        shopHTML += `<div class="card" style="margin-bottom: 8px;"><b>${up.icon} ${up.name}</b><br><small style="color:#aaa;">${up.desc}</small><br><button class="btn-action" style="margin-top:8px;" onclick="buyInvest('${up.id}', '${up.priceKey}')">КУПИТЬ (${hiddenPrice || curPrice} PLN)</button></div>`; 
+                    }
+                });
+            } else { shopHTML = "<div style='text-align:center; padding:20px; color:#666;'>Магазин закрыт на учет</div>"; }
+            if (shopList.innerHTML !== shopHTML) shopList.innerHTML = shopHTML;
+        }
+        
+        const distContainer = document.getElementById('districts-list-container');
+        if (distContainer) {
+            let distHTML = "";
+            DISTRICTS.forEach((d, i) => {
+                let isCurrent = G.district === i;
+                let isOwner = G.housing && G.housing.id === i;
+                let moveBtn = isCurrent ? `<button class="btn-action btn-secondary" style="margin-top:8px; opacity:0.7;">ВЫ ЗДЕСЬ</button>` : `<button class="btn-action" style="margin-top:8px;" onclick="moveDistrict(${i})">ПЕРЕЕХАТЬ ${d.price > 0 ? '('+d.price+' PLN)' : ''}</button>`;
+                let houseBtn = isOwner ? `<button class="btn-action" style="margin-top:5px; background:var(--gold); color:black; font-weight:800;">🏠 ВЫ ВЛАДЕЛЕЦ</button>` : `<button class="btn-action" style="margin-top:5px; background:rgba(251, 191, 36, 0.1); color:var(--accent-gold); border:1px solid var(--accent-gold);" onclick="buyHouse(${i})">КУПИТЬ ЖИЛЬЕ (${(d.housePrice/1000).toFixed(0)}k PLN)</button>`;
+                distHTML += `<div class="card" style="border: ${isOwner ? '1px solid var(--gold)' : 'none'};"><div style="display:flex; justify-content:space-between;"><b>${d.name} ${i>0 ? `<span style="color:var(--accent-gold); font-size:10px;">(LVL ${d.minLvl}+)</span>` : ''}</b>${isOwner ? '⭐' : ''}</div><small style="color:var(--text-secondary);">${isOwner ? `<span style="color:var(--success)">Квартплата (Czynsz): ${getDynamicPrice(d.czynszBase)} PLN</span>` : `Аренда: ${(d.rentPct*100).toFixed(0)}% от баланса`}<br>Доход: x${d.mult}</small>${moveBtn}${houseBtn}</div>`;
+            });
+            if(distContainer.innerHTML !== distHTML) distContainer.innerHTML = distHTML;
+        }
+        
+        const qBar = document.getElementById('quest-bar'); 
+        if (order.visible && curView === 'main') { 
+            qBar.style.display = 'block'; 
+            if (order.active) { 
+                document.getElementById('quest-actions-choice').style.display = 'none'; 
+                document.getElementById('quest-active-ui').style.display = 'block'; 
+                document.getElementById('quest-timer-ui').innerText = Math.floor(order.time/60) + ":" + ((order.time%60<10?'0':'')+order.time%60); 
+                document.getElementById('quest-progress-bar').style.width = (order.steps / order.target * 100) + "%"; 
+            } else { 
+                document.getElementById('quest-actions-choice').style.display = 'flex'; 
+                document.getElementById('quest-active-ui').style.display = 'none'; 
+                document.getElementById('quest-timer-ui').innerText = "0:" + ((order.offerTimer<10?'0':'')+order.offerTimer); 
+                if(isBlind) document.getElementById('quest-pay').innerText = "?.??";
+                else document.getElementById('quest-pay').innerText = order.reward.toFixed(2);
+            } 
+        } else { qBar.style.display = 'none'; }
+        
+        document.getElementById('history-ui').innerHTML = G.history.map(h => "<div class='history-item'><span>" + h.time + " " + h.msg + "</span><b style='color:" + (h.type==='plus'?'var(--success)':'var(--danger)') + "'>" + (h.type==='plus'?'+':'-') + (isBlind ? '?' : h.val) + "</b></div>").join('');
+        
+        renderBank(); renderBankFull(); renderMilestones();
+        
+        // Рендер бизнеса
         if (curView === 'business') renderBusiness();
 
+        const taxTimer = document.getElementById('tax-timer');
+        const rentTimer = document.getElementById('rent-timer');
+        let currentTaxRate = (SETTINGS.economy.tax_rate * 100).toFixed(0);
+        
+        if(taxTimer) {
+            let taxText = G.money > SETTINGS.economy.tax_threshold ? currentTaxRate + "%" : "FREE";
+            taxTimer.innerText = "Налог (" + taxText + ") через: " + Math.floor(G.tax/60) + ":" + ((G.tax%60<10?'0':'')+G.tax%60);
+        }
+        
+        if(rentTimer) {
+            let isOwner = G.housing && G.housing.id === G.district;
+            if (isOwner) {
+                let czynszCost = getDynamicPrice(DISTRICTS[G.district].czynszBase);
+                rentTimer.innerText = "Квартплата (" + czynszCost.toFixed(0) + " PLN): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
+                rentTimer.style.color = "var(--success)";
+            } else {
+                let rentP = (DISTRICTS[G.district].rentPct * 100).toFixed(0);
+                rentTimer.innerText = "Аренда (" + rentP + "%): " + Math.floor(G.rent/60) + ":" + ((G.rent%60<10?'0':'')+G.rent%60);
+                rentTimer.style.color = "var(--danger)";
+            }
+        }
+        
+        const btnLvlSmall = document.getElementById('btn-lvl-small');
+        if (btnLvlSmall) btnLvlSmall.innerText = `ОБМЕН -0.05 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate} PLN`;
+        
+        const btnLvlBig = document.getElementById('btn-lvl-big');
+        if (btnLvlBig) btnLvlBig.innerText = `ОБМЕН -1.00 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate_big} PLN`;
+        
+        const planRate1 = document.getElementById('plan-rate-1');
+        if (planRate1) planRate1.innerText = "+" + (SETTINGS.economy.bank_rate * 100).toFixed(0) + "%";
+        
+        const planRate2 = document.getElementById('plan-rate-2');
+        if (planRate2) planRate2.innerText = "+" + (SETTINGS.economy.bank_rate * 3 * 100).toFixed(0) + "%";
+        
+        const planRate3 = document.getElementById('plan-rate-3');
+        if (planRate3) planRate3.innerText = "+" + (SETTINGS.economy.bank_rate * 8 * 100).toFixed(0) + "%";
+        
+        const btnBottles = document.querySelector("button[onclick='collectBottles()']");
+        if (btnBottles && !isSearching) {
+            btnBottles.innerText = `♻️ СБОР БУТЫЛОК (+${SETTINGS.economy.bottle_price.toFixed(2)})`;
+        }
     } catch (e) { console.error(e); }
 }
 
-// === ИГРОВОЙ ЦИКЛ ===
 setInterval(() => {
     if (!gameLoaded) return;
 
@@ -762,8 +1030,8 @@ setInterval(() => {
             if (cost > 0) {
                 G.money = parseFloat((G.money - cost).toFixed(2)); 
                 addHistory('🏛️ НАЛОГ', cost, 'minus'); 
-                log("Списан налог " + (SETTINGS.economy.tax_rate*100).toFixed(0) + "%: -" + cost + " PLN"); 
-            }
+                log("Списан налог " + (SETTINGS.economy.tax_rate*100).toFixed(0) + "% с сверхдоходов: -" + cost + " PLN"); 
+            } else { log("Доход ниже минимума. Налог: 0 PLN", "var(--success)"); }
             G.tax = SETTINGS.economy.tax_timer_sec; save(); 
         }
         
@@ -779,7 +1047,7 @@ setInterval(() => {
                 cost = parseFloat((G.money * pct).toFixed(2));
             }
             G.money = parseFloat((G.money - cost).toFixed(2)); 
-            addHistory('🏠 ЖИЛЬЕ', cost, 'minus'); 
+            addHistory(isOwner ? '🏠 CZYNSZ' : '🏠 АРЕНДА', cost, 'minus'); 
             G.rent = SETTINGS.economy.rent_timer_sec; save(); 
         }
     }
@@ -805,11 +1073,19 @@ setInterval(() => {
     if (G.autoTime > 0) { 
         G.autoTime--;
         if (order.active && !isBroken) {
-             // ... логика автопилота курьера (без изменений) ...
-             if (G.en > 5) { 
-                consumeResources(true); 
-                order.steps += 3;
-                if (order.steps >= order.target) finishOrder(true);
+            for(let i=0; i<10; i++) {
+                if(!order.active || isBroken) break;
+                if (G.waterStock > 0 && G.en < 600) { 
+                    let eff = 1 + (Math.max(0.1, G.lvl) * 0.1); 
+                    G.en = Math.min(G.maxEn, G.en + (15 * eff)); G.waterStock -= 15; 
+                }
+                if (G.en > 5) { 
+                    consumeResources(true); 
+                    if (G.shoes.dur > 0) { G.shoes.dur -= 0.01; if(G.shoes.dur < 0) G.shoes.dur = 0; }
+                    order.steps += (G.bikeRentTime > 0 ? 3 : 2); 
+                    if (G.transportMode === 'bolt') order.steps += 1;
+                    if (order.steps >= order.target) { finishOrder(true); break; } 
+                }
             }
         }
     }
