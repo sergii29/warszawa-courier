@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.1">
+    <link rel="stylesheet" href="style.css?v=5.2">
 </head>
 <body>
 
@@ -314,6 +314,17 @@
         <div id="my-items-list" class="shop-grid" style="margin-bottom:15px;"></div>
     </div>
 
+    <div id="view-business" class="view">
+        <h3 style="margin:0; margin-bottom: 10px;">💼 Мой Бизнес</h3>
+        <div class="card" style="text-align:center; padding: 40px 20px;">
+            <div style="font-size: 50px; margin-bottom: 10px;">🏗️</div>
+            <b style="color:var(--accent-gold);">СКОРО ОТКРЫТИЕ</b>
+            <p style="color:var(--text-secondary); font-size:12px;">
+                Здесь вы сможете открывать ларьки, нанимать персонал и стать королём Варшавы.
+            </p>
+        </div>
+    </div>
+
     <div id="view-bank" class="view">
         <h3 style="margin:0; margin-bottom: 15px;">🏦 Варшавский Банк</h3>
         
@@ -390,6 +401,9 @@
     <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
     <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
     <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
+    
+    <div class="tab-item" onclick="switchTab('business', this)">Бизнес</div>
+    
     <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
     <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
 </div>
