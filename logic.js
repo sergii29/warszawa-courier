@@ -1,7 +1,7 @@
 // --- logic.js ---
-// VERSION: 12.0 (STRATEGY & TAX EDITION)
+// VERSION: 13.0 (CLEAN UI & TAX WARNING)
 // Ключ сохранения WARSZAWA_FOREVER.
-// Разные механики для каждого бизнеса + Налог 19%.
+// Убрана лишняя панель "Империя". Добавлено предупреждение о налогах.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -152,25 +152,26 @@ function log(msg, color = "#eee") {
     console.log(`%c ${msg}`, `color: ${color}`);
 }
 
-// --- БИЗНЕС ЛОГИКА (РАЗНЫЕ СТРАТЕГИИ) ---
+// --- БИЗНЕС ЛОГИКА ---
 
 function renderBusiness() {
+    // 1. СКРЫВАЕМ СТАРУЮ ПАНЕЛЬ "ИМПЕРИЯ" (Если она есть в HTML)
+    const oldDash = document.getElementById('biz-total-cash');
+    if(oldDash) {
+        let card = oldDash.closest('.card');
+        if(card) card.style.display = 'none';
+    }
+
     const list = document.getElementById('business-list');
     if(!list) return;
 
-    // Скрываем старые панели
-    const bizTotalPanel = document.getElementById('biz-total-value');
-    if(bizTotalPanel) {
-        let totalVal = 0;
-        BUSINESS_META.forEach(b => { if(G.business[b.id]) totalVal += getBusinessPrice(b.basePrice); });
-        bizTotalPanel.innerText = totalVal.toLocaleString() + " PLN";
-    }
-    const bizCashPanel = document.getElementById('biz-total-cash');
-    if(bizCashPanel) {
-        bizCashPanel.parentElement.innerHTML = `<small style="color:#aaa;">Ваш капитал:</small><br><b style="font-size:16px; color:var(--success);">${G.money.toFixed(2)} PLN</b>`;
-    }
+    // 2. ДОБАВЛЯЕМ ПРЕДУПРЕЖДЕНИЕ О НАЛОГАХ
+    let html = `
+    <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-bottom:15px; border-left: 3px solid var(--danger); font-size:11px; color:#aaa; line-height:1.4;">
+        🏛️ <b>МУНИЦИПАЛЬНЫЙ ЗАКОН:</b><br>
+        Прибыль от ведения бизнеса облагается налогом <b>${(SETTINGS.economy.business_tax*100).toFixed(0)}%</b>. Налог списывается автоматически при получении выручки.
+    </div>`;
 
-    let html = "";
     let hasHouse = G.housing && G.housing.id !== -1;
 
     BUSINESS_META.forEach(biz => {
@@ -211,21 +212,17 @@ function renderBusiness() {
             let lastRes = userBiz.lastResult || { msg: "Бизнес ждет указаний...", color: "#aaa" };
             let controls = "";
 
-            // ГЕНЕРАЦИЯ УПРАВЛЕНИЯ В ЗАВИСИМОСТИ ОТ ТИПА БИЗНЕСА
             if (biz.type === 'maintenance') {
-                // ВЕНДИНГ
                 controls = `
                     <button class="btn-action" style="background:var(--accent-blue);" onclick="runVendingDeal('${biz.id}')">
                         🔧 ОБСЛУЖИТЬ АВТОМАТ (-${dealCost.toFixed(0)} PLN)
                     </button>`;
             } else if (biz.type === 'lottery') {
-                // ОВОЩНОЙ
                 controls = `
                     <button class="btn-action" style="background:var(--success); color:black;" onclick="runVegeGamble('${biz.id}')">
                         🎲 КУПИТЬ ПАРТИЮ И ПРОВЕРИТЬ (-${dealCost.toFixed(0)})
                     </button>`;
             } else if (biz.type === 'strategy') {
-                // КЕБАБ
                 controls = `
                     <div style="display:flex; gap:5px;">
                         <button class="btn-action" style="flex:1; font-size:10px; background:#475569;" onclick="runKebabStrategy('${biz.id}', 'safe')">ЛЕГАЛЬНО<br>Safe</button>
@@ -233,7 +230,6 @@ function renderBusiness() {
                         <button class="btn-action" style="flex:1; font-size:10px; background:var(--danger);" onclick="runKebabStrategy('${biz.id}', 'risky')">ОПАСНО<br>Illegal</button>
                     </div>`;
             } else if (biz.type === 'high_stakes') {
-                // ЖАБКА
                 controls = `
                     <button class="btn-action" style="background:linear-gradient(45deg, #16a34a, #15803d);" onclick="runZabkaContract('${biz.id}')">
                         📝 ПОДПИСАТЬ ПЛАН ПРОДАЖ (-${dealCost.toFixed(0)} PLN)
@@ -352,17 +348,14 @@ function runKebabStrategy(id, mode) {
     let r = Math.random();
 
     if (mode === 'safe') {
-        // Низкий риск, низкая маржа
         profit = cost * 1.3; msg = "🛡️ Легальное мясо. Спокойный доход."; color: "#fff";
     } else if (mode === 'normal') {
-        // Средний риск
         if (r < 0.2) {
             profit = cost * 0.5; msg = "📉 Мясо жесткое. Клиенты недовольны."; color: "#aaa";
         } else {
             profit = cost * 2.5; msg = "🥙 Вкусный кебаб. Хорошая касса."; color: "var(--success)";
         }
     } else if (mode === 'risky') {
-        // Высокий риск, огромная маржа
         if (r < 0.5) { // 50% шанс проверки
             profit = 0; msg = "🚓 SANEPID! Нашли голубя. Конфискация!"; color: "var(--danger)";
         } else {
