@@ -1,14 +1,13 @@
 // --- logic.js ---
-// VERSION: 9.7 (FIXED & RESTORED)
-// Ключ сохранения WARSZAWA_FOREVER (старый прогресс возвращен).
-// Вся старая механика (Сфера, Вода, Бутылки) на месте.
-// Добавлен Бизнес с Хардкорными ценами и защитой от сбоев.
+// VERSION: 9.9 (BANKING UPDATE)
+// Добавлен лимит на 3 бесплатных снятия кассы в день.
+// С 4-го снятия берется банковская комиссия 15%.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
 
-// ВОЗВРАЩАЕМ СТАРЫЙ КЛЮЧ
+// КЛЮЧ ТОТ ЖЕ - ПРОГРЕСС СОХРАНЯЕТСЯ
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
 // === НАСТРОЙКИ ===
@@ -32,7 +31,8 @@ const DEFAULT_SETTINGS = {
         welfare_amount: 30, welfare_cooldown: 600,
         lvl_exchange_rate: 10, lvl_exchange_rate_big: 300, 
         tax_timer_sec: 300, rent_timer_sec: 300,
-        bank_rate: 0.05, bottle_price: 0.05, click_base: 0.10
+        bank_rate: 0.05, bottle_price: 0.05, click_base: 0.10,
+        transfer_fee: 0.15 // Комиссия за частые переводы (15%)
     },
     jobs: { base_pay: 3.80, km_pay: 2.20, tips_chance: 0.40, tips_max: 15 },
     gameplay: {
@@ -44,11 +44,11 @@ const DEFAULT_SETTINGS = {
     toggles: { enable_bank: true, enable_shop: true, enable_auto: true, enable_work: true, service_veturilo: true, service_bolt: true }
 };
 
-// === БИЗНЕС МЕТАДАННЫЕ (ХАРДКОР ЦЕНЫ) ===
+// === БИЗНЕС МЕТАДАННЫЕ ===
 const BUSINESS_META = [
     { 
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
-        basePrice: 5000, // Высокая цена
+        basePrice: 5000, 
         minLvl: 5.0, 
         taxRate: 0.18, 
         stockConsume: 1, 
@@ -101,7 +101,6 @@ const RANKS = [
     { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
 ];
 
-// Основной объект игры
 let G = { 
     money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 300, 
     waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, totalEarned: 0, 
@@ -118,6 +117,10 @@ let G = {
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
     ],
     business: {}, 
+    // НОВЫЕ ПОЛЯ ДЛЯ БАНКОВСКИХ ЛИМИТОВ
+    dailyBizWithdrawals: 0,
+    lastBizWithdrawalDay: null,
+    
     lastActive: Date.now()
 };
 
@@ -353,7 +356,6 @@ function load() {
     if(!G.business) G.business = {};
 
     // ЗАЩИТА: Если есть старый прогресс, но нет полей бизнеса - инициализируем их
-    // Это предотвращает ошибку и сброс игры
     if(G.business) {
         for(let key in G.business) {
             if(G.business[key]) {
@@ -362,6 +364,10 @@ function load() {
             }
         }
     }
+    
+    // Инициализация полей для лимита снятий
+    if (G.dailyBizWithdrawals === undefined) G.dailyBizWithdrawals = 0;
+    if (G.lastBizWithdrawalDay === undefined) G.lastBizWithdrawalDay = null;
 
     if(isNaN(G.money)) G.money = 10;
     if(isNaN(G.lvl)) G.lvl = 1.0;
@@ -389,7 +395,7 @@ function load() {
     updateUI(); 
 }
 
-// === ЛОГИКА БИЗНЕСА (SAFE & HARDCORE) ===
+// === ЛОГИКА БИЗНЕСА (SAFE & HARDCORE & BANKING) ===
 
 function renderBusiness() {
     const list = document.getElementById('business-list');
@@ -397,6 +403,9 @@ function renderBusiness() {
 
     let html = "";
     let hasHouse = G.housing && G.housing.id !== -1;
+    
+    let totalCash = 0;
+    let totalValue = 0;
 
     BUSINESS_META.forEach(biz => {
         if (!G.business[biz.id]) G.business[biz.id] = null; 
@@ -440,9 +449,11 @@ function renderBusiness() {
                 </div>
             </div>`;
         } else {
-            // FIX: Если данные были повреждены или старые
             if(userBiz.stock === undefined) userBiz.stock = 0;
             if(userBiz.cash === undefined) userBiz.cash = 0;
+
+            totalCash += userBiz.cash;
+            totalValue += currentPrice;
 
             let stockPct = (userBiz.stock / biz.maxStock) * 100;
             let cashPct = (userBiz.cash / biz.maxCash) * 100;
@@ -491,6 +502,11 @@ function renderBusiness() {
     });
     
     if (list.innerHTML !== html) list.innerHTML = html;
+
+    const bizTotalCash = document.getElementById('biz-total-cash');
+    const bizTotalValue = document.getElementById('biz-total-value');
+    if(bizTotalCash) bizTotalCash.innerText = totalCash.toFixed(2) + " PLN";
+    if(bizTotalValue) bizTotalValue.innerText = totalValue.toFixed(0) + " PLN";
 }
 
 function buyBusiness(id) {
@@ -504,7 +520,7 @@ function buyBusiness(id) {
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
         G.business[id] = {
-            stock: 100, // Бонусные 100 товаров при покупке
+            stock: 100, 
             cash: 0,
             lastUpdate: Date.now()
         };
@@ -549,12 +565,37 @@ function collectBusiness(id) {
         return;
     }
     
-    let amount = parseFloat(userBiz.cash.toFixed(2));
-    G.money = parseFloat((G.money + amount).toFixed(2));
-    G.totalEarned += amount;
-    userBiz.cash = 0;
+    // --- BANKING LOGIC ---
+    let today = new Date().toDateString();
     
-    addHistory('💰 ПРИБЫЛЬ', amount, 'plus');
+    // Сброс счетчика, если новый день
+    if (G.lastBizWithdrawalDay !== today) {
+        G.dailyBizWithdrawals = 0;
+        G.lastBizWithdrawalDay = today;
+    }
+
+    let amount = parseFloat(userBiz.cash.toFixed(2));
+    let fee = 0;
+    
+    // Лимит 3 бесплатных, дальше комиссия
+    if (G.dailyBizWithdrawals >= 3) {
+        let feeRate = SETTINGS.economy.transfer_fee || 0.15; // 15%
+        fee = amount * feeRate;
+        amount = amount - fee;
+    }
+
+    G.money = parseFloat((G.money + amount).toFixed(2));
+    userBiz.cash = 0; // Опустошаем сейф
+    G.dailyBizWithdrawals++; // Увеличиваем счетчик
+
+    if (fee > 0) {
+        addHistory('🏦 ПЕРЕВОД', amount, 'plus');
+        log(`💰 Вывод: +${amount.toFixed(2)} PLN (Комиссия: ${fee.toFixed(2)})`, "var(--accent-gold)");
+    } else {
+        addHistory('💰 ПРИБЫЛЬ', amount, 'plus');
+        log(`💰 Вывод: +${amount.toFixed(2)} PLN (Бесплатно ${G.dailyBizWithdrawals}/3)`, "var(--success)");
+    }
+
     tg.HapticFeedback.notificationOccurred('success');
     save(); updateUI();
 }
@@ -1574,9 +1615,6 @@ setInterval(() => {
     if (G.buffTime > 0) G.buffTime--;
     if (G.blindTime > 0) G.blindTime--; 
     
-    // БИЗНЕС ЛОГИКА (ВЫЗОВ)
-    processBusinessLogic();
-
     generateDailyQuests(); 
 
     if (G.autoTime > 0) { 
@@ -1615,3 +1653,4 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
+}
