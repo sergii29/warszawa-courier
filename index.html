@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.2">
+    <link rel="stylesheet" href="style.css?v=5.3">
 </head>
 <body>
 
@@ -315,14 +315,15 @@
     </div>
 
     <div id="view-business" class="view">
-        <h3 style="margin:0; margin-bottom: 10px;">💼 Мой Бизнес</h3>
-        <div class="card" style="text-align:center; padding: 40px 20px;">
-            <div style="font-size: 50px; margin-bottom: 10px;">🏗️</div>
-            <b style="color:var(--accent-gold);">СКОРО ОТКРЫТИЕ</b>
-            <p style="color:var(--text-secondary); font-size:12px;">
-                Здесь вы сможете открывать ларьки, нанимать персонал и стать королём Варшавы.
-            </p>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">💼 Империя</h3>
+            <div style="font-size:10px; color:var(--text-secondary); text-align:right;">
+                Налог на бизнес: <span style="color:var(--danger)">Включен в цену</span><br>
+                Инфляция: <span style="color:var(--accent-gold)">Активна</span>
+            </div>
         </div>
+        
+        <div id="business-list"></div>
     </div>
 
     <div id="view-bank" class="view">
@@ -411,8 +412,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=8.0" defer></script>
+<script src="logic.js?v=9.0" defer></script>
 
 </body>
 </html>
-
