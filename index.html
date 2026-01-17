@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warszawa Courier Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.3">
+    <link rel="stylesheet" href="style.css?v=5.5">
 </head>
 <body>
 
@@ -77,6 +77,67 @@
             </div>
 
         <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
+    </div>
+</div>
+
+<div id="business-modal" class="modal-overlay" style="z-index: 3600;">
+    <div class="modal-card" style="width: 90%; max-width: 360px; text-align: left; padding: 20px;">
+        <div class="modal-biz-header">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <h2 class="modal-biz-title" id="bm-title">Название</h2>
+                    <span class="modal-biz-desc" id="bm-desc">Описание</span>
+                </div>
+                <button onclick="closeBusinessModal()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
+            </div>
+        </div>
+
+        <div class="biz-dashboard-grid">
+            <div class="biz-dash-item">
+                <span style="font-size:10px; color:#aaa;">📦 Товар на складе</span>
+                <span class="biz-dash-val" style="color:var(--accent-blue);" id="bm-stock">0</span>
+            </div>
+            <div class="biz-dash-item">
+                <span style="font-size:10px; color:#aaa;">💰 В сейфе (Netto)</span>
+                <span class="biz-dash-val" style="color:var(--success);" id="bm-cash">0.00</span>
+            </div>
+        </div>
+
+        <div class="section-title">ПРОДАЖИ</div>
+        <button id="btn-manual-sell" class="btn-sell-manual" onclick="manualSell()">
+            🖐 ПРОДАТЬ 1 ШТ.
+        </button>
+        
+        <div style="margin-top:10px; margin-bottom: 20px;">
+            <button id="btn-hire-emp" class="btn-hire" onclick="hireEmployee()">
+                <span>🤖 НАНЯТЬ ПРОДАВЦА (10 МИН)</span>
+                <span id="hire-price">100 PLN</span>
+            </button>
+            <div id="emp-timer-ui" style="display:none; text-align:center; margin-top:5px; font-size:11px; color:var(--purple); font-weight:bold;">
+                Осталось: 09:59
+            </div>
+        </div>
+
+        <div class="section-title">ФИНАНСЫ & СКЛАД</div>
+        
+        <button class="btn-action btn-secondary" style="margin-bottom:10px;" onclick="restockFromModal()">
+            📦 ЗАКУПИТЬ ТОВАР (10 шт)
+        </button>
+
+        <div class="withdraw-section">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <b style="color:white;">ВЫВОД СРЕДСТВ</b>
+                <span style="font-size:10px; color:var(--accent-gold);" id="bm-withdraw-limit">Лимит: 3/3 FREE</span>
+            </div>
+            <p style="font-size:10px; color:#aaa; margin-top:0; margin-bottom:10px;">
+                Налог на прибыль уже удержан.
+                Комиссия за частые переводы: <span id="bm-fee-warn" style="color:var(--danger)">0%</span>
+            </p>
+            <button class="btn-action" style="background:var(--success); color:black;" onclick="withdrawFromModal()">
+                СНЯТЬ ДЕНЬГИ
+            </button>
+        </div>
+
     </div>
 </div>
 
@@ -315,11 +376,24 @@
     </div>
 
     <div id="view-business" class="view">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <h3 style="margin:0;">💼 Империя</h3>
             <div style="font-size:10px; color:var(--text-secondary); text-align:right;">
-                Налог на бизнес: <span style="color:var(--danger)">Включен в цену</span><br>
+                Налог на бизнес: <span style="color:var(--danger)">Включен</span><br>
                 Инфляция: <span style="color:var(--accent-gold)">Активна</span>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:15px; border:1px solid var(--accent-gold); background: linear-gradient(90deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));">
+            <div style="display:flex; justify-content:space-between;">
+                <div>
+                    <small style="color:#aaa;">Сейфы (Всего):</small><br>
+                    <b style="font-size:16px; color:var(--success);" id="biz-total-cash">0.00 PLN</b>
+                </div>
+                <div style="text-align:right;">
+                    <small style="color:#aaa;">Стоимость Империи:</small><br>
+                    <b style="font-size:16px; color:var(--accent-blue);" id="biz-total-value">0 PLN</b>
+                </div>
             </div>
         </div>
         
@@ -412,7 +486,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
-<script src="logic.js?v=9.0" defer></script>
+<script src="logic.js?v=10.1" defer></script>
 
 </body>
 </html>
+
