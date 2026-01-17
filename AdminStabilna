@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>WARSZAWA GOD MODE v9.0</title>
+    <title>WARSZAWA GOD MODE v10.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -73,14 +73,14 @@
     <div class="app-layout" id="app">
         <div class="header">
             <div>
-                <h2 style="margin:0;">SYSTEM CONTROL <span style="color:var(--gold)">GOD MODE</span></h2>
+                <h2 style="margin:0;">SYSTEM CONTROL <span style="color:var(--gold)">GOD MODE v10.0</span></h2>
                 <div style="font-size:11px; color:#64748b; margin-top:5px;">Firebase Status: <span style="color:var(--success)">Connected</span></div>
             </div>
             <button class="btn-danger" onclick="location.reload()">Выход</button>
         </div>
 
         <div class="tabs">
-            <div class="tab-btn active" onclick="tab('settings')"><i class="fas fa-sliders-h"></i> НАСТРОЙКИ ЭКОНОМИКИ</div>
+            <div class="tab-btn active" onclick="tab('settings')"><i class="fas fa-sliders-h"></i> НАСТРОЙКИ МИРА</div>
             <div class="tab-btn" onclick="tab('users')"><i class="fas fa-users"></i> ИГРОКИ И ЛОГИ</div>
         </div>
 
@@ -88,7 +88,7 @@
             <div class="settings-grid">
                 
                 <div class="card">
-                    <h3>⚡ Расходники</h3>
+                    <h3>⚡ Еда и Энергия</h3>
                     <div class="field-row"><label>Вода (1.5л)</label><input type="number" step="0.1" data-path="prices.water" data-type="float"></div>
                     <div class="field-row"><label>Кофе</label><input type="number" step="0.1" data-path="prices.coffee" data-type="float"></div>
                     <div class="field-row"><label>Энергетик</label><input type="number" step="0.1" data-path="prices.energy" data-type="float"></div>
@@ -96,24 +96,24 @@
                 </div>
 
                 <div class="card" style="border-color: var(--gold);">
-                    <h3>💰 Экономика Глобал</h3>
-                    <div class="field-row"><label>Налог (%) <span class="input-suffix">%</span></label><input type="number" data-path="economy.tax_rate" data-type="percent"></div>
+                    <h3>💰 Экономика (Бабушка / Банк)</h3>
+                    <div class="field-row"><label>Налог на богатство (%) <span class="input-suffix">%</span></label><input type="number" data-path="economy.tax_rate" data-type="percent"></div>
                     <div class="field-row"><label>Порог налога (PLN)</label><input type="number" data-path="economy.tax_threshold" data-type="float"></div>
                     <div class="field-row"><label>Инфляция (%) <span class="input-suffix">%</span></label><input type="number" data-path="economy.inflation_rate" data-type="percent"></div>
-                    <div class="field-row"><label>Банк: Ставка (%) <span class="input-suffix">%</span></label><input type="number" data-path="economy.bank_rate" data-type="percent"></div>
+                    <div class="field-row"><label>Ставка Банка (База %) <span class="input-suffix">%</span></label><input type="number" data-path="economy.bank_rate" data-type="percent"></div>
                     <div class="field-row"><label>Пособие Бабушки (PLN)</label><input type="number" data-path="economy.welfare_amount" data-type="float"></div>
                     <div class="field-row"><label>Цена найденной бутылки</label><input type="number" step="0.01" data-path="economy.bottle_price" data-type="float"></div>
                 </div>
 
                 <div class="card">
-                    <h3>🚲 Транспорт (Аренда)</h3>
-                    <div class="field-row"><label>Автопилот (Полная цена)</label><input type="number" data-path="prices.auto_route" data-type="float"></div>
+                    <h3>🚲 Транспорт (Шеринг)</h3>
+                    <div class="field-row"><label>Автопилот (Услуга)</label><input type="number" data-path="prices.auto_route" data-type="float"></div>
                     <div class="field-row"><label>E-Bike Аренда (10 мин)</label><input type="number" data-path="prices.bike_rent" data-type="float"></div>
-                    <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1);">
-                    <div class="field-row"><label>Veturilo Старт</label><input type="number" data-path="prices.veturilo_start" data-type="float"></div>
-                    <div class="field-row"><label>Veturilo Мин.</label><input type="number" step="0.01" data-path="prices.veturilo_min" data-type="float"></div>
-                    <div class="field-row"><label>Bolt Старт</label><input type="number" data-path="prices.bolt_start" data-type="float"></div>
-                    <div class="field-row"><label>Bolt Мин.</label><input type="number" step="0.01" data-path="prices.bolt_min" data-type="float"></div>
+                    <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+                    <div class="field-row"><label>Veturilo СТАРТ (PLN)</label><input type="number" data-path="prices.veturilo_start" data-type="float"></div>
+                    <div class="field-row"><label>Veturilo МИНУТА (PLN)</label><input type="number" step="0.01" data-path="prices.veturilo_min" data-type="float"></div>
+                    <div class="field-row"><label>Bolt СТАРТ (PLN)</label><input type="number" data-path="prices.bolt_start" data-type="float"></div>
+                    <div class="field-row"><label>Bolt МИНУТА (PLN)</label><input type="number" step="0.01" data-path="prices.bolt_min" data-type="float"></div>
                 </div>
 
                 <div class="card">
@@ -125,22 +125,31 @@
                 </div>
 
                 <div class="card">
-                    <h3>🎒 Цены в Магазине</h3>
+                    <h3>🎒 Экипировка (Цены)</h3>
                     <div class="field-row"><label>Термосумка</label><input type="number" data-path="prices.bag" data-type="float"></div>
                     <div class="field-row"><label>Смартфон</label><input type="number" data-path="prices.phone" data-type="float"></div>
-                    <div class="field-row"><label>Самокат (Покупка)</label><input type="number" data-path="prices.scooter" data-type="float"></div>
+                    <div class="field-row"><label>Самокат (Собственный)</label><input type="number" data-path="prices.scooter" data-type="float"></div>
                     <div class="field-row"><label>Powerbank</label><input type="number" data-path="prices.powerbank" data-type="float"></div>
-                    <div class="field-row"><label>Abibas</label><input type="number" data-path="prices.abibas" data-type="float"></div>
-                    <div class="field-row"><label>Jorban</label><input type="number" data-path="prices.jorban" data-type="float"></div>
+                    <div class="field-row"><label>Abibas (Тапки)</label><input type="number" data-path="prices.abibas" data-type="float"></div>
+                    <div class="field-row"><label>Jorban (Тапки)</label><input type="number" data-path="prices.jorban" data-type="float"></div>
                 </div>
 
                 <div class="card" style="border-color: var(--danger);">
-                    <h3>🎲 Шансы и Штрафы</h3>
+                    <h3>🎲 Шансы и Штрафы (Деньги)</h3>
                     <div class="field-row"><label>Криминал (%) <span class="input-suffix">%</span></label><input type="number" data-path="gameplay.criminal_chance" data-type="percent"></div>
                     <div class="field-row"><label>Полиция (%) <span class="input-suffix">%</span></label><input type="number" data-path="gameplay.police_chance" data-type="percent"></div>
                     <div class="field-row"><label>Авария (Срезка) (%) <span class="input-suffix">%</span></label><input type="number" data-path="gameplay.accident_chance_risky" data-type="percent"></div>
                     <div class="field-row"><label>Найти бутылку (%) <span class="input-suffix">%</span></label><input type="number" data-path="gameplay.bottle_find_chance" data-type="percent"></div>
-                    <div class="field-row"><label>Сумма Штрафа</label><input type="number" data-path="gameplay.fine_amount" data-type="float"></div>
+                    <div class="field-row"><label>Сумма Штрафа (Новичок)</label><input type="number" data-path="gameplay.fine_amount" data-type="float"></div>
+                    <div class="field-row"><label>Сумма Штрафа (Профи)</label><input type="number" data-path="gameplay.fine_amount_pro" data-type="float"></div>
+                </div>
+                
+                <div class="card" style="border-color: var(--danger);">
+                    <h3>👮 Наказания (Рейтинг LVL)</h3>
+                    <div class="field-row"><label>Минус LVL при Аресте</label><input type="number" step="0.05" data-path="gameplay.lvl_fine_police" data-type="float"></div>
+                    <div class="field-row"><label>Минус LVL (Пропуск заказа)</label><input type="number" step="0.01" data-path="gameplay.lvl_fine_missed" data-type="float"></div>
+                    <div class="field-row"><label>Минус LVL (Клик-спам)</label><input type="number" step="0.01" data-path="gameplay.lvl_fine_spam" data-type="float"></div>
+                    <div class="field-row"><label>Лимит кликов (анти-спам)</label><input type="number" step="1" data-path="gameplay.click_spam_limit" data-type="float"></div>
                 </div>
 
                 <div class="card">
@@ -150,7 +159,7 @@
                 </div>
 
                 <div class="card" style="border-color: var(--accent);">
-                    <h3>🔴 Управление</h3>
+                    <h3>🔴 Глобальные Тумблеры</h3>
                     <div class="field-row" style="display:flex; align-items:center; gap:10px;">
                         <input type="checkbox" style="width:20px;" data-path="toggles.enable_work">
                         <label>Разрешить РАБОТУ</label>
