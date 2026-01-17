@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Симулятор Жизни: Варшава</title>
+    <title>Courier Simulator</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -166,7 +166,7 @@
             animation: float 3s infinite ease-in-out;
             transition: transform 0.1s;
             user-select: none;
-            padding: 15px; /* Увеличил область клика для удобства */
+            padding: 15px; 
         }
         .bottle:active { transform: scale(1.2); }
         @keyframes float {
@@ -202,21 +202,20 @@
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.8);
             z-index: 100;
             justify-content: center;
             align-items: center;
-            overflow-y: auto;
         }
         .modal-content {
             background: var(--secondary-bg);
             padding: 20px;
             border-radius: 10px;
-            width: 85%;
-            max-width: 350px;
+            width: 80%;
+            max-width: 300px;
             text-align: center;
             border: 1px solid var(--accent-color);
-            max-height: 90vh;
+            max-height: 80vh;
             overflow-y: auto;
         }
         .modal input {
@@ -228,13 +227,6 @@
             color: white;
             border-radius: 5px;
         }
-        .modal label {
-            display: block;
-            text-align: left;
-            margin-top: 10px;
-            font-size: 0.8rem;
-            color: #aaa;
-        }
         .modal button {
             background: var(--accent-color);
             border: none;
@@ -243,13 +235,14 @@
             color: black;
             font-weight: bold;
             cursor: pointer;
-            margin: 10px 5px 5px 5px;
-            width: 100%;
+            margin: 5px;
         }
-        .admin-group {
-            border-top: 1px solid #444;
-            margin-top: 15px;
-            padding-top: 10px;
+        .modal label {
+            display: block;
+            text-align: left;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #ccc;
         }
 
         /* Career Specifics */
@@ -417,40 +410,36 @@
             <input type="password" id="admin-pass" placeholder="Password (WARSZAWA)">
             
             <div id="admin-controls" style="display:none;">
+                <hr style="border-color: #444; margin: 10px 0;">
+                <h4 style="margin:5px 0;">Настройки</h4>
                 
-                <div class="admin-group">
-                    <h4>Экономика Игры</h4>
-                    
-                    <label>Множитель Зарплат (x):</label>
-                    <input type="number" id="setting-salary" step="0.1" value="1">
-                    
-                    <label>Налог на Жилье (Цена аренды x):</label>
-                    <input type="number" id="setting-rent" step="0.1" value="1">
-                    
-                    <label>Множитель Цен Магазина (x):</label>
-                    <input type="number" id="setting-shop" step="0.1" value="1">
-                    
-                    <label>Цена Бутылки (Мин - Макс):</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" id="setting-bottle-min" step="0.1" value="0.5">
-                        <input type="number" id="setting-bottle-max" step="0.1" value="2.5">
-                    </div>
-                    
-                    <button onclick="saveAdminSettings()" style="background: var(--success-color);">Применить Настройки</button>
+                <label>Множитель Зарплат (x):</label>
+                <input type="number" id="setting-salary" step="0.1" value="1">
+                
+                <label>Множитель Налога/Аренды (x):</label>
+                <input type="number" id="setting-rent" step="0.1" value="1">
+                
+                <label>Множитель Цен Магазина (x):</label>
+                <input type="number" id="setting-shop" step="0.1" value="1">
+                
+                <label>Цена Бутылки (Мин - Макс):</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="setting-bottle-min" step="0.1" value="0.5">
+                    <input type="number" id="setting-bottle-max" step="0.1" value="2.5">
                 </div>
-
-                <div class="admin-group">
-                    <h4>Быстрые Читы</h4>
-                    <button onclick="adminAddMoney()">+1000 PLN</button>
-                    <button onclick="adminAddLevel()">+1 Уровень</button>
-                    <button onclick="adminReset()" style="background: var(--danger-color);">Сброс Прогресса</button>
-                </div>
-
-                <button onclick="closeAdmin()">Закрыть</button>
+                
+                <button onclick="saveAdminSettings()" style="background: var(--success-color);">Применить Все</button>
+                
+                <hr style="border-color: #444; margin: 10px 0;">
+                <h4 style="margin:5px 0;">Читы</h4>
+                <button onclick="adminAddMoney()">+1000 PLN</button>
+                <button onclick="adminAddLevel()">+1 Level</button>
+                <button onclick="adminReset()" style="background: var(--danger-color);">Reset Game</button>
+                <button onclick="closeAdmin()">Close</button>
             </div>
             
-            <button id="admin-login-btn" onclick="checkAdmin()">Войти</button>
-            <button id="admin-close-btn" onclick="closeAdmin()">Отмена</button>
+            <button id="admin-login-btn" onclick="checkAdmin()">Login</button>
+            <button id="admin-close-btn" onclick="closeAdmin()">Cancel</button>
         </div>
     </div>
 
@@ -458,11 +447,17 @@
         // --- GAME STATE ---
         const SAVE_KEY = 'WARSZAWA_FOREVER';
         
-        // Base configurations (before multipliers)
-        const BASE_HOUSING = {
+        // STATIC DATA (Base Values)
+        const BASE_HOUSING_DATA = {
             'street': { name: "Улица", recovery: 1, price: 0 },
             'hostel': { name: "Хостел", recovery: 2, price: 50 }, 
             'apartment': { name: "Квартира", recovery: 4, price: 150 }
+        };
+
+        const TRANSPORT_TYPES = {
+            'feet': { name: "Пешком", speed: 1 },
+            'scooter': { name: "Самокат", speed: 1.5, price: 500 },
+            'car': { name: "Старое авто", speed: 3, price: 5000 }
         };
 
         const BASE_JOBS = [
@@ -505,21 +500,15 @@
             energyDrinkTimer: 0,
             penaltyMode: false,
             penaltyEndTime: 0,
-            // NEW: Global Game Settings controlled by Admin
+            // NEW SETTINGS OBJECT
             settings: {
                 salaryMult: 1,
-                rentMult: 1,      // "Tax" multiplier for housing
+                rentMult: 1,
                 shopPriceMult: 1,
                 bottleMin: 0.5,
                 bottleMax: 2.5
             },
             initialStateSnapshot: null
-        };
-
-        const TRANSPORT_TYPES = {
-            'feet': { name: "Пешком", speed: 1 },
-            'scooter': { name: "Самокат", speed: 1.5, price: 500 },
-            'car': { name: "Старое авто", speed: 3, price: 5000 }
         };
 
         let activeTab = 'home';
@@ -531,10 +520,11 @@
         function init() {
             loadGame();
             renderJobs();
-            setupShopStructure();
+            setupShopStructure(); // Anti-flicker init
             updateUI();
             
             gameLoop = setInterval(gameTick, 2000); 
+            
             setInterval(saveGame, 10000);
         }
 
@@ -546,16 +536,9 @@
             const saved = localStorage.getItem(SAVE_KEY);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // Deep merge to ensure new settings exist if loading old save
-                state = { 
-                    ...state, 
-                    ...parsed, 
-                    settings: { ...state.settings, ...(parsed.settings || {}) }
-                };
-                
-                if(state.penaltyMode) {
-                    activatePenaltyMode(true);
-                }
+                // Merge to keep new settings if missing in old save
+                state = { ...state, ...parsed, settings: { ...state.settings, ...(parsed.settings || {}) } };
+                if(state.penaltyMode) activatePenaltyMode(true);
             } else {
                 state.initialStateSnapshot = JSON.parse(JSON.stringify(state));
             }
@@ -566,18 +549,10 @@
             location.reload();
         }
 
-        // --- HELPER: GET DYNAMIC PRICES ---
-        function getJobSalary(baseSalary) {
-            return Math.floor(baseSalary * state.settings.salaryMult);
-        }
-
-        function getHousingPrice(basePrice) {
-            return Math.floor(basePrice * state.settings.rentMult);
-        }
-
-        function getShopPrice(basePrice) {
-            return Math.floor(basePrice * state.settings.shopPriceMult);
-        }
+        // --- DYNAMIC CALCULATIONS ---
+        function getSalary(base) { return Math.floor(base * state.settings.salaryMult); }
+        function getRent(base) { return Math.floor(base * state.settings.rentMult); }
+        function getPrice(base) { return Math.floor(base * state.settings.shopPriceMult); }
 
         // --- CORE MECHANICS ---
         function gameTick() {
@@ -608,31 +583,28 @@
         }
 
         function dailyReset() {
-            const housing = BASE_HOUSING[state.housing];
-            if (housing && housing.price > 0) {
-                const rentCost = getHousingPrice(housing.price);
-                if (state.money >= rentCost) {
-                    state.money -= rentCost;
-                    notify(`Оплата жилья (Налог): -${rentCost} PLN`);
+            const hData = BASE_HOUSING_DATA[state.housing];
+            if (hData && hData.price > 0) {
+                const cost = getRent(hData.price);
+                if (state.money >= cost) {
+                    state.money -= cost;
+                    notify(`Оплата жилья (Налог): -${cost} PLN`);
                 } else {
                     state.housing = 'street';
-                    notify("Нечем платить за жилье! Вы на улице.");
+                    notify("Выселили из жилья (нет денег)!");
                 }
             }
         }
 
         function changeStat(stat, val) {
-            if (stat === 'energy' && val < 0 && state.energyDrinkActive) {
-                return; // Block energy drain
-            }
+            if (stat === 'energy' && val < 0 && state.energyDrinkActive) return;
             state.stats[stat] = Math.max(0, Math.min(100, state.stats[stat] + val));
         }
 
         function addMoney(amount) {
             if (state.penaltyMode) {
                 const roll = Math.random();
-                if (roll > 0.5) amount = amount * 2;
-                else amount = amount * 0.5;
+                amount = (roll > 0.5) ? amount * 2 : amount * 0.5;
                 state.money += amount;
             } else {
                 state.money += amount;
@@ -648,7 +620,7 @@
                 state.xp = 0;
                 state.xpToNext *= 1.5;
                 notify(`Новый уровень: ${state.level}!`);
-                renderJobs();
+                renderJobs(); 
             }
         }
 
@@ -665,7 +637,7 @@
         }
 
         function spawnBottlesLoop() {
-            spawnBottle();
+            spawnBottle(); 
             bottleInterval = setInterval(() => {
                 if (Math.random() > 0.3) spawnBottle();
             }, 800);
@@ -679,7 +651,7 @@
             bottle.style.left = Math.random() * 80 + 10 + '%';
             bottle.style.top = Math.random() * 80 + 10 + '%';
             
-            // MouseDown/TouchStart for instant reaction (No Lag)
+            // Fix: Mousedown for no delay
             const collect = (e) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -691,9 +663,7 @@
                 // Dynamic Bottle Price
                 const min = state.settings.bottleMin;
                 const max = state.settings.bottleMax;
-                const profit = Math.random() * (max - min) + min;
-                
-                addMoney(profit);
+                addMoney(Math.random() * (max - min) + min);
             };
 
             bottle.onmousedown = collect;
@@ -718,7 +688,7 @@
         }
 
         function sleep() {
-            let recovery = BASE_HOUSING[state.housing].recovery;
+            let recovery = BASE_HOUSING_DATA[state.housing].recovery;
             changeStat('energy', 20 * recovery);
             changeStat('hunger', -10);
             state.time.hour += 2;
@@ -732,8 +702,8 @@
             container.innerHTML = '';
             BASE_JOBS.forEach(job => {
                 const locked = state.level < job.reqLvl;
-                const currentSalary = getJobSalary(job.salary); // Dynamic Salary
-                
+                const currentSalary = getSalary(job.salary);
+
                 const div = document.createElement('div');
                 div.className = `card ${locked ? 'disabled' : ''}`;
                 div.innerHTML = `
@@ -759,13 +729,11 @@
             changeStat('energy', -job.energyCost);
             changeStat('thirst', -job.waterCost);
             state.time.minute += 30;
-            
-            // Pay with multiplier
-            addMoney(getJobSalary(job.salary));
+            addMoney(getSalary(job.salary));
             updateUI();
         }
 
-        // --- SHOP SYSTEM ---
+        // --- SHOP SYSTEM (Fixed structure) ---
         function setupShopStructure() {
             const container = document.getElementById('shop-container');
             container.innerHTML = '';
@@ -775,7 +743,6 @@
                 el.className = 'shop-item';
                 el.id = `shop-item-${item.id}`;
                 
-                // Price placeholder, updated by updateShopUI
                 el.innerHTML = `
                     <div class="shop-item-info">
                         <span class="shop-item-name">${item.name}</span>
@@ -791,7 +758,7 @@
 
         function updateShopUI() {
             BASE_SHOP_ITEMS.forEach(item => {
-                const currentPrice = getShopPrice(item.price);
+                const currentPrice = getPrice(item.price);
                 const btn = document.getElementById(`btn-shop-${item.id}`);
                 const row = document.getElementById(`shop-item-${item.id}`);
                 
@@ -813,10 +780,10 @@
 
         function buyItem(id) {
             const item = BASE_SHOP_ITEMS.find(i => i.id === id);
-            const currentPrice = getShopPrice(item.price);
-
-            if (state.money >= currentPrice) {
-                state.money -= currentPrice;
+            const price = getPrice(item.price);
+            
+            if (state.money >= price) {
+                state.money -= price;
                 
                 if (item.type === 'consumable') {
                     if (item.effect) {
@@ -824,7 +791,7 @@
                     }
                     if (item.special === 'stop_energy_drain') {
                         state.energyDrinkActive = true;
-                        state.energyDrinkTimer = 60; 
+                        state.energyDrinkTimer = 60;
                         notify("Энергетик! Энергия не тратится.");
                     }
                 } else if (item.type === 'transport') {
@@ -851,7 +818,7 @@
             if (navIndex >= 0) document.querySelectorAll('.nav-btn')[navIndex].classList.add('active');
 
             if (tab === 'shop') updateShopUI();
-            if (tab === 'career') renderJobs(); // Refresh salaries in case they changed
+            if (tab === 'career') renderJobs(); 
         }
 
         function updateUI() {
@@ -865,7 +832,7 @@
             updateBar('thirst', state.stats.thirst);
             updateBar('happiness', state.stats.happiness);
 
-            const hName = BASE_HOUSING[state.housing].name;
+            const hName = BASE_HOUSING_DATA[state.housing].name;
             const tName = TRANSPORT_TYPES[state.transport].name;
             document.getElementById('current-housing').textContent = `Жилье: ${hName}`;
             document.getElementById('current-transport').textContent = `Транспорт: ${tName}`;
@@ -912,15 +879,13 @@
             }
         }
 
-        // --- PENALTY LOGIC ---
+        // --- PENALTY SYSTEM ---
         function activatePenaltyMode(isResume = false) {
             state.penaltyMode = true;
             document.getElementById('penalty-overlay').style.display = 'flex';
             document.getElementById('money-display').style.display = 'none';
             
-            if (!isResume) {
-                state.penaltyEndTime = Date.now() + 10 * 60 * 1000;
-            }
+            if (!isResume) state.penaltyEndTime = Date.now() + 10 * 60 * 1000;
 
             if (penaltyTimer) clearInterval(penaltyTimer);
             penaltyTimer = setInterval(() => {
@@ -945,16 +910,16 @@
                 state = JSON.parse(JSON.stringify(state.initialStateSnapshot));
                 alert("Попытка обмана не удалась. Откат состояния.");
             } else {
-                alert("Штрафное время истекло. Вы можете продолжить.");
+                alert("Штрафное время истекло.");
             }
             saveGame();
             location.reload(); 
         }
 
-        // --- ADMIN PANEL INTEGRATION ---
+        // --- ADMIN PANEL (LOGIC) ---
         function openAdmin() {
             document.getElementById('admin-modal').style.display = 'flex';
-            // Pre-fill inputs with current settings
+            // Prefill inputs
             document.getElementById('setting-salary').value = state.settings.salaryMult;
             document.getElementById('setting-rent').value = state.settings.rentMult;
             document.getElementById('setting-shop').value = state.settings.shopPriceMult;
@@ -980,19 +945,17 @@
         }
 
         function saveAdminSettings() {
-            // Read inputs
             state.settings.salaryMult = parseFloat(document.getElementById('setting-salary').value) || 1;
             state.settings.rentMult = parseFloat(document.getElementById('setting-rent').value) || 1;
             state.settings.shopPriceMult = parseFloat(document.getElementById('setting-shop').value) || 1;
             state.settings.bottleMin = parseFloat(document.getElementById('setting-bottle-min').value) || 0.5;
             state.settings.bottleMax = parseFloat(document.getElementById('setting-bottle-max').value) || 2.5;
 
-            // Save and Apply
             saveGame();
             
-            // Refresh visuals immediately
-            renderJobs(); // Updates salary text
-            updateShopUI(); // Updates price text
+            // Refresh visuals
+            renderJobs(); 
+            updateShopUI(); 
             updateUI();
             
             alert("Настройки применены!");
@@ -1004,8 +967,7 @@
         }
 
         function adminAddLevel() {
-            const isFreeCheat = confirm("Это легальное повышение? Отмена = чит-код (+Free LVL)");
-            if (isFreeCheat) {
+            if (confirm("Это легальное повышение? (OK = Да, Cancel = Чит)")) {
                 state.level++;
                 renderJobs();
                 updateUI();
@@ -1019,7 +981,6 @@
             if(confirm("Сбросить весь прогресс?")) resetGame();
         }
 
-        // Start
         window.onload = init;
 
     </script>
