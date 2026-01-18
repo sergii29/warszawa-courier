@@ -2,299 +2,288 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project: Bright Future Tycoon</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warsaw Tycoon Mini</title>
     <style>
         :root {
-            --bg-main: #f0f2f5; /* Светлый фон */
-            --bg-card: #ffffff; /* Белые карточки */
-            --color-primary: #10b981; /* Приятный зеленый */
-            --color-primary-dark: #059669;
-            --color-secondary: #3b82f6; /* Яркий синий */
-            --color-accent: #f59e0b; /* Оранжевый/Золотой */
-            --color-danger: #ef4444;
-            --text-main: #1f2937; /* Темно-серый текст */
-            --text-muted: #6b7280; /* Светло-серый текст */
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-            --radius-lg: 16px;
-            --radius-md: 12px;
+            --primary: #2ebc4f; /* Telegram Green */
+            --secondary: #0088cc; /* Telegram Blue */
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --text: #000000;
+            --gray: #8e8e93;
+            --danger: #ff3b30;
+            --nav-height: 60px;
+            --header-height: 70px;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-main);
             margin: 0;
-            padding: 20px;
-            user-select: none;
-            line-height: 1.5;
-        }
-
-        /* --- LAYOUT GRID --- */
-        .main-container {
-            max-width: 900px;
-            margin: 0 auto;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Запрет скролла всего тела */
             display: flex;
             flex-direction: column;
-            gap: 24px;
         }
 
-        .grid-2-cols {
+        /* --- HEADER (STATS) --- */
+        .header {
+            height: var(--header-height);
+            background: var(--card);
+            padding: 10px 15px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-        @media (max-width: 768px) { .grid-2-cols { grid-template-columns: 1fr; } }
-
-        /* --- CARDS & PANELS --- */
-        .panel {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .panel-title {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-main);
-            display: flex;
+            grid-template-columns: 1fr 1fr 1fr;
             align-items: center;
-            gap: 10px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            z-index: 10;
         }
 
-        /* --- HEADER DASHBOARD --- */
-        .dashboard-header {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
+        .stat-item { text-align: center; }
+        .stat-val { font-weight: 800; font-size: 1.1em; display: block; }
+        .stat-lbl { font-size: 0.75em; color: var(--gray); text-transform: uppercase; }
+        .money-val { color: var(--primary); }
+        .energy-val { color: var(--secondary); }
+
+        /* --- MAIN CONTENT AREA --- */
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg);
         }
 
-        .stat-card {
-            background: var(--bg-card);
-            padding: 20px;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
+        .tab-view {
+            display: none;
+            height: 100%;
+            padding: 15px;
+            flex-direction: column;
+            overflow-y: auto; /* Скролл только внутри таба, если контента много */
+        }
+        .tab-view.active { display: flex; }
+
+        /* --- TAB 1: WORK (MAIN) --- */
+        .work-container {
+            height: 100%;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-        }
-        .stat-card.accent-gold { border-bottom: 4px solid var(--color-accent); }
-        .stat-card.accent-blue { border-bottom: 4px solid var(--color-secondary); }
-        .stat-card.accent-green { border-bottom: 4px solid var(--color-primary); }
-
-        .stat-icon { font-size: 1.5rem; margin-bottom: 8px; }
-        .stat-label { font-size: 0.875rem; color: var(--text-muted); font-weight: 500; }
-        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
-
-        /* --- LEVEL PROGRESS --- */
-        .level-section { margin-top: 16px; }
-        .level-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; }
-        .progress-track {
-            background: #e5e7eb;
-            height: 12px;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--color-secondary), var(--color-primary));
-            width: 0%;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
         }
 
-        /* --- ACTION BUTTONS --- */
-        .big-btn {
-            width: 100%;
-            padding: 24px;
+        .level-badge {
+            background: #e1f5fe;
+            color: var(--secondary);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .main-btn {
+            width: 80%;
+            max-width: 300px;
+            height: 160px; /* Большая кнопка */
             border: none;
-            border-radius: var(--radius-lg);
+            border-radius: 25px;
+            font-size: 1.5em;
+            font-weight: 800;
+            color: white;
             cursor: pointer;
+            box-shadow: 0 10px 20px rgba(46, 188, 79, 0.3);
+            transition: transform 0.1s, filter 0.1s;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            font-weight: 700;
-            transition: all 0.2s;
-            color: white;
-            box-shadow: var(--shadow-md);
-        }
-        .big-btn:active { transform: scale(0.98); }
-        .big-btn-icon { font-size: 2.5rem; margin-bottom: 10px; }
-        .big-btn-subtext { font-size: 0.9rem; opacity: 0.9; font-weight: 400; margin-top: 5px;}
-
-        .btn-work { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); }
-        .btn-work:hover { filter: brightness(110%); }
-        .btn-work:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; box-shadow: none;}
-
-        .btn-rest { background: linear-gradient(135deg, var(--color-secondary), #2563eb); }
-        .btn-rest:hover { filter: brightness(110%); }
-
-        /* --- INVENTORY CHIPS --- */
-        .inventory-grid {
-            display: flex;
-            flex-wrap: wrap;
             gap: 10px;
         }
-        .inv-chip {
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            border: 1px solid #bae6fd;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .empty-inv { color: var(--text-muted); font-style: italic; padding: 10px; }
+        .btn-work { background: linear-gradient(145deg, #4ade80, #22c55e); }
+        .btn-work:active { transform: scale(0.95); }
+        .btn-work:disabled { background: #d1d5db; box-shadow: none; cursor: not-allowed; }
 
-        /* --- SHOP CARDS --- */
+        .btn-sub { font-size: 0.6em; opacity: 0.9; font-weight: normal; }
+
+        .btn-rest {
+            background: white;
+            color: var(--secondary);
+            border: 2px solid var(--secondary);
+            width: 60%;
+            padding: 12px;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1em;
+        }
+
+        /* --- TAB 2: SHOP --- */
         .shop-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 20px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding-bottom: 20px;
         }
-        .shop-item-card {
-            background: var(--bg-card);
-            border: 1px solid #e5e7eb;
-            border-radius: var(--radius-md);
-            padding: 20px;
+        
+        .shop-card {
+            background: var(--card);
+            padding: 12px;
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            transition: border-color 0.2s;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .shop-item-card:hover { border-color: var(--color-secondary); }
-
-        .shop-item-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .shop-item-icon { font-size: 2rem; }
-        .shop-item-name { font-weight: 700; font-size: 1.1rem; }
-        .shop-item-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; flex-grow: 1; }
-        .shop-item-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
-        .shop-item-price { font-weight: 800; color: var(--color-accent); font-size: 1.1rem; }
-
-        .buy-btn {
-            padding: 8px 16px;
+        .shop-icon { font-size: 2em; margin-bottom: 5px; }
+        .shop-name { font-weight: 600; font-size: 0.9em; margin-bottom: 4px; line-height: 1.2; }
+        .shop-desc { font-size: 0.7em; color: var(--gray); margin-bottom: 8px; flex-grow: 1; }
+        .shop-price-btn {
+            background: var(--text);
+            color: white;
             border: none;
+            padding: 6px 12px;
             border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            background: var(--color-primary); color: white;
+            font-size: 0.85em;
+            width: 100%;
         }
-        .buy-btn.consumable { background: var(--color-secondary); }
-        .buy-btn:hover { filter: brightness(110%); }
-        .buy-btn:active { transform: scale(0.95); }
+        .shop-price-btn.consumable { background: var(--secondary); }
 
-
-        /* --- LOG --- */
-        .log-panel {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            max-height: 150px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.85rem;
+        /* --- TAB 3: PROFILE --- */
+        .profile-list { display: flex; flex-direction: column; gap: 10px; }
+        .inv-row {
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
         }
-        .log-entry { padding: 4px 0; border-bottom: 1px solid #eee; color: var(--text-muted); }
-        .log-entry.important { color: var(--color-primary-dark); font-weight: 600; }
-        .log-entry.error { color: var(--color-danger); }
 
-        /* Reset Button */
-        .reset-btn { position: fixed; top: 20px; right: 20px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600;}
-        .reset-btn:hover { background: var(--color-danger); color: white; }
+        /* --- BOTTOM NAV --- */
+        .bottom-nav {
+            height: var(--nav-height);
+            background: var(--card);
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--gray);
+            font-size: 0.7em;
+            gap: 4px;
+            padding: 5px;
+            width: 60px;
+        }
+        .nav-btn.active { color: var(--primary); }
+        .nav-icon { font-size: 1.5em; }
+
+        /* Toast Notification */
+        #toast {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 100;
+            width: max-content;
+        }
     </style>
 </head>
 <body>
 
-<button class="reset-btn" onclick="resetGame()">🗑️ Сброс прогресса</button>
+<div id="toast">Сообщение</div>
 
-<div class="main-container">
-    
-    <section>
-        <h1 style="margin-bottom: 10px;">Мой Проект: Панель Управления</h1>
-        <div class="dashboard-header">
-            <div class="stat-card accent-gold">
-                <span class="stat-icon">💰</span>
-                <span class="stat-label">Баланс</span>
-                <span class="stat-value" id="money">0 $</span>
-            </div>
-            <div class="stat-card accent-blue">
-                <span class="stat-icon">⚡</span>
-                <span class="stat-label">Энергия</span>
-                <span class="stat-value" id="energy">100 / 100</span>
-            </div>
-            <div class="stat-card accent-green">
-                <span class="stat-icon">📈</span>
-                <span class="stat-label">Пассивный доход</span>
-                <span class="stat-value" id="income">0 $/сек</span>
-            </div>
-        </div>
+<header class="header">
+    <div class="stat-item">
+        <span class="stat-val money-val" id="money">0</span>
+        <span class="stat-lbl">PLN</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-val energy-val" id="energy">100</span>
+        <span class="stat-lbl">Энергия</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-val" id="level">1</span>
+        <span class="stat-lbl">Уровень</span>
+    </div>
+</header>
 
-         <div class="panel level-section">
-            <div class="level-info">
-                <span>⭐ Уровень <span id="level">1</span></span>
-                <span id="rank-name" style="color: var(--color-secondary)">Новичок</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="xp-bar"></div>
-            </div>
-            <div style="text-align: right; font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;" id="xp-text">0 / 100 XP</div>
-        </div>
-    </section>
+<div class="content-area">
 
-
-    <div class="grid-2-cols">
-        <section class="panel actions-panel" style="display: flex; gap: 20px; flex-direction: column;">
-            <h2 class="panel-title">🛠️ Активные действия</h2>
-            <button class="big-btn btn-work" id="btn-work" onclick="work()">
-                <span class="big-btn-icon">🔨</span>
+    <div id="tab-home" class="tab-view active">
+        <div class="work-container">
+            <div class="level-badge" id="rank-name">Новичок</div>
+            
+            <button class="main-btn btn-work" id="btn-work" onclick="work()">
+                <span style="font-size:2em">🔨</span>
                 РАБОТАТЬ
-                <span class="big-btn-subtext">-2 Энергии | +XP и Деньги</span>
+                <span class="btn-sub">-2 Энергии</span>
             </button>
-            <button class="big-btn btn-rest" onclick="rest()">
-                <span class="big-btn-icon">💤</span>
-                ОТДЫХАТЬ
-                <span class="big-btn-subtext">+10 Энергии бесплатно</span>
-            </button>
-        </section>
 
-        <section class="panel inventory-panel">
-             <h2 class="panel-title">🎒 Мои Активы и Бонусы</h2>
-             <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">
-                 Купленные улучшения, которые работают на вас.
-             </p>
-             <div class="inventory-grid" id="inventory-display">
-                 <span class="empty-inv">Пока пусто... Загляните в магазин.</span>
-             </div>
-        </section>
+            <div style="text-align:center; color: var(--gray); font-size:0.8em; margin: 5px 0;">
+                Доход: <span id="click-val">10</span> PLN/клик<br>
+                Пассив: <span id="passive-val">0</span> PLN/сек
+            </div>
+
+            <button class="btn-rest" onclick="rest()">💤 Отдохнуть</button>
+        </div>
     </div>
 
-
-    <section class="panel shop-panel">
-        <h2 class="panel-title">🛒 Магазин улучшений</h2>
+    <div id="tab-shop" class="tab-view">
+        <h3 style="margin-top:0">Магазин</h3>
         <div class="shop-grid" id="shop-container">
             </div>
-    </section>
+    </div>
 
-
-    <section class="panel log-panel" id="game-log">
-        <div style="padding: 10px; color: #999; font-style: italic;">Журнал событий...</div>
-    </section>
+    <div id="tab-profile" class="tab-view">
+        <h3 style="margin-top:0">Мой инвентарь</h3>
+        <div class="profile-list" id="inv-container">
+            </div>
+        <button onclick="resetGame()" style="margin-top:20px; width:100%; padding:15px; border:none; color:red; background:white; border-radius:10px;">Сброс игры</button>
+    </div>
 
 </div>
 
+<nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('home', this)">
+        <span class="nav-icon">🏠</span>
+        <span>Главная</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('shop', this)">
+        <span class="nav-icon">🛒</span>
+        <span>Магазин</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('profile', this)">
+        <span class="nav-icon">🎒</span>
+        <span>Профиль</span>
+    </button>
+</nav>
 
 <script>
-    // --- CONFIGURATION ---
-    const GAME_KEY = 'BRIGHT_TYCOON_TEST_V2';
+    // --- KEY & CONFIG ---
+    const GAME_KEY = 'WARSZAWA_FOREVER_MINI';
     const MAX_LEVEL = 150;
     
     // --- STATE ---
@@ -306,237 +295,192 @@
         level: 1,
         clickPower: 10,
         passiveIncome: 0,
-        inventory: {}, 
+        inventory: {},
         lastSaveTime: Date.now()
     };
 
-    // --- DATABASE (Items с иконками) ---
+    // --- ITEMS ---
     const items = [
-        // Расходники
-        {
-            id: 'coffee', icon: '☕', name: 'Двойной Эспрессо', type: 'consumable', price: 50,
-            effect: { energy: 40 }, desc: 'Быстро восстанавливает +40 Энергии.'
-        },
-        // Улучшения клика
-        {
-            id: 'courses', icon: '📚', name: 'Курсы повышения', type: 'upgrade', price: 300,
-            effect: { clickPower: 8 }, desc: 'Увеличивает доход от одного клика на +8$.'
-        },
-        {
-            id: 'tools', icon: '🦾', name: 'Новые инструменты', type: 'upgrade', price: 2500,
-            effect: { clickPower: 40 }, desc: 'Мощный буст. Клик приносит на +40$ больше.'
-        },
-        // Пассивный доход
-        {
-            id: 'trainee', icon: '👨‍💻', name: 'Нанять стажера', type: 'passive', price: 1000,
-            effect: { income: 10 }, desc: 'Приносит пассивный доход +10 $/сек.'
-        },
-        {
-            id: 'small_biz', icon: '🏪', name: 'Малый бизнес', type: 'passive', price: 5000,
-            effect: { income: 60, maxEnergy: 10 }, desc: '+60 $/сек и увеличивает Макс. Энергию на +10.'
-        },
-        {
-            id: 'factory', icon: '🏭', name: 'Свой завод', type: 'passive', price: 30000,
-            effect: { income: 400 }, desc: 'Серьезный бизнес. +400 $/сек.'
-        }
+        { id: 'coffee', icon: '☕', name: 'Кофе', type: 'cons', price: 50, eff: {en: 40}, desc: '+40 Сил' },
+        { id: 'course', icon: '📚', name: 'Курсы', type: 'upg', price: 500, eff: {cp: 5}, desc: '+5 Клик' },
+        { id: 'bike', icon: '🚲', name: 'Велик', type: 'pas', price: 1500, eff: {inc: 15}, desc: '+15/сек' },
+        { id: 'mac', icon: '💻', name: 'Макбук', type: 'pas', price: 5000, eff: {inc: 60, maxEn: 20}, desc: '+60/сек' },
+        { id: 'ai', icon: '🤖', name: 'AI Бот', type: 'upg', price: 10000, eff: {cp: 50}, desc: '+50 Клик' },
+        { id: 'firm', icon: '🏢', name: 'Фирма', type: 'pas', price: 50000, eff: {inc: 500}, desc: '+500/сек' }
     ];
 
-    // --- CORE MECHANICS ---
-
+    // --- LOGIC ---
     function init() {
         loadGame();
         renderShop();
         updateUI();
-        
-        // Passive Loop
+        switchTab('home', document.querySelector('.nav-btn')); // Set default
+
         setInterval(() => {
-            if (state.passiveIncome > 0) addMoney(state.passiveIncome);
-            if (state.energy < state.maxEnergy) {
-                state.energy = Math.min(state.energy + 0.5, state.maxEnergy); // Чуть медленнее реген
-                updateUI();
+            if(state.passiveIncome > 0) addMoney(state.passiveIncome);
+            if(state.energy < state.maxEnergy) {
+                state.energy = Math.min(state.energy + 1, state.maxEnergy);
+                updateHeader();
             }
         }, 1000);
-
-        setInterval(saveGame, 30000);
-    }
-
-    function getXpReq(lvl) {
-        return Math.floor(100 * Math.pow(lvl, 1.5));
+        setInterval(saveGame, 10000);
     }
 
     function work() {
-        if (state.energy >= 2) {
+        if(state.energy >= 2) {
             state.energy -= 2;
-            // Формула дохода: База * (1 + Бонус уровня)
-            const earn = state.clickPower * (1 + (state.level * 0.15)); 
+            let earn = state.clickPower * (1 + (state.level * 0.1));
             addMoney(earn);
-            addXp(15); // Чуть больше XP за клик
-            
-            if (Math.random() < 0.05) {
-                log("⚡ Удача! Критический заработок X3.", "important");
-                addMoney(earn * 2);
-            }
+            addXp(10);
             updateUI();
+            
+            // Animation for button
+            const btn = document.getElementById('btn-work');
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 100);
         } else {
-            log("🛑 Нет энергии! Отдохните.", "error");
-            shakeBtn();
+            showToast("🛑 Нужен отдых!");
         }
     }
 
     function rest() {
-        if (state.energy < state.maxEnergy) {
+        if(state.energy < state.maxEnergy) {
             state.energy = Math.min(state.energy + 15, state.maxEnergy);
+            showToast("💤 Силы восстановлены");
             updateUI();
         }
     }
 
-    function addMoney(amount) {
-        state.money += amount;
-        updateUI();
-    }
-
-    function addXp(amount) {
-        if (state.level >= MAX_LEVEL) return;
-        state.xp += amount;
-        const req = getXpReq(state.level);
-        if (state.xp >= req) {
-            state.xp -= req;
-            state.level++;
-            state.maxEnergy += 10;
-            state.energy = state.maxEnergy;
-            log(`🎉 ПОВЫШЕНИЕ! Уровень ${state.level}. Макс. энергия выросла!`, "important");
-        }
-        updateUI();
-    }
-
-    function buy(itemId) {
-        const item = items.find(i => i.id === itemId);
-        if (!item) return;
-
-        if (state.money >= item.price) {
+    function buy(id) {
+        let item = items.find(i => i.id === id);
+        if(state.money >= item.price) {
             state.money -= item.price;
-            
-            if (item.type === 'consumable') {
-                if (item.effect.energy) state.energy = Math.min(state.energy + item.effect.energy, state.maxEnergy);
-                log(`Куплено: ${item.name}`);
+            if(item.type === 'cons') {
+                if(item.eff.en) state.energy = Math.min(state.energy + item.eff.en, state.maxEnergy);
+                showToast(`Выпил: ${item.name}`);
             } else {
-                if (!state.inventory[item.id]) state.inventory[item.id] = 0;
-                state.inventory[item.id]++;
-                if (item.effect.clickPower) state.clickPower += item.effect.clickPower;
-                if (item.effect.income) state.passiveIncome += item.effect.income;
-                if (item.effect.maxEnergy) state.maxEnergy += item.effect.maxEnergy;
-                log(`🔨 Улучшение: ${item.name}`);
-            }
-            
-            if (item.type !== 'consumable') {
-                item.price = Math.floor(item.price * 1.4); // Инфляция 40%
+                state.inventory[id] = (state.inventory[id] || 0) + 1;
+                if(item.eff.cp) state.clickPower += item.eff.cp;
+                if(item.eff.inc) state.passiveIncome += item.eff.inc;
+                if(item.eff.maxEn) state.maxEnergy += item.eff.maxEn;
+                
+                // Price increase
+                item.price = Math.floor(item.price * 1.3);
+                showToast(`Куплено: ${item.name}`);
                 renderShop();
+                renderInv();
             }
             updateUI();
         } else {
-            log("💸 Не хватает денег!", "error");
+            showToast("💸 Мало денег!");
         }
     }
 
-    // --- UI RENDERERS ---
+    function addMoney(val) { state.money += val; updateHeader(); }
+    
+    function addXp(val) {
+        if(state.level >= MAX_LEVEL) return;
+        state.xp += val;
+        let req = Math.floor(100 * Math.pow(state.level, 1.5));
+        if(state.xp >= req) {
+            state.xp = 0;
+            state.level++;
+            state.maxEnergy += 5;
+            state.energy = state.maxEnergy;
+            showToast(`🎉 Уровень ${state.level}!`);
+        }
+        updateHeader(); // Only stats needed usually
+    }
 
+    // --- UI ---
     function updateUI() {
-        // Stats
-        document.getElementById('money').innerText = Math.floor(state.money).toLocaleString() + ' $';
-        document.getElementById('energy').innerText = Math.floor(state.energy) + ' / ' + state.maxEnergy;
-        document.getElementById('income').innerText = '+' + state.passiveIncome.toLocaleString() + ' $/сек';
+        updateHeader();
+        document.getElementById('click-val').innerText = Math.floor(state.clickPower * (1 + state.level*0.1));
+        document.getElementById('passive-val').innerText = state.passiveIncome;
         
-        // Level
-        document.getElementById('level').innerText = state.level;
-        const req = getXpReq(state.level);
-        const pct = Math.min(100, (state.xp / req) * 100);
-        document.getElementById('xp-bar').style.width = pct + '%';
-        document.getElementById('xp-text').innerText = `${Math.floor(state.xp)} / ${req.toLocaleString()} XP`;
-        
-        let rank = "Новичок";
-        if (state.level > 5) rank = "Специалист";
-        if (state.level > 15) rank = "Менеджер";
-        if (state.level > 30) rank = "Директор";
-        if (state.level > 60) rank = "Олигарх";
-        document.getElementById('rank-name').innerText = rank;
+        let ranks = ["Новичок", "Местный", "Делец", "Магнат", "Олигарх"];
+        let rIndex = Math.min(Math.floor(state.level / 20), 4);
+        document.getElementById('rank-name').innerText = `${ranks[rIndex]} (Lvl ${state.level})`;
 
         document.getElementById('btn-work').disabled = state.energy < 2;
-        renderInventory();
+    }
+
+    function updateHeader() {
+        document.getElementById('money').innerText = nF(state.money);
+        document.getElementById('energy').innerText = Math.floor(state.energy);
+        document.getElementById('level').innerText = state.level;
     }
 
     function renderShop() {
-        const container = document.getElementById('shop-container');
-        container.innerHTML = '';
-        items.forEach(item => {
-            const btnClass = item.type === 'consumable' ? 'buy-btn consumable' : 'buy-btn';
-            const div = document.createElement('div');
-            div.className = 'shop-item-card';
-            div.innerHTML = `
-                <div>
-                    <div class="shop-item-header">
-                        <span class="shop-item-icon">${item.icon}</span>
-                        <span class="shop-item-name">${item.name}</span>
-                    </div>
-                    <div class="shop-item-desc">${item.desc}</div>
-                </div>
-                <div class="shop-item-footer">
-                    <span class="shop-item-price">${item.price.toLocaleString()} $</span>
-                    <button class="${btnClass}" onclick="buy('${item.id}')">Купить</button>
-                </div>
-            `;
-            container.appendChild(div);
+        let html = '';
+        items.forEach(i => {
+            html += `
+            <div class="shop-card">
+                <div class="shop-icon">${i.icon}</div>
+                <div class="shop-name">${i.name}</div>
+                <div class="shop-desc">${i.desc}</div>
+                <button class="shop-price-btn ${i.type==='cons'?'consumable':''}" onclick="buy('${i.id}')">
+                    ${nF(i.price)} PLN
+                </button>
+            </div>`;
         });
+        document.getElementById('shop-container').innerHTML = html;
     }
 
-    function renderInventory() {
-        const container = document.getElementById('inventory-display');
+    function renderInv() {
         let html = '';
-        let hasItems = false;
-        for (const [id, count] of Object.entries(state.inventory)) {
-            const itemDef = items.find(i => i.id === id);
-            if (itemDef && count > 0) {
-                // Используем иконку предмета для чипа
-                html += `<div class="inv-chip">${itemDef.icon} ${itemDef.name} <span style="opacity:0.7">x${count}</span></div>`;
-                hasItems = true;
+        let empty = true;
+        for(let k in state.inventory) {
+            if(state.inventory[k] > 0) {
+                let it = items.find(i => i.id === k);
+                html += `<div class="inv-row">
+                    <span>${it.icon} ${it.name}</span>
+                    <span style="font-weight:bold">x${state.inventory[k]}</span>
+                </div>`;
+                empty = false;
             }
         }
-        if (!hasItems) html = '<span class="empty-inv">У вас пока нет купленных активов.</span>';
-        container.innerHTML = html;
+        if(empty) html = '<div style="text-align:center; color:#999; margin-top:20px;">Пусто...</div>';
+        document.getElementById('inv-container').innerHTML = html;
     }
 
-    function log(msg, type='normal') {
-        const logBox = document.getElementById('game-log');
-        const entry = document.createElement('div');
-        entry.className = 'log-entry ' + type;
-        const time = new Date().toLocaleTimeString();
-        entry.innerText = `[${time}] ${msg}`;
-        logBox.insertBefore(entry, logBox.firstChild);
-        if (logBox.children.length > 10) logBox.removeChild(logBox.lastChild);
+    // --- NAVIGATION ---
+    function switchTab(tabId, btn) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+        // Show target
+        document.getElementById('tab-' + tabId).classList.add('active');
+        
+        // Update nav buttons
+        if(btn) {
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        if(tabId === 'profile') renderInv();
     }
 
-    function shakeBtn() {
-        const btn = document.getElementById('btn-work');
-        btn.style.transform = 'translateX(5px)';
-        setTimeout(() => btn.style.transform = 'translateX(-5px)', 50);
-        setTimeout(() => btn.style.transform = 'translateX(0)', 100);
+    function showToast(msg) {
+        let t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.opacity = 1;
+        setTimeout(() => t.style.opacity = 0, 2000);
     }
 
-    // --- SAVE/LOAD ---
-    function saveGame() {
-        state.lastSaveTime = Date.now();
-        localStorage.setItem(GAME_KEY, JSON.stringify(state));
+    function nF(num) {
+        return Math.floor(num).toLocaleString();
     }
+
+    // --- SAVE ---
+    function saveGame() { localStorage.setItem(GAME_KEY, JSON.stringify(state)); }
     function loadGame() {
-        const saved = localStorage.getItem(GAME_KEY);
-        if (saved) {
-            try { state = { ...state, ...JSON.parse(saved) }; } catch (e) { console.error(e); }
+        let s = localStorage.getItem(GAME_KEY);
+        if(s) {
+            try { state = {...state, ...JSON.parse(s)}; } catch(e){}
         }
     }
     function resetGame() {
-        if(confirm("Сбросить весь прогресс и начать заново?")) {
-            localStorage.removeItem(GAME_KEY);
-            location.reload();
-        }
+        if(confirm('Сбросить?')) { localStorage.removeItem(GAME_KEY); location.reload(); }
     }
 
     init();
