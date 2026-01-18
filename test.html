@@ -2,112 +2,556 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Warszawa Simulator Avatar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warsaw Tycoon: Strategy Test</title>
     <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #00e676; /* Cyber Green */
+            --secondary: #2979ff; /* Blue */
+            --danger: #ff1744;
+            --text: #ffffff;
+            --text-muted: #b0b0b0;
+        }
+
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
             margin: 0;
-            background-color: #0f0f12; /* Темный фон */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            padding: 20px;
+            user-select: none;
         }
 
-        /* Контейнер аватара (круглый для Телеграм) */
-        .avatar-frame {
-            width: 500px;
-            height: 500px;
-            position: relative;
-            background: radial-gradient(circle at center, #1a1a24 0%, #000000 100%);
-            border-radius: 50%;
-            box-shadow: 0 0 50px rgba(0, 191, 255, 0.1);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Layout */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
         }
 
-        /* Центральное ядро (Энергия) */
-        .core {
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(circle, #ffffff 10%, #00bfff 40%, #000000 80%);
-            border-radius: 50%;
-            position: absolute;
-            z-index: 10;
-            box-shadow: 0 0 60px #00bfff, inset 0 0 20px #ffffff;
-            animation: pulse 3s infinite ease-in-out;
+        /* Header & Stats */
+        .header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        /* Орбита 1: Вода (Синий) */
-        .orbit-water {
-            width: 280px;
-            height: 280px;
-            border: 2px solid rgba(0, 191, 255, 0.3);
-            border-top: 4px solid #00bfff;
-            border-radius: 50%;
-            position: absolute;
-            animation: spin 4s linear infinite;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
         }
 
-        /* Орбита 2: Рейтинг/Деньги (Золото) */
-        .orbit-gold {
-            width: 380px;
-            height: 380px;
-            border: 1px solid rgba(255, 215, 0, 0.1);
-            border-bottom: 6px solid #ffd700;
-            border-radius: 50%;
-            position: absolute;
-            animation: spin-reverse 8s linear infinite;
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
         }
 
-        /* Декоративные частицы */
-        .particle {
-            position: absolute;
-            width: 10px;
+        .stat-value { font-size: 1.2em; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 0.85em; color: var(--text-muted); }
+
+        /* Level Progress */
+        .level-container { margin-top: 15px; }
+        .progress-bar {
+            width: 100%;
             height: 10px;
-            background-color: #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #fff;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.3s ease;
         }
 
-        .p1 { top: 10%; left: 50%; animation: float 5s ease-in-out infinite; }
-        .p2 { bottom: 20%; right: 20%; animation: float 4s ease-in-out infinite reverse; background-color: #ffd700; box-shadow: 0 0 10px #ffd700;}
-        .p3 { bottom: 10%; left: 20%; animation: float 6s ease-in-out infinite; background-color: #00bfff; box-shadow: 0 0 10px #00bfff;}
-
-        /* Анимации */
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Main Action Area */
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
-        @keyframes spin-reverse {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
+        .action-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.1s;
+        }
+        .action-card:active { transform: scale(0.98); }
+
+        button.main-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.9; box-shadow: 0 0 40px #00bfff; }
-            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 80px #00bfff, 0 0 20px #ffd700; }
-            100% { transform: scale(0.95); opacity: 0.9; box-shadow: 0 0 40px #00bfff; }
-        }
+        .btn-work { background: var(--primary); color: #000; }
+        .btn-work:hover { background: #00c853; }
+        .btn-work:disabled { background: #333; color: #777; cursor: not-allowed; }
+
+        .btn-rest { background: var(--secondary); color: #fff; }
+
+        /* Shop & Inventory */
+        .section-title { border-bottom: 2px solid #333; padding-bottom: 10px; margin-top: 30px; }
         
-        @keyframes float {
-            0% { transform: translateY(0px); opacity: 0.5; }
-            50% { transform: translateY(-20px); opacity: 1; }
-            100% { transform: translateY(0px); opacity: 0.5; }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
         }
+
+        .item-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .item-name { font-weight: bold; color: var(--secondary); }
+        .item-desc { font-size: 0.8em; color: var(--text-muted); margin: 5px 0; }
+        .item-price { color: var(--primary); font-weight: bold; }
+        
+        .buy-btn {
+            margin-top: 10px;
+            padding: 8px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .buy-btn:hover { background: #444; }
+
+        /* Inventory List */
+        .inventory-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .inv-item {
+            background: #2c2c2c;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            border: 1px solid var(--primary);
+        }
+
+        /* Log */
+        #game-log {
+            height: 100px;
+            overflow-y: auto;
+            background: #000;
+            color: #0f0;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            margin-top: 20px;
+        }
+        .log-entry { margin-bottom: 4px; opacity: 0.8; }
+        .log-entry.new { opacity: 1; font-weight: bold; }
+
     </style>
 </head>
 <body>
-    <div class="avatar-frame">
-        <div class="core"></div>
-        <div class="orbit-water"></div>
-        <div class="orbit-gold"></div>
-        <div class="particle p1"></div>
-        <div class="particle p2"></div>
-        <div class="particle p3"></div>
+
+<div class="container">
+    <div class="header">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0;">WARSAW TYCOON <span style="font-size:0.5em; color:var(--text-muted)">v0.1</span></h2>
+            <button onclick="resetGame()" style="background:var(--danger); border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer;">Сброс</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-value" id="money">0 PLN</div>
+                <div class="stat-label">Баланс</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="energy">100 / 100</div>
+                <div class="stat-label">Энергия</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="income">0 PLN/сек</div>
+                <div class="stat-label">Пассив</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="level">1</div>
+                <div class="stat-label">Уровень</div>
+            </div>
+        </div>
+
+        <div class="level-container">
+            <div style="display:flex; justify-content:space-between; font-size:0.8em;">
+                <span id="xp-text">0 / 100 XP</span>
+                <span id="rank-name">Новичок</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="xp-bar"></div>
+            </div>
+        </div>
     </div>
+
+    <div class="actions">
+        <div class="action-card">
+            <h3>Работа (Клик)</h3>
+            <p style="font-size:0.9em; color:#888;">Тратит 2 энергии</p>
+            <button class="main-btn btn-work" id="btn-work" onclick="work()">ЗАРАБОТАТЬ</button>
+        </div>
+        <div class="action-card">
+            <h3>Отдых</h3>
+            <p style="font-size:0.9em; color:#888;">Восстановить силы</p>
+            <button class="main-btn btn-rest" onclick="rest()">ОТДОХНУТЬ (+10 Эн)</button>
+        </div>
+    </div>
+
+    <div>
+        <h3 class="section-title">Ваш Инвентарь и Навыки</h3>
+        <div class="inventory-list" id="inventory-display">
+            <span style="color:#777; font-style:italic;">Пусто...</span>
+        </div>
+    </div>
+
+    <div>
+        <h3 class="section-title">Рынок и Улучшения</h3>
+        <div class="shop-grid" id="shop-container">
+            </div>
+    </div>
+
+    <div id="game-log"></div>
+</div>
+
+<script>
+    // --- CONFIGURATION ---
+    const GAME_KEY = 'WARSZAWA_TYCOON_TEST_V1';
+    const MAX_LEVEL = 150;
+    
+    // --- STATE ---
+    let state = {
+        money: 0,
+        energy: 100,
+        maxEnergy: 100,
+        xp: 0,
+        level: 1,
+        clickPower: 10, // PLN per click
+        passiveIncome: 0, // PLN per sec
+        inventory: {}, // Format: { "laptop": 1, "coffee": 0 }
+        lastSaveTime: Date.now()
+    };
+
+    // --- DATABASE (Items) ---
+    const items = [
+        {
+            id: 'coffee',
+            name: 'Эспрессо',
+            type: 'consumable',
+            price: 50,
+            effect: { energy: 40 },
+            desc: '+40 Энергии мгновенно.'
+        },
+        {
+            id: 'courses',
+            name: 'Онлайн Курсы',
+            type: 'upgrade',
+            price: 500,
+            effect: { clickPower: 5, xpMultiplier: 0.1 },
+            desc: '+5 PLN за клик. Вы учитесь быстрее.'
+        },
+        {
+            id: 'bike',
+            name: 'Велосипед',
+            type: 'passive',
+            price: 1500,
+            effect: { income: 15 },
+            desc: 'Работа курьером. +15 PLN/сек.'
+        },
+        {
+            id: 'laptop',
+            name: 'Макбук б/у',
+            type: 'passive',
+            price: 5000,
+            effect: { income: 60, maxEnergy: 20 },
+            desc: 'Фриланс. +60 PLN/сек и +20 Макс Энергии.'
+        },
+        {
+            id: 'server',
+            name: 'Серверная стойка',
+            type: 'passive',
+            price: 25000,
+            effect: { income: 350 },
+            desc: 'Майнинг и хостинг. +350 PLN/сек.'
+        },
+         {
+            id: 'ai_sub',
+            name: 'AI Подписка',
+            type: 'upgrade',
+            price: 10000,
+            effect: { clickPower: 50 },
+            desc: 'Нейросеть делает работу за вас. +50 PLN за клик.'
+        }
+    ];
+
+    // --- CORE MECHANICS ---
+
+    function init() {
+        loadGame();
+        renderShop();
+        updateUI();
+        
+        // Passive Loop (1 second tick)
+        setInterval(() => {
+            if (state.passiveIncome > 0) {
+                addMoney(state.passiveIncome);
+            }
+            // Auto regen energy slightly over time
+            if (state.energy < state.maxEnergy) {
+                state.energy = Math.min(state.energy + 1, state.maxEnergy);
+                updateUI();
+            }
+        }, 1000);
+
+        // Auto Save (30 sec)
+        setInterval(saveGame, 30000);
+    }
+
+    function getXpReq(lvl) {
+        // Curve: Level 1 = 100, Level 50 = ~35,000, Level 150 = ~180,000 per level
+        return Math.floor(100 * Math.pow(lvl, 1.5));
+    }
+
+    function work() {
+        if (state.energy >= 2) {
+            state.energy -= 2;
+            const earn = state.clickPower * (1 + (state.level * 0.1)); // Level bonus
+            addMoney(earn);
+            addXp(10); // Fixed XP per click
+            
+            // Random bonus event
+            if (Math.random() < 0.05) { // 5% chance
+                log("⚡ Критический успех! Бонус к деньгам.", "gold");
+                addMoney(earn * 5);
+            }
+            
+            updateUI();
+        } else {
+            log("🛑 Слишком мало энергии! Отдохни или выпей кофе.");
+            shakeBtn();
+        }
+    }
+
+    function rest() {
+        if (state.energy < state.maxEnergy) {
+            state.energy = Math.min(state.energy + 10, state.maxEnergy);
+            log("💤 Вы отдохнули. +10 Энергии.");
+            updateUI();
+        } else {
+            log("Вы полностью полны сил.");
+        }
+    }
+
+    function addMoney(amount) {
+        state.money += amount;
+        updateUI();
+    }
+
+    function addXp(amount) {
+        if (state.level >= MAX_LEVEL) return;
+        
+        state.xp += amount;
+        const req = getXpReq(state.level);
+        
+        if (state.xp >= req) {
+            state.xp -= req;
+            state.level++;
+            state.maxEnergy += 5; // Level up bonus
+            state.energy = state.maxEnergy; // Full restore
+            log(`🎉 УРОВЕНЬ ПОВЫШЕН! Теперь вы ${state.level} уровня.`);
+            playSound('levelup');
+        }
+        updateUI();
+    }
+
+    function buy(itemId) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+
+        if (state.money >= item.price) {
+            state.money -= item.price;
+            
+            // Apply Effects
+            if (item.type === 'consumable') {
+                if (item.effect.energy) {
+                    state.energy = Math.min(state.energy + item.effect.energy, state.maxEnergy);
+                }
+                log(`☕ Вы употребили: ${item.name}`);
+            } else {
+                // Add to inventory
+                if (!state.inventory[item.id]) state.inventory[item.id] = 0;
+                state.inventory[item.id]++;
+                
+                // Permanent Stats
+                if (item.effect.clickPower) state.clickPower += item.effect.clickPower;
+                if (item.effect.income) state.passiveIncome += item.effect.income;
+                if (item.effect.maxEnergy) state.maxEnergy += item.effect.maxEnergy;
+
+                log(`🛒 Куплено: ${item.name}`);
+            }
+            
+            // Price scaling for non-consumables (inflation)
+            if (item.type !== 'consumable') {
+                item.price = Math.floor(item.price * 1.3);
+                renderShop(); // Re-render to show new price
+            }
+            
+            updateUI();
+        } else {
+            log("💸 Недостаточно средств!");
+        }
+    }
+
+    // --- UI FUNCTIONS ---
+
+    function updateUI() {
+        document.getElementById('money').innerText = Math.floor(state.money).toLocaleString() + ' PLN';
+        document.getElementById('energy').innerText = Math.floor(state.energy) + ' / ' + state.maxEnergy;
+        document.getElementById('income').innerText = '+' + state.passiveIncome.toLocaleString() + ' PLN/сек';
+        document.getElementById('level').innerText = state.level;
+
+        // Progress Bar
+        const req = getXpReq(state.level);
+        const pct = Math.min(100, (state.xp / req) * 100);
+        document.getElementById('xp-bar').style.width = pct + '%';
+        document.getElementById('xp-text').innerText = `${Math.floor(state.xp)} / ${req} XP`;
+        
+        // Rank Name
+        let rank = "Турист";
+        if (state.level > 10) rank = "Местный";
+        if (state.level > 30) rank = "Предприниматель";
+        if (state.level > 70) rank = "Магнат";
+        if (state.level > 120) rank = "Легенда Варшавы";
+        document.getElementById('rank-name').innerText = rank;
+
+        // Work Button state
+        const btnWork = document.getElementById('btn-work');
+        btnWork.disabled = state.energy < 2;
+        
+        renderInventory();
+    }
+
+    function renderShop() {
+        const container = document.getElementById('shop-container');
+        container.innerHTML = '';
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'item-card';
+            div.innerHTML = `
+                <div>
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-desc">${item.desc}</div>
+                </div>
+                <div>
+                    <div class="item-price">${item.price.toLocaleString()} PLN</div>
+                    <button class="buy-btn" onclick="buy('${item.id}')">Купить</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderInventory() {
+        const container = document.getElementById('inventory-display');
+        let html = '';
+        let hasItems = false;
+        
+        // Show passive/upgrade items count
+        for (const [id, count] of Object.entries(state.inventory)) {
+            const itemDef = items.find(i => i.id === id);
+            if (itemDef && count > 0) {
+                html += `<div class="inv-item">${itemDef.name} x${count}</div>`;
+                hasItems = true;
+            }
+        }
+        
+        if (!hasItems) html = '<span style="color:#777; font-style:italic;">Инвентарь пуст...</span>';
+        container.innerHTML = html;
+    }
+
+    function log(msg, color='white') {
+        const logBox = document.getElementById('game-log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry new';
+        entry.style.color = color === 'gold' ? '#ffd700' : '#0f0';
+        
+        const time = new Date().toLocaleTimeString().split(' ')[0];
+        entry.innerText = `[${time}] ${msg}`;
+        
+        logBox.insertBefore(entry, logBox.firstChild);
+        if (logBox.children.length > 20) logBox.removeChild(logBox.lastChild);
+    }
+
+    function shakeBtn() {
+        const btn = document.getElementById('btn-work');
+        btn.style.transform = 'translateX(5px)';
+        setTimeout(() => btn.style.transform = 'translateX(-5px)', 50);
+        setTimeout(() => btn.style.transform = 'translateX(0)', 100);
+    }
+
+    // --- SAVE SYSTEM ---
+    function saveGame() {
+        state.lastSaveTime = Date.now();
+        localStorage.setItem(GAME_KEY, JSON.stringify(state));
+        // Silent save, only log specific events
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem(GAME_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Merge save with defaults to prevent errors on version updates
+                state = { ...state, ...parsed };
+                log("💾 Игра загружена.");
+            } catch (e) {
+                console.error("Save error", e);
+            }
+        }
+    }
+
+    function resetGame() {
+        if(confirm("Точно удалить прогресс?")) {
+            localStorage.removeItem(GAME_KEY);
+            location.reload();
+        }
+    }
+
+    function playSound(type) {
+        // Placeholder for sound effects
+    }
+
+    // Start
+    init();
+
+</script>
 </body>
 </html>
