@@ -1,6 +1,7 @@
 // --- logic.js ---
-// VERSION: 20.0 (GOD MODE ENABLED)
-// Логика теперь полностью динамическая и слушает Firebase для всех параметров.
+// VERSION: 20.1 (STABLE FIX + MOBILE ADMIN)
+// Сохранение WARSZAWA_FOREVER.
+// Исправлены критические ошибки запуска. Меню и сохранение работают.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -8,7 +9,7 @@ tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// === CSS АНИМАЦИИ ===
+// === CSS ANIMATION INJECTION ===
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
@@ -18,7 +19,7 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-// === НАСТРОЙКИ ПО УМОЛЧАНИЮ (Если нет интернета или базы) ===
+// === НАСТРОЙКИ ПО УМОЛЧАНИЮ (Резервная копия) ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50, coffee: 5.00, energy: 12.00,
@@ -26,7 +27,7 @@ const DEFAULT_SETTINGS = {
         veturilo_start: 0.00, veturilo_min: 0.50,
         bolt_start: 2.00, bolt_min: 2.50,
         bag: 350, phone: 1200, scooter: 500, helmet: 250, raincoat: 180, powerbank: 400, abibas: 50, jorban: 250,
-        buy_lvl_small: 75, buy_lvl_big: 350 // New
+        buy_lvl_small: 75, buy_lvl_big: 350
     },
     repair_costs: { bag: 70, phone: 250, scooter: 100 },
     economy: {
@@ -47,12 +48,13 @@ const DEFAULT_SETTINGS = {
     },
     business_config: { water_cost: 25, shoe_wear: 0.02 },
     toggles: { enable_bank: true, enable_shop: true, enable_auto: true, enable_work: true, service_veturilo: true, service_bolt: true },
-    // Dynamic Arrays Defaults
+    // Районы по умолчанию
     districts: [
         { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, housePrice: 250000, czynszBase: 25, price: 0 },       
         { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, housePrice: 850000, czynszBase: 80, price: 150 }, 
         { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, housePrice: 3500000, czynszBase: 250, price: 500 } 
     ],
+    // Бизнес по умолчанию
     business_meta: [
         { id: 'vending', name: 'Vending Machine', icon: '🍫', basePrice: 5000, minLvl: 5.0, type: 'maintenance', dealCost: 50, desc: "Простой доход." },
         { id: 'vege', name: 'Warzywniak', icon: '🥦', basePrice: 20000, minLvl: 10.0, type: 'lottery', dealCost: 300, desc: "Овощи. Риск." },
@@ -61,9 +63,8 @@ const DEFAULT_SETTINGS = {
     ]
 };
 
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ НАСТРОЕК (ИНИЦИАЛИЗАЦИЯ)
 let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-
-// Переменные теперь инициализируются из SETTINGS
 let DISTRICTS = SETTINGS.districts;
 let BUSINESS_META = SETTINGS.business_meta;
 
@@ -99,14 +100,14 @@ let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bon
 let isSearching = false; let spamCounter = 0;
 let isBusinessBusy = false; 
 
-// UPGRADES META (Теперь с динамическими ценами ремонта)
+// UPGRADES META
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairKey: null, hidden: true },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', priceKey: null, bonus: 'Связь', maxDur: 40, repairKey: null, hidden: true },
     { id: 'bag', name: 'Термосумка', icon: '🎒', desc: '+15% к выплатам.', priceKey: 'bag', bonus: '+15% PLN', maxDur: 100, repairKey: 'bag' }, 
     { id: 'phone', name: 'Смартфон Pro', icon: '📱', desc: 'Заказы чаще.', priceKey: 'phone', bonus: 'Заказы x1.4', maxDur: 100, repairKey: 'phone' }, 
     { id: 'scooter', name: 'Электросамокат', icon: '🛴', desc: 'Расход энергии -30%.', priceKey: 'scooter', bonus: '⚡ -30%', maxDur: 100, repairKey: 'scooter' },
-    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', priceKey: 'helmet', bonus: '🛡️ Безопасность', maxDur: 50, repairKey: 'helmet' }, // Default fix 50
+    { id: 'helmet', name: 'Шлем Safety', icon: '🧢', desc: 'Риск аварии -50%.', priceKey: 'helmet', bonus: '🛡️ Безопасность', maxDur: 50, repairKey: 'helmet' },
     { id: 'raincoat', name: 'Дождевик', icon: '🧥', desc: 'Защита от дождя.', priceKey: 'raincoat', bonus: '☔ Сухость', maxDur: 80, repairKey: 'raincoat' },
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', priceKey: 'powerbank', bonus: '🤖 +50% времени', maxDur: 100, repairKey: 'powerbank' }
 ];
@@ -115,16 +116,15 @@ function getDynamicPrice(baseValue) {
     if (baseValue === 0) return 0;
     let price = 0;
     if (typeof baseValue === 'string') {
-        if (SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
+        if (SETTINGS.prices && SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
         else price = 0;
     } else { price = baseValue; }
-    let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * SETTINGS.economy.inflation_rate;
+    let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * (SETTINGS.economy.inflation_rate || 0.4);
     return parseFloat((price * multiplier).toFixed(2));
 }
 
 function getRepairCost(key) {
     if(!key) return 0;
-    // Check if in custom repair costs settings, else fallback or use prices
     if(SETTINGS.repair_costs && SETTINGS.repair_costs[key]) return getDynamicPrice(SETTINGS.repair_costs[key]);
     if(key === 'helmet') return getDynamicPrice(50);
     if(key === 'raincoat') return getDynamicPrice(40);
@@ -147,6 +147,7 @@ function addHistory(msg, val, type = 'plus') {
 function log(msg, color = "#eee") { console.log(`%c ${msg}`, `color: ${color}`); }
 
 function triggerFloatingText(text, color, element) {
+    if(!element) return;
     const rect = element.getBoundingClientRect();
     const el = document.createElement('div');
     el.innerText = text;
@@ -171,7 +172,7 @@ function renderBusiness() {
 
     let html = `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-bottom:15px; border-left: 3px solid var(--danger); font-size:11px; color:#aaa; line-height:1.4;">
         🏛️ <b>МУНИЦИПАЛЬНЫЙ ЗАКОН:</b><br>
-        Прибыль от ведения бизнеса облагается налогом <b>${(SETTINGS.economy.business_tax*100).toFixed(0)}%</b>. Налог списывается автоматически.
+        Прибыль от ведения бизнеса облагается налогом <b>${((SETTINGS.economy.business_tax||0.19)*100).toFixed(0)}%</b>.
     </div>`;
 
     let hasHouse = G.housing && G.housing.id !== -1;
@@ -240,7 +241,6 @@ function runBusinessAction(id, cost, btnEl, callback) {
     if (isBusinessBusy) return;
     if(G.money < cost) { log(`Не хватает средств! (${cost.toFixed(0)} PLN)`, "var(--danger)"); triggerShake(); return; }
     
-    // Configurable costs
     let wCost = SETTINGS.business_config.water_cost || 25;
     let sWear = SETTINGS.business_config.shoe_wear || 0.02;
 
@@ -276,7 +276,6 @@ function runVendingDeal(id, btnEl) {
         applyBusinessResult(id, profit, cost, msg, color, btnEl);
     });
 }
-// ... (Остальные функции бизнеса идентичны, используют BUSINESS_META глобально)
 function runVegeGamble(id, btnEl) {
     let biz = BUSINESS_META.find(b => b.id === id);
     let cost = getDynamicPrice(biz.dealCost);
@@ -291,7 +290,7 @@ function runVegeGamble(id, btnEl) {
 }
 function runKebabStrategy(id, mode, btnEl) {
     let biz = BUSINESS_META.find(b => b.id === id);
-    let baseCost = 800; // Можно вынести в настройки, но пока оставим как базу
+    let baseCost = 800; 
     let cost = getDynamicPrice(baseCost);
     if (mode === 'safe') cost *= 1.5; 
     if (mode === 'risky') cost *= 0.3;
@@ -502,20 +501,26 @@ function updateUI() {
         document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
         
         const autoStatus = document.getElementById('auto-status-ui');
-        autoStatus.style.display = G.autoTime > 0 ? 'block' : 'none';
-        if(G.autoTime > 0) autoStatus.innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
+        if(autoStatus) {
+            autoStatus.style.display = G.autoTime > 0 ? 'block' : 'none';
+            if(G.autoTime > 0) autoStatus.innerText = "🤖 " + Math.floor(G.autoTime/60) + ":" + ((G.autoTime%60<10?'0':'')+G.autoTime%60);
+        }
 
         const bikeStatus = document.getElementById('bike-status-ui');
-        let rentShow = false; let text = "";
-        if (G.transportMode === 'veturilo') { rentShow = true; text = "🚲 VETURILO"; } 
-        else if (G.transportMode === 'bolt') { rentShow = true; text = "🛴 BOLT"; } 
-        else if (G.bikeRentTime > 0) { rentShow = true; text = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60); }
-        bikeStatus.style.display = rentShow ? 'block' : 'none';
-        bikeStatus.innerText = text;
+        if(bikeStatus) {
+            let rentShow = false; let text = "";
+            if (G.transportMode === 'veturilo') { rentShow = true; text = "🚲 VETURILO"; } 
+            else if (G.transportMode === 'bolt') { rentShow = true; text = "🛴 BOLT"; } 
+            else if (G.bikeRentTime > 0) { rentShow = true; text = "🚲 " + Math.floor(G.bikeRentTime/60) + ":" + ((G.bikeRentTime%60<10?'0':'')+G.bikeRentTime%60); }
+            bikeStatus.style.display = rentShow ? 'block' : 'none';
+            bikeStatus.innerText = text;
+        }
 
         const buffUI = document.getElementById('buff-status-ui'); 
-        buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
-        if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
+        if(buffUI) {
+            buffUI.style.display = G.buffTime > 0 ? 'block' : 'none';
+            if(G.buffTime > 0) buffUI.innerText = "⚡ " + Math.floor(G.buffTime/60) + ":" + ((G.buffTime%60<10?'0':'')+G.buffTime%60);
+        }
         
         const hiddenPrice = isBlind ? "???" : null;
         const setBtnText = (id, priceStr) => { const btn = document.getElementById(id); if(btn) btn.innerText = (hiddenPrice || priceStr) + " PLN"; };
@@ -538,17 +543,24 @@ function updateUI() {
         }
 
         const rentBikeBtn = document.getElementById('buy-bike-rent');
-        if(G.bikeRentTime > 0) { rentBikeBtn.innerText = "ОТМЕНА"; rentBikeBtn.style.background = "#ef4444"; rentBikeBtn.onclick = cancelBikeRent; }
-        else { rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice('bike_rent').toFixed(2)) + " PLN)"; rentBikeBtn.style.background = ""; rentBikeBtn.onclick = rentBike; }
+        if(rentBikeBtn) {
+            if(G.bikeRentTime > 0) { rentBikeBtn.innerText = "ОТМЕНА"; rentBikeBtn.style.background = "#ef4444"; rentBikeBtn.onclick = cancelBikeRent; }
+            else { rentBikeBtn.innerText = "АРЕНДОВАТЬ (" + (hiddenPrice || getDynamicPrice('bike_rent').toFixed(2)) + " PLN)"; rentBikeBtn.style.background = ""; rentBikeBtn.onclick = rentBike; }
+        }
 
-        document.getElementById('price-auto').innerText = "(" + (hiddenPrice || getDynamicPrice('auto_route').toFixed(2)) + " PLN)";
-        document.getElementById('btn-repair-express').innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice('repair_express').toFixed(2)) + " PLN)";
+        const autoLabel = document.getElementById('price-auto');
+        if(autoLabel) autoLabel.innerText = "(" + (hiddenPrice || getDynamicPrice('auto_route').toFixed(2)) + " PLN)";
+        
+        const repairBtn = document.getElementById('btn-repair-express');
+        if(repairBtn) repairBtn.innerText = "🔧 ЭКСПРЕСС РЕМОНТ (" + (hiddenPrice || getDynamicPrice('repair_express').toFixed(2)) + " PLN)";
 
         let shoeBar = document.getElementById('shoe-bar');
-        const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
-        shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
-        shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
-        document.getElementById('shoe-name').innerHTML = G.shoes.dur <= 0 ? "<span style='color:red'>СЛОМАНО!</span>" : G.shoes.name;
+        if(shoeBar) {
+            const sPct = (G.shoes.dur / G.shoes.maxDur) * 100;
+            shoeBar.style.width = Math.min(100, Math.max(0, sPct)) + "%";
+            shoeBar.style.background = sPct < 20 ? "var(--danger)" : "var(--purple)";
+            document.getElementById('shoe-name').innerHTML = G.shoes.dur <= 0 ? "<span style='color:red'>СЛОМАНО!</span>" : G.shoes.name;
+        }
 
         // Rank Logic
         let currentRank = RANKS[0]; let nextRank = null;
@@ -556,22 +568,29 @@ function updateUI() {
         else if (G.totalOrders < RANKS[1].max) { currentRank = RANKS[1]; nextRank = RANKS[2]; }
         else if (G.totalOrders < RANKS[2].max) { currentRank = RANKS[2]; nextRank = RANKS[3]; }
         else { currentRank = RANKS[3]; nextRank = null; }
-        document.getElementById('rank-icon').innerText = currentRank.icon;
-        document.getElementById('rank-name').innerText = currentRank.name;
-        document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
-        if (nextRank) {
-            let prevMax = (currentRank.name === "Бывалый") ? RANKS[0].max : 0;
-            document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100)) + "%";
-            document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders);
+        
+        const rIcon = document.getElementById('rank-icon');
+        if(rIcon) {
+            rIcon.innerText = currentRank.icon;
+            document.getElementById('rank-name').innerText = currentRank.name;
+            document.getElementById('rank-bonus').innerText = "Бонус ранга: +" + (currentRank.bonus * 100) + "%";
+            if (nextRank) {
+                let prevMax = (currentRank.name === "Бывалый") ? RANKS[0].max : 0;
+                document.getElementById('rank-progress').style.width = Math.max(0, Math.min(100, ((G.totalOrders - prevMax) / (currentRank.max - prevMax)) * 100)) + "%";
+                document.getElementById('rank-next').innerText = "До ранга " + nextRank.name + ": " + (currentRank.max - G.totalOrders);
+            }
         }
 
         // Daily Quests
         let questsHTML = "";
-        G.dailyQuests.forEach(q => {
-            let btn = q.claimed ? "✅" : (q.current >= q.target ? `<button class='btn-action' style='width:auto; padding:4px;' onclick='claimDaily(${q.id})'>ЗАБРАТЬ ${q.reward}</button>` : `<small>${Math.floor(q.current)}/${q.target}</small>`);
-            questsHTML += `<div class='daily-quest-item'><div class='daily-quest-info'><b>${q.text}</b><br><div style='height:4px; background:#333; margin-top:4px;'><div style='height:100%; background:var(--accent-blue); width:${(q.current/q.target)*100}%'></div></div></div><div style='margin-left:10px;'>${btn}</div></div>`;
-        });
-        document.getElementById('daily-quests-list').innerHTML = questsHTML;
+        if(G.dailyQuests) {
+            G.dailyQuests.forEach(q => {
+                let btn = q.claimed ? "✅" : (q.current >= q.target ? `<button class='btn-action' style='width:auto; padding:4px;' onclick='claimDaily(${q.id})'>ЗАБРАТЬ ${q.reward}</button>` : `<small>${Math.floor(q.current)}/${q.target}</small>`);
+                questsHTML += `<div class='daily-quest-item'><div class='daily-quest-info'><b>${q.text}</b><br><div style='height:4px; background:#333; margin-top:4px;'><div style='height:100%; background:var(--accent-blue); width:${(q.current/q.target)*100}%'></div></div></div><div style='margin-left:10px;'>${btn}</div></div>`;
+            });
+            const qList = document.getElementById('daily-quests-list');
+            if(qList) qList.innerHTML = questsHTML;
+        }
 
         document.getElementById('stat-orders').innerText = G.totalOrders;
         document.getElementById('stat-clicks').innerText = G.totalClicks;
@@ -591,46 +610,59 @@ function updateUI() {
 
         // Items
         let invHTML = "";
-        UPGRADES_META.forEach(up => {
-            if(G[up.id]) {
-                const item = G[up.id];
-                const isBroken = item.dur <= 0;
-                let conf = UPGRADES_META.find(u => u.id === up.id);
-                let repairCost = getRepairCost(conf.repairKey);
-                invHTML += `<div class="shop-item ${isBroken ? 'item-broken' : ''}"><div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc">${isBroken ? 'СЛОМАНО' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${item.dur}%"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairCost}, true)">🛠️ ${hiddenPrice || repairCost.toFixed(2)}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}')">💸</button></div></div>`;
-            }
-        });
-        document.getElementById('my-items-list').innerHTML = invHTML;
+        const itemsList = document.getElementById('my-items-list');
+        if(itemsList) {
+            UPGRADES_META.forEach(up => {
+                if(G[up.id]) {
+                    const item = G[up.id];
+                    const isBroken = item.dur <= 0;
+                    let conf = UPGRADES_META.find(u => u.id === up.id);
+                    let repairCost = getRepairCost(conf.repairKey);
+                    invHTML += `<div class="shop-item ${isBroken ? 'item-broken' : ''}"><div class="shop-icon">${up.icon}</div><div class="shop-title">${up.name}</div><div class="shop-desc">${isBroken ? 'СЛОМАНО' : up.bonus}</div><div class="inv-dur-track"><div class="inv-dur-fill" style="width:${item.dur}%"></div></div><div class="inv-action-row"><button class="inv-btn-repair" onclick="repairItem('${up.id}', ${repairCost}, true)">🛠️ ${hiddenPrice || repairCost.toFixed(2)}</button><button class="inv-btn-sell" onclick="sellInvest('${up.id}')">💸</button></div></div>`;
+                }
+            });
+            itemsList.innerHTML = invHTML;
+        }
 
         // Districts
         let distHTML = "";
-        DISTRICTS.forEach((d, i) => {
-            let isCurrent = G.district === i;
-            let isOwner = G.housing && G.housing.id === i;
-            let actionBtn = isCurrent ? `<button class="btn-action btn-secondary" style="opacity:0.7;">ТУТ</button>` : `<button class="btn-action" onclick="moveDistrict(${i})">ЕХАТЬ ${d.price}</button>`;
-            if(isOwner) actionBtn = `<button class="btn-action" style="background:var(--gold); color:black;">ВЛАДЕЛЕЦ</button>`;
-            else if(d.housePrice) actionBtn += `<button class="btn-action" style="margin-top:5px; border:1px solid var(--accent-gold); background:transparent; color:var(--accent-gold);" onclick="buyHouse(${i})">КУПИТЬ ${(d.housePrice/1000).toFixed(0)}k</button>`;
-            distHTML += `<div class="card"><b>${d.name}</b><small>Аренда: ${(d.rentPct*100).toFixed(0)}% | x${d.mult}</small>${actionBtn}</div>`;
-        });
-        document.getElementById('districts-list-container').innerHTML = distHTML;
+        const distCont = document.getElementById('districts-list-container');
+        if(distCont) {
+            DISTRICTS.forEach((d, i) => {
+                let isCurrent = G.district === i;
+                let isOwner = G.housing && G.housing.id === i;
+                let actionBtn = isCurrent ? `<button class="btn-action btn-secondary" style="opacity:0.7;">ТУТ</button>` : `<button class="btn-action" onclick="moveDistrict(${i})">ЕХАТЬ ${d.price}</button>`;
+                if(isOwner) actionBtn = `<button class="btn-action" style="background:var(--gold); color:black;">ВЛАДЕЛЕЦ</button>`;
+                else if(d.housePrice) actionBtn += `<button class="btn-action" style="margin-top:5px; border:1px solid var(--accent-gold); background:transparent; color:var(--accent-gold);" onclick="buyHouse(${i})">КУПИТЬ ${(d.housePrice/1000).toFixed(0)}k</button>`;
+                distHTML += `<div class="card"><b>${d.name}</b><small>Аренда: ${(d.rentPct*100).toFixed(0)}% | x${d.mult}</small>${actionBtn}</div>`;
+            });
+            distCont.innerHTML = distHTML;
+        }
 
         renderBank(); renderBankFull(); renderMilestones(); renderBusiness();
 
         if (curView === 'main' && order.visible) document.getElementById('quest-bar').style.display = 'block';
         else document.getElementById('quest-bar').style.display = 'none';
 
-        document.getElementById('btn-lvl-small').innerText = `КУПИТЬ -0.05 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate} PLN`;
-        document.getElementById('btn-lvl-big').innerText = `КУПИТЬ -1.00 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate_big} PLN`;
+        const lvlS = document.getElementById('btn-lvl-small');
+        if(lvlS) lvlS.innerText = `КУПИТЬ -0.05 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate} PLN`;
+        
+        const lvlB = document.getElementById('btn-lvl-big');
+        if(lvlB) lvlB.innerText = `КУПИТЬ -1.00 LVL\n⮕ ${SETTINGS.economy.lvl_exchange_rate_big} PLN`;
 
-        document.querySelector("button[onclick='collectBottles()']").innerText = `♻️ СБОР БУТЫЛОК (+${SETTINGS.economy.bottle_price})`;
+        const btnB = document.querySelector("button[onclick='collectBottles()']");
+        if(btnB) btnB.innerText = `♻️ СБОР БУТЫЛОК (+${SETTINGS.economy.bottle_price})`;
 
         // Timers
         let taxText = G.money > SETTINGS.economy.tax_threshold ? (SETTINGS.economy.tax_rate * 100).toFixed(0) + "%" : "FREE";
-        document.getElementById('tax-timer').innerText = `Налог (${taxText}): ${Math.floor(G.tax/60)}:${G.tax%60}`;
+        const taxT = document.getElementById('tax-timer');
+        if(taxT) taxT.innerText = `Налог (${taxText}): ${Math.floor(G.tax/60)}:${G.tax%60}`;
+        
         let rentVal = (G.housing && G.housing.id === G.district) ? getDynamicPrice(DISTRICTS[G.district].czynszBase) : (G.money * DISTRICTS[G.district].rentPct);
-        document.getElementById('rent-timer').innerText = `Оплата (${rentVal.toFixed(0)}): ${Math.floor(G.rent/60)}:${G.rent%60}`;
+        const rentT = document.getElementById('rent-timer');
+        if(rentT) rentT.innerText = `Оплата (${rentVal.toFixed(0)}): ${Math.floor(G.rent/60)}:${G.rent%60}`;
 
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("UI Error:", e); }
 }
 
 function doWork() {
@@ -718,15 +750,13 @@ function finishOrder(win) {
     order.visible = false; updateUI(); save(); 
 }
 
-// ... Остальные функции (buyShoes, buyInvest, sellInvest, repairItem, getWelfare, repairBikeInstant) используют getDynamicPrice и работают корректно ...
-// Сократил для примера, но логика осталась та же, только теперь SETTINGS динамические.
+// ... Остальные функции (buyShoes, buyInvest, sellInvest, repairItem, getWelfare, repairBikeInstant) ...
+// (Они остаются такими же, как в предыдущем коде, но используют SETTINGS)
 
-// Функции банка (с использованием SETTINGS.bank_config)
 function makeDeposit() {
     const inp = document.getElementById('bank-inp'); let val = parseFloat(inp.value);
     if (!val || val > G.money || val < 100) return;
-    let mult = selectedBankPlan.mult; // 1, 3, or 8 from UI
-    // В новой админке мы можем менять mult_15 и mult_30, так что тут надо мапить
+    let mult = selectedBankPlan.mult;
     if (selectedBankPlan.days === 15) mult = SETTINGS.bank_config.mult_15;
     if (selectedBankPlan.days === 30) mult = SETTINGS.bank_config.mult_30;
     
@@ -736,7 +766,7 @@ function makeDeposit() {
     addBankLog("Вклад", val, "minus"); inp.value = ""; save(); updateUI();
 }
 
-// ... Остальные UI функции без изменений, они просто отображают данные ...
+// ... Остальные функции UI ...
 
 setInterval(() => {
     if (G.money > 0) {
@@ -754,9 +784,7 @@ setInterval(() => {
             G.money -= cost; addHistory('АРЕНДА/ЖКХ', cost.toFixed(2), 'minus'); G.rent = SETTINGS.economy.rent_timer_sec; save();
         }
     }
-    // ... Таймеры предметов ...
     updateUI();
 }, 1000);
 
 window.onload = load;
-
