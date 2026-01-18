@@ -3,503 +3,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Cyber-Tycoon</title>
+    <title>Warszawa Delivery King</title>
     <style>
         :root {
-            --bg: #050505;
-            --panel: rgba(20, 20, 20, 0.8);
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-            --neon-green: #00ff41;
-            --danger: #ff3333;
-            --text-main: #e0e0e0;
+            --bg: #121212;
+            --card: #1e1e1e;
+            --uber-green: #06C167;
+            --wolt-blue: #009de0;
+            --glovo-yellow: #ffc244;
+            --danger: #ff4444;
+            --text: #ffffff;
         }
 
         body {
             background-color: var(--bg);
-            color: var(--text-main);
-            font-family: 'Courier New', monospace;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            background-image: 
-                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
-            background-size: 20px 20px;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0; padding: 0;
+            height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+            user-select: none;
         }
 
-        /* --- UI HEADER --- */
-        .hud-top {
-            display: flex;
-            justify-content: space-between;
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ (СТАТИСТИКА) --- */
+        .hud {
             padding: 15px;
-            background: var(--panel);
-            border-bottom: 1px solid var(--neon-blue);
-            z-index: 100;
-        }
-
-        .stat-box {
-            text-align: center;
-        }
-
-        .crypto-val {
-            font-size: 20px;
-            font-weight: bold;
-            color: var(--neon-green);
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-        }
-
-        .temp-bar-container {
-            width: 100%;
-            height: 4px;
-            background: #333;
-            margin-top: 5px;
-            position: relative;
-        }
-        
-        .temp-bar-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--neon-blue), var(--danger));
-            transition: width 0.2s;
-        }
-
-        /* --- CORE VISUAL (Адаптировано из твоего test.html) --- */
-        .core-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            perspective: 1000px;
-        }
-
-        .avatar-frame {
-            width: 280px;
-            height: 280px;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .avatar-frame:active {
-            transform: scale(0.95);
-        }
-
-        .core {
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle, #fff 10%, var(--neon-blue) 60%, #000 90%);
-            border-radius: 50%;
-            position: absolute;
+            background: rgba(30, 30, 30, 0.9);
+            border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
             z-index: 10;
-            box-shadow: 0 0 50px var(--neon-blue);
-            animation: pulse 2s infinite ease-in-out;
         }
 
-        .orbit {
-            position: absolute;
+        .balance-area {
+            display: flex; flex-direction: column;
+        }
+        .balance-val {
+            font-size: 26px; font-weight: 900; color: var(--text);
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+        .balance-label { font-size: 10px; color: #888; letter-spacing: 1px; }
+
+        .stress-area { width: 140px; text-align: right; }
+        .stress-bar-bg {
+            width: 100%; height: 8px; background: #333;
+            border-radius: 4px; margin-top: 5px; overflow: hidden;
+        }
+        .stress-bar-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--uber-green), var(--glovo-yellow), var(--danger));
+            transition: width 0.1s linear;
+        }
+
+        /* --- ЦЕНТРАЛЬНЫЙ РАДАР (ТЕЛЕФОН) --- */
+        .radar-zone {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            overflow: hidden;
+        }
+
+        /* Карта на фоне (декор) */
+        .map-grid {
+            position: absolute; width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(40deg) translateY(-50px);
+            animation: moveMap 10s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes moveMap { 0% { background-position: 0 0; } 100% { background-position: 0 40px; } }
+
+        /* Смартфон/Кнопка */
+        .phone-btn {
+            width: 220px; height: 220px;
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #444;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            transition: transform 0.1s, border-color 0.3s;
+        }
+        .phone-btn:active { transform: scale(0.96); }
+
+        /* Волны радара */
+        .pulse-ring {
+            position: absolute; border-radius: 50%; border: 2px solid var(--uber-green);
+            width: 100%; height: 100%; opacity: 0;
+            animation: pulseWave 2s infinite;
+        }
+        .pulse-ring:nth-child(2) { animation-delay: 0.5s; border-color: var(--wolt-blue); }
+        .pulse-ring:nth-child(3) { animation-delay: 1.0s; border-color: var(--glovo-yellow); }
+
+        @keyframes pulseWave {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.6); opacity: 0; }
         }
 
-        .orbit-1 { width: 160px; height: 160px; border-top: 2px solid var(--neon-blue); animation: spin 4s linear infinite; }
-        .orbit-2 { width: 220px; height: 220px; border-bottom: 2px solid var(--neon-pink); animation: spin-rev 7s linear infinite; }
-        .orbit-3 { width: 260px; height: 260px; border-left: 2px dashed var(--neon-green); animation: spin 12s linear infinite; }
+        .phone-icon { font-size: 60px; z-index: 6; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
 
-        @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 80px var(--neon-blue); } 100% { transform: scale(0.95); opacity: 0.8; } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spin-rev { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+        /* Всплывающие заказы */
+        .order-pop {
+            position: absolute; font-weight: bold; font-size: 14px;
+            padding: 5px 10px; border-radius: 15px; color: #000;
+            pointer-events: none; animation: floatUp 0.8s forwards;
+            display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 20% { opacity: 1; transform: scale(1.1); } 100% { transform: translateY(-80px) scale(1); opacity: 0; } }
 
-        .heat-warning {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 40px;
-            color: var(--danger);
-            font-weight: 900;
-            display: none;
-            z-index: 20;
-            text-shadow: 0 0 20px var(--danger);
-            pointer-events: none;
-            border: 4px solid var(--danger);
-            padding: 20px;
-            background: rgba(0,0,0,0.8);
+        /* Экран БАНА */
+        .ban-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9);
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 50; text-align: center; color: var(--danger);
+        }
+        .ban-icon { font-size: 60px; margin-bottom: 10px; animation: shake 0.5s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 25% { transform: translate(-2px, -1px); } 50% { transform: translate(1px, -2px); } 75% { transform: translate(-1px, 2px); } 100% { transform: translate(0, 0); } }
+
+        /* --- НИЖНЯЯ ПАНЕЛЬ (УПРАВЛЕНИЕ) --- */
+        .controls {
+            background: #181818; border-top: 1px solid #333;
+            padding: 15px; display: flex; flex-direction: column; gap: 12px;
+            height: 40vh;
         }
 
-        /* --- STRATEGY PANEL --- */
-        .strategy-panel {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
+        /* Переключатель режимов */
+        .mode-switcher {
+            display: flex; background: #222; padding: 4px; border-radius: 12px;
+            gap: 4px;
         }
-
         .mode-btn {
-            background: transparent;
-            border: 1px solid #555;
-            color: #777;
-            padding: 8px 15px;
-            font-family: inherit;
-            font-size: 10px;
-            cursor: pointer;
-            text-transform: uppercase;
+            flex: 1; background: transparent; border: none; color: #666;
+            padding: 12px; font-weight: 700; cursor: pointer; border-radius: 8px; font-size: 11px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            transition: all 0.2s;
         }
+        .mode-btn.active { background: #333; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .mode-btn.active.chill { color: var(--uber-green); border-bottom: 2px solid var(--uber-green); }
+        .mode-btn.active.normal { color: var(--wolt-blue); border-bottom: 2px solid var(--wolt-blue); }
+        .mode-btn.active.hard { color: var(--danger); border-bottom: 2px solid var(--danger); background: rgba(255, 68, 68, 0.1); }
 
-        .mode-btn.active {
-            border-color: var(--color);
-            color: var(--color);
-            box-shadow: 0 0 10px var(--color);
+        /* Магазин */
+        .shop-container { flex: 1; overflow-y: auto; padding-right: 5px; }
+        .shop-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px;
+            margin-bottom: 8px; border-left: 3px solid #444;
         }
-
-        /* --- UPGRADES --- */
-        .panel-bottom {
-            background: var(--panel);
-            border-top: 1px solid var(--neon-pink);
-            height: 35vh;
-            overflow-y: auto;
-            padding: 15px;
+        .shop-item.can-buy { border-left-color: var(--uber-green); }
+        
+        .buy-btn {
+            background: var(--text); color: black; border: none;
+            padding: 8px 16px; border-radius: 20px; font-weight: 800; cursor: pointer;
+            font-size: 12px;
         }
-
-        .upgrade-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255,255,255,0.05);
-            padding: 10px;
-            margin-bottom: 10px;
-            border-left: 3px solid #555;
-        }
-
-        .upgrade-card.affordable {
-            border-left-color: var(--neon-green);
-        }
-
-        .btn-buy {
-            background: transparent;
-            border: 1px solid var(--neon-green);
-            color: var(--neon-green);
-            padding: 5px 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn-buy:disabled {
-            border-color: #555;
-            color: #555;
-        }
-
-        /* --- LOGS --- */
-        .log-console {
-            position: absolute;
-            top: 70px;
-            left: 10px;
-            font-size: 10px;
-            color: var(--neon-green);
-            opacity: 0.7;
-            pointer-events: none;
-            text-shadow: 0 0 2px var(--neon-green);
-        }
-        .log-line { margin-bottom: 2px; }
+        .buy-btn:disabled { opacity: 0.3; cursor: not-allowed; background: #555; color: #888; }
 
     </style>
 </head>
 <body>
 
-    <div class="hud-top">
-        <div class="stat-box" style="text-align: left;">
-            <small style="color:var(--neon-blue)">NET_WORTH</small><br>
-            <span id="crypto-ui" class="crypto-val">0.0000</span> BTC
+    <div class="hud">
+        <div class="balance-area">
+            <span class="balance-label">БАЛАНС</span>
+            <div class="balance-val" id="money-ui">0 PLN</div>
         </div>
-        <div class="stat-box" style="text-align: right; width: 120px;">
-            <small style="color:var(--danger)">SYS_TEMP</small> <span id="temp-val-ui">0°C</span>
-            <div class="temp-bar-container">
-                <div id="temp-bar" class="temp-bar-fill"></div>
+        <div class="stress-area">
+            <div style="font-size: 10px; color: #aaa; display:flex; justify-content:space-between;">
+                <span>НАГРУЗКА</span>
+                <span id="stress-text">0%</span>
             </div>
-            <small id="cooling-rate-ui" style="font-size: 9px; color: #777;">Cooling: -1°/sec</small>
+            <div class="stress-bar-bg">
+                <div class="stress-bar-fill" id="stress-fill"></div>
+            </div>
+            <div style="font-size: 9px; margin-top: 4px;" id="stress-status">Спокойная смена...</div>
         </div>
     </div>
 
-    <div class="log-console" id="log-container">
-        <div class="log-line">> SYSTEM INIT...</div>
-    </div>
+    <div class="radar-zone">
+        <div class="map-grid"></div>
+        
+        <div class="ban-overlay" id="ban-screen">
+            <div class="ban-icon">⛔</div>
+            <h2 style="margin:0;">АККАУНТ ЗАБЛОКИРОВАН</h2>
+            <p style="font-size:12px; color:#aaa; max-width: 250px;">Вы взяли слишком много заказов и не справились. Поддержка разбирается...</p>
+            <div style="font-size: 18px; color: white; margin-top:10px; font-weight: bold;" id="ban-timer">5.0s</div>
+        </div>
 
-    <div class="core-container">
-        <div class="heat-warning" id="overheat-msg">OVERHEAT</div>
-        <div class="avatar-frame" id="click-zone" onclick="manualHack()">
-            <div class="core"></div>
-            <div class="orbit orbit-1"></div>
-            <div class="orbit orbit-2"></div>
-            <div class="orbit orbit-3"></div>
+        <div class="phone-btn" id="phone-core" onclick="takeOrder()">
+            <div class="pulse-ring"></div>
+            <div class="pulse-ring"></div>
+            <div class="pulse-ring"></div>
+            <div class="phone-icon" id="app-icon">🚴</div>
         </div>
     </div>
 
-    <div style="text-align: center; margin-bottom: 10px; color: #aaa; font-size: 10px;">
-        РЕЖИМ РАБОТЫ (СТРАТЕГИЯ)
-    </div>
-    <div class="strategy-panel">
-        <button class="mode-btn" style="--color: var(--neon-blue)" id="mode-eco" onclick="setMode('eco')">❄️ ECO</button>
-        <button class="mode-btn active" style="--color: var(--neon-green)" id="mode-normal" onclick="setMode('normal')">⚡ NORMAL</button>
-        <button class="mode-btn" style="--color: var(--danger)" id="mode-oc" onclick="setMode('overclock')">🔥 OVERCLOCK</button>
-    </div>
+    <div class="controls">
+        <div style="font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold;">Режим работы (Стратегия)</div>
+        <div class="mode-switcher">
+            <button class="mode-btn active chill" id="btn-chill" onclick="setMode('chill')">
+                <span>🟢 Chill</span>
+                <span style="font-size:9px; opacity:0.7;">1 Приложение</span>
+            </button>
+            <button class="mode-btn normal" id="btn-active" onclick="setMode('active')">
+                <span>🔵 Active</span>
+                <span style="font-size:9px; opacity:0.7;">2 Приложения</span>
+            </button>
+            <button class="mode-btn hard" id="btn-psycho" onclick="setMode('psycho')">
+                <span>🔴 PSYCHO</span>
+                <span style="font-size:9px; opacity:0.7;">MULTI-APP</span>
+            </button>
+        </div>
 
-    <div class="panel-bottom">
-        <div style="font-size: 12px; margin-bottom: 10px; color: var(--neon-pink); font-weight: bold;">/// MARKETPLACE ///</div>
-        <div id="upgrades-list"></div>
+        <div style="font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold; margin-top: 5px;">Экипировка & Бусты</div>
+        <div class="shop-container" id="shop-ui"></div>
     </div>
 
 <script>
-    // === LOGIC & ECONOMY ===
-    
-    // Save Key (Compatible logic pattern)
-    const SAVE_KEY = "WARSZAWA_CYBER_SAVE";
+    // === ЛОГИКА ИГРЫ ===
+    const SAVE_KEY = "DELIVERY_KING_V1";
 
+    // Конфигурация Режимов
+    // mult: множитель денег за клик
+    // stress: множитель накопления стресса
+    // activeStress: сколько стресса добавляет само оборудование (пассивный нагрев)
     const MODES = {
-        eco: { mult: 0.5, heat: 0.2, color: 'var(--neon-blue)' },
-        normal: { mult: 1.0, heat: 1.0, color: 'var(--neon-green)' },
-        overclock: { mult: 3.5, heat: 4.0, color: 'var(--danger)' }
+        chill:  { id: 'chill', name: "Один заказ", mult: 1.0, stress: 0.5, icon: "🚴", color: "#06C167" },
+        active: { id: 'active', name: "Плотный поток", mult: 2.5, stress: 1.5, icon: "🛵", color: "#009de0" },
+        psycho: { id: 'psycho', name: "MULTI-APPING", mult: 5.0, stress: 4.0, icon: "🔥", color: "#ff4444" }
     };
 
-    const UPGRADES = [
-        { id: 'ram', name: 'RAM Stick 8GB', desc: '+База клика', basePrice: 0.005, type: 'click', val: 0.0001 },
-        { id: 'gpu', name: 'GTX 1050 Miner', desc: '+Пассивный доход', basePrice: 0.020, type: 'auto', val: 0.0005, heatGen: 0.5 },
-        { id: 'fan', name: 'Cooler Master', desc: '+Охлаждение', basePrice: 0.015, type: 'cool', val: 1.5 },
-        { id: 'asic', name: 'ASIC Antminer', desc: '++Пассив, +Жар', basePrice: 0.150, type: 'auto', val: 0.005, heatGen: 3.0 },
-        { id: 'liquid', name: 'Liquid Cooling', desc: '++Охлаждение', basePrice: 0.300, type: 'cool', val: 5.0 },
-        { id: 'server', name: 'Mainframe Node', desc: '+++Пассив, ++Жар', basePrice: 1.000, type: 'auto', val: 0.05, heatGen: 10.0 }
+    // Магазин
+    const SHOP = [
+        { id: 'bag', name: 'Термосумка Pro', desc: '+10% к доходу за клик', basePrice: 50, type: 'click', val: 0.5 },
+        { id: 'powerbank', name: 'Powerbank 20k', desc: 'Снижает нагрузку (стресс -1)', basePrice: 120, type: 'cool', val: 1.0 },
+        { id: 'ebike', name: 'Электровелосипед', desc: 'Авто-заказы (Пассив)', basePrice: 400, type: 'auto', val: 2.0, heat: 0.5 },
+        { id: 'coffee', name: 'Двойной Эспрессо', desc: 'Мгновенно снимает -20% стресса', basePrice: 20, type: 'consumable', val: -20 },
+        { id: 'bot', name: 'Скрипт-кликер', desc: 'Сильный авто-доход, но РИСК!', basePrice: 1500, type: 'auto', val: 15.0, heat: 3.0 },
+        { id: 'rent', name: 'Сдать акк в аренду', desc: 'Огромный пассив, дикая нагрузка', basePrice: 5000, type: 'auto', val: 50.0, heat: 8.0 }
     ];
 
     let G = {
-        btc: 0.0000,
-        temp: 40,
-        clickPower: 0.0001,
-        autoPower: 0,
-        cooling: 2.0, // Базовое охлаждение
-        heatGeneration: 0, // Базовый нагрев от оборудования
-        inventory: {},
-        startTime: Date.now()
+        money: 0,
+        stress: 0,
+        clickBase: 2.5, // База PLN за заказ
+        autoIncome: 0,  // Пассивный доход
+        stressRelief: 2.0, // Базовое "охлаждение" (отдых)
+        passiveStress: 0, // Нагрузка от авто-ботов
+        inventory: {}
     };
 
-    let currentMode = 'normal';
-    let isOverheated = false;
+    let currentMode = 'chill';
+    let isBanned = false;
 
-    // --- INIT ---
+    // === START ===
     function init() {
         loadGame();
-        renderUpgrades();
-        setInterval(gameLoop, 100); // Fast loop for smooth bars
-        setInterval(saveGame, 5000); // Auto save
-        log("System Online. Welcome, NetRunner.");
+        renderShop();
+        updateUI();
+        setInterval(gameLoop, 100); // 10 раз в секунду
+        setInterval(saveGame, 5000);
     }
 
-    // --- CORE LOOP ---
+    // === GAME LOOP ===
     function gameLoop() {
-        // Охлаждение работает всегда
-        let coolingEffect = G.cooling * 0.1; // per tick (0.1s)
+        if (isBanned) return;
+
+        // 1. Расчет Нагрузки (Stress)
+        // Если ничего не делать, стресс падает (G.stressRelief)
+        // Но если есть Боты/Аренда (G.passiveStress), они грузят систему даже без кликов!
+        // В режиме PSYCHO пассивная нагрузка умножается!
         
-        // Нагрев зависит от пассивного оборудования и режима
-        let passiveHeat = (G.heatGeneration * MODES[currentMode].heat) * 0.1;
+        let modeMult = (currentMode === 'psycho') ? 1.5 : 1.0;
+        let stressAdd = (G.passiveStress * modeMult); 
+        let stressSub = G.stressRelief;
         
-        // Изменение температуры
-        if (!isOverheated) {
-            G.temp = G.temp + passiveHeat - coolingEffect;
-            
-            // Пассивный доход
-            if (G.autoPower > 0) {
-                let gain = (G.autoPower * MODES[currentMode].mult) * 0.1;
-                G.btc += gain;
-            }
-        } else {
-            // Если перегрев, доход 0, охлаждение х2 (аварийный режим)
-            G.temp -= coolingEffect * 1.5;
-            if (G.temp <= 50) {
-                isOverheated = false;
-                document.getElementById('overheat-msg').style.display = 'none';
-                log("System Restored.");
-            }
+        // Тик 0.1 сек
+        let delta = (stressAdd - stressSub) * 0.1;
+        G.stress += delta;
+
+        // Ограничители
+        if (G.stress < 0) G.stress = 0;
+        
+        // 2. Пассивный доход
+        if (G.autoIncome > 0) {
+            // В режиме Chill боты работают хуже, в Psycho - на полную
+            let efficiency = (currentMode === 'chill') ? 0.5 : (currentMode === 'active' ? 1.0 : 1.2);
+            G.money += (G.autoIncome * efficiency) * 0.1;
         }
 
-        // Физика температуры
-        if (G.temp < 20) G.temp = 20; // Комнатная
-        if (G.temp > 100) {
-            G.temp = 100;
-            if (!isOverheated) {
-                isOverheated = true;
-                document.getElementById('overheat-msg').style.display = 'block';
-                log("CRITICAL ERROR: OVERHEAT!", "red");
-                // Сброс режима на Eco при перегреве
-                setMode('eco'); 
-            }
+        // 3. ПРОВЕРКА НА БАН (Взрыв)
+        if (G.stress >= 100) {
+            triggerBan();
         }
 
         updateUI();
     }
 
-    // --- ACTIONS ---
-    function manualHack() {
-        if (isOverheated) return;
+    // === ДЕЙСТВИЯ ===
 
-        // Клик нагревает процессор!
-        let heatCost = 2.5 * MODES[currentMode].heat; 
-        G.temp += heatCost;
+    function takeOrder() {
+        if (isBanned) return;
 
-        let gain = G.clickPower * MODES[currentMode].mult;
-        G.btc += gain;
-
-        createFloatingText(`+${gain.toFixed(5)}`, MODES[currentMode].color);
+        // Клик повышает стресс. В режиме Psycho - очень сильно.
+        let modeConfig = MODES[currentMode];
+        let stressCost = 4.0 * modeConfig.stress;
         
-        // Визуальный эффект клика
-        const core = document.querySelector('.core');
-        core.style.transform = 'scale(1.2)';
-        setTimeout(() => core.style.transform = 'scale(1)', 100);
+        G.stress += stressCost;
+
+        // Доход
+        let income = G.clickBase * modeConfig.mult;
+        // Случайный разброс (Чаевые)
+        let rng = 0.8 + Math.random() * 0.4; // 0.8x to 1.2x
+        let finalPay = income * rng;
+        
+        G.money += finalPay;
+
+        // Визуал
+        spawnOrderText(finalPay, modeConfig.color);
+        pulsePhone();
+        
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(15);
+        updateUI();
     }
 
     function setMode(mode) {
         currentMode = mode;
+        // UI
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + mode).classList.add('active');
         
-        let btnId = mode === 'eco' ? 'mode-eco' : mode === 'normal' ? 'mode-normal' : 'mode-oc';
-        document.getElementById(btnId).classList.add('active');
-        
-        log(`Mode switched to: ${mode.toUpperCase()}`);
+        // Меняем цвет колец радара
+        let color = MODES[mode].color;
+        document.querySelectorAll('.pulse-ring').forEach(r => r.style.borderColor = color);
+        document.getElementById('app-icon').innerText = MODES[mode].icon;
     }
 
-    function buyUpgrade(id) {
-        let item = UPGRADES.find(u => u.id === id);
-        let count = G.inventory[id] || 0;
-        let cost = item.basePrice * Math.pow(1.15, count);
-
-        if (G.btc >= cost) {
-            G.btc -= cost;
-            G.inventory[id] = count + 1;
-            
-            // Apply Stats
-            if (item.type === 'click') G.clickPower += item.val;
-            if (item.type === 'auto') {
-                G.autoPower += item.val;
-                G.heatGeneration += (item.heatGen || 0);
+    function buyItem(id) {
+        let item = SHOP.find(i => i.id === id);
+        
+        // Если расходник (Кофе)
+        if (item.type === 'consumable') {
+            if (G.money >= item.basePrice) {
+                G.money -= item.basePrice;
+                G.stress = Math.max(0, G.stress + item.val); // val отрицательный
+                updateUI();
             }
-            if (item.type === 'cool') G.cooling += item.val;
+            return;
+        }
 
-            log(`Installed: ${item.name} (Lvl ${count + 1})`);
-            renderUpgrades();
+        // Если улучшение
+        let count = G.inventory[id] || 0;
+        let price = Math.floor(item.basePrice * Math.pow(1.3, count));
+
+        if (G.money >= price) {
+            G.money -= price;
+            G.inventory[id] = count + 1;
+
+            if (item.type === 'click') G.clickBase += item.val;
+            if (item.type === 'cool') G.stressRelief += item.val;
+            if (item.type === 'auto') {
+                G.autoIncome += item.val;
+                G.passiveStress += (item.heat || 0); // Боты добавляют нагрузку
+            }
+
+            renderShop();
             saveGame();
-        } else {
-            log("Insufficient Funds", "red");
+            updateUI();
         }
     }
 
-    // --- UI & RENDER ---
-    function updateUI() {
-        document.getElementById('crypto-ui').innerText = G.btc.toFixed(6);
+    function triggerBan() {
+        isBanned = true;
+        G.stress = 0;
+        setMode('chill'); // Сброс режима
+
+        const screen = document.getElementById('ban-screen');
+        const timerEl = document.getElementById('ban-timer');
+        screen.style.display = 'flex';
+
+        let banTime = 5.0;
+        let interval = setInterval(() => {
+            banTime -= 0.1;
+            timerEl.innerText = banTime.toFixed(1) + "s";
+            if (banTime <= 0) {
+                clearInterval(interval);
+                screen.style.display = 'none';
+                isBanned = false;
+                G.stress = 30; // Возвращаем немного стресса после бана
+            }
+        }, 100);
+    }
+
+    // === VISUALS ===
+
+    function spawnOrderText(amount, color) {
+        const el = document.createElement('div');
+        el.className = 'order-pop';
+        el.style.left = (30 + Math.random() * 40) + '%';
+        el.style.top = '40%';
+        el.style.backgroundColor = color;
         
-        let tempPct = Math.min(100, Math.max(0, G.temp));
-        let bar = document.getElementById('temp-bar');
-        document.getElementById('temp-val-ui').innerText = Math.floor(G.temp) + "°C";
-        bar.style.width = tempPct + "%";
+        // Выбор иконки приложения случайно для атмосферы
+        let apps = ["U", "W", "G"]; 
+        let app = apps[Math.floor(Math.random()*apps.length)];
+        
+        el.innerHTML = `<span style="background:rgba(0,0,0,0.2); padding:2px 5px; border-radius:4px;">${app}</span> +${amount.toFixed(1)}`;
+        
+        document.querySelector('.radar-zone').appendChild(el);
+        setTimeout(() => el.remove(), 800);
+    }
 
-        // Цвет полоски температуры
-        if (tempPct < 60) bar.style.background = "var(--neon-blue)";
-        else if (tempPct < 85) bar.style.background = "var(--neon-green)";
-        else bar.style.background = "var(--danger)";
+    function pulsePhone() {
+        const p = document.getElementById('phone-core');
+        p.style.transform = "scale(0.95)";
+        p.style.borderColor = "#fff";
+        setTimeout(() => {
+            p.style.transform = "scale(1)";
+            p.style.borderColor = "#444";
+        }, 100);
+    }
 
-        // Обновление кнопок (доступность)
-        UPGRADES.forEach(u => {
-            let count = G.inventory[u.id] || 0;
-            let cost = u.basePrice * Math.pow(1.15, count);
-            let btn = document.getElementById(`btn-${u.id}`);
+    function updateUI() {
+        document.getElementById('money-ui').innerText = Math.floor(G.money).toLocaleString() + " PLN";
+        
+        // Стресс бар
+        let pct = Math.min(100, Math.max(0, G.stress));
+        let bar = document.getElementById('stress-fill');
+        bar.style.width = pct + "%";
+        document.getElementById('stress-text').innerText = Math.floor(pct) + "%";
+
+        // Цвет бара и статус
+        let status = document.getElementById('stress-status');
+        if (pct < 40) {
+            bar.style.background = "var(--uber-green)";
+            status.innerText = "Нормальная нагрузка";
+            status.style.color = "#aaa";
+        } else if (pct < 80) {
+            bar.style.background = "var(--glovo-yellow)";
+            status.innerText = "Много заказов...";
+            status.style.color = "var(--glovo-yellow)";
+        } else {
+            bar.style.background = "var(--danger)";
+            status.innerText = "РИСК БАНА! ТОРМОЗИ!";
+            status.style.color = "var(--danger)";
+            if (Math.random() > 0.5) status.innerText = "ТЕЛЕФОН КИПИТ!";
+        }
+
+        // Обновление кнопок магазина
+        SHOP.forEach(item => {
+            // Цена кофе статична, остальные растут
+            let price = item.type === 'consumable' ? item.basePrice : Math.floor(item.basePrice * Math.pow(1.3, (G.inventory[item.id] || 0)));
+            let btn = document.getElementById(`btn-buy-${item.id}`);
             if(btn) {
-                btn.disabled = G.btc < cost;
-                if (!btn.disabled) btn.parentElement.classList.add('affordable');
-                else btn.parentElement.classList.remove('affordable');
+                btn.disabled = G.money < price;
+                btn.innerText = item.type === 'consumable' ? `${price} PLN` : `${price} PLN`;
             }
         });
-
-        // Расчет реального изменения температуры для UI
-        let netHeat = ((G.heatGeneration * MODES[currentMode].heat) - G.cooling);
-        let sign = netHeat > 0 ? "+" : "";
-        let color = netHeat > 0 ? "var(--danger)" : "var(--neon-blue)";
-        document.getElementById('cooling-rate-ui').innerHTML = `Net Heat: <span style="color:${color}">${sign}${netHeat.toFixed(1)}°/sec</span>`;
     }
 
-    function renderUpgrades() {
-        const list = document.getElementById('upgrades-list');
-        list.innerHTML = "";
-        UPGRADES.forEach(u => {
-            let count = G.inventory[u.id] || 0;
-            let cost = u.basePrice * Math.pow(1.15, count);
+    function renderShop() {
+        const cont = document.getElementById('shop-ui');
+        cont.innerHTML = "";
+        
+        SHOP.forEach(item => {
+            let count = G.inventory[item.id] || 0;
+            // Цена
+            let price = item.type === 'consumable' ? item.basePrice : Math.floor(item.basePrice * Math.pow(1.3, count));
             
-            let heatInfo = "";
-            if (u.type === 'auto') heatInfo = `<span style="color:var(--danger)">🔥 +${u.heatGen} Heat</span>`;
-            if (u.type === 'cool') heatInfo = `<span style="color:var(--neon-blue)">❄️ -${u.val} Heat</span>`;
-
-            list.innerHTML += `
-            <div class="upgrade-card">
+            let lvlInfo = item.type === 'consumable' ? '' : `<span style="font-size:10px; background:#333; padding:2px 6px; border-radius:4px;">Lvl ${count}</span>`;
+            
+            cont.innerHTML += `
+            <div class="shop-item ${G.money >= price ? 'can-buy' : ''}">
                 <div>
-                    <div style="font-weight:bold; color:#fff;">${u.name} <span style="font-size:10px; color:#777;">Lvl ${count}</span></div>
-                    <div style="font-size:10px; color:#aaa;">${u.desc} ${heatInfo}</div>
+                    <div style="color:white; font-weight:bold; font-size:13px;">${item.name} ${lvlInfo}</div>
+                    <div style="color:#888; font-size:10px;">${item.desc}</div>
                 </div>
-                <button id="btn-${u.id}" class="btn-buy" onclick="buyUpgrade('${u.id}')">
-                    ${cost.toFixed(4)} ₿
+                <button class="buy-btn" id="btn-buy-${item.id}" onclick="buyItem('${item.id}')">
+                    ${price} PLN
                 </button>
-            </div>
-            `;
+            </div>`;
         });
     }
 
-    // --- UTILS ---
-    function log(msg, color = null) {
-        const c = document.getElementById('log-container');
-        const l = document.createElement('div');
-        l.className = 'log-line';
-        l.innerText = `> ${msg}`;
-        if (color) l.style.color = color;
-        c.prepend(l);
-        if (c.children.length > 6) c.lastChild.remove();
-    }
-
-    function createFloatingText(text, color) {
-        const el = document.createElement('div');
-        el.innerText = text;
-        el.style.position = 'absolute';
-        el.style.left = '50%';
-        el.style.top = '50%';
-        el.style.transform = 'translate(-50%, -50%)';
-        el.style.color = color;
-        el.style.fontWeight = 'bold';
-        el.style.fontSize = '20px';
-        el.style.pointerEvents = 'none';
-        el.style.textShadow = `0 0 5px ${color}`;
-        el.style.transition = 'all 1s ease-out';
-        
-        document.querySelector('.core-container').appendChild(el);
-        
-        setTimeout(() => {
-            el.style.top = '30%';
-            el.style.opacity = 0;
-        }, 50);
-        setTimeout(() => el.remove(), 1000);
-    }
-
+    // === SAVE/LOAD ===
     function saveGame() {
         localStorage.setItem(SAVE_KEY, JSON.stringify(G));
     }
-
     function loadGame() {
         let d = localStorage.getItem(SAVE_KEY);
         if (d) {
             try {
                 let loaded = JSON.parse(d);
                 G = { ...G, ...loaded };
-                // Сброс температуры при загрузке, чтобы не сгореть сразу
-                G.temp = 40; 
-                isOverheated = false;
-            } catch (e) { console.error("Save Corrupted"); }
+                G.stress = 0; // Сброс стресса при входе
+            } catch(e) {}
         }
     }
 
@@ -508,4 +510,3 @@
 </script>
 </body>
 </html>
-
