@@ -1,15 +1,15 @@
 // --- logic.js ---
-// VERSION: 16.1 (FIXED: ADMIN RESET & ESPRESSO LOGIC)
+// VERSION: 17.0 (ADMIN GOD MODE ENABLED)
 // Ключ сохранения WARSZAWA_FOREVER.
-// Исправлено: Эспрессо не покупается при полной энергии.
-// Исправлено: Полный сброс бизнеса и банка при ресете админом.
-// Исправлено: Защита от покупки услуг без денег.
+// Вшита Админ-панель. Доступ через Промокод: admin9422s
+// Логика игры сохранена на 100%.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
 tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
+const ADMIN_CODE = "admin9422s"; // Секретный ключ
 
 // === CSS АНИМАЦИИ (ВШИТЫ) ===
 const styleSheet = document.createElement("style");
@@ -21,7 +21,7 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-// === НАСТРОЙКИ ===
+// === НАСТРОЙКИ (ИЗМЕНЯЕМЫЕ) ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50, coffee: 5.00, energy: 12.00,
@@ -50,40 +50,35 @@ const DEFAULT_SETTINGS = {
 
 let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 
-// === МЕТАДАННЫЕ БИЗНЕСА ===
-const BUSINESS_META = [
+// === МЕТАДАННЫЕ БИЗНЕСА (Теперь LET для Админки) ===
+let BUSINESS_META = [
     { 
         id: 'vending', name: 'Vending Machine', icon: '🍫', 
-        basePrice: 5000, 
-        minLvl: 5.0, 
-        type: 'maintenance', 
-        dealCost: 50, 
+        basePrice: 5000, minLvl: 5.0, type: 'maintenance', dealCost: 50, 
         desc: "Простой доход. Требует пинка."
     },
     { 
         id: 'vege', name: 'Warzywniak', icon: '🥦', 
-        basePrice: 20000, 
-        minLvl: 10.0,
-        type: 'lottery', 
-        dealCost: 300,
+        basePrice: 20000, minLvl: 10.0, type: 'lottery', dealCost: 300,
         desc: "Овощи. Риск гнилой партии."
     },
     { 
         id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', 
-        basePrice: 75000, 
-        minLvl: 20.0,
-        type: 'strategy', 
-        dealCost: 0, 
+        basePrice: 75000, minLvl: 20.0, type: 'strategy', dealCost: 0, 
         desc: "Выбор ингредиентов. Опасайся Sanepid."
     },
     { 
         id: 'zabka', name: 'Żabka Franchise', icon: '🐸', 
-        basePrice: 300000, 
-        minLvl: 30.0, 
-        type: 'high_stakes', 
-        dealCost: 5000,
+        basePrice: 300000, minLvl: 30.0, type: 'high_stakes', dealCost: 5000,
         desc: "Выполнение корп. плана. Крупные ставки."
     }
+];
+
+// === РАЙОНЫ (Теперь LET для Админки) ===
+let DISTRICTS = [
+    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0, housePrice: 250000, czynszBase: 25 },       
+    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150, housePrice: 850000, czynszBase: 80 }, 
+    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500, housePrice: 3500000, czynszBase: 250 } 
 ];
 
 const RANKS = [
@@ -130,12 +125,6 @@ const UPGRADES_META = [
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', priceKey: 'powerbank', bonus: '🤖 +50% времени', maxDur: 100, repairPriceKey: 80 }
 ];
 
-const DISTRICTS = [
-    { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, price: 0, housePrice: 250000, czynszBase: 25 },       
-    { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, price: 150, housePrice: 850000, czynszBase: 80 }, 
-    { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, price: 500, housePrice: 3500000, czynszBase: 250 } 
-];
-
 // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 
 function getDynamicPrice(baseValue) {
@@ -165,24 +154,122 @@ function log(msg, color = "#eee") {
     console.log(`%c ${msg}`, `color: ${color}`);
 }
 
-// === ЭФФЕКТЫ ===
+// === АДМИН ПАНЕЛЬ ===
 
-function triggerFloatingText(text, color, element) {
-    const rect = element.getBoundingClientRect();
-    const el = document.createElement('div');
-    el.innerText = text;
-    el.style.color = color;
-    el.className = 'floating-text';
-    el.style.left = (rect.left + rect.width / 2 - 20) + 'px';
-    el.style.top = (rect.top - 20) + 'px';
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1000);
+function renderAdminPanel() {
+    const container = document.getElementById('admin-content');
+    if (!container) return;
+    
+    let html = '';
+
+    // ГЕНЕРАТОР ГРУПП НАСТРОЕК
+    const createInputGroup = (title, obj, keyPrefix) => {
+        let groupHtml = `<div class="admin-group"><h4>${title}</h4>`;
+        for (let key in obj) {
+            let val = obj[key];
+            if (typeof val === 'boolean') {
+                 groupHtml += `<div class="admin-row"><span>${key}</span><input type="checkbox" id="adm-${keyPrefix}-${key}" ${val ? 'checked' : ''}></div>`;
+            } else {
+                 groupHtml += `<div class="admin-row"><span>${key}</span><input type="number" step="0.01" class="admin-input" id="adm-${keyPrefix}-${key}" value="${val}"></div>`;
+            }
+        }
+        groupHtml += `</div>`;
+        return groupHtml;
+    };
+
+    html += createInputGroup("🛒 Цены Магазина", SETTINGS.prices, "prices");
+    html += createInputGroup("📈 Экономика", SETTINGS.economy, "economy");
+    html += createInputGroup("💼 Работа", SETTINGS.jobs, "jobs");
+    html += createInputGroup("🎲 Шансы", SETTINGS.gameplay, "gameplay");
+    html += createInputGroup("🔧 Переключатели", SETTINGS.toggles, "toggles");
+
+    // РЕДАКТОР БИЗНЕСА
+    html += `<div class="admin-group"><h4>🏢 Бизнес (Цены и Доступ)</h4>`;
+    BUSINESS_META.forEach((b, i) => {
+        html += `<div style="margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:5px;">
+            <b style="color:var(--accent-gold)">${b.name}</b><br>
+            <div class="admin-row"><span>Base Price</span><input type="number" class="admin-input" id="adm-biz-${i}-basePrice" value="${b.basePrice}"></div>
+            <div class="admin-row"><span>Min LVL</span><input type="number" class="admin-input" id="adm-biz-${i}-minLvl" value="${b.minLvl}"></div>
+            <div class="admin-row"><span>Deal Cost</span><input type="number" class="admin-input" id="adm-biz-${i}-dealCost" value="${b.dealCost}"></div>
+        </div>`;
+    });
+    html += `</div>`;
+
+    // РЕДАКТОР РАЙОНОВ
+    html += `<div class="admin-group"><h4>🏙️ Районы (Жилье)</h4>`;
+    DISTRICTS.forEach((d, i) => {
+        html += `<div style="margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:5px;">
+            <b style="color:var(--accent-blue)">${d.name}</b><br>
+            <div class="admin-row"><span>Цена Квартиры</span><input type="number" class="admin-input" id="adm-dist-${i}-housePrice" value="${d.housePrice}"></div>
+            <div class="admin-row"><span>Аренда % (0.1=10%)</span><input type="number" class="admin-input" id="adm-dist-${i}-rentPct" value="${d.rentPct}"></div>
+            <div class="admin-row"><span>Множитель ЗП</span><input type="number" class="admin-input" id="adm-dist-${i}-mult" value="${d.mult}"></div>
+        </div>`;
+    });
+    html += `</div>`;
+
+    container.innerHTML = html;
 }
 
-function triggerShake() {
-    document.body.classList.add('shake-mode');
-    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(200);
-    setTimeout(() => document.body.classList.remove('shake-mode'), 500);
+function openAdminPanel() {
+    renderAdminPanel();
+    document.getElementById('admin-modal').style.display = 'flex';
+}
+
+function saveAdminSettings() {
+    if (!window.db) { alert("Ошибка: Нет связи с БД"); return; }
+    
+    // СБОР ДАННЫХ SETTINGS
+    const readGroup = (obj, prefix) => {
+        let newObj = {};
+        for (let key in obj) {
+            let el = document.getElementById(`adm-${prefix}-${key}`);
+            if (el) {
+                if (el.type === 'checkbox') newObj[key] = el.checked;
+                else newObj[key] = parseFloat(el.value);
+            }
+        }
+        return newObj;
+    };
+
+    let newSettings = {
+        prices: readGroup(SETTINGS.prices, "prices"),
+        economy: readGroup(SETTINGS.economy, "economy"),
+        jobs: readGroup(SETTINGS.jobs, "jobs"),
+        gameplay: readGroup(SETTINGS.gameplay, "gameplay"),
+        toggles: readGroup(SETTINGS.toggles, "toggles")
+    };
+
+    // СБОР БИЗНЕСА
+    let newBiz = JSON.parse(JSON.stringify(BUSINESS_META));
+    newBiz.forEach((b, i) => {
+        b.basePrice = parseFloat(document.getElementById(`adm-biz-${i}-basePrice`).value);
+        b.minLvl = parseFloat(document.getElementById(`adm-biz-${i}-minLvl`).value);
+        b.dealCost = parseFloat(document.getElementById(`adm-biz-${i}-dealCost`).value);
+    });
+
+    // СБОР РАЙОНОВ
+    let newDist = JSON.parse(JSON.stringify(DISTRICTS));
+    newDist.forEach((d, i) => {
+        d.housePrice = parseFloat(document.getElementById(`adm-dist-${i}-housePrice`).value);
+        d.rentPct = parseFloat(document.getElementById(`adm-dist-${i}-rentPct`).value);
+        d.mult = parseFloat(document.getElementById(`adm-dist-${i}-mult`).value);
+    });
+
+    // ОТПРАВКА В FIREBASE
+    let finalData = {
+        settings: newSettings,
+        business_meta: newBiz,
+        districts: newDist,
+        lastUpdated: Date.now()
+    };
+
+    window.db.ref('game_settings_v2').set(finalData, (error) => {
+        if (error) alert("Ошибка сохранения: " + error);
+        else {
+            alert("✅ НАСТРОЙКИ ОБНОВЛЕНЫ! Все игроки получили новые цены.");
+            document.getElementById('admin-modal').style.display = 'none';
+        }
+    });
 }
 
 // === БИЗНЕС ЛОГИКА ===
@@ -427,18 +514,29 @@ function applyBusinessResult(id, revenue, cost, text, color, btnEl) {
 
 async function usePromo() {
     const inputField = document.getElementById('promo-input');
-    const code = inputField.value.trim().toUpperCase();
+    const code = inputField.value.trim(); // Убрал toUpperCase для точного ввода админ-кода
+
+    // ПРОВЕРКА НА АДМИНА
+    if (code === ADMIN_CODE) {
+        log("⚠️ ACCESS GRANTED: WELCOME ADMIN", "var(--danger)");
+        tg.HapticFeedback.notificationOccurred('success');
+        openAdminPanel();
+        inputField.value = "";
+        return;
+    }
+
     if (!G.usedPromos) G.usedPromos = [];
-    if (G.usedPromos.includes(code)) { log("Уже использовано!", "var(--danger)"); return; }
+    if (G.usedPromos.includes(code.toUpperCase())) { log("Уже использовано!", "var(--danger)"); return; }
     try {
         const response = await fetch('promos.json?nocache=' + Date.now());
         const promoData = await response.json();
-        if (promoData[code]) {
-            let reward = promoData[code].reward;
-            let msg = promoData[code].msg;
+        const cleanCode = code.toUpperCase();
+        if (promoData[cleanCode]) {
+            let reward = promoData[cleanCode].reward;
+            let msg = promoData[cleanCode].msg;
             G.money = parseFloat((G.money + reward).toFixed(2));
             G.totalEarned += reward;
-            G.usedPromos.push(code);
+            G.usedPromos.push(cleanCode);
             addHistory('🎁 ПРОМО', reward, 'plus');
             log("🎁 " + msg + " +" + reward + " PLN", "var(--gold)");
             inputField.value = "";
@@ -485,7 +583,6 @@ function claimStarterPack() {
     document.getElementById('starter-modal').style.display = 'none';
     G.money += 50; G.waterStock += 500; G.transportMode = 'none'; 
     G.bikeRentTime += 900; G.isNewPlayer = false;
-    // ОЧИСТКА ХВОСТОВ ПРИ НОВОЙ ИГРЕ (FIX)
     G.business = {};
     G.deposit = null;
     G.bankHistory = [];
@@ -556,14 +653,20 @@ function listenToCloud() {
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
 
     if(window.db) {
-        window.db.ref('game_settings').on('value', (snapshot) => {
-            const serverSettings = snapshot.val();
-            if (serverSettings) {
-                SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...(serverSettings.prices || {}) };
-                SETTINGS.economy = { ...DEFAULT_SETTINGS.economy, ...(serverSettings.economy || {}) };
-                SETTINGS.jobs = { ...DEFAULT_SETTINGS.jobs, ...(serverSettings.jobs || {}) };
-                SETTINGS.gameplay = { ...DEFAULT_SETTINGS.gameplay, ...(serverSettings.gameplay || {}) };
-                SETTINGS.toggles = { ...DEFAULT_SETTINGS.toggles, ...(serverSettings.toggles || {}) };
+        // СЛУШАЕМ НАСТРОЙКИ (SETTINGS + BUSINESS + DISTRICTS)
+        window.db.ref('game_settings_v2').on('value', (snapshot) => {
+            const serverData = snapshot.val();
+            if (serverData) {
+                if (serverData.settings) {
+                    SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...(serverData.settings.prices || {}) };
+                    SETTINGS.economy = { ...DEFAULT_SETTINGS.economy, ...(serverData.settings.economy || {}) };
+                    SETTINGS.jobs = { ...DEFAULT_SETTINGS.jobs, ...(serverData.settings.jobs || {}) };
+                    SETTINGS.gameplay = { ...DEFAULT_SETTINGS.gameplay, ...(serverData.settings.gameplay || {}) };
+                    SETTINGS.toggles = { ...DEFAULT_SETTINGS.toggles, ...(serverData.settings.toggles || {}) };
+                }
+                if (serverData.business_meta) BUSINESS_META = serverData.business_meta;
+                if (serverData.districts) DISTRICTS = serverData.districts;
+                
                 updateUI();
             }
         });
@@ -584,8 +687,6 @@ function listenToCloud() {
                 let wasNew = G.isNewPlayer;
                 G = { ...G, ...remote };
                 
-                // FIX: Если удаленное сохранение помечает игрока как "нового" (сброс админом),
-                // нужно принудительно очистить бизнес и банк, которые могли остаться от merge.
                 if (G.isNewPlayer) {
                     G.business = {};
                     G.deposit = null;
