@@ -483,24 +483,6 @@
     <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
 </div>
 
-<div id="admin-modal" class="modal-overlay" style="z-index: 9999;">
-    <div class="modal-card" style="max-height: 90vh; overflow-y: auto; text-align: left; width: 95%; max-width: 400px; background: #0f172a; border: 2px solid var(--danger);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #333; padding-bottom:10px;">
-            <h3 style="margin:0; color:var(--danger);">💀 GOD MODE</h3>
-            <button onclick="document.getElementById('admin-modal').style.display='none'" style="background:transparent; border:none; color:#fff; font-size:20px; cursor:pointer;">✕</button>
-        </div>
-        
-        <p style="font-size:10px; color:#666; margin-bottom:15px;">Изменения применяются мгновенно для ВСЕХ игроков онлайн.</p>
-
-        <div id="admin-content"></div>
-
-        <div style="display:flex; gap:10px; margin-top:20px; position:sticky; bottom:0; background:#0f172a; padding:10px 0; border-top:1px solid #333;">
-            <button class="btn-action" style="background:var(--success); color:black;" onclick="saveAdminSettings()">СОХРАНИТЬ (LIVE)</button>
-            <button class="btn-action btn-secondary" onclick="document.getElementById('admin-modal').style.display='none'">ОТМЕНА</button>
-        </div>
-    </div>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="database.js?v=4.0"></script>
@@ -508,3 +490,5 @@
 
 </body>
 </html>
+
+
