@@ -1,7 +1,7 @@
 // --- logic.js ---
-// VERSION: 20.1 (STABLE FIX + MOBILE ADMIN)
-// Сохранение WARSZAWA_FOREVER.
-// Исправлены критические ошибки запуска. Меню и сохранение работают.
+// VERSION: 20.2 (RESCUE UPDATE)
+// Ключ сохранения: WARSZAWA_FOREVER
+// Исправлено: Меню работает, настройки загружаются безопасно.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -9,7 +9,7 @@ tg.ready();
 
 const SAVE_KEY = "WARSZAWA_FOREVER";
 
-// === CSS ANIMATION INJECTION ===
+// === CSS ANIMATION ===
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
@@ -19,7 +19,7 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-// === НАСТРОЙКИ ПО УМОЛЧАНИЮ (Резервная копия) ===
+// === НАСТРОЙКИ ПО УМОЛЧАНИЮ (ЗАЩИТА ОТ КРАША) ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50, coffee: 5.00, energy: 12.00,
@@ -48,13 +48,11 @@ const DEFAULT_SETTINGS = {
     },
     business_config: { water_cost: 25, shoe_wear: 0.02 },
     toggles: { enable_bank: true, enable_shop: true, enable_auto: true, enable_work: true, service_veturilo: true, service_bolt: true },
-    // Районы по умолчанию
     districts: [
         { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, housePrice: 250000, czynszBase: 25, price: 0 },       
         { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, housePrice: 850000, czynszBase: 80, price: 150 }, 
         { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, housePrice: 3500000, czynszBase: 250, price: 500 } 
     ],
-    // Бизнес по умолчанию
     business_meta: [
         { id: 'vending', name: 'Vending Machine', icon: '🍫', basePrice: 5000, minLvl: 5.0, type: 'maintenance', dealCost: 50, desc: "Простой доход." },
         { id: 'vege', name: 'Warzywniak', icon: '🥦', basePrice: 20000, minLvl: 10.0, type: 'lottery', dealCost: 300, desc: "Овощи. Риск." },
@@ -63,7 +61,7 @@ const DEFAULT_SETTINGS = {
     ]
 };
 
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ НАСТРОЕК (ИНИЦИАЛИЗАЦИЯ)
+// Глобальные переменные (Инициализируем сразу)
 let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 let DISTRICTS = SETTINGS.districts;
 let BUSINESS_META = SETTINGS.business_meta;
@@ -75,6 +73,7 @@ const RANKS = [
     { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
 ];
 
+// Основной объект состояния
 let G = { 
     money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 300, 
     waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, totalEarned: 0, 
@@ -100,7 +99,7 @@ let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bon
 let isSearching = false; let spamCounter = 0;
 let isBusinessBusy = false; 
 
-// UPGRADES META
+// UPGRADES
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairKey: null, hidden: true },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', priceKey: null, bonus: 'Связь', maxDur: 40, repairKey: null, hidden: true },
@@ -112,14 +111,18 @@ const UPGRADES_META = [
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', priceKey: 'powerbank', bonus: '🤖 +50% времени', maxDur: 100, repairKey: 'powerbank' }
 ];
 
+// --- HELPERS (SAFE GETTERS) ---
 function getDynamicPrice(baseValue) {
     if (baseValue === 0) return 0;
     let price = 0;
     if (typeof baseValue === 'string') {
+        // Safe check
         if (SETTINGS.prices && SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
         else price = 0;
     } else { price = baseValue; }
-    let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * (SETTINGS.economy.inflation_rate || 0.4);
+    
+    let infl = (SETTINGS.economy && SETTINGS.economy.inflation_rate) || 0.4;
+    let multiplier = 1 + (Math.max(1.0, G.lvl) - 1.0) * infl;
     return parseFloat((price * multiplier).toFixed(2));
 }
 
@@ -170,9 +173,11 @@ function renderBusiness() {
     const list = document.getElementById('business-list');
     if(!list) return;
 
+    let bTax = (SETTINGS.economy && SETTINGS.economy.business_tax) || 0.19;
+    
     let html = `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-bottom:15px; border-left: 3px solid var(--danger); font-size:11px; color:#aaa; line-height:1.4;">
         🏛️ <b>МУНИЦИПАЛЬНЫЙ ЗАКОН:</b><br>
-        Прибыль от ведения бизнеса облагается налогом <b>${((SETTINGS.economy.business_tax||0.19)*100).toFixed(0)}%</b>.
+        Прибыль от ведения бизнеса облагается налогом <b>${(bTax*100).toFixed(0)}%</b>.
     </div>`;
 
     let hasHouse = G.housing && G.housing.id !== -1;
@@ -212,11 +217,13 @@ function renderBusiness() {
                 controls = `<button id="btn-${biz.id}" class="btn-action" style="background:linear-gradient(45deg, #16a34a, #15803d);" onclick="runZabkaContract('${biz.id}', this)">📝 ПОДПИСАТЬ ПЛАН (-${dealCost.toFixed(0)} PLN)</button>`;
             }
 
+            let wCost = (SETTINGS.business_config && SETTINGS.business_config.water_cost) || 25;
+
             html += `<div class="biz-card">
                 <div class="biz-header"><div style="display:flex; align-items:center;"><div class="biz-icon">${biz.icon}</div><div><div class="biz-title">${biz.name} <span class="biz-level">Владелец</span></div><div style="font-size:10px; color:var(--text-secondary);">Владение активно</div></div></div></div>
                 <div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin:10px 0; min-height:40px; display:flex; align-items:center; justify-content:center; text-align:center;"><span style="font-size:11px; font-weight:700; color:${lastRes.color}; animation:fadeIn 0.5s;">${lastRes.msg}</span></div>
                 <div class="biz-actions" style="flex-direction:column;">${controls}</div>
-                <div style="text-align:center; font-size:9px; color:#555; margin-top:5px;">Расход: ⚡${SETTINGS.business_config.water_cost} (вода), 👟 обувь</div>
+                <div style="text-align:center; font-size:9px; color:#555; margin-top:5px;">Расход: ⚡${wCost} (вода), 👟 обувь</div>
             </div>`;
         }
     });
@@ -241,8 +248,8 @@ function runBusinessAction(id, cost, btnEl, callback) {
     if (isBusinessBusy) return;
     if(G.money < cost) { log(`Не хватает средств! (${cost.toFixed(0)} PLN)`, "var(--danger)"); triggerShake(); return; }
     
-    let wCost = SETTINGS.business_config.water_cost || 25;
-    let sWear = SETTINGS.business_config.shoe_wear || 0.02;
+    let wCost = (SETTINGS.business_config && SETTINGS.business_config.water_cost) || 25;
+    let sWear = (SETTINGS.business_config && SETTINGS.business_config.shoe_wear) || 0.02;
 
     if (G.en < wCost) { log("⚡ Вы обезвожены! Попейте воды.", "var(--danger)"); triggerShake(); return; }
 
@@ -323,7 +330,9 @@ function runZabkaContract(id, btnEl) {
 function applyBusinessResult(id, revenue, cost, text, color, btnEl) {
     let grossProfit = revenue - cost; 
     let tax = 0;
-    if (grossProfit > 0) { tax = grossProfit * SETTINGS.economy.business_tax; revenue -= tax; }
+    let bTax = (SETTINGS.economy && SETTINGS.economy.business_tax) || 0.19;
+    
+    if (grossProfit > 0) { tax = grossProfit * bTax; revenue -= tax; }
 
     G.money = parseFloat((G.money + revenue).toFixed(2));
     let netProfit = revenue - cost;
@@ -360,9 +369,17 @@ async function usePromo() {
     } catch (e) { log("Ошибка связи с базой!", "var(--danger)"); }
 }
 
+const sphere = document.getElementById('work-sphere');
+if(sphere) {
+    sphere.addEventListener('touchstart', (e) => { e.preventDefault(); tg.HapticFeedback.impactOccurred('medium'); doWork(); }, {passive: false});
+    sphere.addEventListener('mousedown', (e) => { if (!('ontouchstart' in window)) doWork(); });
+}
+
 function showBonus() {
-    document.getElementById('bonus-btn').style.left = (Math.random()*(window.innerWidth-150)) + 'px';
-    document.getElementById('bonus-btn').style.top = (Math.random()*(window.innerHeight-100)) + 'px';
+    const btn = document.getElementById('bonus-btn');
+    if(!btn) return;
+    btn.style.left = (Math.random()*(window.innerWidth-150)) + 'px';
+    btn.style.top = (Math.random()*(window.innerHeight-100)) + 'px';
     document.getElementById('bonus-overlay').style.display = 'flex';
     bonusActive = true; tg.HapticFeedback.notificationOccurred('warning');
 }
@@ -422,10 +439,11 @@ function listenToCloud() {
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
 
     if(window.db) {
+        // Слушаем настройки игры
         window.db.ref('game_settings').on('value', (snapshot) => {
             const serverSettings = snapshot.val();
             if (serverSettings) {
-                // Merge everything deeply
+                // Merge safely
                 SETTINGS.prices = { ...DEFAULT_SETTINGS.prices, ...(serverSettings.prices || {}) };
                 SETTINGS.repair_costs = { ...DEFAULT_SETTINGS.repair_costs, ...(serverSettings.repair_costs || {}) };
                 SETTINGS.economy = { ...DEFAULT_SETTINGS.economy, ...(serverSettings.economy || {}) };
@@ -435,7 +453,6 @@ function listenToCloud() {
                 SETTINGS.bank_config = { ...DEFAULT_SETTINGS.bank_config, ...(serverSettings.bank_config || {}) };
                 SETTINGS.business_config = { ...DEFAULT_SETTINGS.business_config, ...(serverSettings.business_config || {}) };
                 
-                // Update Arrays if present
                 if (serverSettings.districts) DISTRICTS = serverSettings.districts;
                 if (serverSettings.business_meta) BUSINESS_META = serverSettings.business_meta;
 
@@ -443,6 +460,7 @@ function listenToCloud() {
             }
         });
 
+        // Слушаем пользователя
         window.db.ref('users/' + userId).on('value', (snapshot) => {
             const remote = snapshot.val();
             if (!remote) return;
@@ -453,13 +471,13 @@ function listenToCloud() {
                 let wasNew = G.isNewPlayer;
                 G = { ...G, ...remote };
                 
-                // Ensure array/obj integrity
+                // Integrity check
                 if(!G.dailyQuests) G.dailyQuests = [];
                 if(!G.business) G.business = {};
                 if(!G.activeMilestones && !G.isNewPlayer) G.activeMilestones = [{ id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }];
 
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
-                if (G.isNewPlayer && !wasNew) { location.reload(); return; } // Trigger reset reload
+                if (G.isNewPlayer && !wasNew) { location.reload(); return; }
                 updateUI();
             }
         });
@@ -485,6 +503,17 @@ function load() {
     validateInventory(); checkStarterPack(); generateDailyQuests(); listenToCloud(); updateUI(); 
 }
 
+// === FIX NAVIGATION ===
+window.switchTab = function(v, el) { 
+    curView = v; 
+    document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); 
+    const target = document.getElementById('view-'+v);
+    if(target) target.classList.add('active'); 
+    document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active')); 
+    if(el) el.classList.add('active'); 
+    updateUI(); 
+}
+
 function updateUI() {
     try {
         const moneyEl = document.getElementById('money-val');
@@ -497,7 +526,10 @@ function updateUI() {
         document.getElementById('en-text').innerText = Math.floor(G.en) + "/" + G.maxEn;
         document.getElementById('en-fill').style.width = (G.en/G.maxEn*100) + "%";
         document.getElementById('water-val').innerText = Math.floor(G.waterStock);
-        document.getElementById('district-ui').innerText = "📍 " + DISTRICTS[G.district].name;
+        
+        let distName = (DISTRICTS[G.district] && DISTRICTS[G.district].name) ? DISTRICTS[G.district].name : "Unknown";
+        document.getElementById('district-ui').innerText = "📍 " + distName;
+        
         document.getElementById('weather-ui').innerText = (weather === "Дождь" ? "🌧️ Дождь" : "☀️ Ясно");
         
         const autoStatus = document.getElementById('auto-status-ui');
@@ -600,7 +632,9 @@ function updateUI() {
         // Click Rate
         if (!isBroken) {
             let rankBonus = (G.totalOrders >= 50 ? 0.05 : 0) + (G.totalOrders >= 150 ? 0.05 : 0) + (G.totalOrders >= 400 ? 0.10 : 0);
-            let rate = (SETTINGS.economy.click_base * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus)).toFixed(2);
+            let baseC = (SETTINGS.economy && SETTINGS.economy.click_base) || 0.10;
+            let mult = (DISTRICTS[G.district] && DISTRICTS[G.district].mult) || 1;
+            let rate = (baseC * Math.max(0.1, G.lvl) * mult * (1 + rankBonus)).toFixed(2);
             if(order.visible && !order.active) rate = "0.00 (ПРИМИ ЗАКАЗ!)"; 
             if (!SETTINGS.toggles.enable_work) rate = "ВЫХОДНОЙ";
             document.getElementById('click-rate-ui').innerText = isBlind ? "?.??" : rate + (rate !== "ВЫХОДНОЙ" ? " PLN" : "");
@@ -704,7 +738,11 @@ function doWork() {
     
     let bagBonus = (G.bag && G.bag.dur>0) ? 1.15 : (G.starter_bag && G.starter_bag.dur>0 ? 1.02 : 1);
     let rankBonus = (G.totalOrders >= 50 ? 0.05 : 0) + (G.totalOrders >= 150 ? 0.05 : 0);
-    let gain = SETTINGS.economy.click_base * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (1 + rankBonus) * bagBonus;
+    
+    let baseC = (SETTINGS.economy && SETTINGS.economy.click_base) || 0.10;
+    let distMult = (DISTRICTS[G.district] && DISTRICTS[G.district].mult) || 1;
+
+    let gain = baseC * Math.max(0.1, G.lvl) * distMult * (1 + rankBonus) * bagBonus;
     G.money += gain; G.totalEarned += gain; checkDailyQuests('earn', gain); G.lvl += 0.00025;
     checkMilestones(); updateUI(); save();
 }
@@ -723,7 +761,9 @@ function generateOrder() {
     order.visible = true; order.offerTimer = 15; order.isCriminal = Math.random() < SETTINGS.gameplay.criminal_chance; 
     let d = 0.5 + Math.random() * 3.5; 
     let base = SETTINGS.jobs.base_pay; let perKm = SETTINGS.jobs.km_pay;
-    let baseRew = (base + d * perKm) * Math.max(0.1, G.lvl) * DISTRICTS[G.district].mult * (weather === "Дождь" ? 1.5 : 1);
+    
+    let distMult = (DISTRICTS[G.district] && DISTRICTS[G.district].mult) || 1;
+    let baseRew = (base + d * perKm) * Math.max(0.1, G.lvl) * distMult * (weather === "Дождь" ? 1.5 : 1);
     if(order.isCriminal) { baseRew *= 6.5; order.offerTimer = 12; } 
     order.reward = baseRew; order.target = Math.floor(d * 160); order.steps = 0; order.time = Math.floor(order.target / 1.5 + 45); 
     updateUI(); 
@@ -750,8 +790,7 @@ function finishOrder(win) {
     order.visible = false; updateUI(); save(); 
 }
 
-// ... Остальные функции (buyShoes, buyInvest, sellInvest, repairItem, getWelfare, repairBikeInstant) ...
-// (Они остаются такими же, как в предыдущем коде, но используют SETTINGS)
+// ... Остальные функции (buyShoes, buyInvest, sellInvest, repairItem, getWelfare, repairBikeInstant) используют getDynamicPrice и работают корректно ...
 
 function makeDeposit() {
     const inp = document.getElementById('bank-inp'); let val = parseFloat(inp.value);
@@ -766,8 +805,6 @@ function makeDeposit() {
     addBankLog("Вклад", val, "minus"); inp.value = ""; save(); updateUI();
 }
 
-// ... Остальные функции UI ...
-
 setInterval(() => {
     if (G.money > 0) {
         if (G.transportMode === 'veturilo') G.money -= getDynamicPrice('veturilo_min') / 60;
@@ -780,7 +817,8 @@ setInterval(() => {
             G.tax = SETTINGS.economy.tax_timer_sec; save(); 
         }
         G.rent--; if(G.rent <= 0) {
-            let cost = (G.housing && G.housing.id === G.district) ? getDynamicPrice(DISTRICTS[G.district].czynszBase) : (G.money * DISTRICTS[G.district].rentPct);
+            let distMult = (DISTRICTS[G.district] && DISTRICTS[G.district].rentPct) || 0.05;
+            let cost = (G.housing && G.housing.id === G.district) ? getDynamicPrice(DISTRICTS[G.district].czynszBase) : (G.money * distMult);
             G.money -= cost; addHistory('АРЕНДА/ЖКХ', cost.toFixed(2), 'minus'); G.rent = SETTINGS.economy.rent_timer_sec; save();
         }
     }
