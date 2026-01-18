@@ -3,29 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Life Simulator</title>
+    <title>Warszawa Life</title>
     <style>
         :root {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
-            --text-main: #e0e0e0;
-            --text-muted: #a0a0a0;
-            --accent: #bb86fc;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --accent: #bb86fc; 
+            --accent-dark: #3700b3;
             --success: #03dac6;
             --danger: #cf6679;
             --warning: #ffb74d;
-            --border: #333;
+            --border: #333333;
+            --nav-height: 60px;
         }
 
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
         }
 
         body {
             margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             height: 100vh;
@@ -34,1035 +35,815 @@
             overflow: hidden;
         }
 
-        /* --- Header --- */
+        /* HEADER */
         header {
             background-color: var(--card-bg);
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border);
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             z-index: 10;
         }
 
-        .location {
+        .header-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .header-loc {
             font-size: 0.8rem;
             color: var(--text-muted);
+            margin-top: 2px;
         }
 
         .balance {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: bold;
             color: var(--success);
+            text-shadow: 0 0 10px rgba(3, 218, 198, 0.3);
         }
 
-        /* --- Stats Bar --- */
+        /* STATS */
         #stats-bar {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-            padding: 10px;
+            gap: 8px;
+            padding: 10px 15px;
             background-color: var(--bg-color);
         }
 
-        .stat-item {
+        .stat-box {
             background-color: var(--card-bg);
-            padding: 5px;
-            border-radius: 5px;
+            padding: 8px 5px;
+            border-radius: 8px;
             text-align: center;
-            font-size: 0.75rem;
-            position: relative;
-            overflow: hidden;
+            border: 1px solid var(--border);
         }
 
-        .stat-value {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 2px;
-        }
+        .stat-val { font-weight: bold; font-size: 0.9rem; display: block; }
+        .stat-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 
-        .stat-label {
-            color: var(--text-muted);
-            font-size: 0.65rem;
-        }
-
-        /* --- Main Content Area --- */
+        /* CONTENT */
         #game-container {
             flex: 1;
             overflow-y: auto;
             padding: 15px;
-            padding-bottom: 80px; /* Space for footer */
-        }
-
-        /* --- Tabs & Sections --- */
-        .section {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+            padding-bottom: calc(var(--nav-height) + 20px);
         }
 
         h2 {
-            margin-top: 0;
-            font-size: 1.4rem;
             color: var(--accent);
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
+            font-size: 1.3rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        /* --- Cards & Interactive Elements --- */
         .card {
             background-color: var(--card-bg);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 15px;
             margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+
+        /* BUTTONS */
         .btn {
             background-color: var(--accent);
             color: #000;
             border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
+            padding: 12px;
+            border-radius: 8px;
             font-weight: bold;
-            cursor: pointer;
+            font-size: 1rem;
             width: 100%;
+            cursor: pointer;
+            transition: 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-top: 10px;
-            transition: opacity 0.2s;
-            font-size: 0.95rem;
         }
 
-        .btn:active {
-            opacity: 0.8;
-            transform: scale(0.98);
-        }
-
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        
         .btn.secondary {
-            background-color: transparent;
+            background: transparent;
             border: 1px solid var(--accent);
             color: var(--accent);
         }
 
         .btn.danger {
-            background-color: var(--danger);
-            color: white;
+            background-color: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
         }
-        
+
         .btn:disabled {
-            background-color: #444;
-            color: #888;
+            opacity: 0.5;
             cursor: not-allowed;
-            border: none;
+            filter: grayscale(100%);
         }
 
-        .job-status {
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 5px;
-        }
-
-        .progress-bar {
-            height: 6px;
+        /* PROGRESS BAR */
+        .progress-bg {
             background: #333;
-            border-radius: 3px;
-            margin-top: 5px;
+            height: 8px;
+            border-radius: 4px;
             overflow: hidden;
+            margin: 10px 0;
         }
-
         .progress-fill {
             height: 100%;
             background: var(--success);
             width: 0%;
-            transition: width 0.3s;
+            transition: width 0.3s ease;
         }
 
-        /* --- Footer Nav --- */
+        /* NAV BAR (Fixed with SVG) */
         nav {
             position: fixed;
             bottom: 0;
             width: 100%;
+            height: var(--nav-height);
             background-color: var(--card-bg);
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
-            padding: 10px 0;
-            z-index: 20;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .nav-item {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.7rem;
-            text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 20%;
-        }
-
-        .nav-item span {
-            font-size: 1.2rem;
-            margin-bottom: 2px;
-        }
-
-        .nav-item.active {
-            color: var(--accent);
-        }
-
-        /* Notifications */
-        #notification-area {
-            position: fixed;
-            top: 60px;
-            right: 15px;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
-        }
-
-        .toast {
-            background-color: rgba(30, 30, 30, 0.95);
-            border-left: 4px solid var(--accent);
-            padding: 10px 15px;
-            border-radius: 4px;
-            color: #fff;
-            font-size: 0.85rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s ease;
-            pointer-events: auto;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            display: none;
             justify-content: center;
-            align-items: center;
-            z-index: 50;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            width: 20%;
+            height: 100%;
+            transition: 0.2s;
         }
 
-        .modal {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            fill: var(--text-muted);
+            transition: 0.2s;
         }
-        
+
+        .nav-item.active { color: var(--accent); }
+        .nav-item.active svg { fill: var(--accent); }
+
+        /* SECTIONS */
+        .section { display: none; animation: fade 0.3s; }
+        .section.active { display: block; }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+        /* LISTS */
         .item-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #333;
         }
-        .item-info {
-            text-align: left;
-        }
-        .item-name { font-weight: bold; font-size: 0.9rem; }
+        .item-row:last-child { border-bottom: none; }
+        
+        .item-name { font-weight: bold; margin-bottom: 4px; }
         .item-desc { font-size: 0.75rem; color: var(--text-muted); }
 
+        /* NOTIFICATIONS */
+        #notif-area {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 200;
+            pointer-events: none;
+        }
+        .toast {
+            background: rgba(30,30,30,0.95);
+            border-left: 4px solid var(--accent);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s;
+        }
+        @keyframes slideIn { from {transform: translateX(100%);} to {transform: translateX(0);} }
+
+        /* MODAL */
+        .modal-wrap {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
 
     <header>
         <div>
-            <div style="font-weight: bold; color: white;">Warszawa Life</div>
-            <div class="location">📍 Warszawa, Mazowieckie</div>
+            <div class="header-title">Warszawa Life</div>
+            <div class="header-loc">📍 Warszawa, Mazowieckie</div>
         </div>
         <div class="balance" id="ui-balance">0 PLN</div>
     </header>
 
     <div id="stats-bar">
-        <div class="stat-item">
-            <span class="stat-value" id="ui-energy">100%</span>
-            <span class="stat-label">Энергия</span>
+        <div class="stat-box">
+            <span class="stat-val" id="ui-energy">100%</span>
+            <span class="stat-lbl">Энергия</span>
         </div>
-        <div class="stat-item">
-            <span class="stat-value" id="ui-water">100%</span>
-            <span class="stat-label">Вода</span>
+        <div class="stat-box">
+            <span class="stat-val" id="ui-water">100%</span>
+            <span class="stat-lbl">Вода</span>
         </div>
-        <div class="stat-item">
-            <span class="stat-value" id="ui-satiety">100%</span>
-            <span class="stat-label">Еда</span>
+        <div class="stat-box">
+            <span class="stat-val" id="ui-satiety">100%</span>
+            <span class="stat-lbl">Еда</span>
         </div>
-        <div class="stat-item">
-            <span class="stat-value" id="ui-mood">100%</span>
-            <span class="stat-label">Настр.</span>
+        <div class="stat-box">
+            <span class="stat-val" id="ui-mood">100%</span>
+            <span class="stat-lbl">Настр.</span>
         </div>
     </div>
 
-    <div id="notification-area"></div>
+    <div id="notif-area"></div>
 
     <div id="game-container">
-        <div id="section-courier" class="section active">
+        
+        <div id="sec-courier" class="section active">
             <h2>📦 Работа Курьером</h2>
+            
             <div class="card">
                 <h3>Glovo/Uber Eats</h3>
-                <p class="job-status" id="courier-status">Статус: Свободен</p>
-                
-                <div id="manual-courier-panel">
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                    <span id="courier-status">Статус: Свободен</span>
+                </div>
+
+                <div id="manual-panel">
                     <button class="btn" id="btn-take-order" onclick="startOrder()">Взять заказ</button>
-                    <div id="order-progress-ui" style="display:none;">
-                        <p style="font-size:0.8rem; margin-bottom:5px;">Доставка...</p>
-                        <div class="progress-bar"><div class="progress-fill" id="order-bar"></div></div>
+                    <div id="progress-ui" style="display:none;">
+                        <p style="font-size:0.8rem; margin:0 0 5px 0;">Доставка...</p>
+                        <div class="progress-bg"><div class="progress-fill" id="order-bar"></div></div>
                     </div>
                 </div>
 
-                <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 10px;">
-                    <h4>Авто-Курьер (Бот)</h4>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
+                    <h3>Авто-Курьер (Бот)</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
                         Требует: Велосипед/Скутер + Лицензия.<br>
                         <span style="color: var(--warning);">Внимание: Тратит воду и энергию.</span>
                     </p>
                     <button class="btn secondary" id="btn-auto-courier" onclick="toggleAutoCourier()">Включить бота</button>
                 </div>
             </div>
-            
-            <div class="card" id="active-boosts" style="display:none;">
-                <h4>⚡ Активные эффекты</h4>
+
+            <div class="card" id="boost-card" style="display:none;">
+                <h3>⚡ Активные эффекты</h3>
                 <div id="boost-list"></div>
             </div>
         </div>
 
-        <div id="section-career" class="section">
-            <h2>💼 Карьера и Навыки</h2>
-            
+        <div id="sec-career" class="section">
+            <h2>💼 Карьера</h2>
             <div class="card">
-                <h3>Навык программирования</h3>
-                <p>Уровень: <span id="coding-lvl">0</span> <span style="font-size:0.8rem; color:var(--accent);">Python Dev</span></p>
-                <div class="progress-bar"><div class="progress-fill" id="coding-bar" style="width: 0%"></div></div>
-                <button class="btn" onclick="studyCoding()">Учить Python (-10 Энергии)</button>
+                <h3>Программирование</h3>
+                <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                    <span>Уровень: <b id="coding-lvl">0</b></span>
+                    <span style="color:var(--accent)">Python Dev</span>
+                </div>
+                <div class="progress-bg"><div class="progress-fill" id="coding-bar"></div></div>
+                <button class="btn" onclick="studyCoding()">Учить Python (-10 Эн)</button>
             </div>
 
             <div class="card">
                 <h3>Ежедневные задания</h3>
-                <div id="daily-tasks-list">
-                    </div>
+                <div id="tasks-list"></div>
             </div>
         </div>
 
-        <div id="section-business" class="section">
+        <div id="sec-business" class="section">
             <h2>📈 Бизнес</h2>
-            <div id="business-container">
-                </div>
+            <div id="business-container"></div>
         </div>
 
-        <div id="section-shop" class="section">
+        <div id="sec-shop" class="section">
             <h2>🛒 Магазин</h2>
             
             <div class="card">
-                <h3>Расходники</h3>
-                <div id="consumables-list"></div>
+                <h3>Еда и Напитки</h3>
+                <div id="shop-consumables"></div>
+            </div>
+            
+            <div class="card">
+                <h3>Транспорт и Техника</h3>
+                <div id="shop-gear"></div>
             </div>
 
             <div class="card">
-                <h3>Имущество & Гаджеты</h3>
-                <div id="inventory-shop-list"></div>
-            </div>
-            
-             <div class="card">
-                <h3>Недвижимость (Аренда)</h3>
-                <div id="real-estate-list"></div>
+                <h3>Недвижимость</h3>
+                <div id="shop-rent"></div>
             </div>
         </div>
 
-        <div id="section-settings" class="section">
+        <div id="sec-settings" class="section">
             <h2>⚙️ Настройки</h2>
+            
             <div class="card">
-                <h3>Управление игрой</h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">
-                    Версия: 2.1 (Warszawa Forever)<br>
-                    ID: PL-WAW-2026
+                <h3>Статус Гражданина</h3>
+                <p>Налог (ZUS/PIT): <span id="tax-timer" style="font-weight:bold; color:var(--warning)">0</span> дн.</p>
+                <button class="btn secondary" onclick="payTax()">Оплатить налог (500 PLN)</button>
+            </div>
+
+            <div class="card" style="border-color: var(--danger);">
+                <h3 style="color:var(--danger)">Сброс игры</h3>
+                <p style="font-size:0.8rem; color:var(--text-muted)">
+                    Удаляет весь прогресс, деньги и инвентарь. Обратного пути нет.
                 </p>
                 <button class="btn danger" onclick="fullReset()">🛑 ПОЛНЫЙ СБРОС (RESET)</button>
-                <p style="font-size: 0.75rem; color: var(--danger); margin-top: 5px;">
-                    Сбрасывает всё: деньги, навыки, покупки, налоги и бизнес.
-                </p>
             </div>
-            
-            <div class="card">
-                 <h3>Статус Гражданина</h3>
-                 <p>Налог (ZUS/PIT): <span id="tax-timer">0</span> дн. осталось</p>
-                 <button class="btn secondary" onclick="payTax()">Оплатить налог (500 PLN)</button>
-            </div>
+            <p style="text-align:center; color:var(--text-muted); font-size:0.7rem; margin-top:20px;">
+                Warszawa Life v2.2 (Forever Edition)
+            </p>
         </div>
+
     </div>
 
     <nav>
         <a href="#" class="nav-item active" onclick="switchTab('courier', this)">
-            <span>🚲</span> Курьер
+            <svg viewBox="0 0 24 24"><path d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm5.8-10l2.4-2.4.8.8c1.3 1.3 3 2.1 5.1 2.1V9c-1.5 0-2.7-.6-3.6-1.5l-1.9-1.9c-.5-.4-1.2-.4-1.6 0l-1.6 1.6c-.9.9-1.3 2.2-1.3 3.5V13h2V10.5h.2zM19 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z"/></svg>
+            Курьер
         </a>
         <a href="#" class="nav-item" onclick="switchTab('career', this)">
-            <span>💼</span> Карьера
+            <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h18c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+            Карьера
         </a>
         <a href="#" class="nav-item" onclick="switchTab('business', this)">
-            <span>📈</span> Бизнес
+            <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+            Бизнес
         </a>
         <a href="#" class="nav-item" onclick="switchTab('shop', this)">
-            <span>🛒</span> Магазин
+            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            Магазин
         </a>
         <a href="#" class="nav-item" onclick="switchTab('settings', this)">
-            <span>⚙️</span> Настр.
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            Настр.
         </a>
     </nav>
 
-    <div id="modal" class="modal-overlay">
-        <div class="modal">
-            <h3 id="modal-title">Сообщение</h3>
-            <p id="modal-body">Текст...</p>
+    <div id="modal-overlay" class="modal-wrap">
+        <div class="modal-box">
+            <h3 id="modal-title">Info</h3>
+            <p id="modal-text">...</p>
             <button class="btn" onclick="closeModal()">OK</button>
         </div>
     </div>
 
 <script>
 /**
- * WARSZAWA LIFE SIMULATOR
+ * WARSZAWA LIFE SIMULATOR (FIXED)
  * Key: WARSZAWA_FOREVER
- * Updated: 2026-01-18
+ * Design: SVG Icons restored
  */
 
 const SAVE_KEY = 'WARSZAWA_FOREVER';
 
-// --- Default Configuration ---
 const DEFAULTS = {
-    balance: 50,
-    rating: 4.5,
-    energy: 100,
-    water: 100,
-    satiety: 100,
-    mood: 100,
-    
-    // Skills
-    codingXp: 0,
-    codingLevel: 0,
-    
-    // Inventory & Assets
-    inventory: [], // IDs of owned items
-    activeBoosts: {}, // { 'energy_drink': expiryTime }
-    
-    // Business
-    business: null, // { type: 'kebab', level: 1, lastCollection: time }
-    
-    // Housing
-    housing: 'homeless', // 'homeless', 'hostel', 'apartment'
-    rentTimer: 0, // Days until payment
-    
-    // Status
-    taxTimer: 7, // Days until tax
-    daysPlayed: 0,
-    
-    // Automation
-    autoCourierEnabled: false,
-    
-    // Daily Tasks
-    lastDayLogin: 0,
+    balance: 0,
+    energy: 100, water: 100, satiety: 100, mood: 100,
+    codingLvl: 0, codingXp: 0,
+    inventory: [],
+    activeBoosts: {},
+    business: null,
+    housing: 'homeless', rentTimer: 0,
+    taxTimer: 7,
+    autoCourier: false,
     dailyTasks: {
-        'deliver5': { count: 0, target: 5, reward: 50, done: false, desc: 'Доставить 5 заказов (+50 PLN)' },
-        'study1': { count: 0, target: 1, reward: 20, done: false, desc: 'Поучиться 1 раз (+20 PLN)' }
+        'd1': { txt: 'Доставить 5 заказов', max: 5, cur: 0, reward: 50, done: false },
+        'd2': { txt: 'Учить Python 1 раз', max: 1, cur: 0, reward: 20, done: false }
     }
 };
 
-// --- Game State ---
 let state = JSON.parse(JSON.stringify(DEFAULTS));
-let gameLoopInterval;
-let autoCourierInterval;
+let loopInt;
 
-// --- Database (Items, Business) ---
+// DATA
 const ITEMS = {
-    'water_bottle': { name: 'Вода (0.5л)', price: 3, type: 'consumable', effect: { water: 25 }, desc: 'Восстанавливает воду' },
-    'kebab': { name: 'Кебаб', price: 18, type: 'consumable', effect: { satiety: 40, energy: 10 }, desc: 'Сытно и вкусно' },
-    'energy_drink': { name: 'Энергетик', price: 8, type: 'consumable', effect: { energy: 30, mood: 5, special: 'pause_energy' }, desc: 'Энергия не тратится 2 мин, но вода тратится!' },
+    'water': { name: 'Вода (0.5л)', price: 3, type: 'use', ef: {water:25}, desc: '+25 Воды' },
+    'kebab': { name: 'Кебаб', price: 18, type: 'use', ef: {satiety:40, energy:10}, desc: '+40 Еды, +10 Эн' },
+    'monster': { name: 'Энергетик', price: 8, type: 'use', ef: {energy:30, mood:5, sp:'no_drain'}, desc: '+30 Эн, 2 мин энергия не тратится (вода тратится!)' },
     
-    'bicycle': { name: 'Велосипед', price: 300, type: 'gear', desc: 'Открывает доступ к авто-курьеру (медленно)' },
+    'bike': { name: 'Велосипед', price: 300, type: 'gear', desc: 'Нужен для авто-курьера' },
     'scooter': { name: 'Электроскутер', price: 1500, type: 'gear', desc: 'Быстрый авто-курьер' },
-    'laptop': { name: 'Ноутбук', price: 2500, type: 'gear', desc: 'Нужен для работы программистом' },
+    'laptop': { name: 'Ноутбук', price: 2500, type: 'gear', desc: 'Для IT карьеры' },
     
-    'hostel': { name: 'Койка в хостеле', price: 50, type: 'rent', period: 1, desc: 'Восстановление энергии во сне' },
-    'apartment': { name: 'Квартира (Студия)', price: 2000, type: 'rent', period: 30, desc: 'Высокий комфорт' }
+    'hostel': { name: 'Хостел', price: 50, type: 'rent', days:1, desc: 'Койка на ночь' },
+    'flat': { name: 'Квартира', price: 2000, type: 'rent', days:30, desc: 'Студия на месяц' }
 };
 
-const BUSINESSES = [
-    { id: 'vending', name: 'Вендинг', cost: 1000, income: 100, desc: 'Автомат с батончиками. Доход 100/день' },
-    { id: 'kebab_spot', name: 'Точка с Кебабом', cost: 5000, income: 600, desc: 'Малый бизнес. Доход 600/день' },
-    { id: 'software_agency', name: 'IT Агентство', cost: 15000, income: 2000, desc: 'Разработка ПО. Доход 2000/день' }
+const BIZ = [
+    { id: 'vending', name: 'Вендинг', cost: 1000, inc: 100, desc: 'Доход 100/день' },
+    { id: 'kebab_spot', name: 'Точка Кебаб', cost: 5000, inc: 600, desc: 'Доход 600/день' },
+    { id: 'agency', name: 'IT Студия', cost: 15000, inc: 2000, desc: 'Доход 2000/день' }
 ];
 
-// --- Initialization ---
-
+// INIT
 function init() {
-    loadGame();
-    setupUI();
-    startGameLoop();
-    renderAll();
-    checkDailyReset();
-}
-
-function loadGame() {
-    const saved = localStorage.getItem(SAVE_KEY);
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            // Merge defaults to handle version updates
-            state = { ...DEFAULTS, ...parsed };
-            
-            // Ensure nested objects merge correctly if missing in save
-            if(!state.dailyTasks) state.dailyTasks = JSON.parse(JSON.stringify(DEFAULTS.dailyTasks));
-        } catch (e) {
-            console.error("Save corrupted, resetting to defaults");
-            state = JSON.parse(JSON.stringify(DEFAULTS));
-        }
+    let s = localStorage.getItem(SAVE_KEY);
+    if(s) {
+        try { state = {...DEFAULTS, ...JSON.parse(s)}; } 
+        catch(e) { console.log('Save Error'); }
     }
+    // Fix missing tasks structure if old save
+    if(!state.dailyTasks || !state.dailyTasks.d1) state.dailyTasks = JSON.parse(JSON.stringify(DEFAULTS.dailyTasks));
+    
+    startLoop();
+    renderAll();
 }
 
-function saveGame() {
+function save() {
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
 }
 
-// --- Core Mechanics ---
+// GAME LOOP
+function startLoop() {
+    if(loopInt) clearInterval(loopInt);
+    loopInt = setInterval(() => {
+        // Passive Drain
+        change('satiety', -0.5);
+        change('water', -0.8);
+        change('mood', -0.2);
+        
+        // Energy Logic (Check Boost)
+        let noEnergyDrain = false;
+        if(state.activeBoosts['no_drain'] && state.activeBoosts['no_drain'] > Date.now()) {
+            noEnergyDrain = true;
+        }
+        
+        if(!noEnergyDrain) change('energy', -0.3);
+        
+        // Auto Courier
+        if(state.autoCourier) tickAutoCourier();
 
-function startGameLoop() {
-    if (gameLoopInterval) clearInterval(gameLoopInterval);
-    
-    gameLoopInterval = setInterval(() => {
-        // Passive stat drain (every 3 seconds real time = approx 1 game "tick")
-        // Stats drain slower if housing is good (logic simplified here)
-        
-        changeStat('satiety', -0.5);
-        changeStat('water', -0.8);
-        changeStat('mood', -0.2);
-        
-        // Energy drain check (Boost logic)
-        const energyBoost = isBoostActive('pause_energy');
-        if (!energyBoost) {
-             // Normal drain
-             changeStat('energy', -0.3);
-        } else {
-            // Boost active: Energy paused, but Water still drains extra as per user request
-            // Logic handled in render (visual) and here
-        }
-        
-        // Auto Courier Logic
-        if (state.autoCourierEnabled) {
-            processAutoCourier();
-        }
-        
-        // Business Passive Income (simulated per tick slightly)
-        // Ideally business income is collected daily, but let's make it drip
-        // Implementation: Add to hidden accumulator or just daily event. 
-        // For simplicity: Manual collection or daily triggers. Let's use Daily Trigger in checkDailyReset
-        
-        // Check Game Over
-        if (state.satiety <= 0 || state.water <= 0) {
-            showNotification("⚠️ Критическое состояние! Купите еду или воду!", "danger");
-            state.health = (state.health || 100) - 5;
-        }
+        // Checks
+        if(state.satiety<=0 || state.water<=0) notify('⚠️ Внимание! Голод или Жажда!', 'danger');
 
-        saveGame();
+        save();
         renderStats();
-        updateBoosts();
+        renderBoosts();
     }, 3000);
 }
 
-function changeStat(stat, val) {
-    state[stat] += val;
-    if (state[stat] > 100) state[stat] = 100;
-    if (state[stat] < 0) state[stat] = 0;
-    renderStats();
+function change(key, val) {
+    state[key] += val;
+    if(state[key]>100) state[key]=100;
+    if(state[key]<0) state[key]=0;
 }
 
-// --- Courier Logic ---
-
+// COURIER
 function startOrder() {
-    if (state.energy < 10 || state.satiety < 5) {
-        showNotification("Слишком устал или голоден!", "danger");
-        return;
+    if(state.energy<10 || state.satiety<5) return notify('Нет сил или еды', 'warning');
+    
+    document.getElementById('btn-take-order').style.display='none';
+    document.getElementById('progress-ui').style.display='block';
+    
+    let w=0;
+    let t = setInterval(()=>{
+        w+=10; 
+        document.getElementById('order-bar').style.width=w+'%';
+        if(w>=100) {
+            clearInterval(t);
+            finishOrder();
+        }
+    }, 150);
+}
+
+function finishOrder() {
+    let pay = Math.floor(10 + Math.random()*5);
+    state.balance += pay;
+    change('energy', -5);
+    change('water', -2);
+    
+    // Task
+    let t = state.dailyTasks.d1;
+    if(!t.done) {
+        t.cur++;
+        if(t.cur>=t.max) { t.done=true; state.balance+=t.reward; notify('Задание: +'+t.reward, 'success'); }
     }
     
-    const btn = document.getElementById('btn-take-order');
-    const progressUI = document.getElementById('order-progress-ui');
-    const bar = document.getElementById('order-bar');
-    
-    btn.style.display = 'none';
-    progressUI.style.display = 'block';
-    bar.style.width = '0%';
-    
-    let width = 0;
-    const interval = setInterval(() => {
-        width += 5;
-        bar.style.width = width + '%';
-        
-        if (width >= 100) {
-            clearInterval(interval);
-            completeOrder();
-            btn.style.display = 'block';
-            progressUI.style.display = 'none';
-        }
-    }, 100); // 2 seconds total
-}
-
-function completeOrder() {
-    const basePay = 10 + (Math.random() * 5);
-    const pay = Math.floor(basePay);
-    
-    state.balance += pay;
-    changeStat('energy', -5);
-    changeStat('water', -2); // Courier works, gets thirsty
-    
-    updateTask('deliver5', 1);
-    
-    showNotification(`Заказ доставлен! +${pay} PLN`, "success");
-    saveGame();
+    notify(`Доставка: +${pay} PLN`);
+    document.getElementById('btn-take-order').style.display='block';
+    document.getElementById('progress-ui').style.display='none';
     renderAll();
 }
 
 function toggleAutoCourier() {
-    const hasBike = state.inventory.includes('bicycle');
-    const hasScooter = state.inventory.includes('scooter');
-    
-    if (!hasBike && !hasScooter) {
-        showModal("Ошибка", "Для авто-курьера нужен Велосипед или Скутер!");
-        return;
+    if(!state.inventory.includes('bike') && !state.inventory.includes('scooter')) {
+        return modal('Ошибка', 'Нужен транспорт (Велосипед или Скутер)');
     }
-    
-    state.autoCourierEnabled = !state.autoCourierEnabled;
+    state.autoCourier = !state.autoCourier;
     renderCourier();
 }
 
-function processAutoCourier() {
-    // Costs
-    if (state.energy < 5 || state.water < 5) {
-        state.autoCourierEnabled = false;
-        showNotification("Бот остановлен: нужна вода или энергия", "danger");
+function tickAutoCourier() {
+    // Requirements
+    if(state.energy<5 || state.water<5) {
+        state.autoCourier=false;
+        notify('Бот остановлен: нет воды/сил', 'danger');
         renderCourier();
         return;
     }
     
-    // Efficiency
-    const isScooter = state.inventory.includes('scooter');
-    const chance = isScooter ? 0.4 : 0.2; // Chance to complete order per tick
+    // Logic
+    let isScooter = state.inventory.includes('scooter');
+    let chance = isScooter ? 0.4 : 0.2;
     
-    if (Math.random() < chance) {
-        const pay = isScooter ? 18 : 12;
+    if(Math.random() < chance) {
+        let pay = isScooter ? 18 : 12;
         state.balance += pay;
-        updateTask('deliver5', 1);
         
-        // CONSUME RESOURCES (User requirement: water and energy must be consumed)
-        // Energy drink logic: if boost active, don't drain energy, but drain water
-        const energyBoost = isBoostActive('pause_energy');
+        // CONSUMPTION
+        // Energy check boost
+        let noEn = (state.activeBoosts['no_drain'] && state.activeBoosts['no_drain'] > Date.now());
+        if(!noEn) change('energy', -3);
         
-        if (!energyBoost) {
-            changeStat('energy', -3);
-        }
-        changeStat('water', -3); // Water drains regardless
+        change('water', -3); // Water ALWAYS drains
         
-        showNotification(`🤖 Бот: +${pay} PLN`, "success");
+        // Task
+        let t = state.dailyTasks.d1;
+        if(!t.done) { t.cur++; if(t.cur>=t.max){ t.done=true; state.balance+=t.reward; notify('Дейлик выполнен!', 'success');}}
+
+        notify(`🤖 Бот: +${pay} PLN`, 'success');
+        renderAll();
     }
 }
 
-// --- Career & Skills ---
-
+// CAREER
 function studyCoding() {
-    if (state.energy < 10) {
-        showNotification("Нужна энергия!", "warning");
-        return;
-    }
-    
+    if(state.energy<10) return notify('Мало энергии', 'warning');
     state.energy -= 10;
     state.codingXp += 10;
-    
-    // Level up logic
-    const req = (state.codingLevel + 1) * 50;
-    if (state.codingXp >= req) {
-        state.codingLevel++;
-        state.codingXp = 0;
-        showNotification(`Уровень повышен! Теперь LVL ${state.codingLevel}`, "accent");
+    let req = (state.codingLvl+1)*50;
+    if(state.codingXp >= req) {
+        state.codingLvl++;
+        state.codingXp=0;
+        notify('Level Up! LVL '+state.codingLvl, 'success');
     }
     
-    updateTask('study1', 1);
-    renderCareer();
-    renderStats();
+    let t = state.dailyTasks.d2;
+    if(!t.done) {
+        t.cur++;
+        if(t.cur>=t.max) { t.done=true; state.balance+=t.reward; notify('Учеба: +'+t.reward, 'success'); }
+    }
+    renderAll();
 }
 
-function updateTask(taskId, amount) {
-    const task = state.dailyTasks[taskId];
-    if (task && !task.done) {
-        task.count += amount;
-        if (task.count >= task.target) {
-            task.done = true;
-            state.balance += task.reward;
-            showNotification(`Задание выполнено! +${task.reward} PLN`, "accent");
+// SHOP & BIZ
+function buy(id) {
+    let it = ITEMS[id];
+    if(state.balance < it.price) return notify('Мало денег', 'danger');
+    
+    if(it.type === 'gear') {
+        if(state.inventory.includes(id)) return notify('Уже куплено', 'warning');
+        state.balance -= it.price;
+        state.inventory.push(id);
+        notify('Куплено: '+it.name);
+    } 
+    else if(it.type === 'use') {
+        state.balance -= it.price;
+        if(it.ef.water) change('water', it.ef.water);
+        if(it.ef.energy) change('energy', it.ef.energy);
+        if(it.ef.satiety) change('satiety', it.ef.satiety);
+        if(it.sp === 'no_drain') {
+            state.activeBoosts['no_drain'] = Date.now() + 120000; // 2 min
+            notify('⚡ Энергетик активен!');
         }
-        renderCareer();
+        notify('Использовано: '+it.name);
     }
-}
-
-function checkDailyReset() {
-    // Simple mock for daily reset based on sessions/time could be complex
-    // Here we just ensure structure exists. In a real app, compare Date.now()
-}
-
-// --- Shop & Inventory ---
-
-function buyItem(id) {
-    const item = ITEMS[id];
-    if (state.balance >= item.price) {
-        
-        // Inventory Check
-        if (item.type === 'gear' && state.inventory.includes(id)) {
-            showNotification("У вас это уже есть!", "warning");
-            return;
-        }
-
-        state.balance -= item.price;
-        
-        if (item.type === 'consumable') {
-            applyConsumable(item);
-        } else if (item.type === 'gear') {
-            state.inventory.push(id);
-            showNotification(`Куплено: ${item.name}`, "success");
-        } else if (item.type === 'rent') {
-            // Rent logic
-            state.housing = id;
-            state.rentTimer = item.period; // Reset timer
-            showNotification(`Арендовано: ${item.name}`, "success");
-        }
-        
-        saveGame();
-        renderAll();
-    } else {
-        showNotification("Недостаточно средств", "danger");
+    else if(it.type === 'rent') {
+        state.balance -= it.price;
+        state.housing = id;
+        state.rentTimer = it.days;
+        notify('Арендовано: '+it.name);
     }
+    renderAll();
+    save();
 }
 
-function applyConsumable(item) {
-    if (item.effect.water) changeStat('water', item.effect.water);
-    if (item.effect.satiety) changeStat('satiety', item.effect.satiety);
-    if (item.effect.energy) changeStat('energy', item.effect.energy);
-    if (item.effect.mood) changeStat('mood', item.effect.mood);
+function buyBiz(idx) {
+    let b = BIZ[idx];
+    if(state.balance < b.cost) return notify('Мало денег', 'danger');
+    if(state.business) return notify('Уже есть бизнес', 'warning');
     
-    if (item.effect.special === 'pause_energy') {
-        // 2 minutes (120000 ms) boost
-        const expiry = Date.now() + 120000;
-        state.activeBoosts['pause_energy'] = expiry;
-        showNotification("⚡ Энергетик: Энергия не падает 2 мин!", "accent");
-    } else {
-        showNotification(`Использовано: ${item.name}`, "success");
-    }
+    state.balance -= b.cost;
+    state.business = { id: b.id, name: b.name, lvl: 1 };
+    notify('Бизнес куплен!', 'success');
+    renderAll();
+    save();
 }
 
-function isBoostActive(type) {
-    if (!state.activeBoosts || !state.activeBoosts[type]) return false;
-    if (Date.now() > state.activeBoosts[type]) {
-        delete state.activeBoosts[type];
-        return false;
-    }
-    return true;
+function collectBiz() {
+    if(!state.business) return;
+    let b = BIZ.find(x=>x.id==state.business.id);
+    state.balance += b.inc;
+    notify('Прибыль: '+b.inc, 'success');
+    renderAll();
 }
 
-function updateBoosts() {
-    const list = document.getElementById('boost-list');
-    const container = document.getElementById('active-boosts');
-    let content = '';
-    let hasBoosts = false;
-    
-    if (isBoostActive('pause_energy')) {
-        const left = Math.ceil((state.activeBoosts['pause_energy'] - Date.now()) / 1000);
-        content += `<div style="color:var(--warning); font-size:0.8rem;">⚡ Энергетик: ${left} сек. (Тратишь только воду)</div>`;
-        hasBoosts = true;
-    }
-    
-    if (hasBoosts) {
-        container.style.display = 'block';
-        list.innerHTML = content;
-    } else {
-        container.style.display = 'none';
-    }
+// SYSTEM
+function payTax() {
+    if(state.balance<500) return notify('Нужно 500 PLN', 'danger');
+    state.balance-=500;
+    state.taxTimer=7;
+    notify('Налог оплачен');
+    renderAll();
 }
-
-// --- Business Logic ---
-
-function buyBusiness(index) {
-    const biz = BUSINESSES[index];
-    if (state.business) {
-        showNotification("У вас уже есть бизнес!", "warning");
-        return;
-    }
-    
-    if (state.balance >= biz.cost) {
-        state.balance -= biz.cost;
-        state.business = { id: biz.id, level: 1, name: biz.name };
-        showNotification(`Бизнес "${biz.name}" куплен!`, "success");
-        saveGame();
-        renderBusiness();
-        renderHeader();
-    } else {
-        showNotification("Не хватает денег", "danger");
-    }
-}
-
-function collectBusinessIncome() {
-    if (!state.business) return;
-    
-    // Find biz definition
-    const def = BUSINESSES.find(b => b.id === state.business.id);
-    if (def) {
-        // Simple manual collection mechanic for engagement
-        // Or simulation of daily income. Let's do instant small collection for gameplay flow
-        // "Collect profits" action
-        showNotification(`Собрана прибыль: ${def.income} PLN`, "success");
-        state.balance += def.income;
-        saveGame();
-        renderHeader();
-    }
-}
-
-// --- Admin / Settings / Reset ---
 
 function fullReset() {
-    if (confirm("ВЫ УВЕРЕНЫ? Это удалит ВЕСЬ прогресс, покупки и навыки.")) {
-        // 1. Clear Storage
+    if(confirm('Точно сбросить? Весь прогресс пропадет.')) {
         localStorage.removeItem(SAVE_KEY);
-        // 2. Hard Reload to ensure all memory states are cleared
-        location.reload(); 
+        location.reload();
     }
 }
 
-function payTax() {
-    if (state.balance >= 500) {
-        state.balance -= 500;
-        state.taxTimer = 7; // Reset to week
-        showNotification("Налог оплачен", "success");
-        saveGame();
-        renderHeader();
-        renderSettings();
-    } else {
-        showNotification("Нет 500 PLN на налог", "danger");
-    }
-}
-
-// --- UI Rendering ---
-
+// RENDER
 function renderAll() {
-    renderHeader();
+    document.getElementById('ui-balance').innerText = Math.floor(state.balance) + ' PLN';
     renderStats();
     renderCourier();
     renderCareer();
+    renderBiz();
     renderShop();
-    renderBusiness();
     renderSettings();
 }
 
-function renderHeader() {
-    document.getElementById('ui-balance').textContent = Math.floor(state.balance) + ' PLN';
+function renderStats() {
+    ['energy','water','satiety','mood'].forEach(k => {
+        let el = document.getElementById('ui-'+k);
+        el.innerText = Math.floor(state[k])+'%';
+        el.style.color = state[k]<20 ? 'var(--danger)' : 'white';
+    });
 }
 
-function renderStats() {
-    document.getElementById('ui-energy').textContent = Math.floor(state.energy) + '%';
-    document.getElementById('ui-water').textContent = Math.floor(state.water) + '%';
-    document.getElementById('ui-satiety').textContent = Math.floor(state.satiety) + '%';
-    document.getElementById('ui-mood').textContent = Math.floor(state.mood) + '%';
-    
-    // Color coding
-    document.getElementById('ui-energy').style.color = state.energy < 20 ? 'var(--danger)' : 'white';
-    document.getElementById('ui-water').style.color = state.water < 20 ? 'var(--danger)' : 'white';
+function renderBoosts() {
+    let d = document.getElementById('boost-card');
+    let l = document.getElementById('boost-list');
+    if(state.activeBoosts['no_drain'] && state.activeBoosts['no_drain'] > Date.now()) {
+        d.style.display='block';
+        let sec = Math.ceil((state.activeBoosts['no_drain'] - Date.now())/1000);
+        l.innerHTML = `<div style="color:yellow">⚡ Энергетик: ${sec} сек</div>`;
+    } else {
+        d.style.display='none';
+    }
 }
 
 function renderCourier() {
-    const status = document.getElementById('courier-status');
-    const btnAuto = document.getElementById('btn-auto-courier');
-    
-    if (state.autoCourierEnabled) {
-        status.innerHTML = "Статус: <span style='color:var(--accent)'>🤖 АВТО-БОТ РАБОТАЕТ</span>";
-        btnAuto.textContent = "Остановить бота";
-        btnAuto.classList.add('danger');
-        btnAuto.classList.remove('secondary');
+    let btn = document.getElementById('btn-auto-courier');
+    let stat = document.getElementById('courier-status');
+    if(state.autoCourier) {
+        stat.innerHTML = '<span style="color:var(--accent)">🤖 АВТО-БОТ РАБОТАЕТ</span>';
+        btn.innerText = 'Остановить';
+        btn.className = 'btn danger';
     } else {
-        status.innerHTML = "Статус: Свободен";
-        btnAuto.textContent = "Включить бота";
-        btnAuto.classList.remove('danger');
-        btnAuto.classList.add('secondary');
+        stat.innerHTML = 'Статус: Свободен';
+        btn.innerText = 'Включить бота';
+        btn.className = 'btn secondary';
     }
 }
 
 function renderCareer() {
-    // Coding
-    document.getElementById('coding-lvl').textContent = state.codingLevel;
-    const nextLvl = (state.codingLevel + 1) * 50;
-    const pct = (state.codingXp / nextLvl) * 100;
-    document.getElementById('coding-bar').style.width = pct + '%';
+    document.getElementById('coding-lvl').innerText = state.codingLvl;
+    let next = (state.codingLvl+1)*50;
+    document.getElementById('coding-bar').style.width = ((state.codingXp/next)*100)+'%';
     
-    // Tasks
-    const list = document.getElementById('daily-tasks-list');
-    list.innerHTML = '';
-    
-    for (const key in state.dailyTasks) {
-        const t = state.dailyTasks[key];
-        const color = t.done ? 'var(--success)' : 'white';
-        const check = t.done ? '✅' : '⬜';
-        list.innerHTML += `
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.9rem; color:${color}">
-                <span>${t.desc}</span>
-                <span>${t.count}/${t.target} ${check}</span>
-            </div>
-        `;
+    let html = '';
+    for(let k in state.dailyTasks) {
+        let t = state.dailyTasks[k];
+        let col = t.done ? 'var(--success)' : 'white';
+        let ico = t.done ? '✅' : '⬜';
+        html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:${col}">
+            <span>${t.txt}</span><span>${t.cur}/${t.max} ${ico}</span>
+        </div>`;
+    }
+    document.getElementById('tasks-list').innerHTML = html;
+}
+
+function renderBiz() {
+    let c = document.getElementById('business-container');
+    if(state.business) {
+        c.innerHTML = `<div class="card" style="border:1px solid var(--success)">
+            <h3>${state.business.name}</h3>
+            <p>Работает стабильно</p>
+            <button class="btn" onclick="collectBiz()">Забрать прибыль</button>
+        </div>`;
+    } else {
+        let h = '';
+        BIZ.forEach((b,i) => {
+            h += `<div class="card">
+                <h3>${b.name}</h3>
+                <p style="font-size:0.8rem">${b.desc}</p>
+                <button class="btn" onclick="buyBiz(${i})">Купить (${b.cost})</button>
+            </div>`;
+        });
+        c.innerHTML = h;
     }
 }
 
 function renderShop() {
     // Consumables
-    const conList = document.getElementById('consumables-list');
-    conList.innerHTML = '';
-    ['water_bottle', 'kebab', 'energy_drink'].forEach(id => {
-        const item = ITEMS[id];
-        conList.innerHTML += `
-            <div class="item-row">
-                <div class="item-info">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-desc">${item.desc}</div>
-                </div>
-                <button class="btn" style="width:auto; padding:5px 10px;" onclick="buyItem('${id}')">${item.price} PLN</button>
-            </div>
-        `;
+    let h1 = '';
+    ['water','kebab','monster'].forEach(k => {
+        let i = ITEMS[k];
+        h1 += `<div class="item-row">
+            <div><div class="item-name">${i.name}</div><div class="item-desc">${i.desc}</div></div>
+            <button class="btn" style="width:auto; padding:8px 15px;" onclick="buy('${k}')">${i.price}</button>
+        </div>`;
     });
+    document.getElementById('shop-consumables').innerHTML = h1;
 
-    // Inventory / Gear
-    const invList = document.getElementById('inventory-shop-list');
-    invList.innerHTML = '';
-    ['bicycle', 'scooter', 'laptop'].forEach(id => {
-        const item = ITEMS[id];
-        const owned = state.inventory.includes(id);
-        const btnHtml = owned 
-            ? `<button class="btn secondary" disabled style="width:auto;">Куплено</button>`
-            : `<button class="btn" style="width:auto;" onclick="buyItem('${id}')">${item.price} PLN</button>`;
-            
-        invList.innerHTML += `
-            <div class="item-row">
-                <div class="item-info">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-desc">${item.desc}</div>
-                </div>
-                ${btnHtml}
-            </div>
-        `;
+    // Gear
+    let h2 = '';
+    ['bike','scooter','laptop'].forEach(k => {
+        let i = ITEMS[k];
+        let has = state.inventory.includes(k);
+        let btn = has ? `<button class="btn secondary" disabled style="width:auto">Куплено</button>` : `<button class="btn" style="width:auto" onclick="buy('${k}')">${i.price}</button>`;
+        h2 += `<div class="item-row">
+            <div><div class="item-name">${i.name}</div><div class="item-desc">${i.desc}</div></div>
+            ${btn}
+        </div>`;
     });
+    document.getElementById('shop-gear').innerHTML = h2;
     
-    // Real Estate
-    const rentList = document.getElementById('real-estate-list');
-    rentList.innerHTML = '';
-    ['hostel', 'apartment'].forEach(id => {
-        const item = ITEMS[id];
-        const isCurrent = state.housing === id;
-        
-        const btnHtml = isCurrent
-            ? `<button class="btn secondary" disabled style="width:auto;">Текущее</button>`
-            : `<button class="btn" style="width:auto;" onclick="buyItem('${id}')">${item.price} PLN</button>`;
-            
-        rentList.innerHTML += `
-            <div class="item-row">
-                <div class="item-info">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-desc">${item.desc}. Период: ${item.period} дн.</div>
-                </div>
-                ${btnHtml}
-            </div>
-        `;
+    // Rent
+    let h3 = '';
+    ['hostel','flat'].forEach(k => {
+        let i = ITEMS[k];
+        let isCur = state.housing === k;
+        let btn = isCur ? `<button class="btn secondary" disabled style="width:auto">Текущее</button>` : `<button class="btn" style="width:auto" onclick="buy('${k}')">${i.price}</button>`;
+        h3 += `<div class="item-row">
+            <div><div class="item-name">${i.name}</div><div class="item-desc">${i.days} дней</div></div>
+            ${btn}
+        </div>`;
     });
-}
-
-function renderBusiness() {
-    const container = document.getElementById('business-container');
-    
-    if (state.business) {
-        // Show active business
-        container.innerHTML = `
-            <div class="card" style="border-color: var(--success);">
-                <h3>🏢 ${state.business.name}</h3>
-                <p>Уровень: ${state.business.level}</p>
-                <p>Статус: Работает</p>
-                <button class="btn" onclick="collectBusinessIncome()">Собрать прибыль</button>
-            </div>
-        `;
-    } else {
-        // Show catalog
-        let html = '';
-        BUSINESSES.forEach((biz, index) => {
-            html += `
-                <div class="card">
-                    <h3>${biz.name}</h3>
-                    <p style="font-size:0.8rem; color:var(--text-muted)">${biz.desc}</p>
-                    <p class="balance">Цена: ${biz.cost} PLN</p>
-                    <button class="btn" onclick="buyBusiness(${index})">Купить бизнес</button>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
+    document.getElementById('shop-rent').innerHTML = h3;
 }
 
 function renderSettings() {
-    document.getElementById('tax-timer').textContent = state.taxTimer;
+    document.getElementById('tax-timer').innerText = state.taxTimer;
 }
 
-// --- Utility ---
-
-function switchTab(tabId, element) {
-    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-    document.getElementById('section-' + tabId).classList.add('active');
-    
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
+// UTILS
+function switchTab(id, el) {
+    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+    document.getElementById('sec-'+id).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
 }
 
-function showNotification(msg, type = 'accent') {
-    const area = document.getElementById('notification-area');
-    const div = document.createElement('div');
-    div.className = 'toast';
-    div.style.borderColor = `var(--${type})`;
-    div.textContent = msg;
-    
-    area.appendChild(div);
-    
-    setTimeout(() => {
-        div.style.opacity = '0';
-        setTimeout(() => div.remove(), 300);
-    }, 3000);
+function notify(msg, type='accent') {
+    let d = document.createElement('div');
+    d.className = 'toast';
+    d.style.borderColor = `var(--${type})`;
+    d.innerText = msg;
+    document.getElementById('notif-area').appendChild(d);
+    setTimeout(()=>d.remove(), 3000);
 }
 
-function showModal(title, text) {
-    document.getElementById('modal-title').textContent = title;
-    document.getElementById('modal-body').textContent = text;
-    document.getElementById('modal').style.display = 'flex';
+function modal(t, b) {
+    document.getElementById('modal-title').innerText=t;
+    document.getElementById('modal-text').innerText=b;
+    document.getElementById('modal-overlay').style.display='flex';
 }
+function closeModal(){ document.getElementById('modal-overlay').style.display='none'; }
 
-function closeModal() {
-    document.getElementById('modal').style.display = 'none';
-}
-
-// Start
 init();
-
 </script>
 </body>
 </html>
