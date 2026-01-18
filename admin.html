@@ -8,7 +8,6 @@
     <style>
         :root {
             --bg: #0b0f19;
-            --sidebar: #111827;
             --card: #1f2937;
             --input: #374151;
             --text: #f3f4f6;
@@ -19,96 +18,71 @@
             --success: #10b981;
         }
 
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; font-size: 14px; overflow: hidden; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; font-size: 14px; overflow: hidden; }
         
         /* LOGIN */
         #login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--accent); width: 80%; max-width: 300px; }
         
-        /* LAYOUT Responsive */
-        .main-container { display: flex; flex: 1; overflow: hidden; height: 100%; }
-        
-        /* SIDEBAR / TOPBAR */
-        aside { 
-            width: 240px; background: var(--sidebar); border-right: 1px solid #333; display: flex; flex-direction: column; flex-shrink: 0; z-index: 100;
+        /* LAYOUT */
+        .header-bar {
+            background: #111827; padding: 15px; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
         }
-        
-        .brand { padding: 15px; font-size: 16px; font-weight: 900; color: white; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        
-        nav { flex: 1; padding: 10px; overflow-y: auto; }
-        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px; color: var(--text-muted); cursor: pointer; border-radius: 8px; margin-bottom: 2px; font-weight: 600; transition: 0.2s; }
-        .nav-item.active { background: var(--accent); color: white; }
-        .nav-item i { width: 20px; text-align: center; }
+        .header-title { font-weight: 900; font-size: 16px; color: white; }
+        .header-title span { color: var(--gold); }
 
-        main { flex: 1; overflow-y: auto; padding: 20px; position: relative; padding-bottom: 80px; }
-
-        /* MOBILE ADAPTATION */
-        @media (max-width: 768px) {
-            .main-container { flex-direction: column; }
-            aside { 
-                width: 100%; height: auto; border-right: none; border-bottom: 1px solid #333; 
-                flex-direction: row; align-items: center; padding: 0; flex-shrink: 0;
-            }
-            .brand { display: none; } /* Hide brand on mobile to save space */
-            
-            nav { 
-                display: flex; flex-direction: row; overflow-x: auto; padding: 5px; gap: 5px; 
-                white-space: nowrap; -webkit-overflow-scrolling: touch;
-            }
-            .nav-item { 
-                flex-direction: column; gap: 5px; padding: 8px 12px; font-size: 10px; border-radius: 10px; 
-                background: rgba(255,255,255,0.05); min-width: 60px; justify-content: center;
-            }
-            .nav-item i { font-size: 16px; margin-bottom: 2px; }
-            .nav-item.active { background: var(--accent); }
-            
-            main { padding: 10px; padding-bottom: 100px; }
-            
-            .settings-grid { grid-template-columns: 1fr !important; }
-            .form-group label { font-size: 12px; }
-            input[type="number"], input[type="text"] { font-size: 16px; padding: 12px; } /* Bigger for touch */
+        /* TABS (Scrollable top bar) */
+        .tabs-container {
+            background: #111827; border-bottom: 1px solid #333;
+            overflow-x: auto; white-space: nowrap; display: flex; padding: 0 5px; flex-shrink: 0;
+            -webkit-overflow-scrolling: touch;
         }
+        .tab-btn {
+            padding: 12px 15px; color: #9ca3af; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border-bottom: 3px solid transparent; transition: 0.2s;
+        }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(59, 130, 246, 0.05); }
+        .tab-btn i { font-size: 14px; }
 
-        /* GRID & CARDS */
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333; }
-        .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        /* MAIN CONTENT */
+        main { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; position: relative; }
+
+        /* CARDS & INPUTS */
+        .card { background: var(--card); border-radius: 12px; border: 1px solid #374151; padding: 15px; margin-bottom: 15px; }
+        .card h3 { margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
         
-        .card { background: var(--card); border-radius: 12px; border: 1px solid #374151; padding: 15px; margin-bottom: 10px;}
-        .card h3 { margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase; color: var(--accent); letter-spacing: 1px; }
-        
-        .form-group { margin-bottom: 10px; }
-        .form-group label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
-        .form-group input { width: 100%; background: var(--input); border: 1px solid #4b5563; color: white; padding: 10px; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
+        .form-group input { width: 100%; background: var(--input); border: 1px solid #4b5563; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         .form-group input:focus { border-color: var(--accent); outline: none; background: #2d3748; }
 
         /* BUTTONS */
-        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 12px; text-transform: uppercase; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-success { background: var(--success); color: black; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-gold { background: var(--gold); color: black; }
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; text-transform: uppercase; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; color: white; }
+        .btn-primary { background: var(--accent); }
+        .btn-success { background: var(--success); color: #000; }
+        .btn-danger { background: var(--danger); }
+        .btn-gold { background: var(--gold); color: #000; }
 
         .fab-save { 
             position: fixed; bottom: 20px; right: 20px; left: 20px; 
             box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 900; 
-            padding: 15px; font-size: 16px; 
+            padding: 16px; font-size: 16px; 
         }
 
-        /* TABS */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.2s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* USER TABLE */
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.02); border-bottom: 1px solid #333; cursor: pointer; }
-        .user-row:hover { background: rgba(255,255,255,0.05); }
-        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        /* USERS LIST */
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; }
+        .user-row:hover { border-color: var(--accent); }
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .online { background: var(--success); box-shadow: 0 0 5px var(--success); }
-        .offline { background: var(--text-muted); }
+        .offline { background: #666; }
 
         /* MODAL */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; }
-        .modal { background: #1f2937; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; border-radius: 16px; border: 1px solid var(--accent); padding: 20px; display: flex; flex-direction: column; }
+        .modal { background: #1f2937; width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto; border-radius: 16px; border: 1px solid var(--accent); padding: 20px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+
+        .tab-content { display: none; animation: fadeIn 0.2s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -116,100 +90,88 @@
     <div id="login-screen">
         <div class="login-box">
             <h2 style="margin: 0 0 20px 0; color: white;">GOD MODE</h2>
-            <input type="password" id="admin-pass" placeholder="Password" style="padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; width: 100%; text-align: center; margin-bottom: 15px;">
+            <input type="password" id="admin-pass" placeholder="Пароль (admin)" style="padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; width: 100%; text-align: center; margin-bottom: 15px;">
             <button class="btn btn-primary" onclick="auth()">ВОЙТИ</button>
         </div>
     </div>
 
-    <div class="main-container" id="app-ui" hidden>
-        <aside>
-            <div class="brand">WARSZAWA ADMIN</div>
-            <nav>
-                <div class="nav-item active" onclick="switchTab('players', this)"><i class="fas fa-users"></i> <span>Игроки</span></div>
-                <div class="nav-item" onclick="switchTab('economy', this)"><i class="fas fa-coins"></i> <span>Эконом</span></div>
-                <div class="nav-item" onclick="switchTab('items', this)"><i class="fas fa-shopping-cart"></i> <span>Вещи</span></div>
-                <div class="nav-item" onclick="switchTab('jobs', this)"><i class="fas fa-briefcase"></i> <span>Работа</span></div>
-                <div class="nav-item" onclick="switchTab('map', this)"><i class="fas fa-map"></i> <span>Карта</span></div>
-                <div class="nav-item" onclick="switchTab('business', this)"><i class="fas fa-building"></i> <span>Бизнес</span></div>
-                <div class="nav-item" onclick="switchTab('bank', this)"><i class="fas fa-university"></i> <span>Банк</span></div>
-            </nav>
-        </aside>
+    <div style="display: flex; flex-direction: column; height: 100%;" id="app-ui" hidden>
+        <div class="header-bar">
+            <div class="header-title">WARSZAWA <span>ADMIN</span></div>
+            <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 10px;" onclick="location.reload()">EXIT</button>
+        </div>
+
+        <div class="tabs-container">
+            <div class="tab-btn active" onclick="switchTab('players', this)"><i class="fas fa-users"></i> Игроки</div>
+            <div class="tab-btn" onclick="switchTab('economy', this)"><i class="fas fa-coins"></i> Эконом</div>
+            <div class="tab-btn" onclick="switchTab('items', this)"><i class="fas fa-shopping-cart"></i> Магазин</div>
+            <div class="tab-btn" onclick="switchTab('jobs', this)"><i class="fas fa-briefcase"></i> Работа</div>
+            <div class="tab-btn" onclick="switchTab('map', this)"><i class="fas fa-map"></i> Карта</div>
+            <div class="tab-btn" onclick="switchTab('business', this)"><i class="fas fa-building"></i> Бизнес</div>
+            <div class="tab-btn" onclick="switchTab('bank', this)"><i class="fas fa-university"></i> Банк</div>
+        </div>
 
         <main>
             <div id="tab-players" class="tab-content active">
-                <div class="section-header">
-                    <h3>👥 Игроки</h3>
-                    <input type="text" id="user-search" placeholder="Поиск..." oninput="renderUsers()" style="padding: 8px; width: 120px; background: #333; border: none; color: white; border-radius: 6px;">
-                </div>
-                <div id="users-list" style="display: flex; flex-direction: column;"></div>
+                <input type="text" id="user-search" placeholder="🔍 Поиск игрока..." oninput="renderUsers()" style="width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 15px;">
+                <div id="users-list">Loading...</div>
             </div>
 
             <div id="tab-economy" class="tab-content">
-                <div class="settings-grid">
-                    <div class="card">
-                        <h3>Налоги и Глобал</h3>
-                        <div class="form-group"><label>Налог (%)</label><input type="number" data-path="economy.tax_rate" data-type="percent"></div>
-                        <div class="form-group"><label>Порог налога (PLN)</label><input type="number" data-path="economy.tax_threshold"></div>
-                        <div class="form-group"><label>Инфляция (%)</label><input type="number" data-path="economy.inflation_rate" data-type="percent"></div>
-                        <div class="form-group"><label>Таймер налога (сек)</label><input type="number" data-path="economy.tax_timer_sec"></div>
-                    </div>
-                    <div class="card">
-                        <h3>Базовый доход</h3>
-                        <div class="form-group"><label>Цена Клика (База)</label><input type="number" step="0.01" data-path="economy.click_base"></div>
-                        <div class="form-group"><label>Цена Бутылки</label><input type="number" step="0.01" data-path="economy.bottle_price"></div>
-                        <div class="form-group"><label>Шанс бутылки (%)</label><input type="number" data-path="gameplay.bottle_find_chance" data-type="percent"></div>
-                        <div class="form-group"><label>Пособие Бабушки</label><input type="number" data-path="economy.welfare_amount"></div>
-                    </div>
+                <div class="card">
+                    <h3>💰 Глобальная Экономика</h3>
+                    <div class="form-group"><label>Налог (%)</label><input type="number" data-path="economy.tax_rate" data-type="percent"></div>
+                    <div class="form-group"><label>Порог налога (PLN)</label><input type="number" data-path="economy.tax_threshold"></div>
+                    <div class="form-group"><label>Инфляция (%)</label><input type="number" data-path="economy.inflation_rate" data-type="percent"></div>
+                    <div class="form-group"><label>Таймер налога (сек)</label><input type="number" data-path="economy.tax_timer_sec"></div>
+                </div>
+                <div class="card">
+                    <h3>💵 Базовый Доход</h3>
+                    <div class="form-group"><label>Цена Клика (База)</label><input type="number" step="0.01" data-path="economy.click_base"></div>
+                    <div class="form-group"><label>Цена Бутылки</label><input type="number" step="0.01" data-path="economy.bottle_price"></div>
+                    <div class="form-group"><label>Шанс найти бутылку (%)</label><input type="number" data-path="gameplay.bottle_find_chance" data-type="percent"></div>
+                    <div class="form-group"><label>Пособие Бабушки</label><input type="number" data-path="economy.welfare_amount"></div>
                 </div>
             </div>
 
             <div id="tab-items" class="tab-content">
-                <div class="settings-grid">
-                    <div class="card">
-                        <h3>Расходники</h3>
-                        <div class="form-group"><label>Вода (1.5л)</label><input type="number" step="0.1" data-path="prices.water"></div>
-                        <div class="form-group"><label>Кофе</label><input type="number" step="0.1" data-path="prices.coffee"></div>
-                        <div class="form-group"><label>Red Bull</label><input type="number" step="0.1" data-path="prices.energy"></div>
-                    </div>
-                    <div class="card">
-                        <h3>Аренда транспорта</h3>
-                        <div class="form-group"><label>Veturilo Мин</label><input type="number" step="0.01" data-path="prices.veturilo_min"></div>
-                        <div class="form-group"><label>Bolt Старт</label><input type="number" data-path="prices.bolt_start"></div>
-                        <div class="form-group"><label>Bolt Мин</label><input type="number" step="0.01" data-path="prices.bolt_min"></div>
-                        <div class="form-group"><label>E-Bike (10 мин)</label><input type="number" data-path="prices.bike_rent"></div>
-                    </div>
-                    <div class="card">
-                        <h3>Магазин вещей</h3>
-                        <div class="form-group"><label>Сумка</label><input type="number" data-path="prices.bag"></div>
-                        <div class="form-group"><label>Телефон</label><input type="number" data-path="prices.phone"></div>
-                        <div class="form-group"><label>Самокат</label><input type="number" data-path="prices.scooter"></div>
-                        <div class="form-group"><label>Дождевик</label><input type="number" data-path="prices.raincoat"></div>
-                        <div class="form-group"><label>Powerbank</label><input type="number" data-path="prices.powerbank"></div>
-                    </div>
-                    <div class="card">
-                        <h3>Ремонт</h3>
-                        <div class="form-group"><label>Экспресс (Велик)</label><input type="number" data-path="prices.repair_express"></div>
-                        <div class="form-group"><label>Ремонт Сумки</label><input type="number" data-path="repair_costs.bag"></div>
-                        <div class="form-group"><label>Ремонт Телефона</label><input type="number" data-path="repair_costs.phone"></div>
-                    </div>
+                <div class="card">
+                    <h3>🥤 Еда и Энергия</h3>
+                    <div class="form-group"><label>Вода (1.5л)</label><input type="number" step="0.1" data-path="prices.water"></div>
+                    <div class="form-group"><label>Кофе</label><input type="number" step="0.1" data-path="prices.coffee"></div>
+                    <div class="form-group"><label>Red Bull</label><input type="number" step="0.1" data-path="prices.energy"></div>
+                </div>
+                <div class="card">
+                    <h3>🚲 Аренда Транспорта</h3>
+                    <div class="form-group"><label>Veturilo Старт</label><input type="number" data-path="prices.veturilo_start"></div>
+                    <div class="form-group"><label>Veturilo Мин</label><input type="number" step="0.01" data-path="prices.veturilo_min"></div>
+                    <div class="form-group"><label>Bolt Старт</label><input type="number" data-path="prices.bolt_start"></div>
+                    <div class="form-group"><label>Bolt Мин</label><input type="number" step="0.01" data-path="prices.bolt_min"></div>
+                    <div class="form-group"><label>E-Bike (10 мин)</label><input type="number" data-path="prices.bike_rent"></div>
+                </div>
+                <div class="card">
+                    <h3>🛠️ Цены на Ремонт</h3>
+                    <div class="form-group"><label>Экспресс (Велик)</label><input type="number" data-path="prices.repair_express"></div>
+                    <div class="form-group"><label>Ремонт Сумки</label><input type="number" data-path="repair_costs.bag"></div>
+                    <div class="form-group"><label>Ремонт Телефона</label><input type="number" data-path="repair_costs.phone"></div>
+                    <div class="form-group"><label>Ремонт Самоката</label><input type="number" data-path="repair_costs.scooter"></div>
                 </div>
             </div>
 
             <div id="tab-jobs" class="tab-content">
-                <div class="settings-grid">
-                    <div class="card">
-                        <h3>Зарплата</h3>
-                        <div class="form-group"><label>База за заказ</label><input type="number" step="0.1" data-path="jobs.base_pay"></div>
-                        <div class="form-group"><label>За КМ пути</label><input type="number" step="0.1" data-path="jobs.km_pay"></div>
-                        <div class="form-group"><label>Шанс чаевых (%)</label><input type="number" data-path="jobs.tips_chance" data-type="percent"></div>
-                    </div>
-                    <div class="card">
-                        <h3>Полиция</h3>
-                        <div class="form-group"><label>Шанс криминала (%)</label><input type="number" data-path="gameplay.criminal_chance" data-type="percent"></div>
-                        <div class="form-group"><label>Шанс облавы (%)</label><input type="number" data-path="gameplay.police_chance" data-type="percent"></div>
-                        <div class="form-group"><label>Штраф (PLN)</label><input type="number" data-path="gameplay.fine_amount"></div>
-                        <div class="form-group"><label>Штраф (LVL)</label><input type="number" step="0.05" data-path="gameplay.lvl_fine_police"></div>
-                    </div>
+                <div class="card">
+                    <h3>📦 Зарплата</h3>
+                    <div class="form-group"><label>База за заказ</label><input type="number" step="0.1" data-path="jobs.base_pay"></div>
+                    <div class="form-group"><label>За КМ пути</label><input type="number" step="0.1" data-path="jobs.km_pay"></div>
+                    <div class="form-group"><label>Шанс чаевых (%)</label><input type="number" data-path="jobs.tips_chance" data-type="percent"></div>
+                    <div class="form-group"><label>Макс чаевые</label><input type="number" data-path="jobs.tips_max"></div>
+                </div>
+                <div class="card" style="border-color: var(--danger);">
+                    <h3>🚔 Полиция и Риски</h3>
+                    <div class="form-group"><label>Шанс криминала (%)</label><input type="number" data-path="gameplay.criminal_chance" data-type="percent"></div>
+                    <div class="form-group"><label>Шанс облавы (%)</label><input type="number" data-path="gameplay.police_chance" data-type="percent"></div>
+                    <div class="form-group"><label>Штраф (PLN)</label><input type="number" data-path="gameplay.fine_amount"></div>
+                    <div class="form-group"><label>Штраф (LVL)</label><input type="number" step="0.05" data-path="gameplay.lvl_fine_police"></div>
                 </div>
             </div>
 
@@ -221,23 +183,23 @@
                 <div class="card">
                     <h3>Общие настройки</h3>
                     <div class="form-group"><label>Налог на бизнес (%)</label><input type="number" data-path="economy.business_tax" data-type="percent"></div>
-                    <div class="form-group"><label>Расход воды</label><input type="number" data-path="business_config.water_cost"></div>
+                    <div class="form-group"><label>Расход воды за действие</label><input type="number" data-path="business_config.water_cost"></div>
                 </div>
                 <div id="business-settings"></div>
             </div>
 
             <div id="tab-bank" class="tab-content">
                 <div class="card">
-                    <h3>Private Vault</h3>
+                    <h3>💎 Private Vault</h3>
                     <div class="form-group"><label>Базовая ставка (%)</label><input type="number" data-path="economy.bank_rate" data-type="percent"></div>
                     <div class="form-group"><label>Множитель (15 дн)</label><input type="number" data-path="bank_config.mult_15"></div>
                     <div class="form-group"><label>Множитель (30 дн)</label><input type="number" data-path="bank_config.mult_30"></div>
                     <div class="form-group"><label>Штраф снятия (%)</label><input type="number" data-path="bank_config.break_penalty" data-type="percent"></div>
                 </div>
                 <div class="card">
-                    <h3>Биржа LVL</h3>
-                    <div class="form-group"><label>Цена покупки (0.1 LVL)</label><input type="number" data-path="prices.buy_lvl_small"></div>
-                    <div class="form-group"><label>Цена покупки (0.5 LVL)</label><input type="number" data-path="prices.buy_lvl_big"></div>
+                    <h3>⚖️ Биржа LVL</h3>
+                    <div class="form-group"><label>Покупка 0.1 LVL</label><input type="number" data-path="prices.buy_lvl_small"></div>
+                    <div class="form-group"><label>Покупка 0.5 LVL</label><input type="number" data-path="prices.buy_lvl_big"></div>
                     <div class="form-group"><label>Курс обмена (0.05 LVL)</label><input type="number" data-path="economy.lvl_exchange_rate"></div>
                     <div class="form-group"><label>Курс обмена (1.00 LVL)</label><input type="number" data-path="economy.lvl_exchange_rate_big"></div>
                 </div>
@@ -251,24 +213,27 @@
         <div class="modal">
             <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
                 <h3 id="m-username" style="margin:0; color:white;">Player</h3>
-                <button class="btn btn-danger" style="width:auto; padding:5px 10px;" onclick="closeModal()">✕</button>
+                <button class="btn btn-danger" style="width:auto; padding:5px 12px;" onclick="closeModal()">✕</button>
             </div>
             
-            <div class="form-group"><label>Баланс</label><input type="number" id="m-money"></div>
-            <div class="form-group"><label>LVL</label><input type="number" step="0.01" id="m-lvl"></div>
-            <div class="form-group"><label>Вода</label><input type="number" id="m-water"></div>
+            <div class="form-group"><label>Баланс (PLN)</label><input type="number" id="m-money"></div>
+            <div class="form-group"><label>Уровень (LVL)</label><input type="number" step="0.01" id="m-lvl"></div>
+            <div class="form-group"><label>Вода (мл)</label><input type="number" id="m-water"></div>
             <div class="form-group"><label>Энергия</label><input type="number" id="m-energy"></div>
             <div class="form-group"><label>Долг</label><input type="number" id="m-debt"></div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+            <h4 style="color:var(--accent); margin:15px 0 10px 0;">Быстрые действия</h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                 <button class="btn btn-primary" onclick="adminAction('give_water')">💧 +1.5л</button>
                 <button class="btn btn-primary" onclick="adminAction('repair_all')">🛠️ Починить</button>
-                <button class="btn btn-primary" onclick="adminAction('clear_debt')">💸 Простить долг</button>
-                <button class="btn btn-gold" onclick="resetUserToNovice()">🔄 Сброс</button>
+                <button class="btn btn-primary" onclick="adminAction('clear_debt')">💸 Убрать долг</button>
+                <button class="btn btn-gold" onclick="resetUserToNovice()">🔄 СБРОС</button>
             </div>
             
-            <button id="btn-ban" class="btn btn-danger" style="margin-top:15px;" onclick="toggleBan()">BAN</button>
-            <button class="btn btn-success" style="margin-top:10px;" onclick="saveUserChanges()">СОХРАНИТЬ</button>
+            <div style="margin-top:20px;">
+                <button id="btn-ban" class="btn btn-danger" onclick="toggleBan()">BAN USER</button>
+                <button class="btn btn-success" style="margin-top:10px;" onclick="saveUserChanges()">СОХРАНИТЬ</button>
+            </div>
         </div>
     </div>
 
@@ -303,7 +268,7 @@
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(d => d.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(d => d.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(d => d.classList.remove('active'));
             el.classList.add('active');
         }
 
@@ -319,18 +284,19 @@
         }
 
         function renderSettings() {
-            // Standard inputs
+            // Fill standard inputs
             document.querySelectorAll('[data-path]').forEach(el => {
                 const path = el.dataset.path.split('.');
                 let val = settings;
                 for (let p of path) { val = val ? val[p] : undefined; }
+                
                 if (val !== undefined) {
                     if (el.dataset.type === 'percent') val = (val * 100).toFixed(2);
                     el.value = val;
                 }
             });
 
-            // Districts Array
+            // Render Districts
             const distContainer = document.getElementById('districts-settings');
             if (settings.districts) {
                 let html = '';
@@ -340,14 +306,14 @@
                         <div class="form-group"><label>Цена жилья</label><input type="number" id="d-${i}-price" value="${d.housePrice}"></div>
                         <div class="form-group"><label>Квартплата (База)</label><input type="number" id="d-${i}-czynsz" value="${d.czynszBase}"></div>
                         <div class="form-group"><label>Доход (x)</label><input type="number" step="0.01" id="d-${i}-mult" value="${d.mult}"></div>
-                        <div class="form-group"><label>Процент аренды (%)</label><input type="number" id="d-${i}-rent" value="${(d.rentPct*100).toFixed(0)}"></div>
+                        <div class="form-group"><label>Аренда (%)</label><input type="number" id="d-${i}-rent" value="${(d.rentPct*100).toFixed(0)}"></div>
                         <div class="form-group"><label>Мин. LVL</label><input type="number" id="d-${i}-lvl" value="${d.minLvl}"></div>
                     </div>`;
                 });
                 distContainer.innerHTML = html;
             }
 
-            // Business Array
+            // Render Business
             const bizContainer = document.getElementById('business-settings');
             if (settings.business_meta) {
                 let html = '';
@@ -356,7 +322,7 @@
                         <h3>🏭 ${b.name}</h3>
                         <div class="form-group"><label>Цена Лицензии</label><input type="number" id="b-${i}-price" value="${b.basePrice}"></div>
                         <div class="form-group"><label>Мин. LVL</label><input type="number" id="b-${i}-lvl" value="${b.minLvl}"></div>
-                        <div class="form-group"><label>Стоимость Действия</label><input type="number" id="b-${i}-cost" value="${b.dealCost}"></div>
+                        <div class="form-group"><label>Стоимость Сделки</label><input type="number" id="b-${i}-cost" value="${b.dealCost}"></div>
                     </div>`;
                 });
                 bizContainer.innerHTML = html;
@@ -364,21 +330,21 @@
         }
 
         function saveAllSettings() {
-            // Deep copy existing settings to start
             let update = JSON.parse(JSON.stringify(settings));
+            
+            // Ensure structure
             if(!update.economy) update.economy = {};
             if(!update.prices) update.prices = {};
             if(!update.gameplay) update.gameplay = {};
             if(!update.repair_costs) update.repair_costs = {};
             if(!update.bank_config) update.bank_config = {};
             
-            // 1. Save Standard Inputs
+            // Save inputs
             document.querySelectorAll('[data-path]').forEach(el => {
                 const path = el.dataset.path.split('.');
                 let val = parseFloat(el.value);
                 if (el.dataset.type === 'percent') val = val / 100;
                 
-                // Assign deep value
                 let obj = update;
                 for (let i = 0; i < path.length - 1; i++) {
                     if (!obj[path[i]]) obj[path[i]] = {};
@@ -387,7 +353,7 @@
                 obj[path[path.length - 1]] = val;
             });
 
-            // 2. Save Districts Array Explicitly
+            // Save Districts
             if (settings.districts) {
                 settings.districts.forEach((d, i) => {
                     update.districts[i].housePrice = parseFloat(document.getElementById(`d-${i}-price`).value);
@@ -398,7 +364,7 @@
                 });
             }
 
-            // 3. Save Business Array Explicitly
+            // Save Business
             if (settings.business_meta) {
                 settings.business_meta.forEach((b, i) => {
                     update.business_meta[i].basePrice = parseFloat(document.getElementById(`b-${i}-price`).value);
@@ -429,13 +395,13 @@
                     <div style="display:flex; align-items:center;">
                         <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
                         <div>
-                            <div style="font-weight:bold; font-size:13px;">${name} ${u.isBanned ? '<span style="color:red">[BAN]</span>' : ''}</div>
-                            <div style="font-size:11px; color:#888;">${uid.substr(0,6)}...</div>
+                            <div style="font-weight:bold; font-size:13px; color:${u.isBanned ? 'var(--danger)' : 'white'}">${name} ${u.isBanned ? '[BAN]' : ''}</div>
+                            <div style="font-size:10px; color:#666;">${uid.substr(0,5)}...</div>
                         </div>
                     </div>
                     <div style="text-align:right;">
                         <div style="color:${u.money < 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${Math.floor(u.money||0)} PLN</div>
-                        <div style="font-size:11px; color:var(--gold);">LVL ${u.lvl?.toFixed(1)}</div>
+                        <div style="font-size:10px; color:var(--gold);">LVL ${u.lvl?.toFixed(1)}</div>
                     </div>
                 </div>`;
             });
@@ -454,7 +420,7 @@
             document.getElementById('m-debt').value = u.debt || 0;
             
             const banBtn = document.getElementById('btn-ban');
-            banBtn.innerText = u.isBanned ? "РАЗБАНИТЬ" : "ЗАБАНИТЬ ИГРОКА";
+            banBtn.innerText = u.isBanned ? "РАЗБАНИТЬ" : "BAN USER";
             banBtn.className = u.isBanned ? "btn btn-success" : "btn btn-danger";
         }
 
@@ -469,7 +435,7 @@
                 en: parseFloat(document.getElementById('m-energy').value),
                 debt: parseFloat(document.getElementById('m-debt').value),
                 lastAdminUpdate: Date.now(),
-                adminMessage: "Данные изменены администратором"
+                adminMessage: "Параметры изменены администратором."
             }).then(() => closeModal());
         }
 
@@ -481,7 +447,7 @@
 
         function resetUserToNovice() {
             if(!currentUserId) return;
-            if(!confirm("Сбросить игрока до новичка?")) return;
+            if(!confirm("ТОЧНО СБРОСИТЬ?")) return;
             db.ref('users/' + currentUserId).update({
                 money: 0, lvl: 1.0, en: 2000, waterStock: 0,
                 totalOrders: 0, transportMode: 'none', housing: { id: -1 },
@@ -504,3 +470,4 @@
     </script>
 </body>
 </html>
+
