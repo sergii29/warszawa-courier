@@ -3,248 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warsaw Tycoon: Strategy Test</title>
+    <title>Project: Bright Future Tycoon</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --primary: #00e676; /* Cyber Green */
-            --secondary: #2979ff; /* Blue */
-            --danger: #ff1744;
-            --text: #ffffff;
-            --text-muted: #b0b0b0;
+            --bg-main: #f0f2f5; /* Светлый фон */
+            --bg-card: #ffffff; /* Белые карточки */
+            --color-primary: #10b981; /* Приятный зеленый */
+            --color-primary-dark: #059669;
+            --color-secondary: #3b82f6; /* Яркий синий */
+            --color-accent: #f59e0b; /* Оранжевый/Золотой */
+            --color-danger: #ef4444;
+            --text-main: #1f2937; /* Темно-серый текст */
+            --text-muted: #6b7280; /* Светло-серый текст */
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --radius-lg: 16px;
+            --radius-md: 12px;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
             user-select: none;
+            line-height: 1.5;
         }
 
-        /* Layout */
-        .container {
-            max-width: 800px;
+        /* --- LAYOUT GRID --- */
+        .main-container {
+            max-width: 900px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
-        /* Header & Stats */
-        .header {
-            background: var(--card-bg);
+        .grid-2-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) { .grid-2-cols { grid-template-columns: 1fr; } }
+
+        /* --- CARDS & PANELS --- */
+        .panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .panel-title {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- HEADER DASHBOARD --- */
+        .dashboard-header {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
             padding: 20px;
-            border-radius: 12px;
-            border-left: 5px solid var(--primary);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
+        .stat-card.accent-gold { border-bottom: 4px solid var(--color-accent); }
+        .stat-card.accent-blue { border-bottom: 4px solid var(--color-secondary); }
+        .stat-card.accent-green { border-bottom: 4px solid var(--color-primary); }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
+        .stat-icon { font-size: 1.5rem; margin-bottom: 8px; }
+        .stat-label { font-size: 0.875rem; color: var(--text-muted); font-weight: 500; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
 
-        .stat-box {
-            background: rgba(255,255,255,0.05);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-value { font-size: 1.2em; font-weight: bold; color: var(--primary); }
-        .stat-label { font-size: 0.85em; color: var(--text-muted); }
-
-        /* Level Progress */
-        .level-container { margin-top: 15px; }
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background: #333;
-            border-radius: 5px;
+        /* --- LEVEL PROGRESS --- */
+        .level-section { margin-top: 16px; }
+        .level-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; }
+        .progress-track {
+            background: #e5e7eb;
+            height: 12px;
+            border-radius: 6px;
             overflow: hidden;
-            margin-top: 5px;
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            background: linear-gradient(90deg, var(--color-secondary), var(--color-primary));
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Main Action Area */
-        .actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .action-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            transition: transform 0.1s;
-        }
-        .action-card:active { transform: scale(0.98); }
-
-        button.main-btn {
+        /* --- ACTION BUTTONS --- */
+        .big-btn {
             width: 100%;
-            padding: 15px;
-            font-size: 1.1em;
+            padding: 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-lg);
             cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        .btn-work { background: var(--primary); color: #000; }
-        .btn-work:hover { background: #00c853; }
-        .btn-work:disabled { background: #333; color: #777; cursor: not-allowed; }
-
-        .btn-rest { background: var(--secondary); color: #fff; }
-
-        /* Shop & Inventory */
-        .section-title { border-bottom: 2px solid #333; padding-bottom: 10px; margin-top: 30px; }
-        
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 15px;
-        }
-
-        .item-card {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #333;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            color: white;
+            box-shadow: var(--shadow-md);
         }
+        .big-btn:active { transform: scale(0.98); }
+        .big-btn-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .big-btn-subtext { font-size: 0.9rem; opacity: 0.9; font-weight: 400; margin-top: 5px;}
 
-        .item-name { font-weight: bold; color: var(--secondary); }
-        .item-desc { font-size: 0.8em; color: var(--text-muted); margin: 5px 0; }
-        .item-price { color: var(--primary); font-weight: bold; }
-        
-        .buy-btn {
-            margin-top: 10px;
-            padding: 8px;
-            background: #333;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .buy-btn:hover { background: #444; }
+        .btn-work { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); }
+        .btn-work:hover { filter: brightness(110%); }
+        .btn-work:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; box-shadow: none;}
 
-        /* Inventory List */
-        .inventory-list {
+        .btn-rest { background: linear-gradient(135deg, var(--color-secondary), #2563eb); }
+        .btn-rest:hover { filter: brightness(110%); }
+
+        /* --- INVENTORY CHIPS --- */
+        .inventory-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
         }
-        .inv-item {
-            background: #2c2c2c;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            border: 1px solid var(--primary);
+        .inv-chip {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid #bae6fd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        .empty-inv { color: var(--text-muted); font-style: italic; padding: 10px; }
 
-        /* Log */
-        #game-log {
-            height: 100px;
-            overflow-y: auto;
-            background: #000;
-            color: #0f0;
-            font-family: monospace;
-            padding: 10px;
+        /* --- SHOP CARDS --- */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+        .shop-item-card {
+            background: var(--bg-card);
+            border: 1px solid #e5e7eb;
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: border-color 0.2s;
+        }
+        .shop-item-card:hover { border-color: var(--color-secondary); }
+
+        .shop-item-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .shop-item-icon { font-size: 2rem; }
+        .shop-item-name { font-weight: 700; font-size: 1.1rem; }
+        .shop-item-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; flex-grow: 1; }
+        .shop-item-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+        .shop-item-price { font-weight: 800; color: var(--color-accent); font-size: 1.1rem; }
+
+        .buy-btn {
+            padding: 8px 16px;
+            border: none;
             border-radius: 8px;
-            font-size: 0.8em;
-            margin-top: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            background: var(--color-primary); color: white;
         }
-        .log-entry { margin-bottom: 4px; opacity: 0.8; }
-        .log-entry.new { opacity: 1; font-weight: bold; }
+        .buy-btn.consumable { background: var(--color-secondary); }
+        .buy-btn:hover { filter: brightness(110%); }
+        .buy-btn:active { transform: scale(0.95); }
 
+
+        /* --- LOG --- */
+        .log-panel {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid #eee; color: var(--text-muted); }
+        .log-entry.important { color: var(--color-primary-dark); font-weight: 600; }
+        .log-entry.error { color: var(--color-danger); }
+
+        /* Reset Button */
+        .reset-btn { position: fixed; top: 20px; right: 20px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600;}
+        .reset-btn:hover { background: var(--color-danger); color: white; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="margin:0;">WARSAW TYCOON <span style="font-size:0.5em; color:var(--text-muted)">v0.1</span></h2>
-            <button onclick="resetGame()" style="background:var(--danger); border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer;">Сброс</button>
+<button class="reset-btn" onclick="resetGame()">🗑️ Сброс прогресса</button>
+
+<div class="main-container">
+    
+    <section>
+        <h1 style="margin-bottom: 10px;">Мой Проект: Панель Управления</h1>
+        <div class="dashboard-header">
+            <div class="stat-card accent-gold">
+                <span class="stat-icon">💰</span>
+                <span class="stat-label">Баланс</span>
+                <span class="stat-value" id="money">0 $</span>
+            </div>
+            <div class="stat-card accent-blue">
+                <span class="stat-icon">⚡</span>
+                <span class="stat-label">Энергия</span>
+                <span class="stat-value" id="energy">100 / 100</span>
+            </div>
+            <div class="stat-card accent-green">
+                <span class="stat-icon">📈</span>
+                <span class="stat-label">Пассивный доход</span>
+                <span class="stat-value" id="income">0 $/сек</span>
+            </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-box">
-                <div class="stat-value" id="money">0 PLN</div>
-                <div class="stat-label">Баланс</div>
+         <div class="panel level-section">
+            <div class="level-info">
+                <span>⭐ Уровень <span id="level">1</span></span>
+                <span id="rank-name" style="color: var(--color-secondary)">Новичок</span>
             </div>
-            <div class="stat-box">
-                <div class="stat-value" id="energy">100 / 100</div>
-                <div class="stat-label">Энергия</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-value" id="income">0 PLN/сек</div>
-                <div class="stat-label">Пассив</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-value" id="level">1</div>
-                <div class="stat-label">Уровень</div>
-            </div>
-        </div>
-
-        <div class="level-container">
-            <div style="display:flex; justify-content:space-between; font-size:0.8em;">
-                <span id="xp-text">0 / 100 XP</span>
-                <span id="rank-name">Новичок</span>
-            </div>
-            <div class="progress-bar">
+            <div class="progress-track">
                 <div class="progress-fill" id="xp-bar"></div>
             </div>
+            <div style="text-align: right; font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;" id="xp-text">0 / 100 XP</div>
         </div>
+    </section>
+
+
+    <div class="grid-2-cols">
+        <section class="panel actions-panel" style="display: flex; gap: 20px; flex-direction: column;">
+            <h2 class="panel-title">🛠️ Активные действия</h2>
+            <button class="big-btn btn-work" id="btn-work" onclick="work()">
+                <span class="big-btn-icon">🔨</span>
+                РАБОТАТЬ
+                <span class="big-btn-subtext">-2 Энергии | +XP и Деньги</span>
+            </button>
+            <button class="big-btn btn-rest" onclick="rest()">
+                <span class="big-btn-icon">💤</span>
+                ОТДЫХАТЬ
+                <span class="big-btn-subtext">+10 Энергии бесплатно</span>
+            </button>
+        </section>
+
+        <section class="panel inventory-panel">
+             <h2 class="panel-title">🎒 Мои Активы и Бонусы</h2>
+             <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">
+                 Купленные улучшения, которые работают на вас.
+             </p>
+             <div class="inventory-grid" id="inventory-display">
+                 <span class="empty-inv">Пока пусто... Загляните в магазин.</span>
+             </div>
+        </section>
     </div>
 
-    <div class="actions">
-        <div class="action-card">
-            <h3>Работа (Клик)</h3>
-            <p style="font-size:0.9em; color:#888;">Тратит 2 энергии</p>
-            <button class="main-btn btn-work" id="btn-work" onclick="work()">ЗАРАБОТАТЬ</button>
-        </div>
-        <div class="action-card">
-            <h3>Отдых</h3>
-            <p style="font-size:0.9em; color:#888;">Восстановить силы</p>
-            <button class="main-btn btn-rest" onclick="rest()">ОТДОХНУТЬ (+10 Эн)</button>
-        </div>
-    </div>
 
-    <div>
-        <h3 class="section-title">Ваш Инвентарь и Навыки</h3>
-        <div class="inventory-list" id="inventory-display">
-            <span style="color:#777; font-style:italic;">Пусто...</span>
-        </div>
-    </div>
-
-    <div>
-        <h3 class="section-title">Рынок и Улучшения</h3>
+    <section class="panel shop-panel">
+        <h2 class="panel-title">🛒 Магазин улучшений</h2>
         <div class="shop-grid" id="shop-container">
             </div>
-    </div>
+    </section>
 
-    <div id="game-log"></div>
+
+    <section class="panel log-panel" id="game-log">
+        <div style="padding: 10px; color: #999; font-style: italic;">Журнал событий...</div>
+    </section>
+
 </div>
+
 
 <script>
     // --- CONFIGURATION ---
-    const GAME_KEY = 'WARSZAWA_TYCOON_TEST_V1';
+    const GAME_KEY = 'BRIGHT_TYCOON_TEST_V2';
     const MAX_LEVEL = 150;
     
     // --- STATE ---
@@ -254,61 +304,40 @@
         maxEnergy: 100,
         xp: 0,
         level: 1,
-        clickPower: 10, // PLN per click
-        passiveIncome: 0, // PLN per sec
-        inventory: {}, // Format: { "laptop": 1, "coffee": 0 }
+        clickPower: 10,
+        passiveIncome: 0,
+        inventory: {}, 
         lastSaveTime: Date.now()
     };
 
-    // --- DATABASE (Items) ---
+    // --- DATABASE (Items с иконками) ---
     const items = [
+        // Расходники
         {
-            id: 'coffee',
-            name: 'Эспрессо',
-            type: 'consumable',
-            price: 50,
-            effect: { energy: 40 },
-            desc: '+40 Энергии мгновенно.'
+            id: 'coffee', icon: '☕', name: 'Двойной Эспрессо', type: 'consumable', price: 50,
+            effect: { energy: 40 }, desc: 'Быстро восстанавливает +40 Энергии.'
+        },
+        // Улучшения клика
+        {
+            id: 'courses', icon: '📚', name: 'Курсы повышения', type: 'upgrade', price: 300,
+            effect: { clickPower: 8 }, desc: 'Увеличивает доход от одного клика на +8$.'
         },
         {
-            id: 'courses',
-            name: 'Онлайн Курсы',
-            type: 'upgrade',
-            price: 500,
-            effect: { clickPower: 5, xpMultiplier: 0.1 },
-            desc: '+5 PLN за клик. Вы учитесь быстрее.'
+            id: 'tools', icon: '🦾', name: 'Новые инструменты', type: 'upgrade', price: 2500,
+            effect: { clickPower: 40 }, desc: 'Мощный буст. Клик приносит на +40$ больше.'
+        },
+        // Пассивный доход
+        {
+            id: 'trainee', icon: '👨‍💻', name: 'Нанять стажера', type: 'passive', price: 1000,
+            effect: { income: 10 }, desc: 'Приносит пассивный доход +10 $/сек.'
         },
         {
-            id: 'bike',
-            name: 'Велосипед',
-            type: 'passive',
-            price: 1500,
-            effect: { income: 15 },
-            desc: 'Работа курьером. +15 PLN/сек.'
+            id: 'small_biz', icon: '🏪', name: 'Малый бизнес', type: 'passive', price: 5000,
+            effect: { income: 60, maxEnergy: 10 }, desc: '+60 $/сек и увеличивает Макс. Энергию на +10.'
         },
         {
-            id: 'laptop',
-            name: 'Макбук б/у',
-            type: 'passive',
-            price: 5000,
-            effect: { income: 60, maxEnergy: 20 },
-            desc: 'Фриланс. +60 PLN/сек и +20 Макс Энергии.'
-        },
-        {
-            id: 'server',
-            name: 'Серверная стойка',
-            type: 'passive',
-            price: 25000,
-            effect: { income: 350 },
-            desc: 'Майнинг и хостинг. +350 PLN/сек.'
-        },
-         {
-            id: 'ai_sub',
-            name: 'AI Подписка',
-            type: 'upgrade',
-            price: 10000,
-            effect: { clickPower: 50 },
-            desc: 'Нейросеть делает работу за вас. +50 PLN за клик.'
+            id: 'factory', icon: '🏭', name: 'Свой завод', type: 'passive', price: 30000,
+            effect: { income: 400 }, desc: 'Серьезный бизнес. +400 $/сек.'
         }
     ];
 
@@ -319,54 +348,45 @@
         renderShop();
         updateUI();
         
-        // Passive Loop (1 second tick)
+        // Passive Loop
         setInterval(() => {
-            if (state.passiveIncome > 0) {
-                addMoney(state.passiveIncome);
-            }
-            // Auto regen energy slightly over time
+            if (state.passiveIncome > 0) addMoney(state.passiveIncome);
             if (state.energy < state.maxEnergy) {
-                state.energy = Math.min(state.energy + 1, state.maxEnergy);
+                state.energy = Math.min(state.energy + 0.5, state.maxEnergy); // Чуть медленнее реген
                 updateUI();
             }
         }, 1000);
 
-        // Auto Save (30 sec)
         setInterval(saveGame, 30000);
     }
 
     function getXpReq(lvl) {
-        // Curve: Level 1 = 100, Level 50 = ~35,000, Level 150 = ~180,000 per level
         return Math.floor(100 * Math.pow(lvl, 1.5));
     }
 
     function work() {
         if (state.energy >= 2) {
             state.energy -= 2;
-            const earn = state.clickPower * (1 + (state.level * 0.1)); // Level bonus
+            // Формула дохода: База * (1 + Бонус уровня)
+            const earn = state.clickPower * (1 + (state.level * 0.15)); 
             addMoney(earn);
-            addXp(10); // Fixed XP per click
+            addXp(15); // Чуть больше XP за клик
             
-            // Random bonus event
-            if (Math.random() < 0.05) { // 5% chance
-                log("⚡ Критический успех! Бонус к деньгам.", "gold");
-                addMoney(earn * 5);
+            if (Math.random() < 0.05) {
+                log("⚡ Удача! Критический заработок X3.", "important");
+                addMoney(earn * 2);
             }
-            
             updateUI();
         } else {
-            log("🛑 Слишком мало энергии! Отдохни или выпей кофе.");
+            log("🛑 Нет энергии! Отдохните.", "error");
             shakeBtn();
         }
     }
 
     function rest() {
         if (state.energy < state.maxEnergy) {
-            state.energy = Math.min(state.energy + 10, state.maxEnergy);
-            log("💤 Вы отдохнули. +10 Энергии.");
+            state.energy = Math.min(state.energy + 15, state.maxEnergy);
             updateUI();
-        } else {
-            log("Вы полностью полны сил.");
         }
     }
 
@@ -377,17 +397,14 @@
 
     function addXp(amount) {
         if (state.level >= MAX_LEVEL) return;
-        
         state.xp += amount;
         const req = getXpReq(state.level);
-        
         if (state.xp >= req) {
             state.xp -= req;
             state.level++;
-            state.maxEnergy += 5; // Level up bonus
-            state.energy = state.maxEnergy; // Full restore
-            log(`🎉 УРОВЕНЬ ПОВЫШЕН! Теперь вы ${state.level} уровня.`);
-            playSound('levelup');
+            state.maxEnergy += 10;
+            state.energy = state.maxEnergy;
+            log(`🎉 ПОВЫШЕНИЕ! Уровень ${state.level}. Макс. энергия выросла!`, "important");
         }
         updateUI();
     }
@@ -399,63 +416,51 @@
         if (state.money >= item.price) {
             state.money -= item.price;
             
-            // Apply Effects
             if (item.type === 'consumable') {
-                if (item.effect.energy) {
-                    state.energy = Math.min(state.energy + item.effect.energy, state.maxEnergy);
-                }
-                log(`☕ Вы употребили: ${item.name}`);
+                if (item.effect.energy) state.energy = Math.min(state.energy + item.effect.energy, state.maxEnergy);
+                log(`Куплено: ${item.name}`);
             } else {
-                // Add to inventory
                 if (!state.inventory[item.id]) state.inventory[item.id] = 0;
                 state.inventory[item.id]++;
-                
-                // Permanent Stats
                 if (item.effect.clickPower) state.clickPower += item.effect.clickPower;
                 if (item.effect.income) state.passiveIncome += item.effect.income;
                 if (item.effect.maxEnergy) state.maxEnergy += item.effect.maxEnergy;
-
-                log(`🛒 Куплено: ${item.name}`);
+                log(`🔨 Улучшение: ${item.name}`);
             }
             
-            // Price scaling for non-consumables (inflation)
             if (item.type !== 'consumable') {
-                item.price = Math.floor(item.price * 1.3);
-                renderShop(); // Re-render to show new price
+                item.price = Math.floor(item.price * 1.4); // Инфляция 40%
+                renderShop();
             }
-            
             updateUI();
         } else {
-            log("💸 Недостаточно средств!");
+            log("💸 Не хватает денег!", "error");
         }
     }
 
-    // --- UI FUNCTIONS ---
+    // --- UI RENDERERS ---
 
     function updateUI() {
-        document.getElementById('money').innerText = Math.floor(state.money).toLocaleString() + ' PLN';
+        // Stats
+        document.getElementById('money').innerText = Math.floor(state.money).toLocaleString() + ' $';
         document.getElementById('energy').innerText = Math.floor(state.energy) + ' / ' + state.maxEnergy;
-        document.getElementById('income').innerText = '+' + state.passiveIncome.toLocaleString() + ' PLN/сек';
+        document.getElementById('income').innerText = '+' + state.passiveIncome.toLocaleString() + ' $/сек';
+        
+        // Level
         document.getElementById('level').innerText = state.level;
-
-        // Progress Bar
         const req = getXpReq(state.level);
         const pct = Math.min(100, (state.xp / req) * 100);
         document.getElementById('xp-bar').style.width = pct + '%';
-        document.getElementById('xp-text').innerText = `${Math.floor(state.xp)} / ${req} XP`;
+        document.getElementById('xp-text').innerText = `${Math.floor(state.xp)} / ${req.toLocaleString()} XP`;
         
-        // Rank Name
-        let rank = "Турист";
-        if (state.level > 10) rank = "Местный";
-        if (state.level > 30) rank = "Предприниматель";
-        if (state.level > 70) rank = "Магнат";
-        if (state.level > 120) rank = "Легенда Варшавы";
+        let rank = "Новичок";
+        if (state.level > 5) rank = "Специалист";
+        if (state.level > 15) rank = "Менеджер";
+        if (state.level > 30) rank = "Директор";
+        if (state.level > 60) rank = "Олигарх";
         document.getElementById('rank-name').innerText = rank;
 
-        // Work Button state
-        const btnWork = document.getElementById('btn-work');
-        btnWork.disabled = state.energy < 2;
-        
+        document.getElementById('btn-work').disabled = state.energy < 2;
         renderInventory();
     }
 
@@ -463,16 +468,20 @@
         const container = document.getElementById('shop-container');
         container.innerHTML = '';
         items.forEach(item => {
+            const btnClass = item.type === 'consumable' ? 'buy-btn consumable' : 'buy-btn';
             const div = document.createElement('div');
-            div.className = 'item-card';
+            div.className = 'shop-item-card';
             div.innerHTML = `
                 <div>
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-desc">${item.desc}</div>
+                    <div class="shop-item-header">
+                        <span class="shop-item-icon">${item.icon}</span>
+                        <span class="shop-item-name">${item.name}</span>
+                    </div>
+                    <div class="shop-item-desc">${item.desc}</div>
                 </div>
-                <div>
-                    <div class="item-price">${item.price.toLocaleString()} PLN</div>
-                    <button class="buy-btn" onclick="buy('${item.id}')">Купить</button>
+                <div class="shop-item-footer">
+                    <span class="shop-item-price">${item.price.toLocaleString()} $</span>
+                    <button class="${btnClass}" onclick="buy('${item.id}')">Купить</button>
                 </div>
             `;
             container.appendChild(div);
@@ -483,31 +492,26 @@
         const container = document.getElementById('inventory-display');
         let html = '';
         let hasItems = false;
-        
-        // Show passive/upgrade items count
         for (const [id, count] of Object.entries(state.inventory)) {
             const itemDef = items.find(i => i.id === id);
             if (itemDef && count > 0) {
-                html += `<div class="inv-item">${itemDef.name} x${count}</div>`;
+                // Используем иконку предмета для чипа
+                html += `<div class="inv-chip">${itemDef.icon} ${itemDef.name} <span style="opacity:0.7">x${count}</span></div>`;
                 hasItems = true;
             }
         }
-        
-        if (!hasItems) html = '<span style="color:#777; font-style:italic;">Инвентарь пуст...</span>';
+        if (!hasItems) html = '<span class="empty-inv">У вас пока нет купленных активов.</span>';
         container.innerHTML = html;
     }
 
-    function log(msg, color='white') {
+    function log(msg, type='normal') {
         const logBox = document.getElementById('game-log');
         const entry = document.createElement('div');
-        entry.className = 'log-entry new';
-        entry.style.color = color === 'gold' ? '#ffd700' : '#0f0';
-        
-        const time = new Date().toLocaleTimeString().split(' ')[0];
+        entry.className = 'log-entry ' + type;
+        const time = new Date().toLocaleTimeString();
         entry.innerText = `[${time}] ${msg}`;
-        
         logBox.insertBefore(entry, logBox.firstChild);
-        if (logBox.children.length > 20) logBox.removeChild(logBox.lastChild);
+        if (logBox.children.length > 10) logBox.removeChild(logBox.lastChild);
     }
 
     function shakeBtn() {
@@ -517,41 +521,25 @@
         setTimeout(() => btn.style.transform = 'translateX(0)', 100);
     }
 
-    // --- SAVE SYSTEM ---
+    // --- SAVE/LOAD ---
     function saveGame() {
         state.lastSaveTime = Date.now();
         localStorage.setItem(GAME_KEY, JSON.stringify(state));
-        // Silent save, only log specific events
     }
-
     function loadGame() {
         const saved = localStorage.getItem(GAME_KEY);
         if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                // Merge save with defaults to prevent errors on version updates
-                state = { ...state, ...parsed };
-                log("💾 Игра загружена.");
-            } catch (e) {
-                console.error("Save error", e);
-            }
+            try { state = { ...state, ...JSON.parse(saved) }; } catch (e) { console.error(e); }
         }
     }
-
     function resetGame() {
-        if(confirm("Точно удалить прогресс?")) {
+        if(confirm("Сбросить весь прогресс и начать заново?")) {
             localStorage.removeItem(GAME_KEY);
             location.reload();
         }
     }
 
-    function playSound(type) {
-        // Placeholder for sound effects
-    }
-
-    // Start
     init();
-
 </script>
 </body>
 </html>
