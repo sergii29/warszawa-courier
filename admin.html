@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>WARSZAWA GOD MODE v16.1</title>
+    <title>WARSZAWA GOD MODE v16.2</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -39,10 +39,7 @@
         
         .field-row { margin-bottom: 12px; }
         .field-row label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 4px; display: flex; justify-content: space-between; }
-        .input-group { position: relative; }
-        .input-suffix { position: absolute; right: 10px; top: 10px; color: #64748b; font-size: 10px; pointer-events: none; }
         
-        /* USERS LIST */
         .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
         .user-card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid #334155; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
         .user-card:hover { border-color: var(--accent); transform: translateY(-2px); }
@@ -58,9 +55,11 @@
 
         .fab-save { position: fixed; bottom: 30px; right: 30px; padding: 15px 30px; font-size: 14px; z-index: 100; display: flex; align-items: center; gap: 10px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
-
+        
         .toggle-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; margin-bottom: 5px; }
         .toggle-row input { width: 20px; margin: 0; }
+        .input-suffix { position: absolute; right: 10px; top: 10px; color: #64748b; font-size: 10px; pointer-events: none; }
+        .input-group { position: relative; }
     </style>
 </head>
 <body>
@@ -76,7 +75,7 @@
     <div class="app-layout" id="app">
         <div class="header">
             <div>
-                <h2 style="margin:0;">SYSTEM CONTROL <span style="color:var(--gold)">GOD MODE v16.1</span></h2>
+                <h2 style="margin:0;">SYSTEM CONTROL <span style="color:var(--gold)">GOD MODE v16.2</span></h2>
                 <div style="font-size:11px; color:#64748b; margin-top:5px;">Firebase Status: <span style="color:var(--success)">Connected</span></div>
             </div>
             <button class="btn-danger" onclick="location.reload()">Выход</button>
@@ -202,7 +201,7 @@
                 <p style="font-size:10px; color:#aaa; margin-bottom:10px;">
                     Сброс удалит весь прогресс, вещи, бизнес и квартиру. Игрок станет "Новичком" и при входе увидит окно получения стартового пакета (50 PLN + Велик).
                 </p>
-                <button class="btn-danger" style="width:100%;" onclick="resetUserToRookie()">🗑️ СБРОСИТЬ ДО НОВИЧКА (WIPE)</button>
+                <button class="btn-danger" style="width:100%;" onclick="resetUserToRookie()">🗑️ ПОЛНЫЙ WIPE (УДАЛИТЬ ВСЁ)</button>
             </div>
 
             <div style="margin-top:20px;">
@@ -252,19 +251,10 @@
         }
 
         function init() {
-            // Настройки
-            db.ref('game_settings').on('value', snap => {
-                settingsCache = snap.val() || {};
-                fillSettings();
-            });
-            // Пользователи
-            db.ref('users').on('value', snap => {
-                usersCache = snap.val() || {};
-                renderUsers();
-            });
+            db.ref('game_settings').on('value', snap => { settingsCache = snap.val() || {}; fillSettings(); });
+            db.ref('users').on('value', snap => { usersCache = snap.val() || {}; renderUsers(); });
         }
 
-        // --- SETTINGS LOGIC ---
         function fillSettings() {
             document.querySelectorAll('[data-path]').forEach(el => {
                 const path = el.dataset.path.split('.');
@@ -289,27 +279,18 @@
             db.ref('game_settings').set(updateData).then(() => alert('✅ НАСТРОЙКИ ОБНОВЛЕНЫ!'));
         }
 
-        // --- USERS LOGIC ---
         function renderUsers() {
             const grid = document.getElementById('users-grid');
             const term = document.getElementById('search-user').value.toLowerCase();
             grid.innerHTML = '';
-
             Object.keys(usersCache).forEach(uid => {
                 const u = usersCache[uid];
                 const name = u.name || 'Unknown';
                 const userLogin = u.user || 'No Login';
                 if (term && !name.toLowerCase().includes(term) && !uid.includes(term) && !userLogin.toLowerCase().includes(term)) return;
-
                 const div = document.createElement('div');
                 div.className = 'user-card';
-                div.innerHTML = `
-                    <div>
-                        <b style="font-size:14px;">${name}</b> <small style="color:#64748b">${userLogin}</small><br>
-                        <small style="color:${u.lvl < 5 ? '#94a3b8' : 'var(--gold)'}">LVL ${u.lvl?.toFixed(2) || 1}</small>
-                    </div>
-                    <b style="color:${u.money < 0 ? 'var(--danger)' : 'var(--success)'}">${u.money?.toFixed(0) || 0} PLN</b>
-                `;
+                div.innerHTML = `<div><b style="font-size:14px;">${name}</b> <small style="color:#64748b">${userLogin}</small><br><small style="color:${u.lvl < 5 ? '#94a3b8' : 'var(--gold)'}">LVL ${u.lvl?.toFixed(2) || 1}</small></div><b style="color:${u.money < 0 ? 'var(--danger)' : 'var(--success)'}">${u.money?.toFixed(0) || 0} PLN</b>`;
                 div.onclick = () => openUser(uid);
                 grid.appendChild(div);
             });
@@ -322,19 +303,12 @@
             document.getElementById('m-name').innerText = (u.name || "User") + " (" + (u.user || "No Login") + ")";
             document.getElementById('m-money').value = u.money;
             document.getElementById('m-lvl').value = u.lvl;
-            
-            // Logs
             const tbody = document.getElementById('m-logs');
             tbody.innerHTML = '';
             if (u.history && Array.isArray(u.history)) {
                 u.history.forEach(h => {
                     let valClass = h.type === 'minus' ? 'val-minus' : 'val-plus';
-                    let sign = h.type === 'minus' ? '-' : '+';
-                    tbody.innerHTML += `<tr>
-                        <td style="color:#64748b; width:60px;">${h.time}</td>
-                        <td>${h.msg}</td>
-                        <td class="${valClass}" style="text-align:right;">${sign}${h.val}</td>
-                    </tr>`;
+                    tbody.innerHTML += `<tr><td style="color:#64748b; width:60px;">${h.time}</td><td>${h.msg}</td><td class="${valClass}" style="text-align:right;">${h.type==='minus'?'-':'+'}${h.val}</td></tr>`;
                 });
             } else { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#555;">Нет истории</td></tr>'; }
         }
@@ -345,51 +319,57 @@
             if (!currentUserId) return;
             const money = parseFloat(document.getElementById('m-money').value);
             const lvl = parseFloat(document.getElementById('m-lvl').value);
-            
             db.ref('users/' + currentUserId).update({
-                money: money,
-                lvl: lvl,
-                lastAdminUpdate: Date.now(), // Важно: заставляет клиент обновить данные
-                adminMessage: "Баланс/LVL изменены администратором"
-            }).then(() => { 
-                alert("Данные игрока сохранены!");
-                closeModal(); 
-            });
+                money: money, lvl: lvl, lastAdminUpdate: Date.now(), adminMessage: "Баланс/LVL изменены администратором"
+            }).then(() => { alert("Данные игрока сохранены!"); closeModal(); });
         }
 
         function resetUserToRookie() {
             if (!currentUserId) return;
-            if(!confirm("ВЫ УВЕРЕНЫ? Это действие необратимо! Игрок потеряет всё.")) return;
+            if(!confirm("ВЫ УВЕРЕНЫ? Игрок потеряет всё: бизнес, вклады, вещи.")) return;
             
-            // Полный сброс параметров под "Starter Pack"
-            // Мы ставим isNewPlayer: true, чтобы при входе logic.js сам предложил старт
+            // ВАЖНО: Мы явно передаем null для полей, которые нужно удалить полностью
+            // update() просто объединяет данные, поэтому если не передать null, старые объекты останутся.
             const resetData = {
-                money: 0, // Стартовый пакет даст 50
+                money: 0,
                 lvl: 1.0,
-                isNewPlayer: true, // Ключевой флаг
+                isNewPlayer: true,
                 waterStock: 0,
                 housing: { id: -1 },
+                district: 0,
                 transportMode: 'none',
-                business: {},
+                autoTime: 0,
+                bikeRentTime: 0,
+                buffTime: 0,
+                blindTime: 0,
+                
+                // ЯВНОЕ УДАЛЕНИЕ СЛОЖНЫХ ОБЪЕКТОВ
+                business: null, 
+                deposit: null,
+                bankHistory: null,
+                bag: null, phone: null, scooter: null, helmet: null, raincoat: null, powerbank: null,
+                starter_bag: null, starter_phone: null,
+                usedPromos: null,
+                
+                shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
+                totalOrders: 0,
+                totalClicks: 0,
+                totalBottles: 0,
+                totalEarned: 0,
                 activeMilestones: [
                     { id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }, 
                     { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
                     { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
                 ],
-                // Очищаем инвентарь
-                bag: null, phone: null, scooter: null, helmet: null,
-                shoes: { name: "Tapki", maxDur: 100, dur: 100, bonus: 0 },
-                totalOrders: 0,
                 lastAdminUpdate: Date.now(),
-                adminMessage: "Ваш аккаунт был сброшен администратором."
+                adminMessage: "ВАШ АККАУНТ БЫЛ ПОЛНОСТЬЮ СБРОШЕН (WIPE)."
             };
 
             db.ref('users/' + currentUserId).update(resetData).then(() => {
-                // Очищаем историю отдельно, чтобы не смешивать
                 db.ref('users/' + currentUserId + '/history').set([
-                    { time: new Date().toLocaleTimeString(), msg: "ADMIN RESET", val: 0, type: "info" }
+                    { time: new Date().toLocaleTimeString(), msg: "ADMIN WIPE", val: 0, type: "info" }
                 ]);
-                alert("Игрок сброшен до новичка!");
+                alert("Игрок успешно сброшен (Бизнес и Банк удалены)!");
                 closeModal();
             });
         }
