@@ -1,7 +1,8 @@
 // --- logic.js ---
-// VERSION: 20.2 (RESCUE UPDATE)
+// VERSION: 25.0 (RESTORATION + GOD MODE)
 // Ключ сохранения: WARSZAWA_FOREVER
-// Исправлено: Меню работает, настройки загружаются безопасно.
+// Восстановлена вся логика: Сфера, Заказы, Сложный бизнес (склад/сотрудники), Банк.
+// Интегрированы настройки из Админки.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -19,7 +20,7 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-// === НАСТРОЙКИ ПО УМОЛЧАНИЮ (ЗАЩИТА ОТ КРАША) ===
+// === НАСТРОЙКИ ПО УМОЛЧАНИЮ (ЗАЩИТА ОТ СБОЕВ) ===
 const DEFAULT_SETTINGS = {
     prices: {
         water: 1.50, coffee: 5.00, energy: 12.00,
@@ -48,32 +49,27 @@ const DEFAULT_SETTINGS = {
     },
     business_config: { water_cost: 25, shoe_wear: 0.02 },
     toggles: { enable_bank: true, enable_shop: true, enable_auto: true, enable_work: true, service_veturilo: true, service_bolt: true },
+    
+    // МАССИВЫ (Чтобы админ мог их менять, но дефолт был тут)
     districts: [
         { name: "Praga", minLvl: 0, rentPct: 0.05, mult: 1, housePrice: 250000, czynszBase: 25, price: 0 },       
         { name: "Mokotów", minLvl: 2.5, rentPct: 0.10, mult: 1.5, housePrice: 850000, czynszBase: 80, price: 150 }, 
         { name: "Śródmieście", minLvl: 5.0, rentPct: 0.15, mult: 1.55, housePrice: 3500000, czynszBase: 250, price: 500 } 
     ],
     business_meta: [
-        { id: 'vending', name: 'Vending Machine', icon: '🍫', basePrice: 5000, minLvl: 5.0, type: 'maintenance', dealCost: 50, desc: "Простой доход." },
-        { id: 'vege', name: 'Warzywniak', icon: '🥦', basePrice: 20000, minLvl: 10.0, type: 'lottery', dealCost: 300, desc: "Овощи. Риск." },
-        { id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', basePrice: 75000, minLvl: 20.0, type: 'strategy', dealCost: 0, desc: "Кебабная." },
-        { id: 'zabka', name: 'Żabka Franchise', icon: '🐸', basePrice: 300000, minLvl: 30.0, type: 'high_stakes', dealCost: 5000, desc: "Франшиза." }
+        { id: 'vending', name: 'Vending Machine', icon: '🍫', basePrice: 5000, minLvl: 5.0, desc: "Автомат со снеками. Требует загрузки товара.", stockPrice: 2, sellPrice: 5, empPrice: 150 },
+        { id: 'vege', name: 'Warzywniak', icon: '🥦', basePrice: 20000, minLvl: 10.0, desc: "Овощная лавка. Товар портится, но маржа выше.", stockPrice: 5, sellPrice: 12, empPrice: 300 },
+        { id: 'kebab', name: 'Kebab u Aliego', icon: '🥙', basePrice: 75000, minLvl: 20.0, desc: "Точка с кебабом. Нужен продавец.", stockPrice: 10, sellPrice: 25, empPrice: 500 },
+        { id: 'zabka', name: 'Żabka Franchise', icon: '🐸', basePrice: 300000, minLvl: 30.0, desc: "Франшиза. Высокий оборот.", stockPrice: 50, sellPrice: 120, empPrice: 1500 }
     ]
 };
 
-// Глобальные переменные (Инициализируем сразу)
+// Инициализация настроек
 let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 let DISTRICTS = SETTINGS.districts;
 let BUSINESS_META = SETTINGS.business_meta;
 
-const RANKS = [
-    { name: "Новичок", max: 50, bonus: 0, icon: "👶" },
-    { name: "Бывалый", max: 150, bonus: 0.05, icon: "🦊" },
-    { name: "Профи", max: 400, bonus: 0.10, icon: "😎" },
-    { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
-];
-
-// Основной объект состояния
+// --- STATE ---
 let G = { 
     money: 10, debt: 0, lvl: 1.0, en: 2000, maxEn: 2000, tax: 300, rent: 300, 
     waterStock: 0, totalOrders: 0, totalClicks: 0, totalBottles: 0, totalEarned: 0, 
@@ -89,17 +85,17 @@ let G = {
         { id: 2, name: "🧴 Эко-активист", goal: 50, type: 'bottles', reward: 20 }, 
         { id: 3, name: "⚡ Энерджайзер", goal: 1000, type: 'clicks', reward: 40 }
     ],
-    business: {}, 
+    business: {}, // { id: { stock: 0, cash: 0, empTime: 0, level: 1 } }
     lastActive: Date.now()
 };
 
-let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
-let curView = 'main', weather = "Ясно", isBroken = false;
-let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bonusActive = false;
-let isSearching = false; let spamCounter = 0;
-let isBusinessBusy = false; 
+const RANKS = [
+    { name: "Новичок", max: 50, bonus: 0, icon: "👶" },
+    { name: "Бывалый", max: 150, bonus: 0.05, icon: "🦊" },
+    { name: "Профи", max: 400, bonus: 0.10, icon: "😎" },
+    { name: "Легенда", max: 999999, bonus: 0.20, icon: "👑" }
+];
 
-// UPGRADES
 const UPGRADES_META = [
     { id: 'starter_bag', name: 'Старый Рюкзак', icon: '🎒', desc: 'Лучше, чем в руках.', priceKey: null, bonus: '+2% PLN', maxDur: 40, repairKey: null, hidden: true },
     { id: 'starter_phone', name: 'Древний Телефон', icon: '📱', desc: 'Звонит и ладно.', priceKey: null, bonus: 'Связь', maxDur: 40, repairKey: null, hidden: true },
@@ -111,12 +107,17 @@ const UPGRADES_META = [
     { id: 'powerbank', name: 'Powerbank 20k', icon: '🔋', desc: 'Автопилот дольше.', priceKey: 'powerbank', bonus: '🤖 +50% времени', maxDur: 100, repairKey: 'powerbank' }
 ];
 
-// --- HELPERS (SAFE GETTERS) ---
+let order = { visible: false, active: false, steps: 0, target: 100, time: 0, reward: 0, offerTimer: 0, isCriminal: false, baseReward: 0, isRiskyRoute: false };
+let curView = 'main', weather = "Ясно", isBroken = false;
+let repairProgress = 0; let lastClickTime = 0; let clicksSinceBonus = 0; let bonusActive = false;
+let isSearching = false; let spamCounter = 0;
+let currentBizId = null; // Для модалки бизнеса
+
+// --- SAFE GETTERS (ЧТОБЫ НЕ ВЫЛЕТАЛО) ---
 function getDynamicPrice(baseValue) {
     if (baseValue === 0) return 0;
     let price = 0;
     if (typeof baseValue === 'string') {
-        // Safe check
         if (SETTINGS.prices && SETTINGS.prices[baseValue] !== undefined) price = SETTINGS.prices[baseValue];
         else price = 0;
     } else { price = baseValue; }
@@ -129,9 +130,6 @@ function getDynamicPrice(baseValue) {
 function getRepairCost(key) {
     if(!key) return 0;
     if(SETTINGS.repair_costs && SETTINGS.repair_costs[key]) return getDynamicPrice(SETTINGS.repair_costs[key]);
-    if(key === 'helmet') return getDynamicPrice(50);
-    if(key === 'raincoat') return getDynamicPrice(40);
-    if(key === 'powerbank') return getDynamicPrice(80);
     return getDynamicPrice(10);
 }
 
@@ -168,18 +166,25 @@ function triggerShake() {
     setTimeout(() => document.body.classList.remove('shake-mode'), 500);
 }
 
-// === БИЗНЕС ЛОГИКА ===
+// === БИЗНЕС ЛОГИКА (ВОССТАНОВЛЕНА) ===
 function renderBusiness() {
     const list = document.getElementById('business-list');
     if(!list) return;
 
-    let bTax = (SETTINGS.economy && SETTINGS.economy.business_tax) || 0.19;
-    
-    let html = `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-bottom:15px; border-left: 3px solid var(--danger); font-size:11px; color:#aaa; line-height:1.4;">
-        🏛️ <b>МУНИЦИПАЛЬНЫЙ ЗАКОН:</b><br>
-        Прибыль от ведения бизнеса облагается налогом <b>${(bTax*100).toFixed(0)}%</b>.
-    </div>`;
+    // Обновляем общий баланс империи
+    let totalCash = 0;
+    let totalVal = 0;
+    Object.values(G.business).forEach(b => {
+        totalCash += b.cash || 0;
+        // Простая оценка стоимости
+        totalVal += 1000; 
+    });
+    const cashEl = document.getElementById('biz-total-cash');
+    const valEl = document.getElementById('biz-total-value');
+    if(cashEl) cashEl.innerText = totalCash.toFixed(2) + " PLN";
+    if(valEl) valEl.innerText = totalVal.toFixed(0) + " PLN";
 
+    let html = "";
     let hasHouse = G.housing && G.housing.id !== -1;
 
     BUSINESS_META.forEach(biz => {
@@ -188,7 +193,6 @@ function renderBusiness() {
         let isOwned = !!userBiz;
         let currentPrice = getBusinessPrice(biz.basePrice);
         let hasLvl = G.lvl >= biz.minLvl;
-        let dealCost = getDynamicPrice(biz.dealCost);
 
         if (!isOwned) {
             let reason = "";
@@ -205,25 +209,32 @@ function renderBusiness() {
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><button class="btn-action" style="width:100%; padding:10px; ${btnStyle}" ${btnAction}>${reason}</button></div>
             </div>`;
         } else {
-            let lastRes = userBiz.lastResult || { msg: "Бизнес ждет указаний...", color: "#aaa" };
-            let controls = "";
-            if (biz.type === 'maintenance') {
-                controls = `<button id="btn-${biz.id}" class="btn-action" style="background:var(--accent-blue);" onclick="runVendingDeal('${biz.id}', this)">🔧 ОБСЛУЖИТЬ АВТОМАТ (-${dealCost.toFixed(0)} PLN)</button>`;
-            } else if (biz.type === 'lottery') {
-                controls = `<button id="btn-${biz.id}" class="btn-action" style="background:var(--success); color:black;" onclick="runVegeGamble('${biz.id}', this)">🎲 КУПИТЬ ПАРТИЮ (-${dealCost.toFixed(0)})</button>`;
-            } else if (biz.type === 'strategy') {
-                controls = `<div style="display:flex; gap:5px;"><button class="btn-action" style="flex:1; font-size:10px; background:#475569;" onclick="runKebabStrategy('${biz.id}', 'safe', this)">Safe</button><button class="btn-action" style="flex:1; font-size:10px; background:var(--accent-gold); color:black;" onclick="runKebabStrategy('${biz.id}', 'normal', this)">Mix</button><button class="btn-action" style="flex:1; font-size:10px; background:var(--danger);" onclick="runKebabStrategy('${biz.id}', 'risky', this)">Illegal</button></div>`;
-            } else if (biz.type === 'high_stakes') {
-                controls = `<button id="btn-${biz.id}" class="btn-action" style="background:linear-gradient(45deg, #16a34a, #15803d);" onclick="runZabkaContract('${biz.id}', this)">📝 ПОДПИСАТЬ ПЛАН (-${dealCost.toFixed(0)} PLN)</button>`;
-            }
-
-            let wCost = (SETTINGS.business_config && SETTINGS.business_config.water_cost) || 25;
-
-            html += `<div class="biz-card">
-                <div class="biz-header"><div style="display:flex; align-items:center;"><div class="biz-icon">${biz.icon}</div><div><div class="biz-title">${biz.name} <span class="biz-level">Владелец</span></div><div style="font-size:10px; color:var(--text-secondary);">Владение активно</div></div></div></div>
-                <div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin:10px 0; min-height:40px; display:flex; align-items:center; justify-content:center; text-align:center;"><span style="font-size:11px; font-weight:700; color:${lastRes.color}; animation:fadeIn 0.5s;">${lastRes.msg}</span></div>
-                <div class="biz-actions" style="flex-direction:column;">${controls}</div>
-                <div style="text-align:center; font-size:9px; color:#555; margin-top:5px;">Расход: ⚡${wCost} (вода), 👟 обувь</div>
+            // Владелец
+            let stock = userBiz.stock || 0;
+            let cash = userBiz.cash || 0;
+            let isEmp = (userBiz.empTime > 0);
+            
+            html += `<div class="biz-card" onclick="openBusinessModal('${biz.id}')">
+                <div class="biz-header">
+                    <div style="display:flex; align-items:center;">
+                        <div class="biz-icon">${biz.icon}</div>
+                        <div>
+                            <div class="biz-title">${biz.name} <span class="biz-level">LVL ${userBiz.level||1}</span></div>
+                            <div style="font-size:10px; color:var(--text-secondary);">${isEmp ? '🤖 Сотрудник работает' : '⚠️ Требует внимания'}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:12px; color:var(--success); font-weight:bold;">${cash.toFixed(2)} PLN</div>
+                        <div style="font-size:10px; color:#aaa;">📦 ${stock} шт.</div>
+                    </div>
+                </div>
+                <div class="biz-stat-row">
+                    <span>Склад</span>
+                    <span>${stock > 0 ? 'Есть товар' : 'Пусто'}</span>
+                </div>
+                <div class="biz-track"><div class="biz-fill-stock" style="width:${Math.min(100, stock)}%"></div></div>
+                
+                <div style="text-align:center; font-size:9px; color:#555; margin-top:5px;">Нажмите для управления</div>
             </div>`;
         }
     });
@@ -237,115 +248,139 @@ function buyBusiness(id) {
     let price = getBusinessPrice(biz.basePrice);
     if (G.money >= price) {
         G.money = parseFloat((G.money - price).toFixed(2));
-        G.business[id] = { lastResult: { msg: "Бизнес куплен! Выберите действие.", color: "var(--success)" } };
+        // Init business object
+        G.business[id] = { stock: 10, cash: 0, empTime: 0, level: 1 };
         addHistory('🏗️ БИЗНЕС', price, 'minus');
         tg.HapticFeedback.notificationOccurred('success');
         save(); updateUI();
     } else { log(`Не хватает денег! Нужно ${price} PLN`, "var(--danger)"); tg.HapticFeedback.notificationOccurred('error'); }
 }
 
-function runBusinessAction(id, cost, btnEl, callback) {
-    if (isBusinessBusy) return;
-    if(G.money < cost) { log(`Не хватает средств! (${cost.toFixed(0)} PLN)`, "var(--danger)"); triggerShake(); return; }
+// --- УПРАВЛЕНИЕ БИЗНЕСОМ (МОДАЛКА) ---
+function openBusinessModal(id) {
+    currentBizId = id;
+    const biz = BUSINESS_META.find(b => b.id === id);
+    const uBiz = G.business[id];
     
-    let wCost = (SETTINGS.business_config && SETTINGS.business_config.water_cost) || 25;
-    let sWear = (SETTINGS.business_config && SETTINGS.business_config.shoe_wear) || 0.02;
-
-    if (G.en < wCost) { log("⚡ Вы обезвожены! Попейте воды.", "var(--danger)"); triggerShake(); return; }
-
-    isBusinessBusy = true;
-    G.money = parseFloat((G.money - cost).toFixed(2));
-    G.en -= wCost; 
-    if (G.shoes && G.shoes.dur > 0) G.shoes.dur = Math.max(0, G.shoes.dur - sWear);
-    save(); updateUI();
-
-    const originalText = btnEl.innerHTML;
-    btnEl.innerHTML = "⏳ СДЕЛКА...";
-    btnEl.style.opacity = "0.7";
-
-    setTimeout(() => {
-        isBusinessBusy = false;
-        btnEl.innerHTML = originalText;
-        btnEl.style.opacity = "1";
-        callback();
-    }, 1500); 
+    document.getElementById('bm-title').innerText = biz.name;
+    document.getElementById('bm-desc').innerText = biz.desc;
+    
+    updateBusinessModalUI();
+    document.getElementById('business-modal').style.display = 'flex';
 }
 
-function runVendingDeal(id, btnEl) {
-    let biz = BUSINESS_META.find(b => b.id === id);
-    let cost = getDynamicPrice(biz.dealCost);
-    runBusinessAction(id, cost, btnEl, () => {
-        let r = Math.random();
-        let profit = 0; let msg = ""; let color = "";
-        if (r < 0.2) { profit = 0; msg = "⚠️ Монетоприемник сломался."; color = "var(--danger)"; } 
-        else if (r < 0.7) { profit = cost * 1.5; msg = "✅ Стабильные продажи."; color = "var(--success)"; } 
-        else { profit = cost * 3.0; msg = "🔥 Офисный жор!"; color = "var(--accent-gold)"; }
-        applyBusinessResult(id, profit, cost, msg, color, btnEl);
-    });
+function closeBusinessModal() {
+    document.getElementById('business-modal').style.display = 'none';
+    currentBizId = null;
 }
-function runVegeGamble(id, btnEl) {
-    let biz = BUSINESS_META.find(b => b.id === id);
-    let cost = getDynamicPrice(biz.dealCost);
-    runBusinessAction(id, cost, btnEl, () => {
-        let r = Math.random();
-        let profit = 0; let msg = ""; let color = "";
-        if (r < 0.35) { profit = cost * 0.2; msg = "🤢 Партия гнилая."; color = "var(--danger)"; } 
-        else if (r < 0.85) { profit = cost * 1.6; msg = "🥦 Свежие овощи."; color = "#fff"; } 
-        else { profit = cost * 4.0; msg = "💎 ЭКО-БИО Партия!"; color = "var(--accent-gold)"; }
-        applyBusinessResult(id, profit, cost, msg, color, btnEl);
-    });
+
+function updateBusinessModalUI() {
+    if (!currentBizId) return;
+    const uBiz = G.business[currentBizId];
+    const meta = BUSINESS_META.find(b => b.id === currentBizId);
+    
+    document.getElementById('bm-stock').innerText = uBiz.stock;
+    document.getElementById('bm-cash').innerText = uBiz.cash.toFixed(2);
+    
+    const hireBtn = document.getElementById('btn-hire-emp');
+    const timerUI = document.getElementById('emp-timer-ui');
+    
+    if (uBiz.empTime > 0) {
+        hireBtn.style.display = 'none';
+        timerUI.style.display = 'block';
+        let min = Math.floor(uBiz.empTime / 60);
+        let sec = uBiz.empTime % 60;
+        timerUI.innerText = `🤖 Сотрудник: ${min}:${sec<10?'0':''}${sec}`;
+    } else {
+        hireBtn.style.display = 'flex';
+        timerUI.style.display = 'none';
+        document.getElementById('hire-price').innerText = meta.empPrice + " PLN";
+    }
+    
+    // Лимиты вывода
+    document.getElementById('bm-withdraw-limit').innerText = "Налог: " + (SETTINGS.economy.business_tax * 100).toFixed(0) + "%";
 }
-function runKebabStrategy(id, mode, btnEl) {
-    let biz = BUSINESS_META.find(b => b.id === id);
-    let baseCost = 800; 
-    let cost = getDynamicPrice(baseCost);
-    if (mode === 'safe') cost *= 1.5; 
-    if (mode === 'risky') cost *= 0.3;
-    runBusinessAction(id, cost, btnEl, () => {
-        let profit = 0; let msg = ""; let color = ""; let r = Math.random();
-        if (mode === 'safe') { profit = cost * 1.3; msg = "🛡️ Легальное мясо."; color = "#fff"; } 
-        else if (mode === 'normal') {
-            if (r < 0.2) { profit = cost * 0.5; msg = "📉 Мясо жесткое."; color = "#aaa"; } 
-            else { profit = cost * 2.5; msg = "🥙 Вкусный кебаб."; color = "var(--success)"; }
-        } else if (mode === 'risky') {
-            if (r < 0.5) { profit = 0; msg = "🚓 SANEPID! Конфискация!"; color = "var(--danger)"; } 
-            else { profit = cost * 8.0; msg = "💰 Дешевое мясо!"; color = "var(--purple)"; }
+
+function manualSell() {
+    if(!currentBizId) return;
+    const uBiz = G.business[currentBizId];
+    const meta = BUSINESS_META.find(b => b.id === currentBizId);
+    
+    if (uBiz.stock > 0) {
+        if (G.en >= 5) {
+            G.en -= 5; // Тратим энергию игрока
+            uBiz.stock--;
+            let profit = meta.sellPrice;
+            // Налог сразу при продаже внутри бизнеса (упрощение)
+            let tax = profit * SETTINGS.economy.business_tax;
+            uBiz.cash += (profit - tax);
+            
+            updateBusinessModalUI();
+            updateUI(); // Обновить энергию
+            tg.HapticFeedback.impactOccurred('light');
+        } else {
+            log("Нужна энергия (вода)!", "var(--danger)");
         }
-        applyBusinessResult(id, profit, cost, msg, color, btnEl);
-    });
+    } else {
+        log("Склад пуст! Закупите товар.", "var(--danger)");
+        triggerShake();
+    }
 }
-function runZabkaContract(id, btnEl) {
-    let biz = BUSINESS_META.find(b => b.id === id);
-    let cost = getDynamicPrice(biz.dealCost);
-    runBusinessAction(id, cost, btnEl, () => {
-        let successChance = 0.4 + (G.lvl * 0.01);
-        if (successChance > 0.8) successChance = 0.8;
-        let r = Math.random();
-        let profit = 0; let msg = ""; let color = "";
-        if (r < successChance) { profit = cost * 2.5; msg = "📈 ПЛАН ВЫПОЛНЕН!"; color = "var(--accent-gold)"; } 
-        else { profit = cost * 0.5; msg = "📉 План провален."; color = "var(--danger)"; }
-        applyBusinessResult(id, profit, cost, msg, color, btnEl);
-    });
-}
-function applyBusinessResult(id, revenue, cost, text, color, btnEl) {
-    let grossProfit = revenue - cost; 
-    let tax = 0;
-    let bTax = (SETTINGS.economy && SETTINGS.economy.business_tax) || 0.19;
+
+function restockFromModal() {
+    if(!currentBizId) return;
+    const uBiz = G.business[currentBizId];
+    const meta = BUSINESS_META.find(b => b.id === currentBizId);
     
-    if (grossProfit > 0) { tax = grossProfit * bTax; revenue -= tax; }
+    let cost = meta.stockPrice * 10;
+    if (G.money >= cost) {
+        G.money -= cost;
+        uBiz.stock += 10;
+        addHistory('📦 ЗАКУПКА', cost, 'minus');
+        updateBusinessModalUI();
+        updateUI();
+        save();
+    } else {
+        log("Не хватает денег (" + cost + " PLN)", "var(--danger)");
+    }
+}
 
-    G.money = parseFloat((G.money + revenue).toFixed(2));
-    let netProfit = revenue - cost;
-    if (netProfit > 0) G.totalEarned += netProfit;
+function hireEmployee() {
+    if(!currentBizId) return;
+    const uBiz = G.business[currentBizId];
+    const meta = BUSINESS_META.find(b => b.id === currentBizId);
+    
+    let cost = meta.empPrice;
+    if (G.money >= cost) {
+        G.money -= cost;
+        uBiz.empTime = 600; // 10 минут
+        addHistory('🤖 СОТРУДНИК', cost, 'minus');
+        updateBusinessModalUI();
+        updateUI();
+        save();
+    } else {
+        log("Не хватает денег (" + cost + " PLN)", "var(--danger)");
+    }
+}
 
-    let sign = netProfit >= 0 ? "+" : "";
-    let finalMsg = `${text} (${sign}${netProfit.toFixed(0)} PLN)`;
-    if (tax > 0) finalMsg += `<br><small style="opacity:0.7">Налог: -${tax.toFixed(0)}</small>`;
-
-    G.business[id].lastResult = { msg: finalMsg, color: color };
-    if (netProfit > 0) { addHistory('💰 БИЗНЕС', netProfit, 'plus'); triggerFloatingText(`+${netProfit.toFixed(0)}`, "var(--success)", btnEl); tg.HapticFeedback.notificationOccurred('success'); } 
-    else { addHistory('📉 УБЫТОК', Math.abs(netProfit), 'minus'); triggerFloatingText(`${netProfit.toFixed(0)}`, "var(--danger)", btnEl); triggerShake(); tg.HapticFeedback.notificationOccurred('error'); }
-    save(); updateUI();
+function withdrawFromModal() {
+    if(!currentBizId) return;
+    const uBiz = G.business[currentBizId];
+    
+    if (uBiz.cash > 0) {
+        let amount = uBiz.cash;
+        uBiz.cash = 0;
+        G.money += amount;
+        G.totalEarned += amount;
+        addHistory('💰 ВЫВОД', amount.toFixed(2), 'plus');
+        updateBusinessModalUI();
+        updateUI();
+        save();
+        closeBusinessModal();
+        log("Средства выведены на счет!", "var(--success)");
+    } else {
+        log("Касса пуста.", "var(--danger)");
+    }
 }
 
 // === СТАНДАРТНАЯ ЛОГИКА ===
@@ -439,7 +474,6 @@ function listenToCloud() {
     let userId = (tg && tg.user) ? tg.user.id : "test_user_from_browser";
 
     if(window.db) {
-        // Слушаем настройки игры
         window.db.ref('game_settings').on('value', (snapshot) => {
             const serverSettings = snapshot.val();
             if (serverSettings) {
@@ -460,18 +494,15 @@ function listenToCloud() {
             }
         });
 
-        // Слушаем пользователя
         window.db.ref('users/' + userId).on('value', (snapshot) => {
             const remote = snapshot.val();
             if (!remote) return;
             if (remote.isBanned) { document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:black;color:red;font-size:20px;">ACCESS DENIED</div>'; return; }
-            if (remote.adminMessage) { alert("🔔 СИСТЕМА: " + remote.adminMessage); window.db.ref('users/' + userId + '/adminMessage').remove(); }
             
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 let wasNew = G.isNewPlayer;
                 G = { ...G, ...remote };
                 
-                // Integrity check
                 if(!G.dailyQuests) G.dailyQuests = [];
                 if(!G.business) G.business = {};
                 if(!G.activeMilestones && !G.isNewPlayer) G.activeMilestones = [{ id: 1, name: "📦 Первые шаги", goal: 10, type: 'orders', reward: 30 }];
@@ -503,7 +534,7 @@ function load() {
     validateInventory(); checkStarterPack(); generateDailyQuests(); listenToCloud(); updateUI(); 
 }
 
-// === FIX NAVIGATION ===
+// === UI HELPERS ===
 window.switchTab = function(v, el) { 
     curView = v; 
     document.querySelectorAll('.view').forEach(x => x.classList.remove('active')); 
@@ -511,6 +542,8 @@ window.switchTab = function(v, el) {
     if(target) target.classList.add('active'); 
     document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active')); 
     if(el) el.classList.add('active'); 
+    
+    if(v === 'business') renderBusiness();
     updateUI(); 
 }
 
@@ -673,7 +706,8 @@ function updateUI() {
             distCont.innerHTML = distHTML;
         }
 
-        renderBank(); renderBankFull(); renderMilestones(); renderBusiness();
+        renderBank(); renderBankFull(); renderMilestones();
+        if(currentBizId) updateBusinessModalUI();
 
         if (curView === 'main' && order.visible) document.getElementById('quest-bar').style.display = 'block';
         else document.getElementById('quest-bar').style.display = 'none';
@@ -790,7 +824,7 @@ function finishOrder(win) {
     order.visible = false; updateUI(); save(); 
 }
 
-// ... Остальные функции (buyShoes, buyInvest, sellInvest, repairItem, getWelfare, repairBikeInstant) используют getDynamicPrice и работают корректно ...
+// ... Остальные функции ...
 
 function makeDeposit() {
     const inp = document.getElementById('bank-inp'); let val = parseFloat(inp.value);
@@ -805,6 +839,119 @@ function makeDeposit() {
     addBankLog("Вклад", val, "minus"); inp.value = ""; save(); updateUI();
 }
 
+function addBankLog(msg, val, type) {
+    if(!G.bankHistory) G.bankHistory = [];
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    G.bankHistory.unshift({ msg, val, type, time });
+    if(G.bankHistory.length > 10) G.bankHistory.pop();
+}
+
+function renderBankFull() {
+    const selUI = document.getElementById('bank-select-ui');
+    const actUI = document.getElementById('bank-active-ui');
+    if (!selUI || !actUI) return; 
+    if (G.deposit) {
+        selUI.style.display = 'none'; actUI.style.display = 'block';
+        document.getElementById('locked-val').innerText = G.deposit.amount.toFixed(2) + " PLN";
+        let now = Date.now(); let left = G.deposit.end - now; let totalDur = G.deposit.end - G.deposit.start;
+        if (left <= 0) {
+            document.getElementById('bank-timer').innerText = "СРОК ИСТЕК! ПРИБЫЛЬ ГОТОВА";
+            document.getElementById('bank-timer').style.color = "var(--success)";
+            document.getElementById('bank-prog-bar').style.width = "100%";
+            document.getElementById('bank-prog-bar').style.background = "var(--success)";
+            document.getElementById('btn-bank-claim').style.display = 'block';
+            document.getElementById('btn-bank-break').style.display = 'none';
+        } else {
+            let pct = 100 - (left / totalDur * 100);
+            document.getElementById('bank-prog-bar').style.width = pct + "%";
+            document.getElementById('bank-prog-bar').style.background = "var(--accent-gold)";
+            let days = Math.floor(left / (1000 * 60 * 60 * 24));
+            let hours = Math.floor((left % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            let mins = Math.floor((left % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById('bank-timer').innerText = `БЛОКИРОВКА: ${days}д ${hours}ч ${mins}м`;
+            document.getElementById('bank-timer').style.color = "var(--accent-gold)";
+            document.getElementById('btn-bank-claim').style.display = 'none';
+            document.getElementById('btn-bank-break').style.display = 'block';
+        }
+    } else {
+        selUI.style.display = 'block'; actUI.style.display = 'none';
+    }
+    const hList = document.getElementById('bank-history-list');
+    if(hList && G.bankHistory) {
+        hList.innerHTML = G.bankHistory.map(h => {
+            let color = h.type === 'plus' ? 'var(--success)' : (h.type === 'fee' ? 'var(--danger)' : '#fff');
+            let sign = h.type === 'plus' ? '+' : '-'; if(h.type === 'fee') sign = '-';
+            return `<div class="h-row"><span>${h.time} ${h.msg}</span><span style="color:${color}">${sign}${h.val} PLN</span></div>`;
+        }).join('');
+    }
+}
+
+// ... (Остальные стандартные функции типа repairBikeInstant, buyShoes оставлены как в оригинале) ...
+function repairBikeInstant() {
+    let cost = getDynamicPrice('repair_express'); 
+    if (G.money >= cost) {
+        G.money = parseFloat((G.money - cost).toFixed(2));
+        isBroken = false; repairProgress = 0;
+        addHistory('🔧 РЕМОНТ', cost, 'minus');
+        log("Велик починен за деньги!", "var(--success)");
+        save(); updateUI();
+    } else { log("Нет денег (" + cost + " PLN)!", "var(--danger)"); }
+}
+
+function buyShoes(name, basePrice, durability) {
+    if (G.shoes.name === name && G.shoes.dur > 0) { log("У вас уже есть эти кроссовки!", "var(--danger)"); tg.HapticFeedback.notificationOccurred('error'); return; }
+    let priceKey = name === "Jorban" ? "jorban" : "abibas";
+    let price = getDynamicPrice(priceKey); 
+    if (G.money >= price) {
+        G.money -= price;
+        let bonus = (name === "Jorban") ? 0.2 : 0;
+        G.shoes = { name: name, maxDur: durability, dur: durability, bonus: bonus };
+        addHistory('👟 ' + name.toUpperCase(), price, 'minus');
+        log("Куплены " + name + "!", "var(--purple)");
+        save(); updateUI();
+    } else { log("Не хватает денег (" + price + " PLN)!", "var(--danger)"); }
+}
+
+function buyInvest(type, priceKey) { 
+    let price = getDynamicPrice(priceKey); 
+    if(!G[type] && G.money >= price) { 
+        G.money = parseFloat((G.money - price).toFixed(2)); 
+        let maxDur = 100;
+        let conf = UPGRADES_META.find(u => u.id === type);
+        if(conf && conf.maxDur) maxDur = conf.maxDur;
+        G[type] = { active: true, dur: maxDur };
+        addHistory('ИНВЕСТ', price, 'minus'); save(); updateUI(); 
+    } else if (G.money < price) { log("Нужно " + price + " PLN", "var(--danger)"); }
+}
+
+function sellInvest(type) {
+    if(G[type]) {
+        let conf = UPGRADES_META.find(u => u.id === type);
+        let priceKey = conf ? conf.priceKey : null;
+        if (!priceKey) return; 
+        let p = getDynamicPrice(priceKey) * 0.5;
+        G.money = parseFloat((G.money + p).toFixed(2)); G[type] = null; 
+        addHistory('💸 ЛОМБАРД', p, 'plus'); log("Вы продали предмет в ломбард", "var(--gold)");
+        save(); updateUI();
+    }
+}
+
+function repairItem(type, valPassed, isDynamic) {
+    if (!G[type]) return;
+    let conf = UPGRADES_META.find(u => u.id === type);
+    let max = conf ? conf.maxDur : 100;
+    if (G[type].dur >= max) { log("Предмет полностью цел!", "var(--accent-blue)"); return; }
+    let cost = isDynamic ? valPassed : getDynamicPrice(valPassed);
+    if (G.money >= cost) {
+        G.money = parseFloat((G.money - cost).toFixed(2));
+        G[type].dur = max;
+        addHistory('🛠️ РЕМОНТ', cost, 'minus');
+        log("Предмет отремонтирован!", "var(--success)");
+        save(); updateUI();
+    } else { log("Нет денег на ремонт (" + cost + ")", "var(--danger)"); }
+}
+
+// LOOP
 setInterval(() => {
     if (G.money > 0) {
         if (G.transportMode === 'veturilo') G.money -= getDynamicPrice('veturilo_min') / 60;
@@ -822,7 +969,25 @@ setInterval(() => {
             G.money -= cost; addHistory('АРЕНДА/ЖКХ', cost.toFixed(2), 'minus'); G.rent = SETTINGS.economy.rent_timer_sec; save();
         }
     }
+    
+    if(G.business) {
+        Object.keys(G.business).forEach(bid => {
+            if(G.business[bid] && G.business[bid].empTime > 0) {
+                G.business[bid].empTime--;
+                // Автопродажа сотрудником
+                if(G.business[bid].empTime % 5 === 0 && G.business[bid].stock > 0) {
+                    G.business[bid].stock--;
+                    let meta = BUSINESS_META.find(b=>b.id===bid);
+                    let profit = meta.sellPrice * (1 - SETTINGS.economy.business_tax);
+                    G.business[bid].cash += profit;
+                }
+                if(currentBizId === bid) updateBusinessModalUI();
+            }
+        });
+    }
+
     updateUI();
 }, 1000);
 
 window.onload = load;
+
