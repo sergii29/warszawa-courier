@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Royal Casino</title>
+    <title>Warsaw Royal Casino (Fixed)</title>
     <style>
         :root {
-            --bg: #0f172a; /* Dark Blue/Black */
+            --bg: #0f172a;
             --card: #1e293b;
-            --primary: #fbbf24; /* Gold */
-            --accent: #10b981; /* Green Money */
-            --danger: #ef4444;
+            --primary: #fbbf24;
+            --accent: #10b981;
             --text: #f8fafc;
-            --nav-height: 65px;
+            --nav-height: 70px;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -21,593 +20,524 @@
             margin: 0; padding: 0;
             background: var(--bg);
             color: var(--text);
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             height: 100vh; width: 100vw;
             display: flex; flex-direction: column;
             overflow: hidden;
         }
 
-        /* --- TOP BAR --- */
+        /* --- UI Elements --- */
         .top-bar {
             height: 60px;
-            background: rgba(30, 41, 59, 0.9);
-            backdrop-filter: blur(10px);
+            background: rgba(30, 41, 59, 0.95);
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 15px;
             border-bottom: 1px solid #334155;
-            z-index: 50;
+            flex-shrink: 0;
         }
-        .balance-box { display: flex; flex-direction: column; }
-        .bal-val { font-size: 1.1em; font-weight: 800; color: var(--accent); }
-        .lvl-box { font-size: 0.8em; color: var(--primary); text-align: right; }
+        .balance { font-size: 1.2em; font-weight: 800; color: var(--accent); }
+        .level { font-size: 0.9em; color: var(--primary); text-align: right; }
 
-        /* --- CONTENT AREA --- */
-        .content { flex: 1; overflow-y: auto; position: relative; }
-        .view { display: none; padding: 15px; padding-bottom: 80px; min-height: 100%; }
-        .view.active { display: block; animation: fadeIn 0.3s; }
+        .content { flex: 1; overflow-y: auto; position: relative; padding-bottom: 80px; }
+        
+        /* Views */
+        .view { display: none; padding: 15px; animation: fadeIn 0.2s; }
+        .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* --- LOBBY (GAMES GRID) --- */
-        .lobby-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
-        }
-        .game-card {
-            background: linear-gradient(145deg, #1e293b, #0f172a);
+        /* Grid */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .card {
+            background: linear-gradient(145deg, #1e293b, #111827);
             border: 1px solid #334155;
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 20px 10px;
             text-align: center;
-            cursor: pointer;
-            transition: transform 0.1s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
         }
-        .game-card:active { transform: scale(0.96); border-color: var(--primary); }
-        .g-icon { font-size: 2.5em; margin-bottom: 10px; display: block; }
-        .g-title { font-weight: 700; font-size: 0.9em; }
-        .g-desc { font-size: 0.7em; color: #94a3b8; margin-top: 5px; }
+        .card:active { transform: scale(0.96); background: #263346; }
+        .icon { font-size: 2.5em; }
+        .title { font-weight: bold; font-size: 0.9em; }
+        .desc { font-size: 0.75em; color: #94a3b8; }
 
-        /* --- GAME ROOM STYLES --- */
-        .game-room { text-align: center; display: flex; flex-direction: column; gap: 15px; height: 100%; }
-        .game-display {
-            background: #000;
-            border: 2px solid var(--primary);
-            border-radius: 15px;
-            height: 150px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 3em;
-            position: relative;
-            box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+        /* Game Room */
+        .game-room { text-align: center; height: 100%; display: flex; flex-direction: column; gap: 15px; }
+        .screen {
+            background: #000; border: 2px solid var(--primary); border-radius: 12px;
+            height: 140px; display: flex; align-items: center; justify-content: center;
+            font-size: 3em; color: white; position: relative;
         }
-        .bet-controls {
-            background: var(--card); padding: 15px; border-radius: 15px;
+        .controls { background: var(--card); padding: 15px; border-radius: 12px; }
+        
+        button {
+            border: none; outline: none; cursor: pointer; font-family: inherit;
         }
-        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        .bet-input {
-            flex: 1; background: #0f172a; border: 1px solid #475569;
-            color: white; padding: 10px; border-radius: 8px; font-size: 1.1em; text-align: center;
+        .btn-main {
+            width: 100%; padding: 15px; border-radius: 10px;
+            background: var(--primary); color: #000; font-weight: 800; font-size: 1.1em;
+            margin-top: 10px;
         }
-        .btn-action {
-            width: 100%; padding: 15px; border: none; border-radius: 10px;
-            font-weight: 800; font-size: 1.1em; cursor: pointer;
-            background: var(--primary); color: #000;
-        }
-        .btn-back { background: transparent; border: 1px solid #475569; color: #cbd5e1; width: auto; padding: 8px 15px; margin-bottom: 10px; border-radius: 8px; }
-
-        /* --- WORK/BANK TAB --- */
-        .work-btn {
-            width: 100%; height: 120px;
+        .btn-main:active { transform: scale(0.98); opacity: 0.9; }
+        
+        .btn-bank {
+            width: 100%; padding: 40px; border-radius: 20px;
             background: linear-gradient(135deg, #10b981, #059669);
-            border: none; border-radius: 20px;
             color: white; font-size: 1.5em; font-weight: bold;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            margin-bottom: 20px;
         }
-        .work-btn:active { transform: scale(0.98); }
+        .btn-bank:active { transform: scale(0.95); }
 
-        /* --- BOTTOM NAV --- */
+        .input-bet {
+            width: 100%; padding: 12px; background: #0f172a; border: 1px solid #475569;
+            color: white; border-radius: 8px; font-size: 1.2em; text-align: center;
+        }
+
+        /* Nav */
         .nav {
-            height: var(--nav-height);
-            background: var(--card);
+            height: var(--nav-height); background: var(--card);
             border-top: 1px solid #334155;
-            display: flex; justify-content: space-around; align-items: center;
             position: absolute; bottom: 0; width: 100%;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100;
         }
-        .nav-item {
-            color: #64748b; text-align: center; font-size: 0.7em;
-            display: flex; flex-direction: column; gap: 4px; padding: 10px;
+        .nav-btn {
+            background: none; color: #64748b; font-size: 0.7em;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            width: 60px;
         }
-        .nav-item.active { color: var(--primary); }
+        .nav-btn.active { color: var(--primary); }
         .nav-icon { font-size: 1.5em; }
 
-        /* --- TOAST & LOGS --- */
+        /* Toast */
         #toast {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9); padding: 15px 25px; border-radius: 25px;
-            color: #fff; opacity: 0; pointer-events: none; transition: 0.2s; z-index: 100; font-weight: bold;
-            border: 1px solid var(--primary); text-align: center;
+            background: rgba(0,0,0,0.9); padding: 15px 20px; border-radius: 20px;
+            color: #fff; opacity: 0; pointer-events: none; transition: 0.2s; z-index: 200;
+            border: 1px solid var(--primary); font-weight: bold; text-align: center;
         }
-        .win { color: #4ade80; }
-        .lose { color: #f87171; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div class="balance-box">
-        <span style="font-size:0.7em; color:#94a3b8">БАЛАНС</span>
-        <span class="bal-val" id="ui-money">0 PLN</span>
+    <div>
+        <div style="font-size:0.7em; color:#94a3b8">БАЛАНС</div>
+        <div class="balance" id="ui-money">0 PLN</div>
     </div>
-    <div class="lvl-box">
-        <div id="ui-lvl-badge">LVL 1</div>
-        <div style="font-size:0.8em; color:#fff" id="ui-maxbet">Max: 100</div>
+    <div class="level">
+        <div id="ui-lvl">LVL 1</div>
+        <div style="font-size:0.7em; opacity:0.8" id="ui-bet">Max: 100</div>
     </div>
 </div>
 
 <div class="content">
+    
     <div id="view-lobby" class="view active">
-        <h2 style="margin-top:0">Игровой Зал</h2>
-        <div class="lobby-grid">
-            <div class="game-card" onclick="openGame('slots')">
-                <span class="g-icon">🎰</span>
-                <div class="g-title">Royal Slots</div>
-                <div class="g-desc">Классика x5</div>
+        <h2 style="margin-top:0">Игры</h2>
+        <div class="grid">
+            <div class="card" onclick="app.openGame('slots')">
+                <div class="icon">🎰</div>
+                <div class="title">Слоты</div>
+                <div class="desc">Удача x5</div>
             </div>
-            <div class="game-card" onclick="openGame('roulette')">
-                <span class="g-icon">🔴</span>
-                <div class="g-title">Рулетка</div>
-                <div class="g-desc">Красное/Черное x2</div>
+            <div class="card" onclick="app.openGame('roulette')">
+                <div class="icon">🔴</div>
+                <div class="title">Рулетка</div>
+                <div class="desc">Красное/Черное</div>
             </div>
-            <div class="game-card" onclick="openGame('dice')">
-                <span class="g-icon">🎲</span>
-                <div class="g-title">Кости Hi-Lo</div>
-                <div class="g-desc">Выше/Ниже x2</div>
+            <div class="card" onclick="app.openGame('dice')">
+                <div class="icon">🎲</div>
+                <div class="title">Кости</div>
+                <div class="desc">Больше/Меньше</div>
             </div>
-            <div class="game-card" onclick="openGame('coin')">
-                <span class="g-icon">🪙</span>
-                <div class="g-title">Орел/Решка</div>
-                <div class="g-desc">Шанс 50/50</div>
+            <div class="card" onclick="app.openGame('coin')">
+                <div class="icon">🪙</div>
+                <div class="title">Монетка</div>
+                <div class="desc">Орел/Решка</div>
             </div>
-            <div class="game-card" onclick="openGame('thimbles')">
-                <span class="g-icon">🥤</span>
-                <div class="g-title">Наперстки</div>
-                <div class="g-desc">Угадай где x3</div>
+            <div class="card" onclick="app.openGame('crash')">
+                <div class="icon">🚀</div>
+                <div class="title">Crash</div>
+                <div class="desc">Рискни всем</div>
             </div>
-            <div class="game-card" onclick="openGame('crash')">
-                <span class="g-icon">🚀</span>
-                <div class="g-title">Crash Rocket</div>
-                <div class="g-desc">Успей забрать</div>
-            </div>
-             <div class="game-card" onclick="openGame('lottery')">
-                <span class="g-icon">🎫</span>
-                <div class="g-title">Лотерея</div>
-                <div class="g-desc">Мгновенный шанс</div>
-            </div>
-             <div class="game-card" onclick="alert('Скоро! Нужно повысить уровень.')">
-                <span class="g-icon">🔒</span>
-                <div class="g-title">VIP Покер</div>
-                <div class="g-desc">Только LVL 10+</div>
+             <div class="card" onclick="app.openGame('lottery')">
+                <div class="icon">🎫</div>
+                <div class="title">Лотерея</div>
+                <div class="desc">Билет за 50</div>
             </div>
         </div>
+        <p style="text-align:center; color:#475569; font-size:0.8em; margin-top:20px;">
+            Если баланс 0 — иди в Банк 👇
+        </p>
     </div>
 
     <div id="view-bank" class="view">
-        <h2 style="margin-top:0">Банкомат / Работа</h2>
-        <p style="color:#94a3b8">Кончились деньги? Заработайте их здесь, чтобы вернуться в игру.</p>
-        
-        <button class="work-btn" id="btn-click" onclick="doWork()">
-            <span>⛏️ +<span id="ui-click-rate">10</span> PLN</span>
-            <span style="font-size:0.5em; font-weight:normal; opacity:0.8">Кликай и богатей</span>
+        <h2 style="margin-top:0">Работа</h2>
+        <button class="btn-bank" id="btn-work" onclick="app.work()">
+            🔨 РАБОТАТЬ<br>
+            <span style="font-size:0.6em; font-weight:normal">+10 PLN за клик</span>
         </button>
-
-        <div style="margin-top:30px; background:var(--card); padding:15px; border-radius:15px;">
-            <h3>Прокачка заработка</h3>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span>Курсы брокера (+5 к клику)</span>
-                <button onclick="upgradeClick()" style="background:var(--primary); border:none; border-radius:5px; padding:5px 10px;">250 PLN</button>
+        <div style="background:var(--card); padding:15px; border-radius:15px;">
+            <h3>Магазин</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Курсы (+5 к клику)</span>
+                <button onclick="app.upgrade()" style="background:var(--primary); padding:8px; border-radius:6px;">250 PLN</button>
             </div>
         </div>
     </div>
 
-    <div id="view-gameroom" class="view">
-        <button class="btn-back" onclick="closeGame()">← Назад в лобби</button>
-        <div class="game-room" id="game-engine-container">
+    <div id="view-game" class="view">
+        <button onclick="app.goHome()" style="background:none; color:#cbd5e1; padding:10px 0;">← Назад в меню</button>
+        <div id="game-container" class="game-room">
             </div>
     </div>
+
 </div>
 
 <div class="nav">
-    <div class="nav-item active" onclick="switchTab('lobby', this)">
+    <button class="nav-btn active" onclick="app.tab('lobby', this)">
         <span class="nav-icon">🏰</span>
         <span>Лобби</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('bank', this)">
+    </button>
+    <button class="nav-btn" onclick="app.tab('bank', this)">
         <span class="nav-icon">🏦</span>
         <span>Банк</span>
-    </div>
-    <div class="nav-item" onclick="resetGame()">
-        <span class="nav-icon">⚙️</span>
-        <span>Сброс</span>
-    </div>
+    </button>
 </div>
 
 <div id="toast"></div>
 
 <script>
-    // --- STATE & CONFIG ---
-    const KEY = 'WARSZAWA_CASINO_V1';
+// Incapsulate to avoid global scope issues
+const app = (() => {
+    const KEY = 'WARSZAWA_CASINO_FIXED';
+    
+    // Default State
     let state = {
-        money: 100, // Стартовый бонус
-        xp: 0,
+        money: 0,
         level: 1,
-        clickPower: 10,
+        xp: 0,
+        click: 10,
         maxBet: 100
     };
 
-    let currentGameId = null;
+    let currentGame = null;
 
-    // --- INIT ---
+    // --- SAFELY LOAD DATA ---
     function init() {
-        let s = localStorage.getItem(KEY);
-        if(s) state = {...state, ...JSON.parse(s)};
-        updateUI();
-    }
-
-    // --- GAME LOGIC ---
-    
-    // 1. UTILS
-    function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
-    
-    function addMoney(amount) {
-        state.money += amount;
-        updateUI();
-        save();
-    }
-    
-    function addXp(betAmount) {
-        // XP дается за оборот (ставки), а не за выигрыш
-        state.xp += Math.abs(betAmount) * 0.1;
-        
-        let req = state.level * 500;
-        if(state.xp >= req) {
-            state.level++;
-            state.xp = 0;
-            state.maxBet = Math.floor(100 * Math.pow(2, state.level-1));
-            showToast(`🎉 Уровень ${state.level}! Макс. ставка: ${state.maxBet}`);
+        try {
+            const saved = localStorage.getItem(KEY);
+            if (saved) {
+                state = { ...state, ...JSON.parse(saved) };
+            }
+        } catch (e) {
+            console.warn("Storage is blocked. Progress will not be saved after close.");
         }
         updateUI();
     }
 
-    function getBet() {
-        let inp = document.getElementById('bet-input');
-        let val = parseInt(inp.value);
-        if(isNaN(val) || val <= 0) { showToast("Введите ставку!"); return null; }
-        if(val > state.money) { showToast("Не хватает денег!"); return null; }
-        if(val > state.maxBet) { showToast(`Лимит уровня: ${state.maxBet}`); return null; }
-        return val;
+    function save() {
+        try {
+            localStorage.setItem(KEY, JSON.stringify(state));
+        } catch (e) {
+            // Ignore storage errors in restricted modes
+        }
     }
 
-    // 2. GAMES ENGINE
+    // --- CORE LOGIC ---
+    function addMoney(amt) {
+        state.money += amt;
+        updateUI();
+        save();
+    }
+
+    function work() {
+        addMoney(state.click);
+        // Visual feedback
+        const btn = document.getElementById('btn-work');
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => btn.style.transform = 'scale(1)', 100);
+    }
+
+    function upgrade() {
+        if(state.money >= 250) {
+            addMoney(-250);
+            state.click += 5;
+            toast("Улучшено!");
+        } else {
+            toast("Нужно 250 PLN");
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('ui-money').innerText = Math.floor(state.money) + ' PLN';
+        document.getElementById('ui-lvl').innerText = 'LVL ' + state.level;
+        document.getElementById('ui-bet').innerText = 'Max: ' + state.maxBet;
+    }
+
+    function toast(msg, color='white') {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.color = color;
+        t.style.opacity = 1;
+        setTimeout(() => t.style.opacity = 0, 1500);
+    }
+
+    // --- NAVIGATION ---
+    function tab(id, btn) {
+        // Hide all views
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        // Show target
+        document.getElementById('view-' + id).classList.add('active');
+        
+        // Update nav
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+    }
+
+    function goHome() {
+        currentGame = null;
+        tab('lobby', document.querySelector('.nav-btn')); // Activate first tab
+    }
+
+    // --- GAMES ENGINE ---
     const games = {
         slots: {
-            title: "Royal Slots",
             render: () => `
-                <div class="game-display" id="slot-screen">🍒 🍒 🍒</div>
-                <div class="bet-controls">
-                    <div class="input-group">
-                        <input type="number" id="bet-input" class="bet-input" value="10" placeholder="Ставка">
-                    </div>
-                    <button class="btn-action" onclick="games.slots.play()">КРУТИТЬ (x5)</button>
-                </div>
-            `,
+                <div class="screen" id="g-screen">🍒 7️⃣ 🍒</div>
+                <div class="controls">
+                    <input type="number" id="bet" class="input-bet" value="10">
+                    <button class="btn-main" onclick="app.playSlots()">КРУТИТЬ (x5)</button>
+                </div>`,
             play: () => {
-                let bet = getBet();
-                if(!bet) return;
-                
+                let bet = getBet(); if(!bet) return;
                 addMoney(-bet);
-                addXp(bet);
                 
-                let screen = document.getElementById('slot-screen');
-                let symbols = ['🍒','🍋','🍇','💎','7️⃣'];
+                let s = document.getElementById('g-screen');
+                let chars = ['🍒','🍋','🍇','💎','7️⃣'];
                 
-                // Animation loop
-                let spins = 0;
-                let interval = setInterval(() => {
-                    screen.innerText = 
-                        symbols[Math.floor(Math.random()*symbols.length)] + " " +
-                        symbols[Math.floor(Math.random()*symbols.length)] + " " +
-                        symbols[Math.floor(Math.random()*symbols.length)];
-                    spins++;
-                    if(spins > 10) {
-                        clearInterval(interval);
-                        // Result
-                        let r1 = symbols[Math.floor(Math.random()*symbols.length)];
-                        let r2 = symbols[Math.floor(Math.random()*symbols.length)];
-                        let r3 = symbols[Math.floor(Math.random()*symbols.length)];
-                        
-                        // Rigging: Small chance to win big
-                        if(Math.random() < 0.15) { r1=r2=r3; } 
-                        
-                        screen.innerText = `${r1} ${r2} ${r3}`;
-                        
-                        if(r1 === r2 && r2 === r3) {
-                            let win = bet * 5;
-                            addMoney(win);
-                            showToast(`JACKPOT! +${win}`, 'win');
-                        } else if(r1 === r2 || r2 === r3 || r1 === r3) {
-                            let win = Math.floor(bet * 1.5);
-                            addMoney(win);
-                            showToast(`Пара! +${win}`, 'win');
-                        } else {
-                            showToast(`Пусто...`, 'lose');
-                        }
-                    }
+                let i = setInterval(() => {
+                    s.innerText = chars[rn(5)] + ' ' + chars[rn(5)] + ' ' + chars[rn(5)];
                 }, 50);
+
+                setTimeout(() => {
+                    clearInterval(i);
+                    let r1 = chars[rn(5)], r2 = chars[rn(5)], r3 = chars[rn(5)];
+                    
+                    // Rig slightly for fun
+                    if(Math.random() < 0.2) r1=r2=r3;
+
+                    s.innerText = r1 + ' ' + r2 + ' ' + r3;
+                    
+                    if(r1===r2 && r2===r3) {
+                        addMoney(bet*5); toast("ДЖЕКПОТ!", "#4ade80");
+                    } else if(r1===r2 || r2===r3 || r1===r3) {
+                        addMoney(Math.floor(bet*1.5)); toast("Пара! x1.5", "#fbbf24");
+                    } else {
+                        toast("Пусто", "#ef4444");
+                    }
+                    checkLvl(bet);
+                }, 1000);
             }
         },
         roulette: {
-            title: "Roulette",
             render: () => `
-                <div class="game-display" style="font-size:4em" id="roulette-screen">🎡</div>
-                <div class="bet-controls">
-                    <input type="number" id="bet-input" class="bet-input" value="10" style="margin-bottom:10px; width:100%">
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
-                        <button class="btn-action" style="background:#ef4444" onclick="games.roulette.play('red')">КРАСН</button>
-                        <button class="btn-action" style="background:#22c55e" onclick="games.roulette.play('zero')">0</button>
-                        <button class="btn-action" style="background:#1e293b; border:1px solid #fff; color:white;" onclick="games.roulette.play('black')">ЧЕРН</button>
+                <div class="screen" id="g-screen" style="font-size:4em">🎡</div>
+                <div class="controls">
+                    <input type="number" id="bet" class="input-bet" value="10" style="margin-bottom:10px">
+                    <div style="display:flex; gap:5px">
+                        <button class="btn-main" style="background:#ef4444" onclick="app.playRoulette('r')">🔴</button>
+                        <button class="btn-main" style="background:#22c55e" onclick="app.playRoulette('g')">0</button>
+                        <button class="btn-main" style="background:#1e293b; color:white; border:1px solid #fff" onclick="app.playRoulette('b')">⚫</button>
                     </div>
-                </div>
-            `,
-            play: (choice) => {
-                let bet = getBet();
-                if(!bet) return;
-                addMoney(-bet); addXp(bet);
-
-                let screen = document.getElementById('roulette-screen');
-                screen.innerText = "🎲...";
-                
+                </div>`,
+            play: (c) => {
+                let bet = getBet(); if(!bet) return;
+                addMoney(-bet);
+                document.getElementById('g-screen').innerText = "🎲...";
                 setTimeout(() => {
-                    let num = Math.floor(Math.random() * 37); // 0-36
-                    let color = (num === 0) ? 'zero' : (num % 2 === 0 ? 'black' : 'red');
+                    let n = rn(37);
+                    let col = n===0 ? 'g' : (n%2===0 ? 'b' : 'r');
+                    let colorCode = col==='r'?'#ef4444':(col==='b'?'#fff':'#22c55e');
+                    document.getElementById('g-screen').innerHTML = `<span style="color:${colorCode}">${n}</span>`;
                     
-                    screen.innerHTML = `<span style="color:${color==='red'?'#ef4444':(color==='black'?'#fff':'#22c55e')}">${num}</span>`;
-                    
-                    if(choice === color) {
-                        let mult = (choice === 'zero') ? 14 : 2;
-                        addMoney(bet * mult);
-                        showToast(`Победа! +${bet*mult}`, 'win');
-                    } else {
-                        showToast("Мимо", 'lose');
-                    }
+                    if(c === col) {
+                        let m = c==='g' ? 14 : 2;
+                        addMoney(bet*m); toast("ПОБЕДА!", "#4ade80");
+                    } else toast("Мимо", "#ef4444");
+                    checkLvl(bet);
                 }, 500);
             }
         },
         dice: {
-            title: "Dice Hi-Lo",
             render: () => `
-                <div class="game-display" id="dice-screen">🎲</div>
-                <div class="bet-controls">
-                    <input type="number" id="bet-input" class="bet-input" value="10" style="width:100%; margin-bottom:10px;">
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-action" onclick="games.dice.play('lo')">LO (1-3)</button>
-                        <button class="btn-action" onclick="games.dice.play('hi')">HI (4-6)</button>
+                <div class="screen" id="g-screen">🎲</div>
+                <div class="controls">
+                    <input type="number" id="bet" class="input-bet" value="10" style="margin-bottom:10px">
+                    <div style="display:flex; gap:10px">
+                        <button class="btn-main" onclick="app.playDice('lo')">1-3</button>
+                        <button class="btn-main" onclick="app.playDice('hi')">4-6</button>
                     </div>
-                </div>
-            `,
-            play: (choice) => {
+                </div>`,
+            play: (pick) => {
                 let bet = getBet(); if(!bet) return;
-                addMoney(-bet); addXp(bet);
-                
-                let val = Math.floor(Math.random() * 6) + 1;
-                document.getElementById('dice-screen').innerText = val;
-                
-                let win = false;
-                if(choice === 'lo' && val <= 3) win = true;
-                if(choice === 'hi' && val >= 4) win = true;
-                
-                if(win) { addMoney(bet*2); showToast(`Верно! +${bet*2}`, 'win'); }
-                else { showToast('Неверно', 'lose'); }
+                addMoney(-bet);
+                let n = rn(6) + 1;
+                document.getElementById('g-screen').innerText = n;
+                let win = (pick==='lo' && n<=3) || (pick==='hi' && n>=4);
+                if(win) { addMoney(bet*2); toast("Угадал!", "#4ade80"); }
+                else toast("Нет", "#ef4444");
+                checkLvl(bet);
             }
         },
         coin: {
-            title: "Орел и Решка",
             render: () => `
-                <div class="game-display" id="coin-screen" style="font-size:4em">🪙</div>
-                <div class="bet-controls">
-                    <input type="number" id="bet-input" class="bet-input" value="10" style="width:100%; margin-bottom:10px;">
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-action" style="background:#fbbf24; color:black" onclick="games.coin.play(0)">ОРЕЛ</button>
-                        <button class="btn-action" style="background:#94a3b8; color:black" onclick="games.coin.play(1)">РЕШКА</button>
+                <div class="screen" id="g-screen" style="font-size:4em">🪙</div>
+                <div class="controls">
+                    <input type="number" id="bet" class="input-bet" value="10" style="margin-bottom:10px">
+                    <div style="display:flex; gap:10px">
+                        <button class="btn-main" style="background:#fbbf24" onclick="app.playCoin(0)">Орел</button>
+                        <button class="btn-main" style="background:#94a3b8" onclick="app.playCoin(1)">Решка</button>
                     </div>
-                </div>
-            `,
-            play: (pick) => {
+                </div>`,
+            play: (p) => {
                 let bet = getBet(); if(!bet) return;
-                addMoney(-bet); addXp(bet);
-                
-                let screen = document.getElementById('coin-screen');
-                screen.style.transform = "rotateY(720deg)";
-                screen.style.transition = "1s";
-                
-                setTimeout(() => {
-                    screen.style.transform = "rotateY(0deg)";
-                    let res = Math.random() < 0.5 ? 0 : 1;
-                    screen.innerText = res === 0 ? "🦅" : "🌕";
-                    
-                    if(pick === res) { addMoney(bet*1.9); showToast(`Победа!`, 'win'); }
-                    else { showToast(`Проигрыш`, 'lose'); }
-                }, 1000);
+                addMoney(-bet);
+                let r = Math.random()<0.5 ? 0 : 1;
+                document.getElementById('g-screen').innerText = r===0 ? "🦅" : "🌕";
+                if(p===r) { addMoney(bet*2); toast("WIN!", "#4ade80"); }
+                else toast("Lose", "#ef4444");
+                checkLvl(bet);
             }
         },
         crash: {
-            title: "Crash Rocket",
             render: () => `
-                <div class="game-display" id="crash-screen" style="font-family:monospace">1.00x</div>
-                <div class="bet-controls">
-                    <input type="number" id="bet-input" class="bet-input" value="10" style="width:100%; margin-bottom:10px;">
-                    <button class="btn-action" id="crash-btn" onclick="games.crash.start()">ЗАПУСК</button>
-                </div>
-            `,
+                <div class="screen" id="c-screen" style="font-family:monospace">1.00x</div>
+                <div class="controls">
+                    <input type="number" id="bet" class="input-bet" value="10" style="margin-bottom:10px">
+                    <button id="c-btn" class="btn-main" onclick="app.playCrash()">ЗАПУСК</button>
+                </div>`,
             active: false,
-            currMult: 1.0,
-            interval: null,
-            bet: 0,
-            start: () => {
+            play: () => {
+                if(app.crashActive) { // STOP
+                    app.crashActive = false;
+                    return;
+                }
+                // START
                 let bet = getBet(); if(!bet) return;
-                games.crash.bet = bet;
                 addMoney(-bet);
                 
-                let btn = document.getElementById('crash-btn');
-                btn.innerText = "СТОП";
-                btn.style.background = "#ef4444";
-                btn.onclick = games.crash.stop;
+                app.crashActive = true;
+                let btn = document.getElementById('c-btn');
+                btn.innerText = "СТОП"; btn.style.background = "#ef4444";
                 
-                games.crash.active = true;
-                games.crash.currMult = 1.0;
-                
-                // Crash point calculation
-                let crashPoint = (Math.random() * 5) + 1;
-                if(Math.random() < 0.3) crashPoint = 1.1; // 30% instant crash
-                
-                games.crash.interval = setInterval(() => {
-                    if(!games.crash.active) return;
-                    games.crash.currMult += 0.05;
-                    document.getElementById('crash-screen').innerText = games.crash.currMult.toFixed(2) + "x";
-                    
-                    if(games.crash.currMult >= crashPoint) {
-                        games.crash.crash();
+                let m = 1.00;
+                let crashAt = (Math.random()*5) + 1;
+                if(Math.random()<0.3) crashAt = 1.05; // Instant crash chance
+
+                let timer = setInterval(() => {
+                    if(!app.crashActive) { // Player clicked STOP
+                        clearInterval(timer);
+                        let win = Math.floor(bet * m);
+                        addMoney(win);
+                        toast(`Забрал: ${win}`, "#4ade80");
+                        resetCrashBtn();
+                        checkLvl(bet);
+                        return;
                     }
-                }, 100);
-            },
-            stop: () => {
-                if(!games.crash.active) return;
-                games.crash.active = false;
-                clearInterval(games.crash.interval);
-                
-                let win = Math.floor(games.crash.bet * games.crash.currMult);
-                addMoney(win);
-                addXp(games.crash.bet);
-                showToast(`Забрал: ${win}`, 'win');
-                games.crash.resetBtn();
-            },
-            crash: () => {
-                games.crash.active = false;
-                clearInterval(games.crash.interval);
-                document.getElementById('crash-screen').innerText = "💥 CRASH";
-                document.getElementById('crash-screen').style.color = "red";
-                showToast("Взорвался...", 'lose');
-                addXp(games.crash.bet); // XP even for loss
-                games.crash.resetBtn();
-            },
-            resetBtn: () => {
-                let btn = document.getElementById('crash-btn');
-                btn.innerText = "ЗАПУСК";
-                btn.style.background = "#fbbf24";
-                btn.onclick = games.crash.start;
-                setTimeout(() => { document.getElementById('crash-screen').style.color = "white"; }, 2000);
+                    m += 0.05;
+                    document.getElementById('c-screen').innerText = m.toFixed(2)+'x';
+                    
+                    if(m >= crashAt) { // CRASHED
+                        clearInterval(timer);
+                        app.crashActive = false;
+                        document.getElementById('c-screen').innerText = "💥 BAM";
+                        document.getElementById('c-screen').style.color = "red";
+                        toast("Взорвался...", "#ef4444");
+                        resetCrashBtn();
+                        checkLvl(bet);
+                    }
+                }, 80);
             }
         },
         lottery: {
-             title: "Lottery Scratch",
             render: () => `
-                <div class="game-display" id="loto-screen" style="flex-direction:column; font-size:1em;">
-                    <div style="font-size:2em">🎫 🎫 🎫</div>
-                    <div>Цена билета: 50 PLN</div>
+                <div class="screen" style="flex-direction:column; font-size:1.5em">
+                    <div>🎫</div>
+                    <div id="loto-res" style="font-size:0.6em">Билет: 50 PLN</div>
                 </div>
-                <div class="bet-controls">
-                     <button class="btn-action" onclick="games.lottery.play()">КУПИТЬ БИЛЕТ (50)</button>
-                </div>
-            `,
+                <div class="controls">
+                    <button class="btn-main" onclick="app.playLoto()">КУПИТЬ (50)</button>
+                </div>`,
             play: () => {
-                if(state.money < 50) { showToast("Нет 50 PLN"); return; }
-                addMoney(-50); addXp(50);
-                
+                if(state.money < 50) { toast("Мало денег"); return; }
+                addMoney(-50);
                 let r = Math.random();
-                let win = 0;
-                let msg = "Пустой билет";
+                let w = 0; let t = "Пусто";
+                if(r<0.1) { w=500; t="СУПЕР!"; }
+                else if(r<0.3) { w=100; t="Приз!"; }
+                else if(r<0.5) { w=50; t="Возврат"; }
                 
-                if(r < 0.05) { win = 1000; msg = "СУПЕР ПРИЗ!"; }
-                else if(r < 0.2) { win = 150; msg = "Малый приз"; }
-                else if(r < 0.4) { win = 50; msg = "Возврат"; }
-                
-                document.getElementById('loto-screen').innerHTML = `
-                    <div style="font-size:1.5em; font-weight:bold; color:${win>0?var(--primary):'white'}">${msg}</div>
-                    <div>+${win} PLN</div>
-                `;
-                
-                if(win > 0) addMoney(win);
+                document.getElementById('loto-res').innerText = `${t} (+${w})`;
+                if(w>0) addMoney(w);
+                checkLvl(50);
             }
         }
     };
 
-    // --- VIEW CONTROLLERS ---
-
-    function updateUI() {
-        document.getElementById('ui-money').innerText = Math.floor(state.money).toLocaleString() + ' PLN';
-        document.getElementById('ui-lvl-badge').innerText = `LVL ${state.level}`;
-        document.getElementById('ui-maxbet').innerText = `Max: ${state.maxBet.toLocaleString()}`;
-        document.getElementById('ui-click-rate').innerText = state.clickPower;
+    function resetCrashBtn() {
+        let btn = document.getElementById('c-btn');
+        btn.innerText = "ЗАПУСК";
+        btn.style.background = "#fbbf24";
+        setTimeout(() => document.getElementById('c-screen').style.color = "white", 1000);
     }
 
-    function doWork() {
-        addMoney(state.clickPower);
-    }
-    
-    function upgradeClick() {
-        if(state.money >= 250) {
-            addMoney(-250);
-            state.clickPower += 5;
-            updateUI();
-            showToast("Доход увеличен!");
-        } else {
-            showToast("Нужно 250 PLN");
-        }
-    }
-
+    // --- UTILS ---
     function openGame(id) {
         if(!games[id]) return;
-        currentGameId = id;
-        document.getElementById('view-lobby').classList.remove('active');
-        document.getElementById('view-gameroom').classList.add('active');
-        
-        let container = document.getElementById('game-engine-container');
-        container.innerHTML = `<h2 style="margin:0">${games[id].title}</h2>` + games[id].render();
+        document.getElementById('game-container').innerHTML = games[id].render();
+        tab('game');
     }
 
-    function closeGame() {
-        currentGameId = null;
-        document.getElementById('view-gameroom').classList.remove('active');
-        document.getElementById('view-lobby').classList.add('active');
+    function getBet() {
+        let el = document.getElementById('bet');
+        let v = parseInt(el.value);
+        if(isNaN(v) || v<=0) { toast("Неверная ставка"); return null; }
+        if(v > state.money) { toast("Нет денег!"); return null; }
+        if(v > state.maxBet) { toast("Лимит уровня: "+state.maxBet); return null; }
+        return v;
     }
 
-    function switchTab(id, el) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        if(id === 'lobby') {
-            if(currentGameId) closeGame(); // If switching to lobby while in game
-            else document.getElementById('view-lobby').classList.add('active');
-        } else {
-            document.getElementById('view-' + id).classList.add('active');
-        }
-
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if(el) el.classList.add('active');
-    }
-
-    function showToast(msg, type) {
-        let t = document.getElementById('toast');
-        t.innerHTML = msg;
-        t.className = type === 'win' ? 'win' : (type === 'lose' ? 'lose' : '');
-        t.style.opacity = 1;
-        setTimeout(() => t.style.opacity = 0, 2000);
-    }
-
-    function resetGame() {
-        if(confirm("Сбросить весь прогресс?")) {
-            localStorage.removeItem(KEY);
-            location.reload();
+    function checkLvl(bet) {
+        state.xp += bet;
+        if(state.xp > state.level * 500) {
+            state.level++;
+            state.xp = 0;
+            state.maxBet = Math.floor(100 * Math.pow(1.5, state.level));
+            toast(`УРОВЕНЬ ${state.level}!`, "#fbbf24");
+            updateUI();
         }
     }
+    
+    function rn(max) { return Math.floor(Math.random() * max); }
 
-    init();
+    // Public API
+    return { 
+        init, work, upgrade, tab, openGame, goHome,
+        playSlots: games.slots.play,
+        playRoulette: games.roulette.play,
+        playDice: games.dice.play,
+        playCoin: games.coin.play,
+        playCrash: games.crash.play,
+        playLoto: games.lottery.play,
+        crashActive: false
+    };
+})();
+
+// Start
+window.onload = app.init;
+
 </script>
 </body>
 </html>
-
