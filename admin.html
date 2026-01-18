@@ -2,238 +2,105 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>WARSZAWA GOD MODE (MOBILE)</title>
+    <title>WARSZAWA GOD MODE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0b0f19;
-            --card: #1f2937;
-            --input: #374151;
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --accent: #3b82f6; 
-            --gold: #f59e0b;
-            --danger: #ef4444; 
-            --success: #10b981;
-        }
-
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; font-size: 14px; overflow: hidden; }
-        
-        /* LOGIN */
+        :root { --bg: #0b0f19; --card: #1f2937; --input: #374151; --text: #f3f4f6; --accent: #3b82f6; --gold: #f59e0b; --danger: #ef4444; --success: #10b981; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         #login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--accent); width: 80%; max-width: 300px; }
-        
-        /* LAYOUT */
-        .header-bar {
-            background: #111827; padding: 15px; border-bottom: 1px solid #333;
-            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
-        }
-        .header-title { font-weight: 900; font-size: 16px; color: white; }
-        .header-title span { color: var(--gold); }
-
-        /* TABS (Scrollable top bar) */
-        .tabs-container {
-            background: #111827; border-bottom: 1px solid #333;
-            overflow-x: auto; white-space: nowrap; display: flex; padding: 0 5px; flex-shrink: 0;
-            -webkit-overflow-scrolling: touch;
-        }
-        .tab-btn {
-            padding: 12px 15px; color: #9ca3af; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border-bottom: 3px solid transparent; transition: 0.2s;
-        }
-        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(59, 130, 246, 0.05); }
-        .tab-btn i { font-size: 14px; }
-
-        /* MAIN CONTENT */
-        main { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; position: relative; }
-
-        /* CARDS & INPUTS */
+        .header-bar { background: #111827; padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .tabs-container { background: #111827; overflow-x: auto; white-space: nowrap; display: flex; padding: 0 5px; -webkit-overflow-scrolling: touch; }
+        .tab-btn { padding: 12px 15px; color: #9ca3af; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        main { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .card { background: var(--card); border-radius: 12px; border: 1px solid #374151; padding: 15px; margin-bottom: 15px; }
-        .card h3 { margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
-        
         .form-group { margin-bottom: 12px; }
         .form-group label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
-        .form-group input { width: 100%; background: var(--input); border: 1px solid #4b5563; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        .form-group input:focus { border-color: var(--accent); outline: none; background: #2d3748; }
-
-        /* BUTTONS */
-        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; text-transform: uppercase; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; color: white; }
+        .form-group input { width: 100%; background: var(--input); border: 1px solid #4b5563; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; }
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; width: 100%; color: white; }
         .btn-primary { background: var(--accent); }
         .btn-success { background: var(--success); color: #000; }
-        .btn-danger { background: var(--danger); }
-        .btn-gold { background: var(--gold); color: #000; }
-
-        .fab-save { 
-            position: fixed; bottom: 20px; right: 20px; left: 20px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 900; 
-            padding: 16px; font-size: 16px; 
-        }
-
-        /* USERS LIST */
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; }
-        .user-row:hover { border-color: var(--accent); }
-        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .online { background: var(--success); box-shadow: 0 0 5px var(--success); }
-        .offline { background: #666; }
-
-        /* MODAL */
+        .fab-save { position: fixed; bottom: 20px; right: 20px; left: 20px; padding: 15px; font-size: 16px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; }
-        .modal { background: #1f2937; width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto; border-radius: 16px; border: 1px solid var(--accent); padding: 20px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
-
-        .tab-content { display: none; animation: fadeIn 0.2s; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal { background: #1f2937; width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto; border-radius: 16px; border: 1px solid var(--accent); padding: 20px; display: flex; flex-direction: column; }
+        .tab-content { display: none; } .tab-content.active { display: block; }
     </style>
 </head>
 <body>
-
     <div id="login-screen">
         <div class="login-box">
-            <h2 style="margin: 0 0 20px 0; color: white;">GOD MODE</h2>
-            <input type="password" id="admin-pass" placeholder="Пароль (admin)" style="padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; width: 100%; text-align: center; margin-bottom: 15px;">
-            <button class="btn btn-primary" onclick="auth()">ВОЙТИ</button>
+            <h2>GOD MODE</h2>
+            <input type="password" id="admin-pass" placeholder="Password" style="margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="auth()">LOGIN</button>
         </div>
     </div>
 
     <div style="display: flex; flex-direction: column; height: 100%;" id="app-ui" hidden>
         <div class="header-bar">
-            <div class="header-title">WARSZAWA <span>ADMIN</span></div>
-            <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 10px;" onclick="location.reload()">EXIT</button>
+            <div style="font-weight:900; color:white;">WARSZAWA <span style="color:var(--gold)">ADMIN</span></div>
+            <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 10px; background:var(--danger);" onclick="location.reload()">EXIT</button>
         </div>
-
         <div class="tabs-container">
-            <div class="tab-btn active" onclick="switchTab('players', this)"><i class="fas fa-users"></i> Игроки</div>
-            <div class="tab-btn" onclick="switchTab('economy', this)"><i class="fas fa-coins"></i> Эконом</div>
-            <div class="tab-btn" onclick="switchTab('items', this)"><i class="fas fa-shopping-cart"></i> Магазин</div>
-            <div class="tab-btn" onclick="switchTab('jobs', this)"><i class="fas fa-briefcase"></i> Работа</div>
-            <div class="tab-btn" onclick="switchTab('map', this)"><i class="fas fa-map"></i> Карта</div>
-            <div class="tab-btn" onclick="switchTab('business', this)"><i class="fas fa-building"></i> Бизнес</div>
-            <div class="tab-btn" onclick="switchTab('bank', this)"><i class="fas fa-university"></i> Банк</div>
+            <div class="tab-btn active" onclick="switchTab('players', this)">Игроки</div>
+            <div class="tab-btn" onclick="switchTab('economy', this)">Эконом</div>
+            <div class="tab-btn" onclick="switchTab('items', this)">Магазин</div>
+            <div class="tab-btn" onclick="switchTab('jobs', this)">Работа</div>
+            <div class="tab-btn" onclick="switchTab('business', this)">Бизнес</div>
         </div>
-
         <main>
             <div id="tab-players" class="tab-content active">
-                <input type="text" id="user-search" placeholder="🔍 Поиск игрока..." oninput="renderUsers()" style="width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 15px;">
+                <input type="text" id="user-search" placeholder="🔍 Поиск..." oninput="renderUsers()" style="width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 15px;">
                 <div id="users-list">Loading...</div>
             </div>
-
             <div id="tab-economy" class="tab-content">
                 <div class="card">
-                    <h3>💰 Глобальная Экономика</h3>
+                    <h3>💰 Глобал</h3>
                     <div class="form-group"><label>Налог (%)</label><input type="number" data-path="economy.tax_rate" data-type="percent"></div>
-                    <div class="form-group"><label>Порог налога (PLN)</label><input type="number" data-path="economy.tax_threshold"></div>
+                    <div class="form-group"><label>Порог налога</label><input type="number" data-path="economy.tax_threshold"></div>
                     <div class="form-group"><label>Инфляция (%)</label><input type="number" data-path="economy.inflation_rate" data-type="percent"></div>
-                    <div class="form-group"><label>Таймер налога (сек)</label><input type="number" data-path="economy.tax_timer_sec"></div>
-                </div>
-                <div class="card">
-                    <h3>💵 Базовый Доход</h3>
                     <div class="form-group"><label>Цена Клика (База)</label><input type="number" step="0.01" data-path="economy.click_base"></div>
-                    <div class="form-group"><label>Цена Бутылки</label><input type="number" step="0.01" data-path="economy.bottle_price"></div>
-                    <div class="form-group"><label>Шанс найти бутылку (%)</label><input type="number" data-path="gameplay.bottle_find_chance" data-type="percent"></div>
-                    <div class="form-group"><label>Пособие Бабушки</label><input type="number" data-path="economy.welfare_amount"></div>
                 </div>
             </div>
-
             <div id="tab-items" class="tab-content">
                 <div class="card">
-                    <h3>🥤 Еда и Энергия</h3>
-                    <div class="form-group"><label>Вода (1.5л)</label><input type="number" step="0.1" data-path="prices.water"></div>
+                    <h3>🥤 Цены</h3>
+                    <div class="form-group"><label>Вода</label><input type="number" step="0.1" data-path="prices.water"></div>
                     <div class="form-group"><label>Кофе</label><input type="number" step="0.1" data-path="prices.coffee"></div>
-                    <div class="form-group"><label>Red Bull</label><input type="number" step="0.1" data-path="prices.energy"></div>
-                </div>
-                <div class="card">
-                    <h3>🚲 Аренда Транспорта</h3>
-                    <div class="form-group"><label>Veturilo Старт</label><input type="number" data-path="prices.veturilo_start"></div>
-                    <div class="form-group"><label>Veturilo Мин</label><input type="number" step="0.01" data-path="prices.veturilo_min"></div>
-                    <div class="form-group"><label>Bolt Старт</label><input type="number" data-path="prices.bolt_start"></div>
-                    <div class="form-group"><label>Bolt Мин</label><input type="number" step="0.01" data-path="prices.bolt_min"></div>
-                    <div class="form-group"><label>E-Bike (10 мин)</label><input type="number" data-path="prices.bike_rent"></div>
-                </div>
-                <div class="card">
-                    <h3>🛠️ Цены на Ремонт</h3>
-                    <div class="form-group"><label>Экспресс (Велик)</label><input type="number" data-path="prices.repair_express"></div>
-                    <div class="form-group"><label>Ремонт Сумки</label><input type="number" data-path="repair_costs.bag"></div>
-                    <div class="form-group"><label>Ремонт Телефона</label><input type="number" data-path="repair_costs.phone"></div>
-                    <div class="form-group"><label>Ремонт Самоката</label><input type="number" data-path="repair_costs.scooter"></div>
+                    <div class="form-group"><label>Энергетик</label><input type="number" step="0.1" data-path="prices.energy"></div>
                 </div>
             </div>
-
             <div id="tab-jobs" class="tab-content">
                 <div class="card">
-                    <h3>📦 Зарплата</h3>
+                    <h3>📦 Работа</h3>
                     <div class="form-group"><label>База за заказ</label><input type="number" step="0.1" data-path="jobs.base_pay"></div>
-                    <div class="form-group"><label>За КМ пути</label><input type="number" step="0.1" data-path="jobs.km_pay"></div>
-                    <div class="form-group"><label>Шанс чаевых (%)</label><input type="number" data-path="jobs.tips_chance" data-type="percent"></div>
-                    <div class="form-group"><label>Макс чаевые</label><input type="number" data-path="jobs.tips_max"></div>
-                </div>
-                <div class="card" style="border-color: var(--danger);">
-                    <h3>🚔 Полиция и Риски</h3>
-                    <div class="form-group"><label>Шанс криминала (%)</label><input type="number" data-path="gameplay.criminal_chance" data-type="percent"></div>
-                    <div class="form-group"><label>Шанс облавы (%)</label><input type="number" data-path="gameplay.police_chance" data-type="percent"></div>
-                    <div class="form-group"><label>Штраф (PLN)</label><input type="number" data-path="gameplay.fine_amount"></div>
-                    <div class="form-group"><label>Штраф (LVL)</label><input type="number" step="0.05" data-path="gameplay.lvl_fine_police"></div>
+                    <div class="form-group"><label>За КМ</label><input type="number" step="0.1" data-path="jobs.km_pay"></div>
                 </div>
             </div>
-
-            <div id="tab-map" class="tab-content">
-                <div id="districts-settings"></div>
-            </div>
-
             <div id="tab-business" class="tab-content">
                 <div class="card">
-                    <h3>Общие настройки</h3>
+                    <h3>💼 Настройки</h3>
                     <div class="form-group"><label>Налог на бизнес (%)</label><input type="number" data-path="economy.business_tax" data-type="percent"></div>
-                    <div class="form-group"><label>Расход воды за действие</label><input type="number" data-path="business_config.water_cost"></div>
-                </div>
-                <div id="business-settings"></div>
-            </div>
-
-            <div id="tab-bank" class="tab-content">
-                <div class="card">
-                    <h3>💎 Private Vault</h3>
-                    <div class="form-group"><label>Базовая ставка (%)</label><input type="number" data-path="economy.bank_rate" data-type="percent"></div>
-                    <div class="form-group"><label>Множитель (15 дн)</label><input type="number" data-path="bank_config.mult_15"></div>
-                    <div class="form-group"><label>Множитель (30 дн)</label><input type="number" data-path="bank_config.mult_30"></div>
-                    <div class="form-group"><label>Штраф снятия (%)</label><input type="number" data-path="bank_config.break_penalty" data-type="percent"></div>
-                </div>
-                <div class="card">
-                    <h3>⚖️ Биржа LVL</h3>
-                    <div class="form-group"><label>Покупка 0.1 LVL</label><input type="number" data-path="prices.buy_lvl_small"></div>
-                    <div class="form-group"><label>Покупка 0.5 LVL</label><input type="number" data-path="prices.buy_lvl_big"></div>
-                    <div class="form-group"><label>Курс обмена (0.05 LVL)</label><input type="number" data-path="economy.lvl_exchange_rate"></div>
-                    <div class="form-group"><label>Курс обмена (1.00 LVL)</label><input type="number" data-path="economy.lvl_exchange_rate_big"></div>
                 </div>
             </div>
-
-            <button class="btn btn-success fab-save" onclick="saveAllSettings()"><i class="fas fa-save"></i> СОХРАНИТЬ МИР</button>
+            <button class="btn btn-success fab-save" onclick="saveAllSettings()">СОХРАНИТЬ МИР</button>
         </main>
     </div>
 
     <div id="user-modal" class="modal-overlay">
         <div class="modal">
-            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                <h3 id="m-username" style="margin:0; color:white;">Player</h3>
-                <button class="btn btn-danger" style="width:auto; padding:5px 12px;" onclick="closeModal()">✕</button>
-            </div>
-            
-            <div class="form-group"><label>Баланс (PLN)</label><input type="number" id="m-money"></div>
-            <div class="form-group"><label>Уровень (LVL)</label><input type="number" step="0.01" id="m-lvl"></div>
-            <div class="form-group"><label>Вода (мл)</label><input type="number" id="m-water"></div>
-            <div class="form-group"><label>Энергия</label><input type="number" id="m-energy"></div>
-            <div class="form-group"><label>Долг</label><input type="number" id="m-debt"></div>
-
-            <h4 style="color:var(--accent); margin:15px 0 10px 0;">Быстрые действия</h4>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+            <h3 id="m-username" style="color:white; margin-top:0;">Player</h3>
+            <div class="form-group"><label>Баланс</label><input type="number" id="m-money"></div>
+            <div class="form-group"><label>LVL</label><input type="number" step="0.01" id="m-lvl"></div>
+            <div class="form-group"><label>Вода</label><input type="number" id="m-water"></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
                 <button class="btn btn-primary" onclick="adminAction('give_water')">💧 +1.5л</button>
                 <button class="btn btn-primary" onclick="adminAction('repair_all')">🛠️ Починить</button>
-                <button class="btn btn-primary" onclick="adminAction('clear_debt')">💸 Убрать долг</button>
-                <button class="btn btn-gold" onclick="resetUserToNovice()">🔄 СБРОС</button>
             </div>
-            
-            <div style="margin-top:20px;">
-                <button id="btn-ban" class="btn btn-danger" onclick="toggleBan()">BAN USER</button>
-                <button class="btn btn-success" style="margin-top:10px;" onclick="saveUserChanges()">СОХРАНИТЬ</button>
-            </div>
+            <button class="btn btn-success" style="margin-top:15px;" onclick="saveUserChanges()">СОХРАНИТЬ</button>
+            <button class="btn" style="background:#444; margin-top:10px;" onclick="document.getElementById('user-modal').style.display='none'">ЗАКРЫТЬ</button>
         </div>
     </div>
 
@@ -252,17 +119,14 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        let settings = {};
-        let users = {};
-        let currentUserId = null;
+        let settings = {}, users = {}, currentUserId = null;
 
         function auth() {
             if(document.getElementById('admin-pass').value === 'admin') {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-ui').hidden = false;
                 init();
-            } else alert("Неверный пароль");
+            } else alert("Error");
         }
 
         function switchTab(id, el) {
@@ -273,78 +137,32 @@
         }
 
         function init() {
-            db.ref('game_settings').on('value', snap => {
-                settings = snap.val() || {};
-                renderSettings();
-            });
-            db.ref('users').on('value', snap => {
-                users = snap.val() || {};
-                renderUsers();
-            });
+            db.ref('game_settings').on('value', snap => { settings = snap.val() || {}; renderSettings(); });
+            db.ref('users').on('value', snap => { users = snap.val() || {}; renderUsers(); });
         }
 
         function renderSettings() {
-            // Fill standard inputs
             document.querySelectorAll('[data-path]').forEach(el => {
                 const path = el.dataset.path.split('.');
                 let val = settings;
                 for (let p of path) { val = val ? val[p] : undefined; }
-                
                 if (val !== undefined) {
                     if (el.dataset.type === 'percent') val = (val * 100).toFixed(2);
                     el.value = val;
                 }
             });
-
-            // Render Districts
-            const distContainer = document.getElementById('districts-settings');
-            if (settings.districts) {
-                let html = '';
-                settings.districts.forEach((d, i) => {
-                    html += `<div class="card">
-                        <h3>📍 ${d.name || 'Район ' + i}</h3>
-                        <div class="form-group"><label>Цена жилья</label><input type="number" id="d-${i}-price" value="${d.housePrice}"></div>
-                        <div class="form-group"><label>Квартплата (База)</label><input type="number" id="d-${i}-czynsz" value="${d.czynszBase}"></div>
-                        <div class="form-group"><label>Доход (x)</label><input type="number" step="0.01" id="d-${i}-mult" value="${d.mult}"></div>
-                        <div class="form-group"><label>Аренда (%)</label><input type="number" id="d-${i}-rent" value="${(d.rentPct*100).toFixed(0)}"></div>
-                        <div class="form-group"><label>Мин. LVL</label><input type="number" id="d-${i}-lvl" value="${d.minLvl}"></div>
-                    </div>`;
-                });
-                distContainer.innerHTML = html;
-            }
-
-            // Render Business
-            const bizContainer = document.getElementById('business-settings');
-            if (settings.business_meta) {
-                let html = '';
-                settings.business_meta.forEach((b, i) => {
-                    html += `<div class="card">
-                        <h3>🏭 ${b.name}</h3>
-                        <div class="form-group"><label>Цена Лицензии</label><input type="number" id="b-${i}-price" value="${b.basePrice}"></div>
-                        <div class="form-group"><label>Мин. LVL</label><input type="number" id="b-${i}-lvl" value="${b.minLvl}"></div>
-                        <div class="form-group"><label>Стоимость Сделки</label><input type="number" id="b-${i}-cost" value="${b.dealCost}"></div>
-                    </div>`;
-                });
-                bizContainer.innerHTML = html;
-            }
         }
 
         function saveAllSettings() {
             let update = JSON.parse(JSON.stringify(settings));
-            
-            // Ensure structure
             if(!update.economy) update.economy = {};
             if(!update.prices) update.prices = {};
-            if(!update.gameplay) update.gameplay = {};
-            if(!update.repair_costs) update.repair_costs = {};
-            if(!update.bank_config) update.bank_config = {};
+            if(!update.jobs) update.jobs = {};
             
-            // Save inputs
             document.querySelectorAll('[data-path]').forEach(el => {
                 const path = el.dataset.path.split('.');
                 let val = parseFloat(el.value);
                 if (el.dataset.type === 'percent') val = val / 100;
-                
                 let obj = update;
                 for (let i = 0; i < path.length - 1; i++) {
                     if (!obj[path[i]]) obj[path[i]] = {};
@@ -353,56 +171,20 @@
                 obj[path[path.length - 1]] = val;
             });
 
-            // Save Districts
-            if (settings.districts) {
-                settings.districts.forEach((d, i) => {
-                    update.districts[i].housePrice = parseFloat(document.getElementById(`d-${i}-price`).value);
-                    update.districts[i].czynszBase = parseFloat(document.getElementById(`d-${i}-czynsz`).value);
-                    update.districts[i].mult = parseFloat(document.getElementById(`d-${i}-mult`).value);
-                    update.districts[i].rentPct = parseFloat(document.getElementById(`d-${i}-rent`).value) / 100;
-                    update.districts[i].minLvl = parseFloat(document.getElementById(`d-${i}-lvl`).value);
-                });
-            }
-
-            // Save Business
-            if (settings.business_meta) {
-                settings.business_meta.forEach((b, i) => {
-                    update.business_meta[i].basePrice = parseFloat(document.getElementById(`b-${i}-price`).value);
-                    update.business_meta[i].minLvl = parseFloat(document.getElementById(`b-${i}-lvl`).value);
-                    update.business_meta[i].dealCost = parseFloat(document.getElementById(`b-${i}-cost`).value);
-                });
-            }
-
-            db.ref('game_settings').set(update)
-                .then(() => alert('✅ НАСТРОЙКИ СОХРАНЕНЫ!'))
-                .catch(e => alert('Error: ' + e));
+            db.ref('game_settings').set(update).then(() => alert('✅ SAVED'));
         }
 
-        // --- USERS ---
         function renderUsers() {
             const list = document.getElementById('users-list');
             const term = document.getElementById('user-search').value.toLowerCase();
             let html = '';
-            
             Object.keys(users).forEach(uid => {
                 const u = users[uid];
                 const name = u.name || 'Unknown';
-                if (term && !name.toLowerCase().includes(term) && !uid.includes(term)) return;
-                
-                let isOnline = (Date.now() - (u.lastActive || 0)) < 300000;
-                
+                if (term && !name.toLowerCase().includes(term)) return;
                 html += `<div class="user-row" onclick="openUser('${uid}')">
-                    <div style="display:flex; align-items:center;">
-                        <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                        <div>
-                            <div style="font-weight:bold; font-size:13px; color:${u.isBanned ? 'var(--danger)' : 'white'}">${name} ${u.isBanned ? '[BAN]' : ''}</div>
-                            <div style="font-size:10px; color:#666;">${uid.substr(0,5)}...</div>
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="color:${u.money < 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${Math.floor(u.money||0)} PLN</div>
-                        <div style="font-size:10px; color:var(--gold);">LVL ${u.lvl?.toFixed(1)}</div>
-                    </div>
+                    <div><b>${name}</b> <small>${uid.substr(0,5)}</small></div>
+                    <div style="color:${u.money<0?'red':'#10b981'}">${Math.floor(u.money||0)} PLN</div>
                 </div>`;
             });
             list.innerHTML = html;
@@ -416,15 +198,7 @@
             document.getElementById('m-money').value = u.money || 0;
             document.getElementById('m-lvl').value = u.lvl || 1;
             document.getElementById('m-water').value = u.waterStock || 0;
-            document.getElementById('m-energy').value = u.en || 0;
-            document.getElementById('m-debt').value = u.debt || 0;
-            
-            const banBtn = document.getElementById('btn-ban');
-            banBtn.innerText = u.isBanned ? "РАЗБАНИТЬ" : "BAN USER";
-            banBtn.className = u.isBanned ? "btn btn-success" : "btn btn-danger";
         }
-
-        function closeModal() { document.getElementById('user-modal').style.display = 'none'; currentUserId = null; }
 
         function saveUserChanges() {
             if(!currentUserId) return;
@@ -432,28 +206,9 @@
                 money: parseFloat(document.getElementById('m-money').value),
                 lvl: parseFloat(document.getElementById('m-lvl').value),
                 waterStock: parseFloat(document.getElementById('m-water').value),
-                en: parseFloat(document.getElementById('m-energy').value),
-                debt: parseFloat(document.getElementById('m-debt').value),
                 lastAdminUpdate: Date.now(),
-                adminMessage: "Параметры изменены администратором."
-            }).then(() => closeModal());
-        }
-
-        function toggleBan() {
-            if(!currentUserId) return;
-            let u = users[currentUserId];
-            db.ref('users/' + currentUserId).update({ isBanned: !u.isBanned }).then(() => closeModal());
-        }
-
-        function resetUserToNovice() {
-            if(!currentUserId) return;
-            if(!confirm("ТОЧНО СБРОСИТЬ?")) return;
-            db.ref('users/' + currentUserId).update({
-                money: 0, lvl: 1.0, en: 2000, waterStock: 0,
-                totalOrders: 0, transportMode: 'none', housing: { id: -1 },
-                business: {}, activeMilestones: null, bag: null, phone: null, scooter: null,
-                isNewPlayer: true, lastAdminUpdate: Date.now()
-            }).then(() => closeModal());
+                adminMessage: "Admin update"
+            }).then(() => document.getElementById('user-modal').style.display = 'none');
         }
 
         function adminAction(action) {
@@ -464,8 +219,7 @@
                 updates['shoes/dur'] = 100;
                 ['bag', 'phone', 'scooter'].forEach(k => updates[`${k}/dur`] = 100);
             }
-            if (action === 'clear_debt') updates.debt = 0;
-            db.ref('users/' + currentUserId).update(updates).then(() => closeModal());
+            db.ref('users/' + currentUserId).update(updates).then(() => alert("Done"));
         }
     </script>
 </body>
