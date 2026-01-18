@@ -7,7 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --bg: #0b0f19; --card: #1f2937; --input: #374151; --text: #f3f4f6; --accent: #3b82f6; --gold: #f59e0b; --danger: #ef4444; --success: #10b981; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         #login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--accent); width: 80%; max-width: 300px; }
         .header-bar { background: #111827; padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
@@ -16,12 +16,14 @@
         .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
         main { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .card { background: var(--card); border-radius: 12px; border: 1px solid #374151; padding: 15px; margin-bottom: 15px; }
+        .card h3 { color: var(--accent); margin-top: 0; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
         .form-group input { width: 100%; background: var(--input); border: 1px solid #4b5563; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; }
-        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; width: 100%; color: white; }
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; width: 100%; color: white; margin-top: 5px; }
         .btn-primary { background: var(--accent); }
         .btn-success { background: var(--success); color: #000; }
+        .btn-danger { background: var(--danger); }
         .fab-save { position: fixed; bottom: 20px; right: 20px; left: 20px; padding: 15px; font-size: 16px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; }
@@ -41,13 +43,13 @@
     <div style="display: flex; flex-direction: column; height: 100%;" id="app-ui" hidden>
         <div class="header-bar">
             <div style="font-weight:900; color:white;">WARSZAWA <span style="color:var(--gold)">ADMIN</span></div>
-            <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 10px; background:var(--danger);" onclick="location.reload()">EXIT</button>
+            <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 10px;" onclick="location.reload()">EXIT</button>
         </div>
         <div class="tabs-container">
             <div class="tab-btn active" onclick="switchTab('players', this)">Игроки</div>
             <div class="tab-btn" onclick="switchTab('economy', this)">Эконом</div>
             <div class="tab-btn" onclick="switchTab('items', this)">Магазин</div>
-            <div class="tab-btn" onclick="switchTab('jobs', this)">Работа</div>
+            <div class="tab-btn" onclick="switchTab('map', this)">Карта</div>
             <div class="tab-btn" onclick="switchTab('business', this)">Бизнес</div>
         </div>
         <main>
@@ -55,6 +57,7 @@
                 <input type="text" id="user-search" placeholder="🔍 Поиск..." oninput="renderUsers()" style="width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 15px;">
                 <div id="users-list">Loading...</div>
             </div>
+            
             <div id="tab-economy" class="tab-content">
                 <div class="card">
                     <h3>💰 Глобал</h3>
@@ -64,6 +67,7 @@
                     <div class="form-group"><label>Цена Клика (База)</label><input type="number" step="0.01" data-path="economy.click_base"></div>
                 </div>
             </div>
+            
             <div id="tab-items" class="tab-content">
                 <div class="card">
                     <h3>🥤 Цены</h3>
@@ -72,19 +76,19 @@
                     <div class="form-group"><label>Энергетик</label><input type="number" step="0.1" data-path="prices.energy"></div>
                 </div>
             </div>
-            <div id="tab-jobs" class="tab-content">
-                <div class="card">
-                    <h3>📦 Работа</h3>
-                    <div class="form-group"><label>База за заказ</label><input type="number" step="0.1" data-path="jobs.base_pay"></div>
-                    <div class="form-group"><label>За КМ</label><input type="number" step="0.1" data-path="jobs.km_pay"></div>
-                </div>
+            
+            <div id="tab-map" class="tab-content">
+                <div id="districts-container"></div>
             </div>
+            
             <div id="tab-business" class="tab-content">
                 <div class="card">
-                    <h3>💼 Настройки</h3>
+                    <h3>⚙️ Настройки</h3>
                     <div class="form-group"><label>Налог на бизнес (%)</label><input type="number" data-path="economy.business_tax" data-type="percent"></div>
                 </div>
+                <div id="business-container"></div>
             </div>
+            
             <button class="btn btn-success fab-save" onclick="saveAllSettings()">СОХРАНИТЬ МИР</button>
         </main>
     </div>
@@ -142,6 +146,7 @@
         }
 
         function renderSettings() {
+            // Basic inputs
             document.querySelectorAll('[data-path]').forEach(el => {
                 const path = el.dataset.path.split('.');
                 let val = settings;
@@ -151,6 +156,32 @@
                     el.value = val;
                 }
             });
+
+            // Districts
+            const distDiv = document.getElementById('districts-container');
+            if(settings.districts_data) {
+                distDiv.innerHTML = settings.districts_data.map((d, i) => `
+                    <div class="card">
+                        <h3>Район ${i}</h3>
+                        <div class="form-group"><label>Цена Дома</label><input type="number" id="dist-${i}-price" value="${d.housePrice}"></div>
+                        <div class="form-group"><label>Мин. LVL</label><input type="number" id="dist-${i}-lvl" value="${d.minLvl}"></div>
+                        <div class="form-group"><label>Множитель (x)</label><input type="number" id="dist-${i}-mult" value="${d.mult}"></div>
+                    </div>
+                `).join('');
+            }
+
+            // Business
+            const bizDiv = document.getElementById('business-container');
+            if(settings.business_data) {
+                bizDiv.innerHTML = settings.business_data.map((b, i) => `
+                    <div class="card">
+                        <h3>Бизнес ${i}</h3>
+                        <div class="form-group"><label>Цена</label><input type="number" id="biz-${i}-price" value="${b.basePrice}"></div>
+                        <div class="form-group"><label>Цена Товара</label><input type="number" id="biz-${i}-stock" value="${b.stockPrice}"></div>
+                        <div class="form-group"><label>Цена Продажи</label><input type="number" id="biz-${i}-sell" value="${b.sellPrice}"></div>
+                    </div>
+                `).join('');
+            }
         }
 
         function saveAllSettings() {
@@ -159,6 +190,7 @@
             if(!update.prices) update.prices = {};
             if(!update.jobs) update.jobs = {};
             
+            // Save basic
             document.querySelectorAll('[data-path]').forEach(el => {
                 const path = el.dataset.path.split('.');
                 let val = parseFloat(el.value);
@@ -170,6 +202,22 @@
                 }
                 obj[path[path.length - 1]] = val;
             });
+
+            // Save Arrays
+            if(update.districts_data) {
+                update.districts_data.forEach((d, i) => {
+                    d.housePrice = parseFloat(document.getElementById(`dist-${i}-price`).value);
+                    d.minLvl = parseFloat(document.getElementById(`dist-${i}-lvl`).value);
+                    d.mult = parseFloat(document.getElementById(`dist-${i}-mult`).value);
+                });
+            }
+            if(update.business_data) {
+                update.business_data.forEach((b, i) => {
+                    b.basePrice = parseFloat(document.getElementById(`biz-${i}-price`).value);
+                    b.stockPrice = parseFloat(document.getElementById(`biz-${i}-stock`).value);
+                    b.sellPrice = parseFloat(document.getElementById(`biz-${i}-sell`).value);
+                });
+            }
 
             db.ref('game_settings').set(update).then(() => alert('✅ SAVED'));
         }
@@ -224,4 +272,3 @@
     </script>
 </body>
 </html>
-
