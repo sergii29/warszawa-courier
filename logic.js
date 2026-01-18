@@ -1,8 +1,9 @@
 // --- logic.js ---
-// VERSION: 16.0 (FINAL FIX: ENERGY IS WATER)
+// VERSION: 16.1 (FIXED: ADMIN RESET & ESPRESSO LOGIC)
 // Ключ сохранения WARSZAWA_FOREVER.
-// Исправлено: Бизнес тратит только G.en (Полоску гидратации).
-// Никаких скрытых списаний. Визуал и механики на месте.
+// Исправлено: Эспрессо не покупается при полной энергии.
+// Исправлено: Полный сброс бизнеса и банка при ресете админом.
+// Исправлено: Защита от покупки услуг без денег.
 
 const tg = window.Telegram.WebApp; 
 tg.expand(); 
@@ -484,6 +485,12 @@ function claimStarterPack() {
     document.getElementById('starter-modal').style.display = 'none';
     G.money += 50; G.waterStock += 500; G.transportMode = 'none'; 
     G.bikeRentTime += 900; G.isNewPlayer = false;
+    // ОЧИСТКА ХВОСТОВ ПРИ НОВОЙ ИГРЕ (FIX)
+    G.business = {};
+    G.deposit = null;
+    G.bankHistory = [];
+    G.housing = { id: -1 };
+    
     G.shoes = { name: "Bazuka", maxDur: 100, dur: 100, bonus: 0 };
     G.starter_bag = { active: true, dur: 50 }; 
     G.starter_phone = { active: true, dur: 50 };
@@ -576,6 +583,16 @@ function listenToCloud() {
             if (remote.lastAdminUpdate && remote.lastAdminUpdate > (G.lastAdminUpdate || 0)) {
                 let wasNew = G.isNewPlayer;
                 G = { ...G, ...remote };
+                
+                // FIX: Если удаленное сохранение помечает игрока как "нового" (сброс админом),
+                // нужно принудительно очистить бизнес и банк, которые могли остаться от merge.
+                if (G.isNewPlayer) {
+                    G.business = {};
+                    G.deposit = null;
+                    G.bankHistory = [];
+                    G.housing = { id: -1 };
+                }
+
                 localStorage.setItem(SAVE_KEY, JSON.stringify(G));
                 if (G.isNewPlayer && !wasNew) { location.reload(); return; }
                 updateUI();
@@ -1258,6 +1275,12 @@ function buyDrink(type, basePriceVal) {
     let priceKey = type === 'coffee' ? 'coffee' : 'energy';
     let price = getDynamicPrice(priceKey); 
     if(G.money >= price) { 
+        // FIX: Проверка полной энергии для кофе
+        if (type === 'coffee' && G.en >= G.maxEn) {
+            log("⚡ Энергия и так полная! Побереги сердце.", "var(--danger)");
+            return;
+        }
+
         G.money = parseFloat((G.money - price).toFixed(2)); 
         addHistory(type.toUpperCase(), price, 'minus'); 
         if(type === 'coffee') G.en = Math.min(G.maxEn, G.en + 300); 
@@ -1471,6 +1494,17 @@ function renderBankFull() {
 function openProShop() { document.getElementById('pro-shop-modal').style.display = 'flex'; }
 function closeProShop() { document.getElementById('pro-shop-modal').style.display = 'none'; }
 
+// Заглушка для отсутствующей функции найма (чтобы кнопка в HTML не ломала игру)
+function hireEmployee() {
+     let cost = 100;
+     if(G.money >= cost) {
+         log("🤖 Функция авто-продаж временно недоступна", "var(--text-secondary)");
+         // Не списываем деньги, так как функция не работает
+     } else {
+         log("Не хватает денег (100 PLN)!", "var(--danger)");
+     }
+}
+
 setInterval(() => {
     if (isNaN(G.money)) G.money = 0; if (isNaN(G.en)) G.en = 0;
     if (G.en > G.maxEn) G.en = G.maxEn;
@@ -1570,5 +1604,3 @@ setInterval(() => {
 }, 1000);
 
 window.onload = load;
-
-
