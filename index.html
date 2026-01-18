@@ -3,847 +3,492 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Life</title>
-    <style>
-        :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #ffffff;
-            --text-muted: #b0b0b0;
-            --accent: #bb86fc; 
-            --accent-dark: #3700b3;
-            --success: #03dac6;
-            --danger: #cf6679;
-            --warning: #ffb74d;
-            --border: #333333;
-            --nav-height: 60px;
-        }
-
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            font-family: 'Roboto', 'Segoe UI', sans-serif;
-        }
-
-        body {
-            margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* HEADER */
-        header {
-            background-color: var(--card-bg);
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 10;
-        }
-
-        .header-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        .header-loc {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .balance {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--success);
-            text-shadow: 0 0 10px rgba(3, 218, 198, 0.3);
-        }
-
-        /* STATS */
-        #stats-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            padding: 10px 15px;
-            background-color: var(--bg-color);
-        }
-
-        .stat-box {
-            background-color: var(--card-bg);
-            padding: 8px 5px;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-
-        .stat-val { font-weight: bold; font-size: 0.9rem; display: block; }
-        .stat-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-
-        /* CONTENT */
-        #game-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            padding-bottom: calc(var(--nav-height) + 20px);
-        }
-
-        h2 {
-            color: var(--accent);
-            font-size: 1.3rem;
-            margin-top: 0;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
-
-        .card h3 {
-            margin: 0 0 10px 0;
-            font-size: 1.1rem;
-        }
-
-        /* BUTTONS */
-        .btn {
-            background-color: var(--accent);
-            color: #000;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            width: 100%;
-            cursor: pointer;
-            transition: 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 10px;
-        }
-
-        .btn:active { transform: scale(0.98); opacity: 0.9; }
-        
-        .btn.secondary {
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-        }
-
-        .btn.danger {
-            background-color: transparent;
-            border: 1px solid var(--danger);
-            color: var(--danger);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            filter: grayscale(100%);
-        }
-
-        /* PROGRESS BAR */
-        .progress-bg {
-            background: #333;
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        .progress-fill {
-            height: 100%;
-            background: var(--success);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        /* NAV BAR (Fixed with SVG) */
-        nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: var(--nav-height);
-            background-color: var(--card-bg);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 100;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            width: 20%;
-            height: 100%;
-            transition: 0.2s;
-        }
-
-        .nav-item svg {
-            width: 24px;
-            height: 24px;
-            margin-bottom: 4px;
-            fill: var(--text-muted);
-            transition: 0.2s;
-        }
-
-        .nav-item.active { color: var(--accent); }
-        .nav-item.active svg { fill: var(--accent); }
-
-        /* SECTIONS */
-        .section { display: none; animation: fade 0.3s; }
-        .section.active { display: block; }
-        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
-        /* LISTS */
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #333;
-        }
-        .item-row:last-child { border-bottom: none; }
-        
-        .item-name { font-weight: bold; margin-bottom: 4px; }
-        .item-desc { font-size: 0.75rem; color: var(--text-muted); }
-
-        /* NOTIFICATIONS */
-        #notif-area {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 200;
-            pointer-events: none;
-        }
-        .toast {
-            background: rgba(30,30,30,0.95);
-            border-left: 4px solid var(--accent);
-            color: #fff;
-            padding: 12px 20px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s;
-        }
-        @keyframes slideIn { from {transform: translateX(100%);} to {transform: translateX(0);} }
-
-        /* MODAL */
-        .modal-wrap {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.8);
-            display: none; justify-content: center; align-items: center;
-            z-index: 1000;
-        }
-        .modal-box {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 15px;
-            width: 85%;
-            max-width: 350px;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-    </style>
+    <title>Warszawa Courier Simulator</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css?v=5.5">
 </head>
 <body>
 
-    <header>
-        <div>
-            <div class="header-title">Warszawa Life</div>
-            <div class="header-loc">📍 Warszawa, Mazowieckie</div>
-        </div>
-        <div class="balance" id="ui-balance">0 PLN</div>
-    </header>
+<div id="bonus-overlay">
+    <button id="bonus-btn" onclick="claimBonus()">🎁 +50 PLN</button>
+</div>
 
-    <div id="stats-bar">
-        <div class="stat-box">
-            <span class="stat-val" id="ui-energy">100%</span>
-            <span class="stat-lbl">Энергия</span>
+<div id="starter-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="font-size: 40px; margin-bottom: 10px;">👋</div>
+        <h3 style="margin-top:0; color:white;">Добро пожаловать!</h3>
+        <p style="color:var(--text-secondary); font-size:12px; margin-bottom:20px;">
+            Варшава не прощает ошибок. Но мы своих не бросаем.<br>
+            Держи <b>"Набор Выживальщика"</b> от профсоюза:
+        </p>
+        <div class="card" style="margin-bottom:15px; text-align:left;">
+            <div>💵 <b>+50.00 PLN</b> <small>На еду и штрафы</small></div>
+            <div style="margin-top:5px;">💧 <b>+500 мл</b> <small>Вода</small></div>
+            <div style="margin-top:5px;">🚲 <b>Велосипед</b> <small>Аренда на 15 мин</small></div>
+            <div style="margin-top:5px;">👟 <b>Шлепки "Bazuka"</b> <small>Временная обувь</small></div>
+            <div style="margin-top:5px;">🎒 <b>Пакет с логотипом</b> <small>Слабый, но свой</small></div>
         </div>
-        <div class="stat-box">
-            <span class="stat-val" id="ui-water">100%</span>
-            <span class="stat-lbl">Вода</span>
+        <button class="btn-action" style="background:var(--success)" onclick="claimStarterPack()">ЗАБРАТЬ И НАЧАТЬ</button>
+    </div>
+</div>
+
+<div id="route-modal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 style="margin-top:0; color:white; margin-bottom: 5px;">📍 Выбор маршрута</h3>
+        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:15px;">Как поедем к клиенту?</p>
+        
+        <div class="route-option" onclick="chooseRoute('safe')">
+            <div class="route-icon">🐢</div>
+            <div>
+                <b>Спокойный путь</b><br>
+                <small style="color:var(--success)">100% оплата • Нет рисков</small>
+            </div>
         </div>
-        <div class="stat-box">
-            <span class="stat-val" id="ui-satiety">100%</span>
-            <span class="stat-lbl">Еда</span>
+
+        <div class="route-option" onclick="chooseRoute('risky')">
+            <div class="route-icon">😈</div>
+            <div>
+                <b>Срезать дворами (-50% времени)</b><br>
+                <small style="color:var(--danger)">Риск аварии 30% или двойные чаевые</small>
+            </div>
         </div>
-        <div class="stat-box">
-            <span class="stat-val" id="ui-mood">100%</span>
-            <span class="stat-lbl">Настр.</span>
+
+        <div class="route-option" style="border-color:var(--accent-gold); background:rgba(245, 158, 11, 0.1);" id="btn-auto-route" onclick="activateAutopilot()">
+            <div class="route-icon">🤖</div>
+            <div id="lbl-auto-container">
+                <div id="lbl-auto-route"><b>Автопилот</b> <span id="price-auto"></span></div>
+                <div id="desc-auto-route"><small style="color:var(--accent-gold)">Робот сделает всё сам</small></div>
+            </div>
+        </div>
+
+        <button class="btn-action btn-secondary" style="padding:8px;" onclick="closeRouteModal()">ОТМЕНА</button>
+    </div>
+</div>
+
+<div id="pro-shop-modal" class="modal-overlay" style="z-index: 3500;">
+    <div class="modal-card" style="max-height: 80vh; overflow-y: auto; text-align: left; width: 90%; max-width: 360px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; color:white;">⚙️ Проф. Экипировка</h3>
+            <button onclick="closeProShop()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        
+        <div class="section-title" style="margin-top:0;">Доступные улучшения</div>
+        <div id="shop-upgrades-list">
+            </div>
+
+        <button class="btn-action btn-secondary" style="margin-top:20px;" onclick="closeProShop()">ЗАКРЫТЬ КАТАЛОГ</button>
+    </div>
+</div>
+
+<div id="business-modal" class="modal-overlay" style="z-index: 3600;">
+    <div class="modal-card" style="width: 90%; max-width: 360px; text-align: left; padding: 20px;">
+        <div class="modal-biz-header">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <h2 class="modal-biz-title" id="bm-title">Название</h2>
+                    <span class="modal-biz-desc" id="bm-desc">Описание</span>
+                </div>
+                <button onclick="closeBusinessModal()" style="background:transparent; border:none; color:#aaa; font-size:20px; cursor:pointer;">✕</button>
+            </div>
+        </div>
+
+        <div class="biz-dashboard-grid">
+            <div class="biz-dash-item">
+                <span style="font-size:10px; color:#aaa;">📦 Товар на складе</span>
+                <span class="biz-dash-val" style="color:var(--accent-blue);" id="bm-stock">0</span>
+            </div>
+            <div class="biz-dash-item">
+                <span style="font-size:10px; color:#aaa;">💰 В сейфе (Netto)</span>
+                <span class="biz-dash-val" style="color:var(--success);" id="bm-cash">0.00</span>
+            </div>
+        </div>
+
+        <div class="section-title">ПРОДАЖИ</div>
+        <button id="btn-manual-sell" class="btn-sell-manual" onclick="manualSell()">
+            🖐 ПРОДАТЬ 1 ШТ.
+        </button>
+        
+        <div style="margin-top:10px; margin-bottom: 20px;">
+            <button id="btn-hire-emp" class="btn-hire" onclick="hireEmployee()">
+                <span>🤖 НАНЯТЬ ПРОДАВЦА (10 МИН)</span>
+                <span id="hire-price">100 PLN</span>
+            </button>
+            <div id="emp-timer-ui" style="display:none; text-align:center; margin-top:5px; font-size:11px; color:var(--purple); font-weight:bold;">
+                Осталось: 09:59
+            </div>
+        </div>
+
+        <div class="section-title">ФИНАНСЫ & СКЛАД</div>
+        
+        <button class="btn-action btn-secondary" style="margin-bottom:10px;" onclick="restockFromModal()">
+            📦 ЗАКУПИТЬ ТОВАР (10 шт)
+        </button>
+
+        <div class="withdraw-section">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <b style="color:white;">ВЫВОД СРЕДСТВ</b>
+                <span style="font-size:10px; color:var(--accent-gold);" id="bm-withdraw-limit">Лимит: 3/3 FREE</span>
+            </div>
+            <p style="font-size:10px; color:#aaa; margin-top:0; margin-bottom:10px;">
+                Налог на прибыль уже удержан.
+                Комиссия за частые переводы: <span id="bm-fee-warn" style="color:var(--danger)">0%</span>
+            </p>
+            <button class="btn-action" style="background:var(--success); color:black;" onclick="withdrawFromModal()">
+                СНЯТЬ ДЕНЬГИ
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div id="quest-bar">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+            <b id="quest-title" style="color:var(--accent-blue); font-size: 13px;">📦 НОВЫЙ ЗАКАЗ</b><br>
+            <small style="color:var(--text-secondary)">Предложение:</small> <b style="color:var(--success);" id="quest-pay">0.00</b> PLN
+        </div>
+        <div id="quest-timer-ui" style="color:var(--danger); font-weight:bold; font-size: 18px;">0:15</div>
+    </div>
+    
+    <div id="quest-actions-choice" style="margin-top:10px;">
+        <button class="btn-action" style="background:var(--accent-blue);" onclick="openRouteModal()">🗺️ ВЫБРАТЬ МАРШРУТ</button>
+    </div>
+
+    <div id="quest-active-ui" style="display:none; margin-top:10px;">
+        <div id="order-status-text" style="font-size: 11px; margin-bottom: 5px; color: var(--accent-blue);">Доставка...</div>
+        <div class="energy-track" style="height:6px; background:rgba(0,0,0,0.2); margin-top:0;"><div id="quest-progress-bar" style="height:100%; width:0%; background:var(--success); border-radius:10px;"></div></div>
+    </div>
+</div>
+
+<div class="header-container">
+    <div class="top-nav">
+        <div>
+            <small style="color:var(--text-secondary); font-size:10px;">Баланс</small><br>
+            <b id="money-val" class="money-display">0.00 PLN</b>
+            <div id="shoes-status-ui">👟 <span id="shoe-name">...</span> <div class="durability-bar"><div id="shoe-bar" class="durability-fill"></div></div></div>
+        </div>
+        <div class="right-panel">
+            <b id="lvl-val" class="lvl-display">LVL 1.0</b>
+            <div id="inventory-display"></div>
+            <div style="display:flex; gap:3px;">
+                <div id="bike-status-ui" class="status-badge">🚲 00:00</div>
+                <div id="auto-status-ui" class="status-badge">🤖 00:00</div>
+                <div id="buff-status-ui" class="status-badge">⚡ 00:00</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-row" style="margin-top:5px;">
+        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-gold)">⚡</span> <b id="en-text" style="color:var(--text-primary)">0/2000</b></span>
+        <span style="display:flex; align-items:center; gap:4px;"><span style="color:var(--accent-blue)">💧</span> <b id="water-val" style="color:var(--text-primary)">0</b> мл</span>
+    </div>
+    <div class="energy-track" style="margin-top:5px;"><div id="en-fill" class="energy-fill"></div></div>
+    
+    <div style="display:flex; justify-content:space-between; font-size: 9px; margin-top: 4px; opacity: 0.6;">
+        <span id="tax-timer">Налог (FREE) через: 05:00</span>
+        <span id="rent-timer" style="color:var(--danger)">Аренда (%): 05:00</span>
+    </div>
+</div>
+
+<div class="content">
+    
+    <div id="view-main" class="view active">
+        <div style="text-align: center; margin-top: 5px;">
+            <span style="background:rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 15px; font-size: 11px; color: var(--text-secondary);" id="district-ui">📍 ...</span>
+        </div>
+
+        <div class="sphere-container">
+            <div id="work-sphere">
+                <b id="sphere-text">РАБОТАТЬ</b>
+                <div id="repair-progress"></div>
+                <div id="click-rate-ui" style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: 500; position:relative; z-index:2;">0.10 PLN</div>
+            </div>
+            
+            <div id="repair-express-btn" style="display:none; text-align:center; margin-top:10px;">
+                <button id="btn-repair-express" class="btn-action" style="background:var(--accent-gold); color:black; width:auto; padding:8px 15px;" onclick="repairBikeInstant()">🔧 ЭКСПРЕСС РЕМОНТ</button>
+                <div style="font-size:10px; color:#777; margin-top:5px;">Или кликай по сфере (бесплатно)</div>
+            </div>
+        </div>
+
+        <div class="bottom-controls">
+            <button class="btn-action btn-secondary" onclick="collectBottles()">♻️ СБОР БУТЫЛОК</button>
+            <button class="btn-action" onclick="switchTab('districts', this)">🗺️ КАРТА ГОРОДА</button>
+        </div>
+
+        <div class="city-info-group">
+            <div class="city-label">WARSAW</div>
+            <div id="weather-ui">☀️ Ясно</div>
         </div>
     </div>
 
-    <div id="notif-area"></div>
-
-    <div id="game-container">
+    <div id="view-districts" class="view">
+        <h3 style="margin:0; color:var(--text-primary)">🗺️ Недвижимость & Районы</h3>
+        <p style="font-size:10px; color:var(--text-secondary); margin-bottom:15px;">Переезжай в районы подороже, чтобы зарабатывать больше. Купи квартиру, чтобы не платить грабительскую аренду!</p>
         
-        <div id="sec-courier" class="section active">
-            <h2>📦 Работа Курьером</h2>
-            
-            <div class="card">
-                <h3>Glovo/Uber Eats</h3>
-                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-                    <span id="courier-status">Статус: Свободен</span>
-                </div>
+        <div id="districts-list-container"></div>
+    </div>
 
-                <div id="manual-panel">
-                    <button class="btn" id="btn-take-order" onclick="startOrder()">Взять заказ</button>
-                    <div id="progress-ui" style="display:none;">
-                        <p style="font-size:0.8rem; margin:0 0 5px 0;">Доставка...</p>
-                        <div class="progress-bg"><div class="progress-fill" id="order-bar"></div></div>
+    <div id="view-quests" class="view">
+        <div class="card rank-card">
+            <div style="font-size:40px; margin-bottom:5px;" id="rank-icon">😎</div>
+            <h2 style="margin:0; font-size:18px; color:white; text-shadow:0 0 10px var(--accent-blue);" id="rank-name">Новичок</h2>
+            <small style="color:var(--text-secondary); display:block; margin-top:5px;" id="rank-next">До следующего ранга: ...</small>
+            
+            <div class="energy-track" style="margin-top:10px; background:rgba(0,0,0,0.5);">
+                <div id="rank-progress" class="energy-fill" style="width:0%; background: linear-gradient(90deg, var(--accent-gold), #fff7ed);"></div>
+            </div>
+            <div style="font-size:10px; color:var(--accent-gold); margin-top:5px; font-weight:bold;" id="rank-bonus">Бонус ранга: 0%</div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0; display:flex; justify-content:space-between; align-items:center;">
+            📅 Ежедневные задания 
+            <small id="daily-timer" style="font-weight:normal; opacity:0.7; font-size:10px;">Обновление через...</small>
+        </h4>
+        <div id="daily-quests-list"></div>
+
+        <h4 style="margin:15px 0 5px 0;">📊 Статистика</h4>
+        <div class="card">
+            <div class="stat-row"><span>📦 Всего заказов</span> <b id="stat-orders">0</b></div>
+            <div class="stat-row"><span>⚡ Всего кликов</span> <b id="stat-clicks">0</b></div>
+            <div class="stat-row"><span>♻️ Сдано бутылок</span> <b id="stat-bottles">0</b></div>
+            <div class="stat-row"><span>💵 Заработано всего</span> <b id="stat-earned" style="color:var(--success)">0.00 PLN</b></div>
+        </div>
+
+        <h4 style="margin:15px 0 5px 0;">🏆 Достижения</h4>
+        <div id="milestones-list"></div>
+    </div>
+
+    <div id="view-shop" class="view">
+        <h3 style="margin:0; margin-bottom: 15px;">🏪 Маркет</h3>
+        
+        <div class="section-title" style="margin-top:0;">🛵 Городская Мобильность (Аренда)</div>
+        <div class="shop-grid">
+            <div class="shop-item" style="border-top: 2px solid #ccc;">
+                <div class="shop-icon">🚲</div>
+                <div class="shop-title">Veturilo Electric</div>
+                <div class="shop-desc">
+                    Экономия сил.<br>
+                    <span style="color:var(--success)">Энергия: -50%</span>
+                </div>
+                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 0 PLN</div>
+                <button id="btn-veturilo" class="btn-price" style="background:#ddd; color:#000;" onclick="toggleTransport('veturilo')">
+                    0.50 PLN / мин
+                </button>
+            </div>
+
+            <div class="shop-item" style="border-top: 2px solid var(--success);">
+                <div class="shop-icon">🛴</div>
+                <div class="shop-title">Bolt Scooter</div>
+                <div class="shop-desc">
+                    Турбо доставка.<br>
+                    <span style="color:var(--accent-gold)">Скорость: +30%</span>
+                </div>
+                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Старт: 2.00 PLN</div>
+                <button id="btn-bolt" class="btn-price" style="background:var(--success); color:#000;" onclick="toggleTransport('bolt')">
+                    2.50 PLN / мин
+                </button>
+            </div>
+
+            <div class="shop-item" style="grid-column: span 2; border-top: 2px solid var(--accent-blue);">
+                <div style="display:flex; align-items:center; width:100%; gap:15px;">
+                    <div class="shop-icon" style="margin:0;">⚡</div>
+                    <div style="text-align:left; flex:1;">
+                        <div class="shop-title">E-Bike Премиум</div>
+                        <div class="shop-desc" style="margin:0; color:#fff;">
+                            <span style="color:var(--accent-blue)">Скорость x2. Без поминутной оплаты.</span>
+                        </div>
+                    </div>
+                    <button id="buy-bike-rent" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="rentBike()">АРЕНДОВАТЬ</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tech-banner" onclick="openProShop()" style="margin-top: 20px;">
+            <div style="z-index: 1;">
+                <div style="font-size: 10px; color: var(--accent-blue); font-weight: 800; letter-spacing: 1px;">GEAR STORE</div>
+                <h2 style="margin: 5px 0; font-size: 18px;">Экипировка Курьера</h2>
+                <small style="color: #cbd5e1; display: block; margin-bottom: 10px;">Сумки, телефоны, гаджеты</small>
+                <button class="btn-action" style="width: auto; padding: 6px 15px; font-size: 11px;">ОТКРЫТЬ КАТАЛОГ</button>
+            </div>
+            <div style="font-size: 50px; filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); z-index: 1;">🎒</div>
+        </div>
+
+        <div class="section-title">⚡ Энергия и Восстановление</div>
+        <div class="shop-grid">
+            <div class="shop-item item-food">
+                <div class="shop-icon">💧</div>
+                <div class="shop-title">Вода (1.5л)</div>
+                <div class="shop-desc">Восстанавливает силы при кликах.<br><b>+1500 мл</b></div>
+                <button id="btn-buy-water" class="btn-price" onclick="buyWater()">1.50 PLN</button>
+            </div>
+            <div class="shop-item item-food">
+                <div class="shop-icon">☕</div>
+                <div class="shop-title">Эспрессо</div>
+                <div class="shop-desc">Мгновенный заряд бодрости.<br><b>+300 Energy</b></div>
+                <button id="btn-buy-coffee" class="btn-price" onclick="buyDrink('coffee', 5)">5.00 PLN</button>
+            </div>
+            <div class="shop-item item-energy" style="grid-column: span 2;">
+                <div style="display:flex; align-items:center; width:100%; gap:15px;">
+                    <div class="shop-icon" style="margin:0;">🔋</div>
+                    <div style="text-align:left; flex:1;">
+                        <div class="shop-title">Red Bull Power</div>
+                        <div class="shop-desc" style="margin:0; color:#fff;">
+                            <span style="color:var(--success)">Пауза расхода энергии на 2 мин.</span><br>
+                            <span style="color:var(--text-secondary); font-size:9px;">(Вода продолжает тратиться!)</span>
+                        </div>
+                    </div>
+                    <button id="btn-buy-energy" class="btn-price" style="width:auto; padding: 8px 20px;" onclick="buyDrink('energy', 12)">12.00</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">👟 Сникерхед</div>
+        <div class="shop-item item-shoes" style="margin-bottom: 8px;">
+            <div class="shop-icon">🐼</div>
+            <div style="flex:1;">
+                <div class="shop-title">Abibas Ultra</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Классика района.</div>
+                <div style="background:rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Прочность: <b>5000 шагов</b>
+                </div>
+            </div>
+            <button id="btn-buy-abibas" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Abibas', 50, 100)">50 PLN</button>
+        </div>
+        <div class="shop-item item-shoes" style="border-color: var(--gold);">
+            <div class="shop-icon">🔥</div>
+            <div style="flex:1;">
+                <div class="shop-title" style="color:var(--gold)">Jorban Air</div>
+                <div class="shop-desc" style="margin-bottom:5px;">Премиум стиль.</div>
+                <div style="background:rgba(253, 186, 116, 0.2); color:var(--accent-gold); border-radius:4px; padding:2px 6px; display:inline-block; font-size:9px;">
+                    Бонус: <b>+20% к чаевым</b>
+                </div>
+            </div>
+            <button id="btn-buy-jorban" class="btn-price" style="width:auto; padding: 10px 15px; background: var(--purple); color:white;" onclick="buyShoes('Jorban', 250, 150)">250 PLN</button>
+        </div>
+        
+        <div style="height: 20px;"></div>
+    </div>
+
+    <div id="view-invest" class="view">
+        <h3 style="margin:0;">🎒 Инвентарь & Мастерская</h3>
+        <h4 style="margin:15px 0 8px 0; color:var(--text-secondary);">📦 Мои вещи</h4>
+        <div id="my-items-list" class="shop-grid" style="margin-bottom:15px;"></div>
+    </div>
+
+    <div id="view-business" class="view">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0;">💼 Империя</h3>
+            <div style="font-size:10px; color:var(--text-secondary); text-align:right;">
+                Налог на бизнес: <span style="color:var(--danger)">Включен</span><br>
+                Инфляция: <span style="color:var(--accent-gold)">Активна</span>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:15px; border:1px solid var(--accent-gold); background: linear-gradient(90deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));">
+            <div style="display:flex; justify-content:space-between;">
+                <div>
+                    <small style="color:#aaa;">Сейфы (Всего):</small><br>
+                    <b style="font-size:16px; color:var(--success);" id="biz-total-cash">0.00 PLN</b>
+                </div>
+                <div style="text-align:right;">
+                    <small style="color:#aaa;">Стоимость Империи:</small><br>
+                    <b style="font-size:16px; color:var(--accent-blue);" id="biz-total-value">0 PLN</b>
+                </div>
+            </div>
+        </div>
+        
+        <div id="business-list"></div>
+    </div>
+
+    <div id="view-bank" class="view">
+        <h3 style="margin:0; margin-bottom: 15px;">🏦 Варшавский Банк</h3>
+        
+        <div class="card" style="margin-bottom:10px;">
+            <h4 style="margin:0 0 5px 0; font-size:12px; color:var(--accent-blue);">🎁 Секретный промокод</h4>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="promo-input" class="promo-input" placeholder="Введите слово..." style="margin:0;">
+                <button class="btn-action" style="width:auto;" onclick="usePromo()">АКТИВИРОВАТЬ</button>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:15px;">
+             <div id="bank-actions-ui"></div> </div>
+
+        <div class="sapphire-card">
+            <div class="bank-header">
+                <span class="bank-name">Private Vault</span>
+                <span style="font-size:18px;">💎</span>
+            </div>
+
+            <div id="bank-select-ui">
+                <div class="plan-grid">
+                    <div class="plan-item active" onclick="selectBankPlan(7, 1, this)">
+                        <span class="plan-days">7 Дней</span>
+                        <span class="plan-rate" id="plan-rate-1">+5%</span>
+                    </div>
+                    <div class="plan-item" onclick="selectBankPlan(15, 3, this)">
+                        <span class="plan-days">15 Дней</span>
+                        <span class="plan-rate" id="plan-rate-2">+15%</span>
+                    </div>
+                    <div class="plan-item" onclick="selectBankPlan(30, 8, this)">
+                        <span class="plan-days">30 Дней</span>
+                        <span class="plan-rate" id="plan-rate-3">+40%</span>
                     </div>
                 </div>
-
-                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
-                    <h3>Авто-Курьер (Бот)</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
-                        Требует: Велосипед/Скутер + Лицензия.<br>
-                        <span style="color: var(--warning);">Внимание: Тратит воду и энергию.</span>
-                    </p>
-                    <button class="btn secondary" id="btn-auto-courier" onclick="toggleAutoCourier()">Включить бота</button>
+                <div style="margin-bottom:10px; font-size:10px; color:#94a3b8; text-align:center;">
+                    Досрочное снятие: <span style="color:var(--danger)">Штраф -30% от суммы</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="bank-inp" class="promo-input" placeholder="Сумма..." style="margin:0; text-align:center; font-weight:bold;">
+                    <button class="btn-action btn-deposit" style="width:auto;" onclick="makeDeposit()">ВЛОЖИТЬ</button>
                 </div>
             </div>
 
-            <div class="card" id="boost-card" style="display:none;">
-                <h3>⚡ Активные эффекты</h3>
-                <div id="boost-list"></div>
-            </div>
-        </div>
+            <div id="bank-active-ui" style="display:none; text-align:center;">
+                <div class="locked-info">СРЕДСТВА ЗАМОРОЖЕНЫ</div>
+                <div class="locked-amount" id="locked-val">0.00 PLN</div>
+                
+                <div class="progress-track-bank"><div class="progress-fill-bank" id="bank-prog-bar"></div></div>
+                <span class="timer-text" id="bank-timer">00d 00h 00m</span>
 
-        <div id="sec-career" class="section">
-            <h2>💼 Карьера</h2>
-            <div class="card">
-                <h3>Программирование</h3>
-                <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-                    <span>Уровень: <b id="coding-lvl">0</b></span>
-                    <span style="color:var(--accent)">Python Dev</span>
-                </div>
-                <div class="progress-bg"><div class="progress-fill" id="coding-bar"></div></div>
-                <button class="btn" onclick="studyCoding()">Учить Python (-10 Эн)</button>
-            </div>
-
-            <div class="card">
-                <h3>Ежедневные задания</h3>
-                <div id="tasks-list"></div>
-            </div>
-        </div>
-
-        <div id="sec-business" class="section">
-            <h2>📈 Бизнес</h2>
-            <div id="business-container"></div>
-        </div>
-
-        <div id="sec-shop" class="section">
-            <h2>🛒 Магазин</h2>
-            
-            <div class="card">
-                <h3>Еда и Напитки</h3>
-                <div id="shop-consumables"></div>
+                <button class="btn-claim" id="btn-bank-claim" style="display:none;" onclick="claimDeposit()">💰 ЗАБРАТЬ ПРИБЫЛЬ</button>
+                <button class="btn-break" id="btn-bank-break" onclick="breakDeposit()">⚠️ РАЗБИТЬ КОПИЛКУ (-30%)</button>
             </div>
             
-            <div class="card">
-                <h3>Транспорт и Техника</h3>
-                <div id="shop-gear"></div>
-            </div>
-
-            <div class="card">
-                <h3>Недвижимость</h3>
-                <div id="shop-rent"></div>
+            <div class="history-box">
+                <h4 style="margin:0 0 8px 0; font-size:10px; color:var(--text-secondary); text-transform:uppercase;">Выписка по счету</h4>
+                <div id="bank-history-list" style="max-height: 120px; overflow-y: auto;"></div>
             </div>
         </div>
-
-        <div id="sec-settings" class="section">
-            <h2>⚙️ Настройки</h2>
-            
-            <div class="card">
-                <h3>Статус Гражданина</h3>
-                <p>Налог (ZUS/PIT): <span id="tax-timer" style="font-weight:bold; color:var(--warning)">0</span> дн.</p>
-                <button class="btn secondary" onclick="payTax()">Оплатить налог (500 PLN)</button>
+        <div class="card" style="margin-top:15px;">
+            <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--accent-gold);">⚖️ Биржа Репутации</h4>
+            <div style="display:flex; gap:8px;">
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(0.05, SETTINGS.economy.lvl_exchange_rate)" id="btn-lvl-small">ОБМЕН -0.05 LVL<br>⮕ 10 PLN</button>
+                 <button class="btn-action btn-secondary" style="flex:1; font-size:10px; padding:8px;" onclick="exchangeLvl(1.00, SETTINGS.economy.lvl_exchange_rate_big)" id="btn-lvl-big">ОБМЕН -1.00 LVL<br>⮕ 300 PLN</button>
             </div>
-
-            <div class="card" style="border-color: var(--danger);">
-                <h3 style="color:var(--danger)">Сброс игры</h3>
-                <p style="font-size:0.8rem; color:var(--text-muted)">
-                    Удаляет весь прогресс, деньги и инвентарь. Обратного пути нет.
-                </p>
-                <button class="btn danger" onclick="fullReset()">🛑 ПОЛНЫЙ СБРОС (RESET)</button>
-            </div>
-            <p style="text-align:center; color:var(--text-muted); font-size:0.7rem; margin-top:20px;">
-                Warszawa Life v2.2 (Forever Edition)
-            </p>
         </div>
-
+        
+        <div class="card history-list" id="history-ui" style="margin-top:15px; max-height: 150px; overflow-y: auto; background:rgba(0,0,0,0.2); padding:5px;"></div>
     </div>
+</div>
 
-    <nav>
-        <a href="#" class="nav-item active" onclick="switchTab('courier', this)">
-            <svg viewBox="0 0 24 24"><path d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm5.8-10l2.4-2.4.8.8c1.3 1.3 3 2.1 5.1 2.1V9c-1.5 0-2.7-.6-3.6-1.5l-1.9-1.9c-.5-.4-1.2-.4-1.6 0l-1.6 1.6c-.9.9-1.3 2.2-1.3 3.5V13h2V10.5h.2zM19 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z"/></svg>
-            Курьер
-        </a>
-        <a href="#" class="nav-item" onclick="switchTab('career', this)">
-            <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h18c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
-            Карьера
-        </a>
-        <a href="#" class="nav-item" onclick="switchTab('business', this)">
-            <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-            Бизнес
-        </a>
-        <a href="#" class="nav-item" onclick="switchTab('shop', this)">
-            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
-            Магазин
-        </a>
-        <a href="#" class="nav-item" onclick="switchTab('settings', this)">
-            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-            Настр.
-        </a>
-    </nav>
-
-    <div id="modal-overlay" class="modal-wrap">
-        <div class="modal-box">
-            <h3 id="modal-title">Info</h3>
-            <p id="modal-text">...</p>
-            <button class="btn" onclick="closeModal()">OK</button>
-        </div>
-    </div>
-
-<script>
-/**
- * WARSZAWA LIFE SIMULATOR (FIXED)
- * Key: WARSZAWA_FOREVER
- * Design: SVG Icons restored
- */
-
-const SAVE_KEY = 'WARSZAWA_FOREVER';
-
-const DEFAULTS = {
-    balance: 0,
-    energy: 100, water: 100, satiety: 100, mood: 100,
-    codingLvl: 0, codingXp: 0,
-    inventory: [],
-    activeBoosts: {},
-    business: null,
-    housing: 'homeless', rentTimer: 0,
-    taxTimer: 7,
-    autoCourier: false,
-    dailyTasks: {
-        'd1': { txt: 'Доставить 5 заказов', max: 5, cur: 0, reward: 50, done: false },
-        'd2': { txt: 'Учить Python 1 раз', max: 1, cur: 0, reward: 20, done: false }
-    }
-};
-
-let state = JSON.parse(JSON.stringify(DEFAULTS));
-let loopInt;
-
-// DATA
-const ITEMS = {
-    'water': { name: 'Вода (0.5л)', price: 3, type: 'use', ef: {water:25}, desc: '+25 Воды' },
-    'kebab': { name: 'Кебаб', price: 18, type: 'use', ef: {satiety:40, energy:10}, desc: '+40 Еды, +10 Эн' },
-    'monster': { name: 'Энергетик', price: 8, type: 'use', ef: {energy:30, mood:5, sp:'no_drain'}, desc: '+30 Эн, 2 мин энергия не тратится (вода тратится!)' },
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab('main', this)">Город</div>
+    <div class="tab-item" onclick="switchTab('quests', this)">Карьера</div>
+    <div class="tab-item" onclick="switchTab('shop', this)">Магазин</div>
     
-    'bike': { name: 'Велосипед', price: 300, type: 'gear', desc: 'Нужен для авто-курьера' },
-    'scooter': { name: 'Электроскутер', price: 1500, type: 'gear', desc: 'Быстрый авто-курьер' },
-    'laptop': { name: 'Ноутбук', price: 2500, type: 'gear', desc: 'Для IT карьеры' },
+    <div class="tab-item" onclick="switchTab('business', this)">Бизнес</div>
     
-    'hostel': { name: 'Хостел', price: 50, type: 'rent', days:1, desc: 'Койка на ночь' },
-    'flat': { name: 'Квартира', price: 2000, type: 'rent', days:30, desc: 'Студия на месяц' }
-};
+    <div class="tab-item" onclick="switchTab('invest', this)">Инвест</div>
+    <div class="tab-item" onclick="switchTab('bank', this)">Банк</div>
+</div>
 
-const BIZ = [
-    { id: 'vending', name: 'Вендинг', cost: 1000, inc: 100, desc: 'Доход 100/день' },
-    { id: 'kebab_spot', name: 'Точка Кебаб', cost: 5000, inc: 600, desc: 'Доход 600/день' },
-    { id: 'agency', name: 'IT Студия', cost: 15000, inc: 2000, desc: 'Доход 2000/день' }
-];
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="database.js?v=4.0"></script>
+<script src="logic.js?v=10.1" defer></script>
 
-// INIT
-function init() {
-    let s = localStorage.getItem(SAVE_KEY);
-    if(s) {
-        try { state = {...DEFAULTS, ...JSON.parse(s)}; } 
-        catch(e) { console.log('Save Error'); }
-    }
-    // Fix missing tasks structure if old save
-    if(!state.dailyTasks || !state.dailyTasks.d1) state.dailyTasks = JSON.parse(JSON.stringify(DEFAULTS.dailyTasks));
-    
-    startLoop();
-    renderAll();
-}
-
-function save() {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-}
-
-// GAME LOOP
-function startLoop() {
-    if(loopInt) clearInterval(loopInt);
-    loopInt = setInterval(() => {
-        // Passive Drain
-        change('satiety', -0.5);
-        change('water', -0.8);
-        change('mood', -0.2);
-        
-        // Energy Logic (Check Boost)
-        let noEnergyDrain = false;
-        if(state.activeBoosts['no_drain'] && state.activeBoosts['no_drain'] > Date.now()) {
-            noEnergyDrain = true;
-        }
-        
-        if(!noEnergyDrain) change('energy', -0.3);
-        
-        // Auto Courier
-        if(state.autoCourier) tickAutoCourier();
-
-        // Checks
-        if(state.satiety<=0 || state.water<=0) notify('⚠️ Внимание! Голод или Жажда!', 'danger');
-
-        save();
-        renderStats();
-        renderBoosts();
-    }, 3000);
-}
-
-function change(key, val) {
-    state[key] += val;
-    if(state[key]>100) state[key]=100;
-    if(state[key]<0) state[key]=0;
-}
-
-// COURIER
-function startOrder() {
-    if(state.energy<10 || state.satiety<5) return notify('Нет сил или еды', 'warning');
-    
-    document.getElementById('btn-take-order').style.display='none';
-    document.getElementById('progress-ui').style.display='block';
-    
-    let w=0;
-    let t = setInterval(()=>{
-        w+=10; 
-        document.getElementById('order-bar').style.width=w+'%';
-        if(w>=100) {
-            clearInterval(t);
-            finishOrder();
-        }
-    }, 150);
-}
-
-function finishOrder() {
-    let pay = Math.floor(10 + Math.random()*5);
-    state.balance += pay;
-    change('energy', -5);
-    change('water', -2);
-    
-    // Task
-    let t = state.dailyTasks.d1;
-    if(!t.done) {
-        t.cur++;
-        if(t.cur>=t.max) { t.done=true; state.balance+=t.reward; notify('Задание: +'+t.reward, 'success'); }
-    }
-    
-    notify(`Доставка: +${pay} PLN`);
-    document.getElementById('btn-take-order').style.display='block';
-    document.getElementById('progress-ui').style.display='none';
-    renderAll();
-}
-
-function toggleAutoCourier() {
-    if(!state.inventory.includes('bike') && !state.inventory.includes('scooter')) {
-        return modal('Ошибка', 'Нужен транспорт (Велосипед или Скутер)');
-    }
-    state.autoCourier = !state.autoCourier;
-    renderCourier();
-}
-
-function tickAutoCourier() {
-    // Requirements
-    if(state.energy<5 || state.water<5) {
-        state.autoCourier=false;
-        notify('Бот остановлен: нет воды/сил', 'danger');
-        renderCourier();
-        return;
-    }
-    
-    // Logic
-    let isScooter = state.inventory.includes('scooter');
-    let chance = isScooter ? 0.4 : 0.2;
-    
-    if(Math.random() < chance) {
-        let pay = isScooter ? 18 : 12;
-        state.balance += pay;
-        
-        // CONSUMPTION
-        // Energy check boost
-        let noEn = (state.activeBoosts['no_drain'] && state.activeBoosts['no_drain'] > Date.now());
-        if(!noEn) change('energy', -3);
-        
-        change('water', -3); // Water ALWAYS drains
-        
-        // Task
-        let t = state.dailyTasks.d1;
-        if(!t.done) { t.cur++; if(t.cur>=t.max){ t.done=true; state.balance+=t.reward; notify('Дейлик выполнен!', 'success');}}
-
-        notify(`🤖 Бот: +${pay} PLN`, 'success');
-        renderAll();
-    }
-}
-
-// CAREER
-function studyCoding() {
-    if(state.energy<10) return notify('Мало энергии', 'warning');
-    state.energy -= 10;
-    state.codingXp += 10;
-    let req = (state.codingLvl+1)*50;
-    if(state.codingXp >= req) {
-        state.codingLvl++;
-        state.codingXp=0;
-        notify('Level Up! LVL '+state.codingLvl, 'success');
-    }
-    
-    let t = state.dailyTasks.d2;
-    if(!t.done) {
-        t.cur++;
-        if(t.cur>=t.max) { t.done=true; state.balance+=t.reward; notify('Учеба: +'+t.reward, 'success'); }
-    }
-    renderAll();
-}
-
-// SHOP & BIZ
-function buy(id) {
-    let it = ITEMS[id];
-    if(state.balance < it.price) return notify('Мало денег', 'danger');
-    
-    if(it.type === 'gear') {
-        if(state.inventory.includes(id)) return notify('Уже куплено', 'warning');
-        state.balance -= it.price;
-        state.inventory.push(id);
-        notify('Куплено: '+it.name);
-    } 
-    else if(it.type === 'use') {
-        state.balance -= it.price;
-        if(it.ef.water) change('water', it.ef.water);
-        if(it.ef.energy) change('energy', it.ef.energy);
-        if(it.ef.satiety) change('satiety', it.ef.satiety);
-        if(it.sp === 'no_drain') {
-            state.activeBoosts['no_drain'] = Date.now() + 120000; // 2 min
-            notify('⚡ Энергетик активен!');
-        }
-        notify('Использовано: '+it.name);
-    }
-    else if(it.type === 'rent') {
-        state.balance -= it.price;
-        state.housing = id;
-        state.rentTimer = it.days;
-        notify('Арендовано: '+it.name);
-    }
-    renderAll();
-    save();
-}
-
-function buyBiz(idx) {
-    let b = BIZ[idx];
-    if(state.balance < b.cost) return notify('Мало денег', 'danger');
-    if(state.business) return notify('Уже есть бизнес', 'warning');
-    
-    state.balance -= b.cost;
-    state.business = { id: b.id, name: b.name, lvl: 1 };
-    notify('Бизнес куплен!', 'success');
-    renderAll();
-    save();
-}
-
-function collectBiz() {
-    if(!state.business) return;
-    let b = BIZ.find(x=>x.id==state.business.id);
-    state.balance += b.inc;
-    notify('Прибыль: '+b.inc, 'success');
-    renderAll();
-}
-
-// SYSTEM
-function payTax() {
-    if(state.balance<500) return notify('Нужно 500 PLN', 'danger');
-    state.balance-=500;
-    state.taxTimer=7;
-    notify('Налог оплачен');
-    renderAll();
-}
-
-function fullReset() {
-    if(confirm('Точно сбросить? Весь прогресс пропадет.')) {
-        localStorage.removeItem(SAVE_KEY);
-        location.reload();
-    }
-}
-
-// RENDER
-function renderAll() {
-    document.getElementById('ui-balance').innerText = Math.floor(state.balance) + ' PLN';
-    renderStats();
-    renderCourier();
-    renderCareer();
-    renderBiz();
-    renderShop();
-    renderSettings();
-}
-
-function renderStats() {
-    ['energy','water','satiety','mood'].forEach(k => {
-        let el = document.getElementById('ui-'+k);
-        el.innerText = Math.floor(state[k])+'%';
-        el.style.color = state[k]<20 ? 'var(--danger)' : 'white';
-    });
-}
-
-function renderBoosts() {
-    let d = document.getElementById('boost-card');
-    let l = document.getElementById('boost-list');
-    if(state.activeBoosts['no_drain'] && state.activeBoosts['no_drain'] > Date.now()) {
-        d.style.display='block';
-        let sec = Math.ceil((state.activeBoosts['no_drain'] - Date.now())/1000);
-        l.innerHTML = `<div style="color:yellow">⚡ Энергетик: ${sec} сек</div>`;
-    } else {
-        d.style.display='none';
-    }
-}
-
-function renderCourier() {
-    let btn = document.getElementById('btn-auto-courier');
-    let stat = document.getElementById('courier-status');
-    if(state.autoCourier) {
-        stat.innerHTML = '<span style="color:var(--accent)">🤖 АВТО-БОТ РАБОТАЕТ</span>';
-        btn.innerText = 'Остановить';
-        btn.className = 'btn danger';
-    } else {
-        stat.innerHTML = 'Статус: Свободен';
-        btn.innerText = 'Включить бота';
-        btn.className = 'btn secondary';
-    }
-}
-
-function renderCareer() {
-    document.getElementById('coding-lvl').innerText = state.codingLvl;
-    let next = (state.codingLvl+1)*50;
-    document.getElementById('coding-bar').style.width = ((state.codingXp/next)*100)+'%';
-    
-    let html = '';
-    for(let k in state.dailyTasks) {
-        let t = state.dailyTasks[k];
-        let col = t.done ? 'var(--success)' : 'white';
-        let ico = t.done ? '✅' : '⬜';
-        html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:${col}">
-            <span>${t.txt}</span><span>${t.cur}/${t.max} ${ico}</span>
-        </div>`;
-    }
-    document.getElementById('tasks-list').innerHTML = html;
-}
-
-function renderBiz() {
-    let c = document.getElementById('business-container');
-    if(state.business) {
-        c.innerHTML = `<div class="card" style="border:1px solid var(--success)">
-            <h3>${state.business.name}</h3>
-            <p>Работает стабильно</p>
-            <button class="btn" onclick="collectBiz()">Забрать прибыль</button>
-        </div>`;
-    } else {
-        let h = '';
-        BIZ.forEach((b,i) => {
-            h += `<div class="card">
-                <h3>${b.name}</h3>
-                <p style="font-size:0.8rem">${b.desc}</p>
-                <button class="btn" onclick="buyBiz(${i})">Купить (${b.cost})</button>
-            </div>`;
-        });
-        c.innerHTML = h;
-    }
-}
-
-function renderShop() {
-    // Consumables
-    let h1 = '';
-    ['water','kebab','monster'].forEach(k => {
-        let i = ITEMS[k];
-        h1 += `<div class="item-row">
-            <div><div class="item-name">${i.name}</div><div class="item-desc">${i.desc}</div></div>
-            <button class="btn" style="width:auto; padding:8px 15px;" onclick="buy('${k}')">${i.price}</button>
-        </div>`;
-    });
-    document.getElementById('shop-consumables').innerHTML = h1;
-
-    // Gear
-    let h2 = '';
-    ['bike','scooter','laptop'].forEach(k => {
-        let i = ITEMS[k];
-        let has = state.inventory.includes(k);
-        let btn = has ? `<button class="btn secondary" disabled style="width:auto">Куплено</button>` : `<button class="btn" style="width:auto" onclick="buy('${k}')">${i.price}</button>`;
-        h2 += `<div class="item-row">
-            <div><div class="item-name">${i.name}</div><div class="item-desc">${i.desc}</div></div>
-            ${btn}
-        </div>`;
-    });
-    document.getElementById('shop-gear').innerHTML = h2;
-    
-    // Rent
-    let h3 = '';
-    ['hostel','flat'].forEach(k => {
-        let i = ITEMS[k];
-        let isCur = state.housing === k;
-        let btn = isCur ? `<button class="btn secondary" disabled style="width:auto">Текущее</button>` : `<button class="btn" style="width:auto" onclick="buy('${k}')">${i.price}</button>`;
-        h3 += `<div class="item-row">
-            <div><div class="item-name">${i.name}</div><div class="item-desc">${i.days} дней</div></div>
-            ${btn}
-        </div>`;
-    });
-    document.getElementById('shop-rent').innerHTML = h3;
-}
-
-function renderSettings() {
-    document.getElementById('tax-timer').innerText = state.taxTimer;
-}
-
-// UTILS
-function switchTab(id, el) {
-    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
-    document.getElementById('sec-'+id).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
-    el.classList.add('active');
-}
-
-function notify(msg, type='accent') {
-    let d = document.createElement('div');
-    d.className = 'toast';
-    d.style.borderColor = `var(--${type})`;
-    d.innerText = msg;
-    document.getElementById('notif-area').appendChild(d);
-    setTimeout(()=>d.remove(), 3000);
-}
-
-function modal(t, b) {
-    document.getElementById('modal-title').innerText=t;
-    document.getElementById('modal-text').innerText=b;
-    document.getElementById('modal-overlay').style.display='flex';
-}
-function closeModal(){ document.getElementById('modal-overlay').style.display='none'; }
-
-init();
-</script>
 </body>
 </html>
+
+
