@@ -3,608 +3,626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier RPG</title>
+    <title>Wolt Courier Simulator</title>
     <style>
         :root {
-            --bg: #111827;
-            --panel: #1f2937;
-            --accent: #3b82f6; /* Blue Wolt-ish */
-            --accent-green: #10b981; /* Uber Green */
-            --accent-orange: #f59e0b; /* Glovo Orange */
-            --danger: #ef4444;
-            --text: #f3f4f6;
-            --road: #374151;
+            --wolt-blue: #00c2e8;
+            --wolt-dark: #202125;
+            --bg-gray: #f3f3f5;
+            --white: #ffffff;
+            --text-main: #202125;
+            --text-sec: #999999;
+            --success: #4cd964;
+            --danger: #ff3b30;
         }
 
         body {
-            background-color: var(--bg); color: var(--text);
-            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-gray);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0;
             height: 100vh; display: flex; flex-direction: column;
-            user-select: none; overflow: hidden;
+            overflow: hidden; user-select: none;
         }
 
-        /* --- ВЕРХНЯЯ СТАТИСТИКА (RPG HUD) --- */
-        .hud {
-            padding: 10px 15px; background: var(--panel);
-            border-bottom: 1px solid #333;
+        /* --- HEADER (EARNINGS) --- */
+        .app-header {
+            background: var(--white);
+            padding: 15px 20px;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 20;
         }
-        .stat-group { display: flex; flex-direction: column; }
-        .money-display { font-size: 20px; font-weight: 800; color: var(--accent-green); }
-        .lvl-display { font-size: 10px; color: #9ca3af; }
+        .earn-title { font-size: 12px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; }
+        .earn-val { font-size: 24px; font-weight: 800; color: var(--text-main); }
+        
+        .status-badge {
+            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;
+            background: #eee; color: #777; transition: 0.3s;
+        }
+        .status-badge.online { background: rgba(0, 194, 232, 0.1); color: var(--wolt-blue); }
 
-        .energy-bar-cont { width: 100px; height: 6px; background: #333; border-radius: 3px; margin-top: 5px; overflow: hidden;}
-        .energy-fill { height: 100%; background: var(--accent); width: 100%; transition: width 0.2s; }
-
-        /* --- ИГРОВОЕ ПОЛЕ (УЛИЦА) --- */
-        .game-world {
+        /* --- MAP AREA --- */
+        .map-view {
             flex: 1; position: relative;
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            display: flex; flex-direction: column; justify-content: center;
+            background-color: #e5e9ec;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             overflow: hidden;
         }
 
-        /* Дорога */
-        .road-container {
-            position: relative; width: 100%; height: 120px;
-            background: var(--road);
-            border-top: 4px solid #4b5563;
-            border-bottom: 4px solid #4b5563;
-            display: flex; align-items: center;
-            overflow: hidden;
+        /* Radar Effect */
+        .radar-pulse {
+            position: absolute; width: 100px; height: 100px;
+            border-radius: 50%; background: var(--wolt-blue);
+            opacity: 0; transform: scale(0);
+        }
+        .searching .radar-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 
+            0% { transform: scale(0.5); opacity: 0.3; } 
+            100% { transform: scale(3); opacity: 0; } 
+        }
+
+        /* Player Icon */
+        .courier-marker {
+            width: 50px; height: 50px; background: var(--white);
+            border-radius: 50%; border: 3px solid var(--white);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10; display: flex; justify-content: center; align-items: center;
+            font-size: 24px; position: relative;
+            transition: transform 0.3s;
         }
         
-        /* Разметка дороги (анимация движения) */
-        .road-lines {
-            position: absolute; width: 200%; height: 4px;
-            background: repeating-linear-gradient(90deg, #fff 0, #fff 40px, transparent 40px, transparent 80px);
-            top: 50%; transform: translateY(-50%);
-            opacity: 0.5;
+        /* Map Markers */
+        .map-pin {
+            position: absolute; font-size: 30px; 
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0; transform: scale(0);
         }
-        .moving .road-lines { animation: drive 1s linear infinite; }
-        @keyframes drive { 0% { transform: translate(0, -50%); } 100% { transform: translate(-80px, -50%); } }
+        .map-pin.visible { opacity: 1; transform: scale(1); }
 
-        /* Игрок (Курьер) */
-        .courier-bike {
-            position: absolute; left: 20px; bottom: 30px;
-            font-size: 50px; z-index: 10;
-            transition: transform 0.2s;
+        /* Progress Line */
+        .route-line {
+            position: absolute; height: 4px; background: #cbd5e1;
+            width: 0; transform-origin: left; transition: width 0.1s linear;
+            top: 50%; left: 50%; z-index: 5; display: none;
         }
-        .moving .courier-bike { animation: bounce 0.5s infinite alternate; }
-        @keyframes bounce { 0% { bottom: 30px; } 100% { bottom: 32px; } }
 
-        /* Точки назначения (Ресторан / Дом) */
-        .destination {
-            position: absolute; right: -100px; bottom: 30px;
-            font-size: 50px; transition: right 0.5s linear;
+        /* --- BOTTOM SHEET (CONTROLS) --- */
+        .bottom-sheet {
+            background: var(--white);
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            box-shadow: 0 -5px 30px rgba(0,0,0,0.1);
+            padding: 20px; z-index: 30;
+            transition: transform 0.3s ease;
+            min-height: 180px;
+        }
+
+        /* Online Switch */
+        .slider-container {
+            width: 100%; height: 60px; background: #f0f0f0;
+            border-radius: 30px; position: relative;
+            display: flex; align-items: center; padding: 5px; box-sizing: border-box;
+            cursor: pointer; overflow: hidden;
+        }
+        .slider-knob {
+            width: 50px; height: 50px; background: var(--white);
+            border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: absolute; left: 5px; transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex; justify-content: center; align-items: center; font-weight: bold; color: var(--text-sec);
+        }
+        .slider-text {
+            width: 100%; text-align: center; font-weight: 700; color: var(--text-main);
+            position: absolute; pointer-events: none; z-index: 1; transition: opacity 0.2s;
         }
         
-        /* Инфо о текущем заказе */
-        .order-status-card {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            text-align: center; width: 80%; display: none;
-        }
-        .temp-meter {
-            width: 100%; height: 4px; background: #333; margin-top: 5px; border-radius: 2px;
-        }
-        .temp-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #3b82f6, #ef4444); transition: width 1s linear; }
-
-        /* --- ТЕЛЕФОН (МЕНЮ ЗАКАЗОВ) --- */
-        .phone-overlay {
-            position: absolute; bottom: 0; width: 100%; height: 60%;
-            background: #111; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
-            z-index: 50;
-        }
-        .phone-overlay.active { transform: translateY(0); }
-
-        .order-card {
-            background: #222; border: 1px solid #333; padding: 15px; border-radius: 12px;
-            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .btn-accept { background: var(--accent-green); color: black; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-reject { background: #333; color: #aaa; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
-
-        /* --- УПРАВЛЕНИЕ (ВНИЗУ) --- */
-        .controls-area {
-            height: 140px; background: var(--panel); border-top: 1px solid #333;
-            display: flex; justify-content: space-around; align-items: center; padding: 0 10px;
-            position: relative; z-index: 60;
-        }
-
-        .action-btn {
-            width: 80px; height: 80px; border-radius: 50%; border: none;
-            font-weight: 900; font-size: 12px; text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
+        /* State: Online */
+        .online-mode .slider-container { background: rgba(0, 194, 232, 0.1); }
+        .online-mode .slider-knob { left: calc(100% - 55px); color: var(--wolt-blue); }
         
-        #btn-main { background: var(--accent); color: white; width: 100px; height: 100px; font-size: 14px; }
-        #btn-main:active { transform: scale(0.95); }
-        #btn-main.disabled { background: #444; color: #888; pointer-events: none; }
+        /* Order Card */
+        .order-panel { display: none; flex-direction: column; gap: 10px; }
+        .rest-info { display: flex; justify-content: space-between; align-items: flex-start; }
+        .rest-name { font-size: 18px; font-weight: 800; }
+        .rest-meta { font-size: 12px; color: var(--text-sec); margin-top: 4px; }
+        .order-pay { font-size: 20px; color: var(--wolt-blue); font-weight: 800; }
 
-        .sub-btn { background: #374151; color: #fff; }
+        .btn-main {
+            width: 100%; padding: 16px; border-radius: 12px; border: none;
+            font-size: 16px; font-weight: 700; color: white; cursor: pointer;
+            background: var(--wolt-blue); transition: transform 0.1s;
+        }
+        .btn-main:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: #f0f0f0; color: var(--text-main); margin-top: 10px;
+        }
 
-        /* Модалка прокачки */
+        /* Active Delivery UI */
+        .delivery-ui { display: none; }
+        .info-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-sec); margin-bottom: 5px; }
+        .progress-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin-bottom: 15px; }
+        .progress-fill { height: 100%; background: var(--wolt-blue); width: 0%; }
+        
+        .temp-bar-fill { height: 100%; background: linear-gradient(90deg, #4cd964, #ffcc00, #ff3b30); width: 100%; }
+
+        /* Notification */
+        .notification {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: var(--dark); color: white; padding: 10px 20px; border-radius: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 100; font-weight: 600;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #202125;
+        }
+        .notification.show { transform: translateX(-50%) translateY(0); }
+
+        /* Menu/Shop */
+        .menu-btn {
+            position: absolute; top: 15px; right: 15px; width: 40px; height: 40px;
+            background: white; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 25;
+        }
+
         .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200;
-            display: none; flex-direction: column; padding: 20px;
+            position: fixed; inset: 0; background: #f3f3f5; z-index: 200;
+            padding: 20px; transform: translateY(100%); transition: transform 0.3s;
+            overflow-y: auto;
         }
-        .skill-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #222; border-radius: 10px; }
-        
-        /* События */
-        .event-popup {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(239, 68, 68, 0.9); padding: 20px; border-radius: 12px;
-            color: white; font-weight: bold; text-align: center; display: none; z-index: 150;
-            animation: popIn 0.3s;
+        .modal.open { transform: translateY(0); }
+        .shop-item {
+            background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        @keyframes popIn { from { transform: translate(-50%, -50%) scale(0.5); } to { transform: translate(-50%, -50%) scale(1); } }
 
     </style>
 </head>
 <body>
 
-    <div class="hud">
-        <div class="stat-group">
-            <div class="money-display" id="money-ui">0.00 PLN</div>
-            <div class="lvl-display" id="xp-ui">LVL 1 (0/100 XP)</div>
+    <div class="notification" id="notif">Новое уведомление</div>
+
+    <div class="menu-btn" onclick="toggleShop()">🍔</div>
+
+    <div class="app-header">
+        <div>
+            <div class="earn-title">Заработано сегодня</div>
+            <div class="earn-val" id="money-ui">0.00 PLN</div>
         </div>
-        <div class="stat-group" style="align-items: flex-end;">
-            <div style="font-size: 10px; color: #aaa;">ЭНЕРГИЯ</div>
-            <div class="energy-bar-cont"><div class="energy-fill" id="energy-bar"></div></div>
-        </div>
+        <div class="status-badge" id="status-badge">OFFLINE</div>
     </div>
 
-    <div class="game-world" id="world-bg">
-        <div class="order-status-card" id="status-card">
-            <div id="order-msg" style="font-weight:bold; color:var(--accent);">Доставка Kebab King</div>
-            <div style="font-size: 10px; color:#aaa; margin-top:2px;">
-                Температура еды: <span id="temp-val">100%</span>
-            </div>
-            <div class="temp-meter"><div class="temp-fill" id="temp-bar"></div></div>
-            <div style="font-size: 10px; margin-top: 5px; color: var(--accent-orange);" id="dist-ui">Осталось: 2.0 км</div>
-        </div>
-
-        <div class="event-popup" id="event-ui">
-            <div style="font-size: 40px;">🛑</div>
-            <div id="event-text">КРАСНЫЙ СВЕТ!</div>
-            <div style="font-size: 10px; margin-top: 5px;">Жди...</div>
-        </div>
-
-        <div class="road-container" id="road">
-            <div class="road-lines"></div>
-            <div class="courier-bike">🚴</div>
-            <div class="destination" id="dest-icon">🏢</div>
-        </div>
-
-        <div class="phone-overlay" id="phone">
-            <h3 style="color:white; margin-top:0;">📱 Новые заказы</h3>
-            <div id="orders-list"></div>
-        </div>
-    </div>
-
-    <div class="controls-area">
-        <button class="action-btn sub-btn" onclick="toggleProfile()">
-            👤<br>Профиль
-        </button>
+    <div class="map-view" id="map-bg">
+        <div class="radar-pulse"></div>
         
-        <button class="action-btn" id="btn-main" onmousedown="startDrive()" onmouseup="stopDrive()" ontouchstart="startDrive()" ontouchend="stopDrive()">
-            ЖМИ<br>ЕХАТЬ
-        </button>
-
-        <button class="action-btn sub-btn" onclick="togglePhone()">
-            📱<br>Заказы
-        </button>
+        <div class="courier-marker" id="player-icon">🚲</div>
+        
+        <div class="map-pin" id="pin-rest">🏪</div>
+        <div class="map-pin" id="pin-client">👤</div>
+        <div class="route-line" id="route-line"></div>
     </div>
 
-    <div class="modal" id="profile-modal">
-        <h2 style="color:white;">Твои Навыки</h2>
-        <div style="color:#aaa; margin-bottom: 20px;">Очки навыков: <b id="sp-ui" style="color:var(--accent);">0</b></div>
+    <div class="bottom-sheet">
         
-        <div class="skill-row">
-            <div>
-                <b>🚴 Скорость</b><br>
-                <small style="color:#777;">Едешь быстрее, еда не стынет</small>
+        <div id="panel-start">
+            <div class="slider-container" onclick="toggleOnline()">
+                <div class="slider-text" id="slider-text">SWIPE TO ONLINE</div>
+                <div class="slider-knob">➜</div>
             </div>
-            <button class="btn-accept" onclick="upgrade('speed')">+</button>
-        </div>
-        <div class="skill-row">
-            <div>
-                <b>🔋 Выносливость</b><br>
-                <small style="color:#777;">Больше энергии, меньше отдыха</small>
+            <div style="text-align:center; margin-top:15px; font-size:12px; color:#999;">
+                <span id="vehicle-name">Транспорт: Велосипед</span> • LVL <span id="lvl-ui">1</span>
             </div>
-            <button class="btn-accept" onclick="upgrade('stamina')">+</button>
-        </div>
-        <div class="skill-row">
-            <div>
-                <b>😎 Обаяние</b><br>
-                <small style="color:#777;">Шанс чаевых и прощения ошибок</small>
-            </div>
-            <button class="btn-accept" onclick="upgrade('charm')">+</button>
-        </div>
-        <div class="skill-row">
-            <div>
-                <b>🎒 Термо-сумка</b><br>
-                <small style="color:#777;">Еда остывает медленнее</small>
-            </div>
-            <button class="btn-accept" onclick="upgrade('bag')">+</button>
         </div>
 
-        <button class="btn-reject" style="width:100%; margin-top:auto;" onclick="toggleProfile()">ЗАКРЫТЬ</button>
+        <div id="panel-offer" class="order-panel">
+            <div class="rest-info">
+                <div>
+                    <div class="rest-name" id="offer-rest">McDonalds</div>
+                    <div class="rest-meta" id="offer-meta">2.5 km • Еда</div>
+                </div>
+                <div class="order-pay" id="offer-pay">14.50</div>
+            </div>
+            <div style="font-size:12px; color:#777; margin-bottom:10px;">
+                Включает бонус за спрос +1.50 PLN
+            </div>
+            <button class="btn-main" onclick="acceptOrder()">ПРИНЯТЬ ЗАКАЗ</button>
+            <button class="btn-main btn-secondary" style="color:var(--danger)" onclick="rejectOrder()">ОТКЛОНИТЬ</button>
+        </div>
+
+        <div id="panel-active" class="delivery-ui">
+            <h3 style="margin:0 0 10px 0; font-size:16px;" id="task-title">Едем в ресторан...</h3>
+            
+            <div class="info-row">
+                <span>Прогресс</span>
+                <span id="dist-ui">1.2 km</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-bar"></div></div>
+
+            <div id="temp-container">
+                <div class="info-row">
+                    <span>Температура еды</span>
+                    <span id="temp-ui">100%</span>
+                </div>
+                <div class="progress-bar"><div class="temp-bar-fill" id="temp-bar"></div></div>
+            </div>
+
+            <button class="btn-main" id="action-btn" onmousedown="holdGas()" onmouseup="releaseGas()" ontouchstart="holdGas()" ontouchend="releaseGas()">ЖМИ ГАЗ (HOLD)</button>
+        </div>
+
+    </div>
+
+    <div class="modal" id="shop-modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0;">Магазин & Профиль</h2>
+            <button style="border:none; background:transparent; font-size:24px;" onclick="toggleShop()">✕</button>
+        </div>
+        
+        <div style="background:white; padding:15px; border-radius:12px; margin-bottom:20px;">
+            <div style="color:#999; font-size:12px;">Твой уровень</div>
+            <div style="font-size:24px; font-weight:800; color:var(--wolt-blue);">LVL <span id="shop-lvl">1</span></div>
+            <div style="font-size:12px; margin-top:5px;">XP: <span id="shop-xp">0</span> / <span id="shop-next">100</span></div>
+        </div>
+
+        <h3 style="margin-bottom:10px;">Транспорт</h3>
+        <div id="shop-vehicles"></div>
+
+        <h3 style="margin-bottom:10px;">Экипировка</h3>
+        <div id="shop-gear"></div>
     </div>
 
 <script>
-    // === КОНФИГУРАЦИЯ И ПЕРЕМЕННЫЕ ===
-    const SAVE_KEY = "WARSZAWA_RPG_V1";
-
-    // Состояния игры
-    const STATE = {
-        IDLE: 0,      // Ждет заказ
-        TO_REST: 1,   // Едет в ресторан
-        PICKUP: 2,    // Забирает заказ
-        TO_CLIENT: 3, // Едет к клиенту
-        PROBLEM: 4    // Проблема (возврат, ожидание)
+    // === CONFIG & DATA ===
+    const CONFIG = {
+        saveKey: 'WOLT_SIM_V1',
+        vehicles: [
+            { id: 'bike', name: 'Велосипед', speed: 1.0, price: 0 },
+            { id: 'ebike', name: 'E-Bike (City)', speed: 1.5, price: 500 },
+            { id: 'scooter', name: 'Скутер 50cc', speed: 2.2, price: 1500 },
+            { id: 'prius', name: 'Toyota Prius', speed: 3.5, price: 5000 }
+        ],
+        gear: [
+            { id: 'basic_bag', name: 'Стандартная сумка', insulation: 1.0, price: 0 },
+            { id: 'pro_bag', name: 'Wolt Pro Bag', insulation: 2.0, price: 300 },
+            { id: 'heater', name: 'Подогрев сиденья', insulation: 3.0, price: 800 }
+        ],
+        rests: [
+            { n: 'McDonalds', pay: 10, dist: 2 },
+            { n: 'Kebab King', pay: 14, dist: 3 },
+            { n: 'Sushi Master', pay: 20, dist: 5 },
+            { n: 'North Fish', pay: 12, dist: 2.5 },
+            { n: 'Pizza Hut', pay: 16, dist: 4 }
+        ]
     };
 
+    // === GAME STATE ===
     let G = {
         money: 0,
         xp: 0,
         lvl: 1,
-        sp: 0, // Skill Points
-        
-        // Характеристики
-        stats: {
-            speed: 1,     // Множитель скорости
-            stamina: 100, // Макс энергия
-            charm: 1,     // Шанс чаевых
-            bag: 1        // Сохранение тепла
-        },
-        
-        energy: 100
+        vehicleId: 'bike',
+        gearId: 'basic_bag',
+        stats: { completed: 0 }
     };
 
-    let Current = {
-        state: STATE.IDLE,
-        order: null,      // Текущий активный заказ
-        distance: 0,      // Сколько осталось ехать (км)
-        foodTemp: 100,    // Температура еды %
-        driving: false,   // Зажата ли кнопка
-        event: null       // Активное событие (светофор и тд)
+    let State = {
+        isOnline: false,
+        phase: 'IDLE', // IDLE, SEARCH, OFFER, TO_REST, WAITING, TO_CLIENT
+        offer: null,
+        progress: 0,
+        temp: 100,
+        isMoving: false,
+        timer: null
     };
 
-    // Генерация заказов
-    const RESTAURANTS = [
-        { name: "Kebab King", type: "food", basePay: 12 },
-        { name: "McDonalds", type: "food", basePay: 10 },
-        { name: "Pasibus", type: "food", basePay: 14 },
-        { name: "Żabka (Закуп)", type: "shop", basePay: 18 },
-        { name: "Apteka", type: "med", basePay: 15 }
-    ];
-
-    let availableOrders = [];
-
-    // === ИНИЦИАЛИЗАЦИЯ ===
+    // === INIT ===
     function init() {
         loadGame();
-        updateHUD();
-        generateOrders();
-        setInterval(gameLoop, 100); // Физика (10 FPS для простоты)
-        setInterval(orderGenerator, 5000); // Новые заказы
-        setInterval(regenEnergy, 1000); // Реген энергии
+        updateHeader();
+        renderShop();
+        
+        // Loop physics
+        setInterval(gameLoop, 100);
+        
+        // Loop search
+        setInterval(() => {
+            if (State.isOnline && State.phase === 'SEARCH') {
+                if (Math.random() < 0.3) foundOffer();
+            }
+        }, 2000);
     }
 
-    // === ГЛАВНЫЙ ЦИКЛ (PHYSICS) ===
+    // === CORE LOGIC ===
+
+    function toggleOnline() {
+        if (State.phase !== 'IDLE' && State.phase !== 'SEARCH') return; // Can't go offline during order
+
+        State.isOnline = !State.isOnline;
+        document.body.classList.toggle('online-mode', State.isOnline);
+        
+        const badge = document.getElementById('status-badge');
+        const sliderText = document.getElementById('slider-text');
+        const map = document.getElementById('map-bg');
+        
+        if (State.isOnline) {
+            badge.innerText = "ONLINE";
+            badge.classList.add('online');
+            sliderText.innerText = "SWIPE TO OFFLINE";
+            map.classList.add('searching');
+            State.phase = 'SEARCH';
+            showNotif("Вы на линии! Ищем заказы...");
+        } else {
+            badge.innerText = "OFFLINE";
+            badge.classList.remove('online');
+            sliderText.innerText = "SWIPE TO ONLINE";
+            map.classList.remove('searching');
+            State.phase = 'IDLE';
+        }
+    }
+
+    function foundOffer() {
+        State.phase = 'OFFER';
+        document.getElementById('map-bg').classList.remove('searching');
+        
+        // Generate Order
+        let r = CONFIG.rests[Math.floor(Math.random() * CONFIG.rests.length)];
+        let dist = (r.dist + Math.random()).toFixed(1);
+        let surge = Math.random() < 0.3 ? (Math.random() * 5).toFixed(1) : 0;
+        let totalPay = (r.pay + (dist * 1.5) + parseFloat(surge)).toFixed(2);
+        
+        State.offer = { name: r.n, dist: dist, pay: totalPay, surge: surge };
+        
+        // UI
+        document.getElementById('offer-rest').innerText = r.n;
+        document.getElementById('offer-meta').innerText = `${dist} km • Ресторан`;
+        document.getElementById('offer-pay').innerText = totalPay + " PLN";
+        
+        switchPanel('offer');
+        playSound('ping');
+    }
+
+    function acceptOrder() {
+        State.phase = 'TO_REST';
+        State.progress = 0;
+        State.temp = 100;
+        
+        // Visuals
+        document.getElementById('pin-rest').classList.add('visible');
+        document.getElementById('pin-rest').style.left = '20%';
+        document.getElementById('pin-rest').style.top = '20%';
+        
+        document.getElementById('task-title').innerText = "Едем в " + State.offer.name;
+        document.getElementById('temp-container').style.display = 'none'; // No food yet
+        document.getElementById('action-btn').innerText = "ЖМИ ГАЗ (ЕХАТЬ)";
+        
+        switchPanel('active');
+    }
+
+    function rejectOrder() {
+        State.phase = 'SEARCH';
+        State.offer = null;
+        switchPanel('start');
+        document.getElementById('map-bg').classList.add('searching');
+    }
+
     function gameLoop() {
-        // 1. Движение
-        if (Current.driving && G.energy > 0 && !Current.event) {
-            if (Current.state === STATE.TO_REST || Current.state === STATE.TO_CLIENT) {
-                // Расход энергии
-                G.energy -= 0.2;
-                
-                // Скорость (База 0.01 км/тик * стат)
-                let speed = 0.015 * (1 + G.stats.speed * 0.1);
-                Current.distance -= speed;
+        if (!State.isOnline) return;
 
-                // Визуал дороги
-                document.getElementById('road').classList.add('moving');
-                
-                // Прибытие
-                if (Current.distance <= 0) {
-                    arrive();
-                }
+        // Driving Logic
+        if (State.isMoving && (State.phase === 'TO_REST' || State.phase === 'TO_CLIENT')) {
+            let veh = CONFIG.vehicles.find(v => v.id === G.vehicleId);
+            let speed = 0.5 * veh.speed;
+            
+            State.progress += speed;
+            if (State.progress >= 100) {
+                State.progress = 100;
+                State.isMoving = false;
+                nextStage();
             }
-        } else {
-            document.getElementById('road').classList.remove('moving');
+            updateProgressUI();
         }
 
-        // 2. Температура еды (только если везем клиенту)
-        if (Current.state === STATE.TO_CLIENT && Current.order) {
-            // Еда стынет. Сумка помогает.
-            let coolRate = 0.15 / (1 + G.stats.bag * 0.2); 
-            Current.foodTemp -= coolRate;
-            if (Current.foodTemp < 0) Current.foodTemp = 0;
-            updateStatusCard();
-        }
-
-        // 3. Случайные события в дороге
-        if (Current.driving && Math.random() < 0.005 && !Current.event && Current.distance > 0.5) {
-            triggerEvent();
-        }
-
-        updateHUD();
-    }
-
-    // === ЛОГИКА ЗАКАЗОВ ===
-
-    function orderGenerator() {
-        if (availableOrders.length < 5) {
-            let r = RESTAURANTS[Math.floor(Math.random() * RESTAURANTS.length)];
-            let dist = (1.5 + Math.random() * 4).toFixed(1); // 1.5 - 5.5 km
-            let pay = (r.basePay + (dist * 1.5)).toFixed(0);
-            
-            availableOrders.push({
-                id: Date.now(),
-                rest: r.name,
-                dist: dist,
-                pay: pay,
-                type: r.type
-            });
-            renderPhone();
-            
-            // Если телефон закрыт, показать уведомление на кнопке
-            if (!document.getElementById('phone').classList.contains('active')) {
-                // можно добавить красную точку
-            }
+        // Temperature Logic
+        if (State.phase === 'TO_CLIENT') {
+            let gear = CONFIG.gear.find(g => g.id === G.gearId);
+            let decay = 0.2 / gear.insulation;
+            State.temp -= decay;
+            if (State.temp < 0) State.temp = 0;
+            updateTempUI();
         }
     }
 
-    function acceptOrder(id) {
-        let order = availableOrders.find(o => o.id === id);
-        if (!order) return;
-
-        Current.order = order;
-        Current.state = STATE.TO_REST;
-        Current.distance = 1.0; // До ресторана всегда 1 км условно (для старта)
-        Current.foodTemp = 100;
-        
-        availableOrders = availableOrders.filter(o => o.id !== id); // Удалить из списка
-        
-        togglePhone(); // Закрыть телефон
-        uiSetState("Едем в " + order.rest, "dist");
-    }
-
-    // === МЕХАНИКА ПОЕЗДКИ ===
-
-    function startDrive() { Current.driving = true; }
-    function stopDrive() { Current.driving = false; }
-
-    function arrive() {
-        Current.driving = false;
-        
-        if (Current.state === STATE.TO_REST) {
-            // Приехали в ресторан
-            alert(`🍱 Прибыли в ${Current.order.rest}. Забираем заказ...`);
-            Current.state = STATE.TO_CLIENT;
-            Current.distance = parseFloat(Current.order.dist);
+    function nextStage() {
+        if (State.phase === 'TO_REST') {
+            // Arrived at restaurant
+            State.phase = 'WAITING';
+            document.getElementById('action-btn').disabled = true;
+            document.getElementById('action-btn').innerText = "Готовим еду...";
+            document.getElementById('task-title').innerText = "Ожидание заказа...";
             
-            // Визуал
-            document.getElementById('dest-icon').innerText = "🏠"; // Иконка дома
-            document.getElementById('dest-icon').style.right = "-100px"; // Сброс анимации
-            
-            uiSetState("Везу клиенту!", "temp");
-
-        } else if (Current.state === STATE.TO_CLIENT) {
-            // Приехали к клиенту. РАСЧЕТ РЕЗУЛЬТАТА
-            finishDelivery();
+            setTimeout(() => {
+                // Food ready
+                State.phase = 'TO_CLIENT';
+                State.progress = 0;
+                document.getElementById('action-btn').disabled = false;
+                document.getElementById('action-btn').innerText = "ВЕЗТИ КЛИЕНТУ";
+                document.getElementById('task-title').innerText = "Доставка клиенту";
+                document.getElementById('temp-container').style.display = 'block';
+                
+                // Map update
+                document.getElementById('pin-rest').classList.remove('visible');
+                document.getElementById('pin-client').classList.add('visible');
+                document.getElementById('pin-client').style.left = '80%';
+                document.getElementById('pin-client').style.top = '70%';
+                
+            }, 2000); // 2 sec cooking time
+        } else if (State.phase === 'TO_CLIENT') {
+            // Finished
+            finishOrder();
         }
     }
 
-    function finishDelivery() {
-        let order = Current.order;
-        let basePay = parseInt(order.pay);
+    function finishOrder() {
+        let pay = parseFloat(State.offer.pay);
         let tip = 0;
-        let msg = "";
-
-        // Проверка температуры
-        if (Current.foodTemp > 80) {
-            // Горячее! Чаевые возможны
-            if (Math.random() < (0.3 + G.stats.charm * 0.05)) {
-                tip = Math.floor(basePay * 0.3);
-                msg = "🔥 Горячо! Клиент доволен.";
-            } else {
-                msg = "✅ Доставка успешна.";
-            }
-        } else if (Current.foodTemp < 40) {
-            // Холодное. Штраф или нет оплаты?
-            basePay = Math.floor(basePay * 0.7);
-            msg = "🥶 Еда ледяная! Клиент жалуется (-30% оплаты).";
-        } else {
-            msg = "😐 Норм доставка.";
-        }
         
-        // Сложная ситуация: Клиент не берет трубку?
-        // Шанс 10%
-        if (Math.random() < 0.1) {
-            if (confirm("📞 Клиент не берет трубку! Ждать 5 сек или оставить у двери? (Ок - Ждать, Отмена - Оставить)")) {
-                // Ждем (симуляция)
-                setTimeout(() => payout(basePay, tip, msg + " (Дождался)"), 2000);
-            } else {
-                // Риск
-                if (Math.random() < 0.5) {
-                    payout(basePay, tip, msg + " (Оставил у двери)");
-                } else {
-                    alert("🤬 У тебя украли еду! Штраф!");
-                    basePay = 0; tip = 0;
-                    payout(0, 0, "Заказ украден.");
-                }
-            }
-        } else {
-            payout(basePay, tip, msg);
+        // Temperature penalty/bonus
+        if (State.temp > 80) {
+            tip = Math.floor(pay * 0.2); // 20% tip
+            showNotif(`🔥 Горячая еда! Чаевые +${tip} PLN`);
+        } else if (State.temp < 30) {
+            pay = pay * 0.8; // Penalty
+            showNotif("🧊 Еда холодная! Штраф.");
         }
-    }
 
-    function payout(pay, tip, text) {
         let total = pay + tip;
         G.money += total;
+        G.xp += 20;
+        G.stats.completed++;
         
-        // XP
-        let xpGain = 10 + (total * 0.5);
-        G.xp += xpGain;
+        checkLevelUp();
+        saveGame();
+        updateHeader();
+        
+        // Reset
+        document.getElementById('pin-client').classList.remove('visible');
+        State.phase = 'SEARCH';
+        State.offer = null;
+        switchPanel('start');
+        document.getElementById('map-bg').classList.add('searching');
+        playSound('ching');
+    }
+
+    // === UI HELPERS ===
+
+    function switchPanel(id) {
+        document.getElementById('panel-start').style.display = 'none';
+        document.getElementById('panel-offer').style.display = 'none';
+        document.getElementById('panel-active').style.display = 'none';
+        
+        if (id === 'start') document.getElementById('panel-start').style.display = 'block';
+        if (id === 'offer') document.getElementById('panel-offer').style.display = 'flex';
+        if (id === 'active') document.getElementById('panel-active').style.display = 'block';
+    }
+
+    function holdGas() { State.isMoving = true; }
+    function releaseGas() { State.isMoving = false; }
+
+    function updateProgressUI() {
+        document.getElementById('prog-bar').style.width = State.progress + "%";
+        let kmLeft = (parseFloat(State.offer.dist) * (1 - State.progress/100)).toFixed(1);
+        document.getElementById('dist-ui').innerText = kmLeft + " km";
+    }
+
+    function updateTempUI() {
+        let bar = document.getElementById('temp-bar');
+        bar.style.width = State.temp + "%";
+        document.getElementById('temp-ui').innerText = Math.floor(State.temp) + "%";
+        
+        if (State.temp < 40) bar.style.background = "#ff3b30";
+        else if (State.temp < 70) bar.style.background = "#ffcc00";
+        else bar.style.background = "#4cd964";
+    }
+
+    function updateHeader() {
+        document.getElementById('money-ui').innerText = G.money.toFixed(2) + " PLN";
+        let vehName = CONFIG.vehicles.find(v => v.id === G.vehicleId).name;
+        document.getElementById('vehicle-name').innerText = "Транспорт: " + vehName;
+        document.getElementById('lvl-ui').innerText = G.lvl;
+    }
+
+    function showNotif(msg) {
+        const n = document.getElementById('notif');
+        n.innerText = msg;
+        n.classList.add('show');
+        setTimeout(() => n.classList.remove('show'), 3000);
+    }
+
+    function playSound(type) {
+        // Placeholder for sound
+    }
+
+    // === SHOP & RPG ===
+    function toggleShop() {
+        let m = document.getElementById('shop-modal');
+        m.classList.toggle('open');
+        if (m.classList.contains('open')) renderShopItems();
+    }
+
+    function renderShopItems() {
+        document.getElementById('shop-lvl').innerText = G.lvl;
+        document.getElementById('shop-xp').innerText = Math.floor(G.xp);
+        document.getElementById('shop-next').innerText = G.lvl * 100;
+
+        // Vehicles
+        let vHtml = "";
+        CONFIG.vehicles.forEach(v => {
+            let owned = G.vehicleId === v.id;
+            let canBuy = G.money >= v.price;
+            let btnTxt = owned ? "ВЫБРАН" : (canBuy ? "КУПИТЬ" : "🔒");
+            let btnClass = owned ? "background:#eee; color:#333" : "background:var(--wolt-blue); color:white";
+            
+            vHtml += `
+            <div class="shop-item" style="${owned ? 'border:2px solid var(--wolt-blue)' : ''}">
+                <div>
+                    <b>${v.name}</b><br>
+                    <small style="color:#777">Скорость: x${v.speed}</small>
+                </div>
+                <button style="border:none; padding:8px 12px; border-radius:15px; font-weight:bold; cursor:pointer; ${btnClass}" 
+                onclick="buyVehicle('${v.id}')">${owned ? '✅' : v.price + ' PLN'}</button>
+            </div>`;
+        });
+        document.getElementById('shop-vehicles').innerHTML = vHtml;
+
+        // Gear
+        let gHtml = "";
+        CONFIG.gear.forEach(g => {
+            let owned = G.gearId === g.id;
+            let canBuy = G.money >= g.price;
+            let btnClass = owned ? "background:#eee; color:#333" : "background:var(--wolt-blue); color:white";
+
+            gHtml += `
+            <div class="shop-item" style="${owned ? 'border:2px solid var(--wolt-blue)' : ''}">
+                <div>
+                    <b>${g.name}</b><br>
+                    <small style="color:#777">Термозащита: x${g.insulation}</small>
+                </div>
+                <button style="border:none; padding:8px 12px; border-radius:15px; font-weight:bold; cursor:pointer; ${btnClass}"
+                onclick="buyGear('${g.id}')">${owned ? '✅' : g.price + ' PLN'}</button>
+            </div>`;
+        });
+        document.getElementById('shop-gear').innerHTML = gHtml;
+    }
+
+    function buyVehicle(id) {
+        let v = CONFIG.vehicles.find(x => x.id === id);
+        if (v.price <= G.money) {
+            if (v.price > 0 && G.vehicleId !== id) G.money -= v.price;
+            G.vehicleId = id;
+            saveGame(); renderShopItems(); updateHeader();
+        }
+    }
+
+    function buyGear(id) {
+        let g = CONFIG.gear.find(x => x.id === id);
+        if (g.price <= G.money) {
+            if (g.price > 0 && G.gearId !== id) G.money -= g.price;
+            G.gearId = id;
+            saveGame(); renderShopItems();
+        }
+    }
+
+    function checkLevelUp() {
         if (G.xp >= G.lvl * 100) {
             G.lvl++;
             G.xp = 0;
-            G.sp++; // Даем очко навыка
-            alert("🆙 НОВЫЙ УРОВЕНЬ! Получено очко навыков!");
-        }
-
-        alert(`💰 ИТОГ ЗАКАЗА:\nОплата: ${pay} PLN\nЧаевые: ${tip} PLN\n\n${text}`);
-        
-        // Сброс
-        Current.state = STATE.IDLE;
-        Current.order = null;
-        updateHUD();
-        uiReset();
-        saveGame();
-    }
-
-    function triggerEvent() {
-        Current.event = true;
-        Current.driving = false; // Остановить машину
-        
-        let events = [
-            { t: "🚦 КРАСНЫЙ СВЕТ", wait: 2000 },
-            { t: "👵 ПРОПУСТИ БАБУШКУ", wait: 1500 },
-            { t: "🚓 ПОЛИЦИЯ (ПРОВЕРКА)", wait: 3000 },
-            { t: "👞 РАЗВЯЗАЛСЯ ШНУРОК", wait: 1000 }
-        ];
-        let ev = events[Math.floor(Math.random() * events.length)];
-
-        let ui = document.getElementById('event-ui');
-        document.getElementById('event-text').innerText = ev.t;
-        ui.style.display = 'block';
-
-        setTimeout(() => {
-            ui.style.display = 'none';
-            Current.event = null;
-        }, ev.wait);
-    }
-
-    function regenEnergy() {
-        if (!Current.driving && G.energy < G.stats.stamina) {
-            G.energy += 1 + (G.stats.stamina * 0.05); // Реген
-            if (G.energy > G.stats.stamina) G.energy = G.stats.stamina;
-            updateHUD();
+            showNotif("🆙 LEVEL UP! Новый уровень!");
         }
     }
 
-    // === UI ФУНКЦИИ ===
-
-    function uiSetState(msg, type) {
-        let card = document.getElementById('status-card');
-        card.style.display = 'block';
-        document.getElementById('order-msg').innerText = msg;
-        
-        if (type === 'dist') {
-            document.querySelector('.temp-meter').style.display = 'none';
-        } else {
-            document.querySelector('.temp-meter').style.display = 'block';
-        }
-        
-        // Кнопка
-        let btn = document.getElementById('btn-main');
-        btn.innerHTML = "ЖМИ<br>ГАЗ";
-        btn.classList.remove('disabled');
-    }
-
-    function uiReset() {
-        document.getElementById('status-card').style.display = 'none';
-        let btn = document.getElementById('btn-main');
-        btn.innerHTML = "ЖДИ<br>ЗАКАЗ";
-        btn.classList.add('disabled');
-        document.getElementById('dest-icon').innerText = "🏢";
-        document.getElementById('dest-icon').style.right = "-100px";
-    }
-
-    function updateStatusCard() {
-        document.getElementById('dist-ui').innerText = `Осталось: ${Current.distance.toFixed(2)} км`;
-        
-        if (Current.state === STATE.TO_CLIENT) {
-            document.getElementById('temp-val').innerText = Math.floor(Current.foodTemp) + "%";
-            document.getElementById('temp-bar').style.width = Current.foodTemp + "%";
-            
-            // Цвет
-            let bar = document.getElementById('temp-bar');
-            if(Current.foodTemp > 70) bar.style.background = "#10b981";
-            else if(Current.foodTemp > 40) bar.style.background = "#f59e0b";
-            else bar.style.background = "#ef4444";
-        }
-    }
-
-    function updateHUD() {
-        document.getElementById('money-ui').innerText = G.money.toFixed(0) + " PLN";
-        document.getElementById('xp-ui').innerText = `LVL ${G.lvl} (${Math.floor(G.xp)}/${G.lvl*100} XP)`;
-        
-        let epct = (G.energy / G.stats.stamina) * 100;
-        document.getElementById('energy-bar').style.width = epct + "%";
-        document.getElementById('sp-ui').innerText = G.sp;
-    }
-
-    function renderPhone() {
-        let html = "";
-        availableOrders.forEach(o => {
-            html += `
-            <div class="order-card">
-                <div>
-                    <b style="color:var(--accent)">${o.rest}</b><br>
-                    <small>${o.dist} км • ${o.type === 'food' ? '🍔 Еда' : '💊 Аптека'}</small>
-                </div>
-                <div>
-                    <b style="color:var(--accent-green); font-size:16px;">${o.pay} PLN</b><br>
-                    <button class="btn-accept" onclick="acceptOrder(${o.id})">ВЗЯТЬ</button>
-                </div>
-            </div>`;
-        });
-        document.getElementById('orders-list').innerHTML = html;
-    }
-
-    function togglePhone() {
-        document.getElementById('phone').classList.toggle('active');
-        document.getElementById('profile-modal').style.display = 'none';
-    }
-
-    function toggleProfile() {
-        let m = document.getElementById('profile-modal');
-        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-        document.getElementById('phone').classList.remove('active');
-        updateHUD();
-    }
-
-    function upgrade(stat) {
-        if (G.sp > 0) {
-            G.sp--;
-            G.stats[stat]++;
-            updateHUD();
-            alert("Навык улучшен!");
-        } else {
-            alert("Нет очков навыков! Качай уровень.");
-        }
-    }
-
-    // Сохранение
-    function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); }
+    // === SAVE SYSTEM ===
+    function saveGame() { localStorage.setItem(CONFIG.saveKey, JSON.stringify(G)); }
     function loadGame() {
-        let d = localStorage.getItem(SAVE_KEY);
-        if(d) {
-            try { G = {...G, ...JSON.parse(d)}; } catch(e){}
-        }
-        uiReset();
+        let d = localStorage.getItem(CONFIG.saveKey);
+        if (d) { try { G = {...G, ...JSON.parse(d)}; } catch(e){} }
     }
 
     window.onload = init;
@@ -612,3 +630,4 @@
 </script>
 </body>
 </html>
+
