@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Courier Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <!-- UI styles -->
+  <link rel="stylesheet" href="css/ui.css" />
+</head>
+
+<body>
+
+  <!-- ===== MAP ===== -->
+  <div id="map"></div>
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="top-bar">
+    <button id="menuBtn">☰</button>
+
+    <div class="top-stats">
+      <span class="money">💰 500 PLN</span>
+      <span class="rep">⭐ 50</span>
+    </div>
+  </div>
+
+  <!-- ===== SIDE MENU ===== -->
+  <div id="sideMenu" class="side-menu">
+    <div class="menu-header">
+      <strong>Courier</strong>
+      <span>Offline</span>
+    </div>
+
+    <ul>
+      <li>🛒 Магазин</li>
+      <li>🎒 Экипировка</li>
+      <li>📊 Статистика</li>
+      <li>💼 Финансы</li>
+      <li>⭐ Репутация</li>
+      <li>⚙️ Настройки</li>
+    </ul>
+  </div>
+
+  <!-- ===== OVERLAY ===== -->
+  <div id="overlay"></div>
+
+  <!-- ===== BOTTOM SHEET ===== -->
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+
+    <div class="sheet-content">
+      <h2>Warsaw</h2>
+      <p class="demand">
+        Доступность заказов:
+        <span class="low">Низкая</span>
+      </p>
+
+      <button class="primary-btn">
+        ▶ Выйти онлайн
+      </button>
+
+      <div class="status-bar">
+        🍔 Голод: 60% &nbsp; 🙂 Настроение: 70% &nbsp; ⚡ Бодрость: 80%
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Temporary inline JS ONLY for UI -->
+  <script>
+    // Map init
+    const map = L.map("map", {
+      zoomControl: false
+    }).setView([52.2297, 21.0122], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    L.marker([52.2297, 21.0122]).addTo(map);
+
+    // Menu logic (temporary, UI only)
+    const menuBtn = document.getElementById("menuBtn");
+    const sideMenu = document.getElementById("sideMenu");
+    const overlay = document.getElementById("overlay");
+
+    menuBtn.onclick = () => {
+      sideMenu.classList.add("open");
+      overlay.classList.add("show");
+    };
+
+    overlay.onclick = () => {
+      sideMenu.classList.remove("open");
+      overlay.classList.remove("show");
+    };
+  </script>
+
+</body>
+</html>
