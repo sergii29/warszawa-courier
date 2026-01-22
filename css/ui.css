@@ -1,29 +1,23 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
 body {
-  background: #f2f4f7;
-  overflow-x: hidden;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f2f2f2;
 }
 
-/* HEADER */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+/* TOP BAR */
+.topbar {
   height: 56px;
-  background: #0a2540;
+  background: #0b2b46;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  z-index: 1000;
+  padding: 0 12px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
 }
 
 #menuBtn {
@@ -31,77 +25,46 @@ body {
   cursor: pointer;
 }
 
-.balance {
-  font-weight: 600;
-}
-
 /* SIDE MENU */
 .menu {
   position: fixed;
-  top: 0;
-  left: -280px;
-  width: 280px;
-  height: 100vh;
-  background: #ffffff;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-  padding-top: 70px;
-  transition: left 0.3s ease;
-  z-index: 1100;
+  top: 56px;
+  left: -260px;
+  width: 260px;
+  height: calc(100% - 56px);
+  background: #fff;
+  z-index: 1500;
+  transition: left 0.25s ease;
+  overflow-y: auto;
 }
 
 .menu.open {
   left: 0;
 }
 
-.menu-item {
-  padding: 16px 20px;
+.menu .item {
+  padding: 16px;
   border-bottom: 1px solid #eee;
   font-size: 16px;
-  cursor: pointer;
 }
 
-/* MAP */
-#map {
-  margin-top: 56px;
-}
-
-/* CARD */
-.card {
-  background: #fff;
-  margin: 16px;
-  padding: 16px;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-}
-
-.card h2 {
-  margin-bottom: 8px;
-}
-
-/* BUTTON */
-.btn {
-  width: 100%;
-  padding: 14px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 12px;
-  background: #00aaff;
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-/* STATUS */
-.status {
+/* OVERLAY */
+#overlay {
   position: fixed;
-  bottom: 0;
+  top: 56px;
   left: 0;
-  right: 0;
-  height: 48px;
-  background: #fff;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-  z-index: 900;
+  width: 100%;
+  height: calc(100% - 56px);
+  background: rgba(0,0,0,0.3);
+  z-index: 1400;
+  display: none;
+}
+
+#overlay.show {
+  display: block;
+}
+
+/* CONTENT */
+.main {
+  padding-top: 70px;
 }
