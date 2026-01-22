@@ -11,7 +11,7 @@
 body {
   margin: 0;
   background: #f4f6f8;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: system-ui, sans-serif;
   color: #0b1f33;
 }
 
@@ -21,7 +21,6 @@ body {
   padding: 12px;
 }
 
-/* HEADER */
 .header {
   text-align: center;
   font-weight: 700;
@@ -30,40 +29,34 @@ body {
   margin-bottom: 10px;
 }
 
-/* MAP / SCENE */
-#scene {
-  height: 180px;
-  background: linear-gradient(#ffffff, #eaf6ff);
-  border-radius: 16px;
+/* MAP */
+#map {
   position: relative;
+  height: 220px;
+  background: #eaf6ff;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 20px rgba(0,0,0,0.08);
   margin-bottom: 12px;
 }
 
-.road {
+.point {
   position: absolute;
-  bottom: 30px;
-  width: 200%;
-  height: 40px;
-  background: repeating-linear-gradient(
-    90deg,
-    #ccc 0 20px,
-    #eee 20px 40px
-  );
-  animation: moveRoad 1s linear infinite;
+  font-size: 22px;
 }
 
-@keyframes moveRoad {
-  from { transform: translateX(0); }
-  to { transform: translateX(-40px); }
-}
+#courier { left: 10px; top: 100px; transition: .2s; }
+#restaurant { right: 20px; top: 40px; }
+#client { right: 20px; bottom: 40px; }
 
-.bike {
+.weather {
   position: absolute;
-  bottom: 45px;
-  left: 40px;
-  font-size: 28px;
+  top: 8px;
+  left: 8px;
+  background: rgba(255,255,255,0.85);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 13px;
 }
 
 /* PANELS */
@@ -100,131 +93,122 @@ button.gray {
   color: #4a5b68;
 }
 
-button:active {
-  transform: scale(0.97);
-}
+button:active { transform: scale(0.97); }
 
-/* STATUS */
 .status {
   text-align: center;
-  font-size: 15px;
   font-weight: 500;
-  color: #334;
 }
 </style>
 </head>
 
 <body>
-
 <div id="app">
 
 <div class="header">Courier Partner</div>
 
-<div id="scene">
-  <div class="road" id="road"></div>
-  <div class="bike">🚴</div>
+<div id="map">
+  <div class="weather" id="weather">☀️ Ясно</div>
+  <div class="point" id="courier">🚴</div>
+  <div class="point" id="restaurant">🍔</div>
+  <div class="point" id="client">🏠</div>
+</div>
+
+<div class="panel">
+  <div class="stat">🏅 Уровень <span id="level">1</span></div>
+  <div class="stat">⭐ Опыт <span id="xp">0</span></div>
 </div>
 
 <div class="panel">
   <div class="stat">💰 Деньги <span id="money">0</span> zł</div>
   <div class="stat">⚡ Энергия <span id="energy">100</span>%</div>
   <div class="stat">🙂 Настроение <span id="mood">70</span>%</div>
-  <div class="stat">🚲 Велосипед <span id="bike">100</span>%</div>
-  <div class="stat">🍔 Сытость <span id="food">60</span>%</div>
+  <div class="stat">🚲 Вел <span id="bike">100</span>%</div>
 </div>
 
-<div class="panel status" id="status">
-Ожидание заказов…
-</div>
+<div class="panel status" id="status">Ожидание заказов…</div>
 
 <div class="panel">
-  <button id="mainBtn" onclick="mainAction()">📦 Ждать заказ</button>
-  <button class="gray" onclick="eat()">🍔 Поесть</button>
+  <button id="mainBtn" onclick="action()">📦 Принять заказ</button>
 </div>
 
 </div>
 
 <script>
 /* ===== СОСТОЯНИЕ ===== */
-let state = JSON.parse(localStorage.getItem("partner_save")) || {
-  money: 0,
-  energy: 100,
-  mood: 70,
-  bike: 100,
-  food: 60,
-  phase: "idle" // idle, toRestaurant, toClient
+let s = JSON.parse(localStorage.getItem("partner_v2")) || {
+  xp:0, level:1, money:0,
+  energy:100, mood:70, bike:100,
+  phase:"idle",
+  weather:"sun"
 };
 
-const statusText = {
-  idle: "Ожидание заказов…",
-  toRestaurant: "Едешь в ресторан",
-  toClient: "Везёшь заказ клиенту"
-};
-
-function save() {
-  localStorage.setItem("partner_save", JSON.stringify(state));
+/* ===== УРОВНИ ===== */
+function calcLevel(xp){
+  return Math.min(150, Math.floor(Math.pow(xp,0.45)));
 }
 
-function update() {
-  money.innerText = state.money;
-  energy.innerText = state.energy;
-  mood.innerText = state.mood;
-  bike.innerText = state.bike;
-  food.innerText = state.food;
-  status.innerText = statusText[state.phase];
-  mainBtn.innerText =
-    state.phase === "idle" ? "📦 Принять заказ" :
-    state.phase === "toRestaurant" ? "🚴 Ехать в ресторан" :
-    "🏠 Ехать к клиенту";
+/* ===== ПОГОДА ===== */
+function newWeather(){
+  s.weather = Math.random()<0.3 ? "rain" : "sun";
+  weather.innerText = s.weather==="rain" ? "🌧 Дождь" : "☀️ Ясно";
 }
 
 /* ===== ГЕЙМПЛЕЙ ===== */
-function mainAction() {
-  if (state.energy <= 0 || state.bike <= 0) return;
+function action(){
+  if(s.energy<=0 || s.bike<=0) return;
 
-  if (state.phase === "idle") {
-    state.phase = "toRestaurant";
-  } else if (state.phase === "toRestaurant") {
+  if(s.phase==="idle"){
+    s.phase="toRestaurant";
+    status.innerText="Едешь в ресторан";
+    moveCourier(280,40);
+    mainBtn.innerText="🚴 Ехать";
+  }
+  else if(s.phase==="toRestaurant"){
     ride();
-    state.phase = "toClient";
-  } else if (state.phase === "toClient") {
+    s.phase="toClient";
+    status.innerText="Везёшь заказ клиенту";
+    moveCourier(280,150);
+  }
+  else{
     ride();
-    state.money += 15 + Math.floor(Math.random() * 10);
-    state.phase = "idle";
+    let income = 12 + Math.floor(s.level*0.6);
+    s.money+=income;
+    s.xp+=income;
+    s.level=calcLevel(s.xp);
+    s.phase="idle";
+    status.innerText="Ожидание заказов…";
+    mainBtn.innerText="📦 Принять заказ";
+    moveCourier(10,100);
+    newWeather();
   }
 
-  decay();
-  save(); update();
+  save();update();
 }
 
-function ride() {
-  state.energy -= 6;
-  state.bike -= 3;
-  state.food -= 4;
+function ride(){
+  let weatherPenalty = s.weather==="rain" ? 1.4 : 1;
+  s.energy-=5*weatherPenalty;
+  s.bike-=3*weatherPenalty;
+  s.mood-=2*weatherPenalty;
 }
 
-function decay() {
-  if (state.food <= 20) state.mood -= 4;
-  if (state.energy <= 20) state.mood -= 3;
-  clamp();
+/* ===== UI ===== */
+function moveCourier(x,y){
+  courier.style.left=x+"px";
+  courier.style.top=y+"px";
 }
-
-function eat() {
-  if (state.money < 10) return;
-  state.money -= 10;
-  state.food = Math.min(100, state.food + 30);
-  state.mood += 5;
-  save(); update();
+function update(){
+  level.innerText=s.level;
+  xp.innerText=s.xp;
+  money.innerText=s.money;
+  energy.innerText=Math.max(0,Math.floor(s.energy));
+  mood.innerText=Math.max(0,Math.floor(s.mood));
+  bike.innerText=Math.max(0,Math.floor(s.bike));
 }
+function save(){localStorage.setItem("partner_v2",JSON.stringify(s));}
 
-function clamp() {
-  state.energy = Math.max(0, state.energy);
-  state.mood = Math.max(0, state.mood);
-  state.bike = Math.max(0, state.bike);
-  state.food = Math.max(0, state.food);
-}
-
-update();
+newWeather();update();
 </script>
 
 </body>
