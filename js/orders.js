@@ -1,21 +1,32 @@
 // js/orders.js
-// Реалистичная логика заказов + движение + уменьшающееся расстояние
+// Заказы + движение + уменьшающееся расстояние + дедлайны + жёсткие штрафы
 
 // ===== НАСТРОЙКИ =====
-const SPEED_KMH = 12;               // скорость курьера
-const TICK_MS = 1000;               // обновление раз в секунду
-const MIN_PAYOUT = 8.99;            // минималка (можно менять потом)
+const SPEED_KMH = 12;        // скорость курьера
+const TICK_MS = 1000;        // обновление раз в секунду
+const MIN_PAYOUT = 8.99;     // минималка
 const BASE_MIN = 3.5;
 const BASE_MAX = 4.5;
 const KM_RATE_MIN = 2.0;
 const KM_RATE_MAX = 2.6;
 
+// Дедлайн: базовое время + на км (мин)
+const BASE_MINUTES = 6;      // базовое время
+const MIN_PER_KM = 6;        // минут на км
+
+// Штрафы
+const LATE_FINE = 10;        // PLN
+const LATE_REP_PENALTY = 3;  // репутация
+const SUCCESS_REP_BONUS = 1; // репутация
+
 // ===== СОСТОЯНИЕ =====
 let online = false;
 let activeOrder = null;
 let phase = "idle"; // idle | to_restaurant | waiting | to_client
+let deadlineAt = null;
+let timerDeadline = null;
 
-// Текущая позиция курьера (берём из map.js, если есть)
+// Текущая позиция курьера (если map.js выставляет — подхватится)
 window.courierPos = window.courierPos || [52.2297, 21.0122];
 
 // ===== УТИЛИТЫ =====
@@ -39,47 +50,95 @@ function haversine(a, b) {
 function moveTowards(from, to, kmPerTick) {
   const dist = haversine(from, to);
   if (dist <= kmPerTick) return to.slice();
-
-  const ratio = kmPerTick / dist;
+  const r = kmPerTick / dist;
   return [
-    from[0] + (to[0] - from[0]) * ratio,
-    from[1] + (to[1] - from[1]) * ratio
+    from[0] + (to[0] - from[0]) * r,
+    from[1] + (to[1] - from[1]) * r
   ];
 }
 
-// ===== UI ХЕЛПЕРЫ =====
-function setBottom(text, buttonsHtml = "") {
-  const card = document.querySelector(".bottom-card");
-  if (!card) return;
-  card.innerHTML = `
-    <h2>Warsaw</h2>
-    <p>${text}</p>
-    ${buttonsHtml}
-  `;
+function minutesLeft() {
+  if (!deadlineAt) return null;
+  const ms = deadlineAt - Date.now();
+  return Math.max(0, Math.ceil(ms / 60000));
 }
 
-function setButtons(html) {
+// ===== UI =====
+function setBottom(html) {
   const card = document.querySelector(".bottom-card");
   if (!card) return;
-  card.insertAdjacentHTML("beforeend", html);
+  card.innerHTML = html;
+}
+
+function searching() {
+  setBottom(`
+    <h2>Warsaw</h2>
+    <p>🔄 Ищем заказ…</p>
+  `);
+}
+
+function showOrderCard(o) {
+  setBottom(`
+    <h2>Street Food Point</h2>
+    <p>
+      📍 До ресторана: ${o.dToRest.toFixed(2)} км<br>
+      📦 До клиента: ${o.dToClient.toFixed(2)} км<br>
+      ⏱ Дедлайн: ${o.deadlineMin} мин<br>
+      💰 Оплата: ${o.payout} PLN
+    </p>
+    <div style="display:flex; gap:10px; margin-top:12px">
+      <button class="online-btn" onclick="acceptOrder()">Принять</button>
+      <button class="online-btn" onclick="skipOrder()" style="background:#ddd;color:#111">Пропустить</button>
+    </div>
+  `);
+}
+
+function showTravel(text, km) {
+  setBottom(`
+    <h2>Warsaw</h2>
+    <p>${text}<br>Осталось: ${km.toFixed(2)} км<br>⏱ До дедлайна: ${minutesLeft()} мин</p>
+  `);
+}
+
+function showWaiting(ms) {
+  const min = Math.ceil(ms / 60000);
+  setBottom(`
+    <h2>Warsaw</h2>
+    <p>⏳ Ожидание заказа (${min} мин)</p>
+  `);
+}
+
+function showSuccess(payout) {
+  setBottom(`
+    <h2>Готово</h2>
+    <p>✅ Доставка выполнена<br>💰 +${payout} PLN<br>⭐ Репутация +${SUCCESS_REP_BONUS}</p>
+  `);
+}
+
+function showLate() {
+  setBottom(`
+    <h2>Отмена</h2>
+    <p>❌ Опоздание<br>💸 Штраф −${LATE_FINE} PLN<br>⭐ Репутация −${LATE_REP_PENALTY}</p>
+  `);
 }
 
 // ===== ВЫХОД НА ЛИНИЮ =====
 window.goOnline = function () {
   if (online) return;
   online = true;
-  setBottom("🔄 Ищем заказ…");
+  searching();
   setTimeout(spawnOrder, rand(3000, 6000));
 };
 
 window.goOffline = function () {
   online = false;
+  cleanupTimers();
   activeOrder = null;
   phase = "idle";
-  setBottom("Вы не на линии");
+  setBottom(`<h2>Warsaw</h2><p>Вы не на линии</p>`);
 };
 
-// ===== ГЕНЕРАЦИЯ ЗАКАЗА =====
+// ===== ЗАКАЗ =====
 function spawnOrder() {
   if (!online) return;
 
@@ -100,88 +159,115 @@ function spawnOrder() {
   const kmRate = rand(KM_RATE_MIN, KM_RATE_MAX);
   let payout = base + totalKm * kmRate;
 
-  // модификаторы состояния (если есть state)
-  if (window.state && window.state.courier) {
-    const c = window.state.courier;
-    if (c.hunger < 40) payout *= 0.9;
-    if (c.mood < 40) payout *= 0.9;
-    if (c.energy < 40) payout *= 0.85;
-  }
-
   if (payout < MIN_PAYOUT) payout = MIN_PAYOUT;
+
+  const deadlineMin = Math.ceil(BASE_MINUTES + totalKm * MIN_PER_KM);
 
   activeOrder = {
     restaurant,
     client,
     dToRest,
     dToClient,
+    totalKm,
     payout: payout.toFixed(2),
-    waitMs: rand(120000, 360000) // 2–6 мин ожидание
+    waitMs: rand(120000, 360000), // 2–6 мин
+    deadlineMin
   };
 
-  setBottom(
-    `🍔 Street Food Point<br>
-     📍 До ресторана: ${dToRest.toFixed(2)} км<br>
-     📦 До клиента: ${dToClient.toFixed(2)} км<br>
-     💰 Оплата: ${activeOrder.payout} PLN`,
-    `
-    <div style="display:flex; gap:10px; margin-top:12px">
-      <button class="online-btn" onclick="acceptOrder()">Принять</button>
-      <button class="online-btn" onclick="skipOrder()" style="background:#ddd;color:#111">Пропустить</button>
-    </div>`
-  );
+  showOrderCard(activeOrder);
 }
 
 window.skipOrder = function () {
-  setBottom("🔄 Ищем заказ…");
+  searching();
   setTimeout(spawnOrder, rand(3000, 6000));
 };
 
-// ===== ПРИНЯТИЕ И ДВИЖЕНИЕ =====
+// ===== ПРИНЯТИЕ =====
 window.acceptOrder = function () {
   if (!activeOrder) return;
+
   phase = "to_restaurant";
-  setBottom(`🚴 Едешь к ресторану…<br>📍 ${activeOrder.dToRest.toFixed(2)} км`);
+  deadlineAt = Date.now() + activeOrder.deadlineMin * 60000;
+  startDeadlineWatcher();
+
+  showTravel("🚴 Едешь к ресторану…", activeOrder.dToRest);
   startMove(activeOrder.restaurant, () => {
     phase = "waiting";
-    setBottom("⏳ Ожидание заказа…");
+    showWaiting(activeOrder.waitMs);
     setTimeout(() => {
       phase = "to_client";
-      setBottom(`🚴 Едешь к клиенту…<br>📦 ${activeOrder.dToClient.toFixed(2)} км`);
+      showTravel("🚴 Едешь к клиенту…", activeOrder.dToClient);
       startMove(activeOrder.client, finishOrder);
     }, activeOrder.waitMs);
   });
 };
 
+// ===== ДВИЖЕНИЕ =====
 function startMove(target, onArrive) {
-  const kmPerTick = SPEED_KMH / 3600; // км за секунду
-  const timer = setInterval(() => {
+  const kmPerTick = SPEED_KMH / 3600;
+  const mover = setInterval(() => {
     const next = moveTowards(courierPos, target, kmPerTick);
     courierPos = next;
 
-    // если есть карта — двигаем маркер
     if (window.courierMarker) {
       window.courierMarker.setLatLng(courierPos);
     }
 
     const remaining = haversine(courierPos, target);
-    if (phase === "to_restaurant") {
-      setBottom(`🚴 Едешь к ресторану…<br>📍 ${remaining.toFixed(2)} км`);
-    } else if (phase === "to_client") {
-      setBottom(`🚴 Едешь к клиенту…<br>📦 ${remaining.toFixed(2)} км`);
-    }
+    if (phase === "to_restaurant") showTravel("🚴 Едешь к ресторану…", remaining);
+    if (phase === "to_client") showTravel("🚴 Едешь к клиенту…", remaining);
 
     if (remaining <= kmPerTick) {
-      clearInterval(timer);
+      clearInterval(mover);
       onArrive && onArrive();
     }
   }, TICK_MS);
 }
 
+// ===== ДЕДЛАЙН =====
+function startDeadlineWatcher() {
+  cleanupTimers();
+  timerDeadline = setInterval(() => {
+    if (!deadlineAt) return;
+    if (Date.now() > deadlineAt) {
+      // опоздал
+      cleanupTimers();
+      phase = "idle";
+      activeOrder = null;
+      applyLatePenalty();
+      showLate();
+      setTimeout(() => online && spawnOrder(), 3000);
+    }
+  }, 1000);
+}
+
+function cleanupTimers() {
+  if (timerDeadline) {
+    clearInterval(timerDeadline);
+    timerDeadline = null;
+  }
+}
+
+// ===== ФИНИШ =====
 function finishOrder() {
-  setBottom(`✅ Доставка завершена<br>💰 +${activeOrder.payout} PLN`);
-  // тут позже: деньги, репутация
-  activeOrder = null;
+  cleanupTimers();
   phase = "idle";
+  const payout = activeOrder.payout;
+
+  // Деньги/репутация — если есть state, применим
+  if (window.state) {
+    window.state.money = (window.state.money || 0) + Number(payout);
+    window.state.reputation = (window.state.reputation || 0) + SUCCESS_REP_BONUS;
+  }
+
+  showSuccess(payout);
+  activeOrder = null;
   setTimeout(() => online && spawnOrder(), 3000);
+}
+
+function applyLatePenalty() {
+  if (window.state) {
+    window.state.money = Math.max(0, (window.state.money || 0) - LATE_FINE);
+    window.state.reputation = Math.max(0, (window.state.reputation || 0) - LATE_REP_PENALTY);
+  }
 }
