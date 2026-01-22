@@ -3,186 +3,227 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Courier Life — Warszawa</title>
+<title>Courier Partner</title>
 
 <style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
 body {
   margin: 0;
-  background: #0b0b0b;
-  color: #eaeaea;
-  font-family: system-ui, Arial;
+  background: #f4f6f8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #0b1f33;
 }
-#wrap {
+
+#app {
   max-width: 420px;
   margin: auto;
-  padding: 14px;
+  padding: 12px;
 }
-canvas {
-  width: 100%;
-  height: 160px;
-  background: linear-gradient(#1a1a1a,#050505);
-  border-radius: 12px;
+
+/* HEADER */
+.header {
+  text-align: center;
+  font-weight: 700;
+  font-size: 20px;
+  color: #00aaff;
+  margin-bottom: 10px;
+}
+
+/* MAP / SCENE */
+#scene {
+  height: 180px;
+  background: linear-gradient(#ffffff, #eaf6ff);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
   margin-bottom: 12px;
 }
+
+.road {
+  position: absolute;
+  bottom: 30px;
+  width: 200%;
+  height: 40px;
+  background: repeating-linear-gradient(
+    90deg,
+    #ccc 0 20px,
+    #eee 20px 40px
+  );
+  animation: moveRoad 1s linear infinite;
+}
+
+@keyframes moveRoad {
+  from { transform: translateX(0); }
+  to { transform: translateX(-40px); }
+}
+
+.bike {
+  position: absolute;
+  bottom: 45px;
+  left: 40px;
+  font-size: 28px;
+}
+
+/* PANELS */
 .panel {
-  background: rgba(25,25,25,0.95);
+  background: #fff;
   border-radius: 14px;
   padding: 12px;
   margin-bottom: 10px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.06);
 }
+
 .stat {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
+  margin: 4px 0;
 }
+
+/* BUTTONS */
 button {
   width: 100%;
-  padding: 14px;
-  margin-top: 6px;
+  padding: 16px;
+  margin-top: 8px;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   font-size: 16px;
-  background: linear-gradient(135deg,#2979ff,#00b0ff);
-  color: white;
+  font-weight: 600;
+  background: #00aaff;
+  color: #fff;
 }
-button.red {
-  background: linear-gradient(135deg,#b71c1c,#ff5252);
+
+button.gray {
+  background: #dfe8ee;
+  color: #4a5b68;
 }
-.log {
-  font-size: 14px;
-  line-height: 1.4;
-  min-height: 80px;
-  opacity: .9;
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* STATUS */
+.status {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: #334;
 }
 </style>
 </head>
 
 <body>
-<div id="wrap">
 
-<canvas id="scene"></canvas>
+<div id="app">
 
-<div class="panel">
-  <div class="stat">Уровень <span id="level">1</span></div>
-  <div class="stat">Опыт <span id="xp">0</span></div>
+<div class="header">Courier Partner</div>
+
+<div id="scene">
+  <div class="road" id="road"></div>
+  <div class="bike">🚴</div>
 </div>
 
 <div class="panel">
   <div class="stat">💰 Деньги <span id="money">0</span> zł</div>
-  <div class="stat">💸 Долг <span id="debt">0</span> zł</div>
-</div>
-
-<div class="panel">
   <div class="stat">⚡ Энергия <span id="energy">100</span>%</div>
-  <div class="stat">😤 Стресс <span id="stress">10</span>%</div>
-  <div class="stat">🙂 Настроение <span id="mood">60</span>%</div>
+  <div class="stat">🙂 Настроение <span id="mood">70</span>%</div>
+  <div class="stat">🚲 Велосипед <span id="bike">100</span>%</div>
+  <div class="stat">🍔 Сытость <span id="food">60</span>%</div>
+</div>
+
+<div class="panel status" id="status">
+Ожидание заказов…
 </div>
 
 <div class="panel">
-  <button onclick="startDay()">🚦 Начать день</button>
-  <button onclick="doDelivery()">📦 Доставка</button>
-  <button class="red" onclick="endDay()">🌙 Закончить день</button>
-</div>
-
-<div class="panel log" id="log">
-Город дышит. Ты смотришь на небо и ждёшь первый заказ.
+  <button id="mainBtn" onclick="mainAction()">📦 Ждать заказ</button>
+  <button class="gray" onclick="eat()">🍔 Поесть</button>
 </div>
 
 </div>
 
 <script>
-/* ================== СОХРАНЕНИЕ ================== */
-let p = JSON.parse(localStorage.getItem("courier_life")) || {
-  xp:0, level:1, money:0, debt:0,
-  energy:100, stress:10, mood:60,
-  burnout:0, day:1, onDay:false
+/* ===== СОСТОЯНИЕ ===== */
+let state = JSON.parse(localStorage.getItem("partner_save")) || {
+  money: 0,
+  energy: 100,
+  mood: 70,
+  bike: 100,
+  food: 60,
+  phase: "idle" // idle, toRestaurant, toClient
 };
 
-/* ================== ГОРОД ================== */
-let city = {
-  hour: 8,
-  weather: "clear", // clear rain night
-  demand: 1,
-  pressure: 1
+const statusText = {
+  idle: "Ожидание заказов…",
+  toRestaurant: "Едешь в ресторан",
+  toClient: "Везёшь заказ клиенту"
 };
 
-/* ================== ФОРМУЛЫ ================== */
-function calcLevel(xp){return Math.min(150,Math.floor(Math.pow(xp,0.45)));}
-function clamp(){p.energy=Math.max(0,Math.min(100,p.energy));p.mood=Math.max(0,Math.min(100,p.mood));}
-
-/* ================== ДЕНЬ ================== */
-function startDay(){
-  if(p.onDay){log("Ты уже в работе.");return;}
-  p.onDay=true;
-  city.hour=8;
-  city.weather=Math.random()<0.3?"rain":"clear";
-  log("Ты выходишь. Погода: "+(city.weather==="rain"?"дождь":"ясно"));
-  save();update();
+function save() {
+  localStorage.setItem("partner_save", JSON.stringify(state));
 }
 
-/* ================== ДОСТАВКА ================== */
-function doDelivery(){
-  if(!p.onDay){log("Ты ещё не начал день.");return;}
-  if(p.energy<=0){log("Ты выгорел физически.");return;}
-
-  city.hour++;
-  city.demand = city.hour>=11&&city.hour<=14 || city.hour>=18?1.6:1.0;
-
-  let dist = rnd(1,7);
-  let fatigue = (100-p.energy)/100;
-  let moodMod = p.mood/100;
-  let income = Math.floor(dist*9*city.demand*moodMod*(1-fatigue));
-
-  let tax = Math.floor(income*0.12);
-  let fine = Math.random()<0.15?rnd(20,60):0;
-
-  p.money += income - tax - fine;
-  p.xp += income;
-  p.energy -= dist*7;
-  p.stress += rnd(3,6);
-  p.mood -= fine?8:3;
-
-  if(fine){log("⚠️ Конфликт. Штраф "+fine+" zł.");}
-  else{log("📦 Доставка. +" + (income-tax) + " zł.");}
-
-  p.level = calcLevel(p.xp);
-  clamp();save();update();
+function update() {
+  money.innerText = state.money;
+  energy.innerText = state.energy;
+  mood.innerText = state.mood;
+  bike.innerText = state.bike;
+  food.innerText = state.food;
+  status.innerText = statusText[state.phase];
+  mainBtn.innerText =
+    state.phase === "idle" ? "📦 Принять заказ" :
+    state.phase === "toRestaurant" ? "🚴 Ехать в ресторан" :
+    "🏠 Ехать к клиенту";
 }
 
-/* ================== КОНЕЦ ДНЯ ================== */
-function endDay(){
-  p.onDay=false;
-  p.energy+=40;
-  p.stress-=20;
-  p.mood+=10;
-  p.day++;
-  log("🌙 День окончен. Ты молчишь и смотришь в потолок.");
-  clamp();save();update();
+/* ===== ГЕЙМПЛЕЙ ===== */
+function mainAction() {
+  if (state.energy <= 0 || state.bike <= 0) return;
+
+  if (state.phase === "idle") {
+    state.phase = "toRestaurant";
+  } else if (state.phase === "toRestaurant") {
+    ride();
+    state.phase = "toClient";
+  } else if (state.phase === "toClient") {
+    ride();
+    state.money += 15 + Math.floor(Math.random() * 10);
+    state.phase = "idle";
+  }
+
+  decay();
+  save(); update();
 }
 
-/* ================== CANVAS ================== */
-const c=document.getElementById("scene"),ctx=c.getContext("2d");
-function draw(){
-  c.width=c.offsetWidth;c.height=c.offsetHeight;
-  ctx.clearRect(0,0,c.width,c.height);
-  ctx.fillStyle=city.weather==="rain"?"#223":"#111";
-  ctx.fillRect(0,0,c.width,c.height);
-  ctx.fillStyle="#4fc3f7";
-  ctx.fillRect((Date.now()/20)%c.width,100,30,10);
-  requestAnimationFrame(draw);
+function ride() {
+  state.energy -= 6;
+  state.bike -= 3;
+  state.food -= 4;
 }
-draw();
 
-/* ================== UI ================== */
-function update(){
-  level.innerText=p.level;xp.innerText=p.xp;
-  money.innerText=p.money;debt.innerText=p.debt;
-  energy.innerText=p.energy;stress.innerText=p.stress;
-  mood.innerText=p.mood;
+function decay() {
+  if (state.food <= 20) state.mood -= 4;
+  if (state.energy <= 20) state.mood -= 3;
+  clamp();
 }
-function log(t){document.getElementById("log").innerText=t;}
-function save(){localStorage.setItem("courier_life",JSON.stringify(p));}
-function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+function eat() {
+  if (state.money < 10) return;
+  state.money -= 10;
+  state.food = Math.min(100, state.food + 30);
+  state.mood += 5;
+  save(); update();
+}
+
+function clamp() {
+  state.energy = Math.max(0, state.energy);
+  state.mood = Math.max(0, state.mood);
+  state.bike = Math.max(0, state.bike);
+  state.food = Math.max(0, state.food);
+}
+
 update();
 </script>
 
