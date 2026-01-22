@@ -2,77 +2,59 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Courier Simulator</title>
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- UI STYLE -->
+  <link rel="stylesheet" href="css/ui.css">
 
-  <!-- Leaflet CSS -->
+  <!-- LEAFLET -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
-
-  <!-- UI styles -->
-  <link rel="stylesheet" href="css/ui.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
 
-  <div id="app">
-
-    <!-- MAP -->
-    <div id="map"></div>
-
-    <!-- TOP BAR -->
-    <div class="top-bar">
-      <button id="menuBtn">☰</button>
-      <div class="top-stats">
-        <span>💰 500 PLN</span>
-        <span>⭐ 50</span>
-      </div>
-    </div>
-
-    <!-- SIDE MENU -->
-    <div id="sideMenu" class="side-menu">
-      <div class="menu-header">
-        <strong>Courier</strong>
-        <small>Offline</small>
-      </div>
-      <ul>
-        <li>🛒 Магазин</li>
-        <li>🎒 Экипировка</li>
-        <li>📊 Статистика</li>
-        <li>💼 Финансы</li>
-        <li>⭐ Репутация</li>
-        <li>⚙️ Настройки</li>
-      </ul>
-    </div>
-
-    <!-- OVERLAY -->
-    <div id="overlay"></div>
-
-    <!-- BOTTOM SHEET -->
-    <div class="bottom-sheet">
-      <div class="sheet-handle"></div>
-
-      <h2>Warsaw</h2>
-      <p>Доступность заказов: <b>Низкая</b></p>
-
-      <button class="primary-btn">▶ Выйти онлайн</button>
-
-      <div class="status">
-        🍔 60% &nbsp; 🙂 70% &nbsp; ⚡ 80%
-      </div>
-    </div>
-
+  <!-- HEADER -->
+  <div class="header">
+    <div id="menuBtn">☰</div>
+    <div class="balance">💰 500 PLN ⭐ 50</div>
   </div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- SIDE MENU -->
+  <div class="menu">
+    <div class="menu-item">🛒 Магазин</div>
+    <div class="menu-item">🎒 Экипировка</div>
+    <div class="menu-item">📊 Статистика</div>
+    <div class="menu-item">💼 Финансы</div>
+    <div class="menu-item">⭐ Репутация</div>
+    <div class="menu-item">⚙️ Настройки</div>
+  </div>
 
-  <!-- App -->
-  <script type="module" src="js/app.js"></script>
+  <!-- MAP -->
+  <div id="map" style="height: 55vh;"></div>
+
+  <!-- MAIN CARD -->
+  <div class="card">
+    <h2>Warsaw</h2>
+    <p>Доступность заказов: <b>Низкая</b></p>
+    <button class="btn" onclick="goOnline()">▶ Выйти онлайн</button>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status">
+    <div>🍔 60%</div>
+    <div>🙂 70%</div>
+    <div>⚡ 80%</div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/state.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
 
 </body>
 </html>
