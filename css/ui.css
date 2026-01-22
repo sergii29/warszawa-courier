@@ -1,1 +1,121 @@
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 
+body {
+  background: #f2f4f7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* MAP */
+#map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* TOP BAR */
+.top-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 1000;
+}
+
+.top-bar button,
+.top-stats {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* SIDE MENU */
+.side-menu {
+  position: absolute;
+  top: 0;
+  left: -260px;
+  width: 240px;
+  height: 100%;
+  background: #fff;
+  z-index: 1500;
+  transition: left 0.3s ease;
+}
+
+.side-menu.open {
+  left: 0;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+}
+
+.side-menu li {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+/* OVERLAY */
+#overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1400;
+  display: none;
+}
+
+#overlay.show {
+  display: block;
+}
+
+/* BOTTOM SHEET */
+.bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  padding: 14px;
+  z-index: 1200;
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 5px;
+  background: #ccc;
+  border-radius: 3px;
+  margin: 0 auto 10px;
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 14px;
+  background: #009de0;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.status {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+}
