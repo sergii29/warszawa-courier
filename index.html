@@ -3,55 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Courier Warsaw</title>
+<title>Courier Simulator Warsaw</title>
 
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #ffffff;
-}
-
-#map {
-  height: 75vh;
-  width: 100%;
-}
-
-#panel {
-  height: 25vh;
-  padding: 12px;
-  box-shadow: 0 -6px 20px rgba(0,0,0,0.15);
-}
-
-button {
-  width: 100%;
-  padding: 16px;
-  font-size: 17px;
-  font-weight: 600;
-  border: none;
-  border-radius: 12px;
-  background: #00aaff;
-  color: white;
-  margin-top: 8px;
-}
-
-button.gray {
-  background: #e4eef4;
-  color: #333;
-}
-
-.status {
-  font-size: 15px;
-  margin-bottom: 6px;
-}
-.stats {
-  font-size: 13px;
-  opacity: 0.8;
-}
+body{margin:0;font-family:system-ui;background:#fff}
+#map{height:72vh}
+#panel{height:28vh;padding:10px;box-shadow:0 -6px 20px rgba(0,0,0,.15)}
+button{width:100%;padding:14px;font-size:16px;font-weight:600;border:none;border-radius:12px;background:#00aaff;color:#fff;margin-top:6px}
+button.gray{background:#e4eef4;color:#333}
+.tab{display:none}
+.tab.active{display:block}
+.order{background:#f4f8fb;padding:10px;border-radius:10px;margin-top:6px;font-size:14px}
+.small{font-size:13px;opacity:.8}
 </style>
 </head>
 
@@ -60,124 +26,165 @@ button.gray {
 <div id="map"></div>
 
 <div id="panel">
-  <div class="status" id="status">🔘 Офлайн</div>
-  <div class="stats">
-    ⚡ Энергия: <span id="energy">100</span>% |
-    🍔 Еда: <span id="food">60</span>% |
-    🚲 Вел: <span id="bike">100</span>%
+  <div id="mainTab" class="tab active">
+    <div id="status">🔘 Офлайн</div>
+    <div class="small">
+      ⚡ <span id="energy">100</span>% |
+      🍔 <span id="food">60</span>% |
+      🚲 <span id="bike">100</span>% |
+      🔋 <span id="battery">100</span>%
+      💰 <span id="money">0</span> zł
+    </div>
+
+    <div id="orderBox"></div>
+
+    <button onclick="mainAction()" id="mainBtn">🟢 Выйти онлайн</button>
+    <button class="gray" onclick="openShop()">🛒 Магазин</button>
   </div>
-  <button id="mainBtn" onclick="mainAction()">🟢 Выйти онлайн</button>
+
+  <div id="shopTab" class="tab">
+    <b>🛒 Магазин</b>
+    <button onclick="buy('food')">🍔 Еда (+30%) — 12 zł</button>
+    <button onclick="buy('bike')">🔧 Ремонт вело — 20 zł</button>
+    <button onclick="buy('battery')">🔋 Заряд — 10 zł</button>
+    <button onclick="buy('energy')">☕ Кофе — 15 zł</button>
+    <button class="gray" onclick="closeShop()">⬅ Назад</button>
+  </div>
 </div>
 
 <script>
 /* ===== СОСТОЯНИЕ ===== */
-let state = {
-  phase: "offline", // offline, online, toRestaurant, toClient
-  energy: 100,
-  food: 60,
-  bike: 100,
-  step: 0
+let s = JSON.parse(localStorage.getItem("courier_warsaw")) || {
+  phase:"offline",
+  energy:100, food:60, bike:100, battery:100,
+  money:0,
+  step:0,
+  order:null
 };
 
-/* ===== КАРТА ВАРШАВЫ ===== */
-const map = L.map('map').setView([52.2297, 21.0122], 13);
+/* ===== КАРТА ===== */
+const map = L.map('map').setView([52.2297,21.0122],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+let courierPos=[52.2297,21.0122];
+const courier=L.marker(courierPos).addTo(map);
+let route=null;
 
-/* ===== МАРКЕРЫ ===== */
-let courierPos = [52.2297, 21.0122];
-let restaurantPos = [52.2335, 21.0020];
-let clientPos = [52.2210, 21.0250];
-
-const courierMarker = L.marker(courierPos).addTo(map);
-let targetLine = null;
+/* ===== ДАННЫЕ ЗАКАЗОВ ===== */
+const restaurants=[
+  {name:"La Pizza Napoletana",pos:[52.2335,21.002]},
+  {name:"Kebab King",pos:[52.221,21.01]},
+  {name:"Burger House",pos:[52.226,21.025]}
+];
 
 /* ===== UI ===== */
-function updateUI() {
-  energy.innerText = Math.floor(state.energy);
-  food.innerText = Math.floor(state.food);
-  bike.innerText = Math.floor(state.bike);
+function updateUI(){
+  energy.innerText=Math.floor(s.energy);
+  food.innerText=Math.floor(s.food);
+  bike.innerText=Math.floor(s.bike);
+  battery.innerText=Math.floor(s.battery);
+  money.innerText=s.money;
+}
+function save(){localStorage.setItem("courier_warsaw",JSON.stringify(s));}
 
-  if (state.phase === "offline") {
-    status.innerText = "🔘 Офлайн";
-    mainBtn.innerText = "🟢 Выйти онлайн";
+/* ===== ОСНОВНАЯ КНОПКА ===== */
+function mainAction(){
+  if(s.phase==="offline"){
+    s.phase="online";
+    status.innerText="🟢 Онлайн. Ожидание заказа…";
+    mainBtn.innerText="🔔 Ждать заказ";
   }
-  if (state.phase === "online") {
-    status.innerText = "🟢 Онлайн. Ожидание заказа…";
-    mainBtn.innerText = "🔔 Ждать заказ";
+  else if(s.phase==="online"){
+    spawnOrder();
   }
-  if (state.phase === "toRestaurant") {
-    status.innerText = "🍔 Едешь в ресторан";
-    mainBtn.innerText = "🚴 Ехать";
+  else if(s.phase==="toRestaurant"){
+    moveStep(s.order.restaurant.pos,()=>{
+      s.phase="waiting";
+      status.innerText="⏳ Ожидание заказа…";
+      setTimeout(()=>{
+        s.phase="toClient";
+        status.innerText="📦 Забрал заказ. Едешь к клиенту";
+        drawRoute(courierPos,s.order.clientPos);
+        mainBtn.innerText="🚴 Ехать";
+      },2000);
+    });
   }
-  if (state.phase === "toClient") {
-    status.innerText = "🏠 Везёшь заказ клиенту";
-    mainBtn.innerText = "🚴 Ехать";
+  else if(s.phase==="toClient"){
+    moveStep(s.order.clientPos,()=>{
+      s.money+=s.order.pay;
+      s.phase="online";
+      orderBox.innerHTML="";
+      status.innerText="🟢 Онлайн. Заказ завершён";
+      mainBtn.innerText="🔔 Ждать заказ";
+    });
   }
+  drain();
+  save();updateUI();
 }
 
-/* ===== ЛОГИКА ===== */
-function mainAction() {
-  if (state.phase === "offline") {
-    state.phase = "online";
-  }
-  else if (state.phase === "online") {
-    state.phase = "toRestaurant";
-    drawRoute(courierPos, restaurantPos);
-    state.step = 0;
-  }
-  else if (state.phase === "toRestaurant") {
-    moveStep(restaurantPos, "toClient");
-  }
-  else if (state.phase === "toClient") {
-    moveStep(clientPos, "online");
-  }
+/* ===== ЗАКАЗ ===== */
+function spawnOrder(){
+  const r=restaurants[Math.floor(Math.random()*restaurants.length)];
+  const client=[52.22+Math.random()*0.02,21.01+Math.random()*0.02];
+  const dist=distance(courierPos,r.pos);
+  const pay=Math.floor(6+dist*2.5);
 
-  drain();
-  updateUI();
+  s.order={restaurant:r,clientPos:client,pay,dist};
+
+  orderBox.innerHTML=`
+    <div class="order">
+      🍴 ${r.name}<br>
+      📏 ${dist.toFixed(1)} км<br>
+      💰 ${pay} zł
+    </div>`;
+  s.phase="toRestaurant";
+  status.innerText="🍔 Принят заказ. Едешь в ресторан";
+  mainBtn.innerText="🚴 Ехать";
+  drawRoute(courierPos,r.pos);
 }
 
 /* ===== ДВИЖЕНИЕ ===== */
-function moveStep(target, nextPhase) {
-  const dx = (target[0] - courierPos[0]) / 15;
-  const dy = (target[1] - courierPos[1]) / 15;
-
-  courierPos[0] += dx;
-  courierPos[1] += dy;
-
-  courierMarker.setLatLng(courierPos);
-  map.panTo(courierPos, { animate: true });
-
-  state.step++;
-  if (state.step >= 15) {
-    courierPos = [...target];
-    courierMarker.setLatLng(courierPos);
+function moveStep(target,done){
+  const dx=(target[0]-courierPos[0])/15;
+  const dy=(target[1]-courierPos[1])/15;
+  courierPos[0]+=dx; courierPos[1]+=dy;
+  courier.setLatLng(courierPos);
+  map.panTo(courierPos,{animate:true});
+  s.step++;
+  if(s.step>=15){
+    courierPos=[...target];
+    courier.setLatLng(courierPos);
     clearRoute();
-    state.phase = nextPhase;
+    s.step=0;
+    done();
   }
 }
 
-/* ===== МАРШРУТ ===== */
-function drawRoute(from, to) {
-  clearRoute();
-  targetLine = L.polyline([from, to], { color: "#00aaff" }).addTo(map);
-}
-function clearRoute() {
-  if (targetLine) map.removeLayer(targetLine);
-}
-
-/* ===== ИЗНОС ===== */
-function drain() {
-  if (state.phase === "toRestaurant" || state.phase === "toClient") {
-    state.energy -= 2;
-    state.food -= 1.5;
-    state.bike -= 1;
+/* ===== РАСХОД ===== */
+function drain(){
+  if(s.phase==="toRestaurant"||s.phase==="toClient"){
+    s.energy-=2; s.food-=1; s.bike-=1; s.battery-=1;
   }
 }
 
-/* INIT */
+/* ===== МАГАЗИН ===== */
+function openShop(){mainTab.classList.remove("active");shopTab.classList.add("active")}
+function closeShop(){shopTab.classList.remove("active");mainTab.classList.add("active")}
+function buy(type){
+  if(type==="food"&&s.money>=12){s.money-=12;s.food+=30}
+  if(type==="bike"&&s.money>=20){s.money-=20;s.bike=100}
+  if(type==="battery"&&s.money>=10){s.money-=10;s.battery=100}
+  if(type==="energy"&&s.money>=15){s.money-=15;s.energy+=30}
+  updateUI();save();
+}
+
+/* ===== ВСПОМОГ ===== */
+function drawRoute(a,b){clearRoute();route=L.polyline([a,b],{color:"#00aaff"}).addTo(map)}
+function clearRoute(){if(route)map.removeLayer(route)}
+function distance(a,b){
+  return Math.sqrt(Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2))*111;
+}
+
 updateUI();
 </script>
 
