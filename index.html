@@ -20,7 +20,7 @@
       top: 56px;
       left: 0;
       right: 0;
-      bottom: 140px;
+      bottom: 160px;
       z-index: 1;
     }
 
@@ -45,6 +45,7 @@
       background: #19a7e0;
       color: #fff;
       cursor: pointer;
+      margin-top: 8px;
     }
 
     .stats {
@@ -55,17 +56,18 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- TOP BAR -->
   <div class="topbar">
     <div id="menuBtn">☰</div>
-    <div>💰 500 PLN ⭐ 50</div>
+    <div>💰 <span id="money">500</span> PLN ⭐ <span id="rep">50</span></div>
   </div>
 
   <!-- SIDE MENU -->
   <div id="sideMenu" class="menu">
-    <div class="item">🛒 Магазин</div>
+    <div class="item" onclick="openShop()">🛒 Магазин</div>
     <div class="item">🎒 Экипировка</div>
     <div class="item">📊 Статистика</div>
     <div class="item">💼 Финансы</div>
@@ -79,30 +81,46 @@
   <!-- BOTTOM CARD -->
   <div class="bottom-card">
     <h2>Warsaw</h2>
-    <p>Доступность заказов: <b>Низкая</b></p>
-    <button class="online-btn">▶ Выйти онлайн</button>
+    <p>Вы не на линии</p>
+    <button class="online-btn" onclick="goOnline()">▶ Выйти на линию</button>
 
     <div class="stats">
-      <div>🍔 60%</div>
-      <div>🙂 70%</div>
-      <div>⚡ 80%</div>
+      <div>🍔 <span id="hunger">60</span>%</div>
+      <div>🙂 <span id="mood">70</span>%</div>
+      <div>⚡ <span id="energy">80</span>%</div>
     </div>
   </div>
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/orders.js"></script>
 
   <script>
-    const map = L.map("map").setView([52.2297, 21.0122], 13);
+    // Инициализация карты
+    window.courierPos = [52.2297, 21.0122];
+
+    const map = L.map("map").setView(window.courierPos, 13);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19
     }).addTo(map);
 
-    L.marker([52.2297, 21.0122]).addTo(map)
+    window.courierMarker = L.marker(window.courierPos)
+      .addTo(map)
       .bindPopup("Ты здесь")
       .openPopup();
+
+    // Обновление UI из state
+    setInterval(() => {
+      if (!window.state) return;
+      document.getElementById("money").textContent = state.money;
+      document.getElementById("rep").textContent = state.reputation;
+      document.getElementById("hunger").textContent = state.courier.hunger;
+      document.getElementById("mood").textContent = state.courier.mood;
+      document.getElementById("energy").textContent = state.courier.energy;
+    }, 500);
   </script>
 
 </body>
