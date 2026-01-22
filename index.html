@@ -4,10 +4,8 @@
   <meta charset="UTF-8" />
   <title>Courier Simulator</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <!-- Leaflet CSS -->
   <link
@@ -21,67 +19,59 @@
 
 <body>
 
-  <!-- ===== MAP ===== -->
-  <div id="map"></div>
+  <div id="app">
 
-  <!-- ===== TOP BAR ===== -->
-  <div class="top-bar">
-    <button id="menuBtn">☰</button>
+    <!-- MAP -->
+    <div id="map"></div>
 
-    <div class="top-stats">
-      <span class="money">💰 500 PLN</span>
-      <span class="rep">⭐ 50</span>
-    </div>
-  </div>
-
-  <!-- ===== SIDE MENU ===== -->
-  <div id="sideMenu" class="side-menu">
-    <div class="menu-header">
-      <strong>Courier</strong>
-      <span>Offline</span>
-    </div>
-
-    <ul>
-      <li>🛒 Магазин</li>
-      <li>🎒 Экипировка</li>
-      <li>📊 Статистика</li>
-      <li>💼 Финансы</li>
-      <li>⭐ Репутация</li>
-      <li>⚙️ Настройки</li>
-    </ul>
-  </div>
-
-  <!-- ===== OVERLAY ===== -->
-  <div id="overlay"></div>
-
-  <!-- ===== BOTTOM SHEET ===== -->
-  <div class="bottom-sheet">
-    <div class="sheet-handle"></div>
-
-    <div class="sheet-content">
-      <h2>Warsaw</h2>
-
-      <p class="demand">
-        Доступность заказов:
-        <span class="low">Низкая</span>
-      </p>
-
-      <button class="primary-btn">
-        ▶ Выйти онлайн
-      </button>
-
-      <div class="status-bar">
-        🍔 Голод: 60% &nbsp;
-        🙂 Настроение: 70% &nbsp;
-        ⚡ Бодрость: 80%
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <button id="menuBtn">☰</button>
+      <div class="top-stats">
+        <span>💰 500 PLN</span>
+        <span>⭐ 50</span>
       </div>
     </div>
+
+    <!-- SIDE MENU -->
+    <div id="sideMenu" class="side-menu">
+      <div class="menu-header">
+        <strong>Courier</strong>
+        <small>Offline</small>
+      </div>
+      <ul>
+        <li>🛒 Магазин</li>
+        <li>🎒 Экипировка</li>
+        <li>📊 Статистика</li>
+        <li>💼 Финансы</li>
+        <li>⭐ Репутация</li>
+        <li>⚙️ Настройки</li>
+      </ul>
+    </div>
+
+    <!-- OVERLAY -->
+    <div id="overlay"></div>
+
+    <!-- BOTTOM SHEET -->
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <h2>Warsaw</h2>
+      <p>Доступность заказов: <b>Низкая</b></p>
+
+      <button class="primary-btn">▶ Выйти онлайн</button>
+
+      <div class="status">
+        🍔 60% &nbsp; 🙂 70% &nbsp; ⚡ 80%
+      </div>
+    </div>
+
   </div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- App entry -->
+  <!-- App -->
   <script type="module" src="js/app.js"></script>
 
 </body>
