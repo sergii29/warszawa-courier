@@ -1,30 +1,21 @@
-html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
+:root {
+  --primary: #1cb5e0;
+  --primary-dark: #149ac2;
+  --bg: #ffffff;
+  --card: #f9f9fb;
+  --text: #111111;
+  --muted: #6b7280;
+  --danger: #ef4444;
 }
 
 body {
-  background: #f2f4f7;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
 }
 
-#app {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* MAP */
-#map {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-/* TOP BAR */
+/* Верхняя панель */
 .top-bar {
   position: absolute;
   top: 12px;
@@ -35,87 +26,61 @@ body {
   z-index: 1000;
 }
 
-.top-bar button,
-.top-stats {
-  background: #fff;
-  border-radius: 12px;
+.balance {
+  background: white;
   padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* Кнопки */
+.btn-primary {
+  background: var(--primary);
+  color: white;
   border: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* SIDE MENU */
-.side-menu {
-  position: absolute;
-  top: 0;
-  left: -260px;
-  width: 240px;
-  height: 100%;
-  background: #fff;
-  z-index: 1500;
-  transition: left 0.3s ease;
-}
-
-.side-menu.open {
-  left: 0;
-}
-
-.side-menu ul {
-  list-style: none;
-  padding: 0;
-}
-
-.side-menu li {
+  border-radius: 16px;
   padding: 16px;
-  border-bottom: 1px solid #eee;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
 }
 
-/* OVERLAY */
-#overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: 1400;
-  display: none;
+.btn-primary:active {
+  background: var(--primary-dark);
 }
 
-#overlay.show {
-  display: block;
-}
-
-/* BOTTOM SHEET */
-.bottom-sheet {
-  position: absolute;
+/* Нижний sheet */
+.sheet {
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: #fff;
-  border-radius: 18px 18px 0 0;
-  padding: 14px;
-  z-index: 1200;
+  background: white;
+  border-radius: 24px 24px 0 0;
+  padding: 20px;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
 }
 
-.sheet-handle {
-  width: 40px;
-  height: 5px;
-  background: #ccc;
-  border-radius: 3px;
-  margin: 0 auto 10px;
+.sheet h2 {
+  margin: 0 0 8px 0;
 }
 
-.primary-btn {
-  width: 100%;
-  padding: 14px;
-  background: #009de0;
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  font-size: 16px;
-  margin-top: 10px;
-}
-
-.status {
-  margin-top: 10px;
-  text-align: center;
+.sheet .muted {
+  color: var(--muted);
   font-size: 14px;
+}
+
+/* Карточка заказа */
+.order-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.order-price {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 8px;
 }
