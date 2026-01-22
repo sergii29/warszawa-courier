@@ -1,18 +1,10 @@
-// js/ui.js
-export function initUI() {
+document.addEventListener("DOMContentLoaded", () => {
   const menuBtn = document.getElementById("menuBtn");
-  const sideMenu = document.getElementById("sideMenu");
-  const overlay = document.getElementById("overlay");
+  const menu = document.querySelector(".menu");
 
-  if (!menuBtn) return;
-
-  menuBtn.onclick = () => {
-    sideMenu.classList.add("open");
-    overlay.classList.add("show");
-  };
-
-  overlay.onclick = () => {
-    sideMenu.classList.remove("open");
-    overlay.classList.remove("show");
-  };
-}
+  if (menuBtn && menu) {
+    menuBtn.addEventListener("click", () => {
+      menu.classList.toggle("open");
+    });
+  }
+});
