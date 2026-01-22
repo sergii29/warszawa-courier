@@ -1,127 +1,197 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Courier Simulator</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+<title>Courier Simulator</title>
 
-  <!-- UI styles -->
-  <link rel="stylesheet" href="css/ui.css" />
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
 
-  <style>
-    #map {
-      position: fixed;
-      top: 56px;
-      left: 0;
-      right: 0;
-      bottom: 160px;
-      z-index: 1;
-    }
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    .bottom-card {
-      position: fixed;
-      left: 12px;
-      right: 12px;
-      bottom: 16px;
-      background: #fff;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.15);
-      z-index: 1000;
-    }
+<style>
+* { box-sizing: border-box; margin:0; padding:0; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
 
-    .online-btn {
-      width: 100%;
-      padding: 14px;
-      font-size: 18px;
-      border-radius: 12px;
-      border: none;
-      background: #19a7e0;
-      color: #fff;
-      cursor: pointer;
-      margin-top: 8px;
-    }
+body {
+  background:#f2f4f7;
+  overflow:hidden;
+}
 
-    .stats {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 12px;
-      font-size: 16px;
-    }
-  </style>
+/* HEADER */
+.header {
+  height:56px;
+  background:#0d3558;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+}
+
+.header-left {
+  font-size:24px;
+  cursor:pointer;
+}
+
+.header-right {
+  display:flex;
+  gap:14px;
+  font-weight:600;
+}
+
+/* MAP */
+#map {
+  height: calc(100vh - 56px);
+  width:100%;
+}
+
+/* BOTTOM CARD */
+.bottom {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:#fff;
+  border-radius:16px 16px 0 0;
+  padding:18px;
+  box-shadow:0 -4px 16px rgba(0,0,0,0.15);
+}
+
+.bottom h2 {
+  margin-bottom:6px;
+}
+
+.online-btn {
+  margin-top:12px;
+  background:#18a8e0;
+  color:#fff;
+  border:none;
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border-radius:12px;
+  cursor:pointer;
+}
+
+/* STATS */
+.stats {
+  margin-top:12px;
+  display:flex;
+  justify-content:space-around;
+  font-size:14px;
+}
+
+/* MENU */
+.menu {
+  position:fixed;
+  top:56px;
+  left:-260px;
+  width:260px;
+  height:calc(100vh - 56px);
+  background:#fff;
+  box-shadow:4px 0 12px rgba(0,0,0,0.15);
+  transition:0.3s;
+  z-index:999;
+}
+
+.menu.open {
+  left:0;
+}
+
+.menu ul {
+  list-style:none;
+}
+
+.menu li {
+  padding:16px;
+  border-bottom:1px solid #eee;
+  font-size:16px;
+}
+
+/* OVERLAY */
+.overlay {
+  position:fixed;
+  top:56px;
+  left:0;
+  right:0;
+  bottom:0;
+  background:rgba(0,0,0,0.3);
+  display:none;
+  z-index:998;
+}
+
+.overlay.show {
+  display:block;
+}
+</style>
 </head>
 
 <body>
 
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <div id="menuBtn">☰</div>
-    <div>💰 <span id="money">500</span> PLN ⭐ <span id="rep">50</span></div>
+<div class="header">
+  <div class="header-left" id="menuBtn">☰</div>
+  <div class="header-right">
+    💰 500 PLN ⭐ 50
   </div>
+</div>
 
-  <!-- SIDE MENU -->
-  <div id="sideMenu" class="menu">
-    <div class="item" onclick="openShop()">🛒 Магазин</div>
-    <div class="item">🎒 Экипировка</div>
-    <div class="item">📊 Статистика</div>
-    <div class="item">💼 Финансы</div>
-    <div class="item">⭐ Репутация</div>
-    <div class="item">⚙️ Настройки</div>
+<div id="map"></div>
+
+<div class="bottom">
+  <h2>Warsaw</h2>
+  <div>Доступность заказов: <b>Низкая</b></div>
+
+  <button class="online-btn">▶ Выйти онлайн</button>
+
+  <div class="stats">
+    🍔 60% 🙂 70% ⚡ 80%
   </div>
+</div>
 
-  <!-- MAP -->
-  <div id="map"></div>
+<div class="menu" id="menu">
+  <ul>
+    <li>🛒 Магазин</li>
+    <li>🎒 Экипировка</li>
+    <li>📊 Статистика</li>
+    <li>💼 Финансы</li>
+    <li>⭐ Репутация</li>
+    <li>⚙️ Настройки</li>
+  </ul>
+</div>
 
-  <!-- BOTTOM CARD -->
-  <div class="bottom-card">
-    <h2>Warsaw</h2>
-    <p>Вы не на линии</p>
-    <button class="online-btn" onclick="goOnline()">▶ Выйти на линию</button>
+<div class="overlay" id="overlay"></div>
 
-    <div class="stats">
-      <div>🍔 <span id="hunger">60</span>%</div>
-      <div>🙂 <span id="mood">70</span>%</div>
-      <div>⚡ <span id="energy">80</span>%</div>
-    </div>
-  </div>
+<script>
+/* MAP */
+const map = L.map('map', { zoomControl:true }).setView([52.2297, 21.0122], 13);
 
-  <!-- Scripts -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/shop.js"></script>
-  <script src="js/orders.js"></script>
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19
+}).addTo(map);
 
-  <script>
-    // Инициализация карты
-    window.courierPos = [52.2297, 21.0122];
+const marker = L.marker([52.2297, 21.0122]).addTo(map)
+  .bindPopup('Ты здесь')
+  .openPopup();
 
-    const map = L.map("map").setView(window.courierPos, 13);
+/* MENU LOGIC */
+const menu = document.getElementById('menu');
+const overlay = document.getElementById('overlay');
+const menuBtn = document.getElementById('menuBtn');
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19
-    }).addTo(map);
+menuBtn.onclick = () => {
+  menu.classList.add('open');
+  overlay.classList.add('show');
+};
 
-    window.courierMarker = L.marker(window.courierPos)
-      .addTo(map)
-      .bindPopup("Ты здесь")
-      .openPopup();
-
-    // Обновление UI из state
-    setInterval(() => {
-      if (!window.state) return;
-      document.getElementById("money").textContent = state.money;
-      document.getElementById("rep").textContent = state.reputation;
-      document.getElementById("hunger").textContent = state.courier.hunger;
-      document.getElementById("mood").textContent = state.courier.mood;
-      document.getElementById("energy").textContent = state.courier.energy;
-    }, 500);
-  </script>
+overlay.onclick = () => {
+  menu.classList.remove('open');
+  overlay.classList.remove('show');
+};
+</script>
 
 </body>
 </html>
