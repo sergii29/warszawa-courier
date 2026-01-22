@@ -1,1 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Courier Simulator</title>
 
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <!-- UI styles -->
+  <link rel="stylesheet" href="css/ui.css" />
+
+  <style>
+    #map {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 140px;
+      z-index: 1;
+    }
+
+    .bottom-card {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 16px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.15);
+      z-index: 1000;
+    }
+
+    .online-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: none;
+      background: #19a7e0;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div id="menuBtn">☰</div>
+    <div>💰 500 PLN ⭐ 50</div>
+  </div>
+
+  <!-- SIDE MENU -->
+  <div id="sideMenu" class="menu">
+    <div class="item">🛒 Магазин</div>
+    <div class="item">🎒 Экипировка</div>
+    <div class="item">📊 Статистика</div>
+    <div class="item">💼 Финансы</div>
+    <div class="item">⭐ Репутация</div>
+    <div class="item">⚙️ Настройки</div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- BOTTOM CARD -->
+  <div class="bottom-card">
+    <h2>Warsaw</h2>
+    <p>Доступность заказов: <b>Низкая</b></p>
+    <button class="online-btn">▶ Выйти онлайн</button>
+
+    <div class="stats">
+      <div>🍔 60%</div>
+      <div>🙂 70%</div>
+      <div>⚡ 80%</div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/ui.js"></script>
+
+  <script>
+    const map = L.map("map").setView([52.2297, 21.0122], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19
+    }).addTo(map);
+
+    L.marker([52.2297, 21.0122]).addTo(map)
+      .bindPopup("Ты здесь")
+      .openPopup();
+  </script>
+
+</body>
+</html>
