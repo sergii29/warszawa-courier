@@ -1,194 +1,1754 @@
+скоро будет что то новое...
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warsaw Courier Sim</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --bg-dark: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #00ccff;
+            --accent-green: #00e676;
+            --accent-orange: #ff9100;
+            --accent-red: #ff3d00;
+            --accent-purple: #d500f9;
+            --brand-blue: #0088cc; 
+            --taxi-yellow: #ffcc00;
+            --taxi-black: #222;
+        }
 
-<title>Courier Simulator</title>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-dark); color: var(--text-primary); overflow: hidden; user-select: none; }
+        #map { height: 100%; width: 100%; z-index: 1; filter: brightness(0.8) contrast(1.2); }
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+        .top-bar { position: absolute; top: 0; left: 0; right: 0; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: none; }
+        .menu-btn, .stats-btn { background: white; color: black; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); pointer-events: auto; cursor: pointer; border: none; }
+        .balance-display { background: rgba(0, 0, 0, 0.8); padding: 8px 16px; border-radius: 20px; text-align: center; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); }
+        .balance-amount { font-size: 18px; font-weight: 800; color: white; }
+        .balance-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; }
+        .debt-warning { color: var(--accent-red); font-size: 10px; font-weight: bold; display: none; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  background: #f2f4f7;
-  overflow: hidden;
-}
+        .equip-bar { position: absolute; top: 70px; left: 15px; right: 15px; display: flex; gap: 4px; z-index: 999; pointer-events: none; }
+        .equip-item { flex: 1; background: rgba(0,0,0,0.8); border-radius: 6px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; backdrop-filter: blur(4px); }
+        .equip-icon { font-size: 10px; margin-bottom: 2px; color: #ccc; }
+        .progress-mini { width: 80%; height: 3px; background: #444; border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+        .progress-mini-fill { height: 100%; background: var(--accent-green); transition: width 0.3s; }
+        .equip-label { font-size: 7px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 0.5px; }
 
-/* HEADER */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  background: #0a2a43;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  z-index: 1000;
-}
+        .game-toast { position: absolute; top: 140px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(0, 0, 0, 0.9); color: white; padding: 10px 20px; border-radius: 25px; font-weight: bold; font-size: 14px; z-index: 1001; opacity: 0; transition: all 0.3s; pointer-events: none; display: flex; align-items: center; gap: 8px; white-space: nowrap; border: 1px solid #333; }
+        .game-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast-warn { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .toast-success { border-color: var(--accent-green); color: var(--accent-green); }
 
-.burger {
-  font-size: 22px;
-  cursor: pointer;
-}
+        .bottom-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px; z-index: 1002; box-shadow: 0 -5px 30px rgba(0,0,0,0.3); color: #333; }
 
-.balance {
-  margin-left: auto;
-  font-weight: 600;
-}
+        .slider-container { position: relative; width: 100%; height: 60px; background: #f0f0f0; border-radius: 30px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-top: 10px; transition: background 0.3s; }
+        .slider-text { color: #999; font-weight: 600; z-index: 1; letter-spacing: 0.5px; text-transform: uppercase; font-size: 14px; }
+        .slider-knob { position: absolute; left: 4px; top: 4px; bottom: 4px; width: 52px; background: var(--brand-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; cursor: grab; z-index: 2; transition: transform 0.1s; }
+        .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(0, 136, 204, 0.2); z-index: 0; }
+        
+        .slider-container.taxi-mode { background: #fff9c4; border: 1px solid #fbc02d; }
+        .slider-container.taxi-mode .slider-knob { background: var(--taxi-yellow); color: black; }
+        .slider-container.taxi-mode .slider-fill { background: rgba(255, 204, 0, 0.3); }
+        .slider-container.taxi-mode .slider-text { color: #f57f17; }
+        
+        .slider-container.scheduled { background: #ffebee; border: 1px solid #ffcdd2; }
+        .slider-container.scheduled .slider-knob { background: var(--accent-red); }
+        .slider-container.scheduled .slider-text { color: var(--accent-red); }
 
-/* MAP */
-#map {
-  position: absolute;
-  top: 56px;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1;
-}
+        .controls-row { display: flex; gap: 10px; margin-top: 15px; }
+        .pedal-btn { flex: 1; background: var(--brand-blue); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; box-shadow: 0 4px 0 #006699; transition: all 0.1s; }
+        .pedal-btn:active { transform: translateY(4px); box-shadow: none; }
+        .pedal-btn:disabled { background: #ccc; box-shadow: none; transform: none; }
+        .pedal-btn.blocked { background: var(--accent-orange); box-shadow: 0 4px 0 #e65100; cursor: not-allowed; }
+        
+        .pedal-btn.taxi-pedal { background: var(--taxi-black); color: var(--taxi-yellow); box-shadow: 0 4px 0 #444; }
 
-/* CARD */
-.card {
-  position: fixed;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
-  background: #fff;
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  z-index: 500;
-}
+        .bag-btn { width: 60px; background: #f8f9fa; border: 2px solid #eee; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #333; cursor: pointer; position: relative; }
+        .bag-badge { position: absolute; top: -5px; right: -5px; background: var(--accent-red); color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
-.card h2 {
-  margin: 0 0 6px 0;
-}
+        .quick-inv { position: absolute; bottom: 90px; left: 20px; width: 220px; background: #252525; color: white; padding: 10px; border-radius: 16px; z-index: 1005; display: none; flex-direction: column; gap: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.6); border: 1px solid #444; }
+        .quick-inv.open { display: flex; animation: popUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; border: 1px solid transparent; transition: background 0.2s; }
+        .inv-item:active { background: rgba(255,255,255,0.2); }
+        .inv-item.link-btn { background: var(--brand-blue); justify-content: center; font-weight: bold; }
+        .inv-count { background: var(--brand-blue); padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+        @keyframes popUp { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-.button {
-  width: 100%;
-  margin-top: 10px;
-  padding: 14px;
-  border-radius: 14px;
-  background: #16a7e0;
-  color: #fff;
-  border: none;
-  font-size: 16px;
-}
+        #side-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #side-menu-overlay.open { opacity: 1; pointer-events: auto; }
+        #side-menu { position: absolute; top: 0; left: -85%; width: 85%; max-width: 320px; height: 100%; background: #1e1e1e; transition: left 0.3s; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto; }
+        #side-menu.open { left: 0; }
+        .menu-item { padding: 15px 0; border-bottom: 1px solid #333; cursor: pointer; display: flex; gap: 15px; font-size: 16px; align-items: center; }
+        .menu-divider { height: 20px; border-bottom: 1px solid #333; margin-bottom: 20px; }
+        .menu-section-title { font-size: 12px; color: var(--taxi-yellow); text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; margin-top: 10px; }
+        .menu-item.locked { opacity: 0.5; cursor: not-allowed; color: #777; }
+        .menu-item.taxi-item { border-bottom: 1px solid #444; }
+        .menu-item.taxi-item i { width: 25px; text-align: center; }
+        
+        .taxi-toggle-btn { background: #333; color: #777; width: 100%; padding: 15px; border-radius: 10px; border: 2px solid #444; font-weight: bold; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .taxi-toggle-btn.active { background: var(--taxi-yellow); color: black; border-color: var(--taxi-yellow); box-shadow: 0 0 15px rgba(255, 204, 0, 0.4); }
 
-/* STATS */
-.stats {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 14px;
-}
+        .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f5f5f5; color: black; z-index: 3000; transform: translateY(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+        .full-modal.open { transform: translateY(0); }
+        .modal-header { padding: 15px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; font-weight: bold; }
+        .modal-content { flex: 1; overflow-y: auto; padding: 15px; }
 
-/* SIDEBAR */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: -260px;
-  width: 260px;
-  height: 100%;
-  background: #fff;
-  z-index: 1500;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.2);
-  transition: left 0.25s ease;
-  padding-top: 56px;
-}
+        .shop-section { margin-bottom: 25px; }
+        .shop-section h3 { margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+        .shop-card { background: white; padding: 15px; border-radius: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .shop-btn { padding: 8px 14px; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; border: 1px solid var(--brand-blue); color: var(--brand-blue); background: white; min-width: 80px; transition: all 0.2s; }
+        .shop-btn.buy { background: var(--brand-blue); color: white; }
+        .shop-btn.bought { background: var(--accent-green); border-color: var(--accent-green); color: white; transform: scale(1.05); }
+        .shop-btn:disabled { background: #eee; color: #aaa; border-color: #eee; cursor: not-allowed; }
 
-.sidebar.open {
-  left: 0;
-}
+        .bank-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 24px; font-weight: bold; margin-bottom: 15px; box-sizing: border-box; }
+        .bank-actions { display: flex; gap: 10px; }
+        .bank-btn { flex: 1; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-loan { background: var(--accent-green); color: #004d40; }
+        .btn-repay { background: var(--accent-orange); color: #3e2723; }
+        .debt-alert-box { background: #ffebee; color: #c62828; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #ef9a9a; display: none; }
+        .govt-btn { background: #37474f; color: white; border-color: #37474f; }
+        
+        .accept-timer-bg { width: 100%; height: 6px; background: #eee; margin-top: 8px; border-radius: 3px; overflow: hidden; display: none; }
+        .accept-timer-fill { height: 100%; background: var(--accent-red); width: 100%; }
+        @keyframes shrinkTimer { from { width: 100%; } to { width: 0%; } }
+        .animate-timer { animation: shrinkTimer 15s linear forwards; }
+        .delivery-timer { font-size: 11px; color: #666; margin-top: 2px; font-weight: bold; }
 
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
+        /* AUTH STYLES */
+        .auth-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 4000; display: none; justify-content: center; align-items: center; }
+        .auth-box { background: #1e1e1e; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .auth-title { text-align: center; color: white; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; font-weight: bold; }
+        .auth-input { width: 100%; padding: 12px; background: #2c2c2c; border: 1px solid #444; border-radius: 8px; color: white; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
+        .auth-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; font-size: 14px; text-transform: uppercase; }
+        .btn-login { background: var(--brand-blue); color: white; }
+        .btn-register { background: transparent; border: 1px solid var(--accent-green); color: var(--accent-green); margin-top: 10px; }
+        .auth-footer { text-align: center; font-size: 10px; color: #666; margin-top: 15px; line-height: 1.4; }
+        .close-auth { position: absolute; top: 10px; right: 10px; color: #666; font-size: 20px; cursor: pointer; }
 
-.sidebar li {
-  padding: 14px 18px;
-  border-bottom: 1px solid #eee;
-  font-size: 16px;
-}
-
-/* OVERLAY */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 1400;
-  display: none;
-}
-
-.overlay.show {
-  display: block;
-}
-</style>
+    </style>
 </head>
-
 <body>
 
-<div class="header">
-  <div class="burger" onclick="toggleMenu()">☰</div>
-  <div class="balance">💰 500 PLN ⭐ 50</div>
-</div>
+    <div id="map"></div>
 
-<div id="map"></div>
+    <div class="top-bar">
+        <button class="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
+        <div class="balance-display">
+            <div class="balance-amount" id="balance-val">0.00 PLN</div>
+            <div class="balance-label">Баланс <span id="debt-warning" class="debt-warning">(ДОЛГ!)</span></div>
+        </div>
+        <button class="stats-btn" onclick="openModal('stats')"><i class="fa-solid fa-chart-simple"></i></button>
+    </div>
 
-<div class="card">
-  <h2>Warsaw</h2>
-  <div>Доступность заказов: <b>Низкая</b></div>
-  <button class="button">▶ Выйти онлайн</button>
-  <div class="stats">
-    <div>🍔 60%</div>
-    <div>🙂 70%</div>
-    <div>⚡ 80%</div>
-  </div>
-</div>
+    <div class="equip-bar">
+        <div class="equip-item"><i class="fa-solid fa-bicycle equip-icon" id="icon-vehicle"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-bike" style="width: 100%"></div></div><span class="equip-label" id="label-vehicle">ВЕЛ</span></div>
+        <div class="equip-item"><i class="fa-solid fa-box-open equip-icon" id="icon-bag"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-bag" style="width: 100%"></div></div><span class="equip-label" id="label-bag">СУМКА</span></div>
+        <div class="equip-item"><i class="fa-solid fa-mobile-screen equip-icon"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-phone" style="width: 100%"></div></div><span class="equip-label">СВЯЗЬ</span></div>
+        <div class="equip-item"><i class="fa-solid fa-shirt equip-icon" id="icon-gear"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-gear" style="width: 100%"></div></div><span class="equip-label" id="label-gear">ОДЕЖДА</span></div>
+        <div class="equip-item"><i class="fa-solid fa-bolt equip-icon" id="icon-energy" style="color:yellow"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-energy" style="background:yellow; width: 100%"></div></div><span class="equip-label" id="label-energy">СИЛЫ</span></div>
+        <div class="equip-item"><i class="fa-solid fa-droplet equip-icon" style="color:cyan"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-water" style="background:cyan; width: 100%"></div></div><span class="equip-label">ВОДА</span></div>
+        <div class="equip-item"><i class="fa-solid fa-face-smile equip-icon" style="color:#d500f9"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-mood" style="background:#d500f9; width: 100%"></div></div><span class="equip-label">НАСТР</span></div>
+    </div>
 
-<div class="sidebar" id="sidebar">
-  <ul>
-    <li>🛒 Магазин</li>
-    <li>🎒 Экипировка</li>
-    <li>📊 Статистика</li>
-    <li>💼 Финансы</li>
-    <li>⭐ Репутация</li>
-    <li>⚙ Настройки</li>
-  </ul>
-</div>
+    <div id="toast" class="game-toast"><i class="fa-solid fa-circle-info"></i> <span>Msg</span></div>
 
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-box">
+            <div style="text-align:right; margin-bottom:10px;"><i class="fa-solid fa-xmark" onclick="closeAuthModal()" style="color:#888; font-size:20px; cursor:pointer"></i></div>
+            <div class="auth-title"><i class="fa-solid fa-lock"></i> Вход в систему</div>
+            <input type="text" id="auth-login" class="auth-input" placeholder="Логин">
+            <input type="password" id="auth-pass" class="auth-input" placeholder="Пароль">
+            <button class="auth-btn btn-login" onclick="performLogin()">Войти</button>
+            <button class="auth-btn btn-register" onclick="performRegister()">Регистрация</button>
+            <div class="auth-footer">
+                Регистрация сохранит ваш ID в облаке.<br>
+                Забыли пароль? Напишите админу:<br>
+                <span style="color:var(--brand-blue); font-weight:bold">@TotKtoIdet</span>
+            </div>
+        </div>
+    </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div id="side-menu-overlay" onclick="toggleMenu()">
+        <div id="side-menu" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom: 5px">Профиль</h2>
+            <div id="player-name-display" style="font-size:18px; color:var(--brand-blue); font-weight:bold; margin-bottom:5px"></div>
+            <div id="player-id-display" style="font-size:10px; color:#666; display:block; margin-bottom:20px">Loading ID...</div>
+            
+            <div class="menu-item" onclick="openModal('shop')"><i class="fa-solid fa-store" style="color:var(--brand-blue)"></i> Магазин / Инвентарь</div>
+            <div class="menu-item" onclick="openModal('bank')"><i class="fa-solid fa-building-columns" style="color:var(--accent-green)"></i> Банк / Кредит</div>
+            <div class="menu-item" onclick="openModal('deflation')"><i class="fa-solid fa-scale-unbalanced-flip" style="color:#90a4ae"></i> Правительство / Инфляция</div>
+            <div class="menu-item" onclick="openModal('stats')"><i class="fa-solid fa-clock-rotate-left"></i> История</div>
+            
+            <div class="menu-divider"></div>
+            <div class="menu-section-title">🚖 Такси Департамент</div>
+            <div class="menu-item taxi-item locked" id="taxi-showroom-btn" onclick="openModal('taxi-shop')">
+                <i class="fa-solid fa-car" style="color:var(--taxi-yellow)"></i> Автосалон
+            </div>
+            <div class="menu-item taxi-item locked" id="taxi-licenses-btn" onclick="openModal('taxi-licenses')">
+                <i class="fa-solid fa-id-card" style="color:#aaa"></i> Лицензии / Права
+            </div>
+            
+            <button id="taxi-toggle-btn" class="taxi-toggle-btn" onclick="toggleTaxiMode()" style="display:none">
+                <i class="fa-solid fa-taxi"></i> <span>ВКЛЮЧИТЬ TAXI</span>
+            </button>
 
-<script>
-const map = L.map('map').setView([52.2297, 21.0122], 13);
+            <div id="taxi-lock-msg" style="font-size:10px; color:#666; margin-left:15px; margin-top:5px; font-style:italic">
+                <i class="fa-solid fa-lock"></i> Требуется 50 доставок (У вас: <span id="career-count">0</span>)
+            </div>
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+            <div style="margin-top:auto">
+                <div class="menu-item" id="auth-menu-item" onclick="openAuthModal()" style="display:none; color:var(--accent-green)">
+                    <i class="fa-solid fa-key"></i> 🔐 Вход / Регистрация
+                </div>
 
-L.marker([52.2297, 21.0122]).addTo(map).bindPopup('Ты здесь').openPopup();
+                <div class="menu-item" onclick="resetGame()" style="color:var(--accent-red); display:flex; flex-direction:column; align-items:flex-start; gap:0">
+                    <div style="display:flex; gap:15px; align-items:center"><i class="fa-solid fa-trash"></i> Сброс прогресса</div>
+                    <div style="font-size:10px; opacity:0.7; margin-left:35px">Начать заново. Цена: 7000 PLN (Долг)</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-function toggleMenu() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show');
-}
-</script>
+    <div id="full-modal" class="full-modal">
+        <div class="modal-header">
+            <i class="fa-solid fa-arrow-left" onclick="closeModal()" style="font-size:20px; padding:10px; cursor:pointer"></i>
+            <span id="modal-title" id="modal-title">Title</span>
+        </div>
+        <div class="modal-content" id="modal-body"></div>
+    </div>
 
-</body>
-</html>
+    <div class="bottom-sheet">
+        <div id="offline-view">
+            <h3 style="margin:0" id="city-label">Варшава</h3>
+            <div id="demo-mode-alert" style="color:#ff3d00; font-size:11px; margin:5px 0; display:none; border:1px solid #ff3d00; padding:5px; border-radius:5px; background:rgba(0,0,0,0.05); font-weight:bold; text-align:center;">
+                ⚠️ ДЕМО РЕЖИМ: Прогресс не сохраняется без входа!
+            </div>
+
+            <p style="color:#888; font-size:13px">Спрос: Высокий • Инфляция: Активна</p>
+            <div class="slider-container" id="offline-slider-box">
+                <div class="slider-fill" id="offline-slider-fill"></div>
+                <div class="slider-text">СВАЙП ДЛЯ ОНЛАЙНА</div>
+                <div class="slider-knob" id="offline-slider-knob"><i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div id="active-order-view" style="display:none; flex-direction:column; gap:10px">
+            <div style="display:flex; gap:15px; align-items:center">
+                <div style="font-size:24px; width:45px; height:45px; background:#f5f5f5; border-radius:10px; display:flex; align-items:center; justify-content:center" id="rest-icon">🍔</div>
+                <div style="flex:1">
+                    <h3 style="margin:0" id="rest-name">Поиск...</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px">
+                        <span style="font-size:12px; color:#666" id="order-dest">Ожидание</span>
+                        <span id="order-offer" style="font-weight:bold; color:var(--accent-green); font-size:15px">-- PLN</span>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; align-items:center">
+                        <span id="delivery-timer" class="delivery-timer"></span>
+                    </div>
+                    <div class="accept-timer-bg" id="accept-timer"><div class="accept-timer-fill" id="accept-timer-fill"></div></div>
+                </div>
+            </div>
+
+            <div style="position:relative; height:30px; margin:5px 0">
+                <div style="position:absolute; top:50%; left:0; right:0; height:4px; background:#eee; transform:translateY(-50%)"></div>
+                <div style="position:absolute; top:50%; left:0; height:4px; background:var(--brand-blue); transform:translateY(-50%); width:0%" id="track-fill"></div>
+                <div style="position:absolute; top:50%; left:0; transform:translate(-50%, -50%); width:28px; height:28px; background:white; border:2px solid var(--brand-blue); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--brand-blue); font-size:12px; transition:left 0.2s" id="track-icon"><i class="fa-solid fa-bicycle"></i></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#666">
+                <span>Состояние: <strong id="temp-val">100%</strong></span>
+                <span id="status-label">Поиск...</span>
+            </div>
+
+            <div class="slider-container" id="online-slider-box">
+                <div class="slider-fill" id="online-slider-fill"></div>
+                <div class="slider-text" id="online-slider-text">СВАЙП ДЛЯ ОФЛАЙНА</div>
+                <div class="slider-knob" id="online-slider-knob"><i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+
+            <div class="quick-inv" id="quick-inv"></div>
+
+            <div class="controls-row">
+                <div class="bag-btn" onclick="toggleQuickInv()">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <div class="bag-badge" id="bag-count">0</div>
+                </div>
+                <button class="pedal-btn" id="pedal-btn">ЖМИ ГАЗ (PEDAL)</button>
+            </div>
+            <div id="garnishment-info" style="font-size:11px; color:var(--accent-red); text-align:center; display:none">
+                </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // CONFIG
+        const firebaseConfig = {
+          apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk", 
+          authDomain: "warszawa-courier.firebaseapp.com",
+          databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "warszawa-courier",
+          storageBucket: "warszawa-courier.firebasestorage.app",
+          messagingSenderId: "295860613508",
+          appId: "1:295860613508:web:86fe8364377d6875612dd1",
+          measurementId: "G-TGSCHBVLX2"
+        };
+
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            console.log("Firebase Connected");
+        } catch(e) { console.error("Firebase Error:", e); }
+
+        const SAVE_KEY = 'WARSZAWA_FOREVER';
+        const TAXI_UNLOCK_REQ = 50;
+        
+        let gameConfig = {
+            basePickupPay: 4.0, perKmPay: 1.5, payVariance: 2.0, 
+            inflationRate: 0.1, trafficChance: 0.1, trafficDuration: 3000,
+            energyDrain: 0.15, waterDrain: 0.10, moodDrain: 0.05, 
+            deliveryTime: 60, coolingRate: 0.5, 
+            tipChance: 0.5, tipBonusChance: 0.3, tipMinTemp: 60, tipMinMood: 80,
+            itemPrices: {}
+        };
+
+        const ITEMS_DB = {
+            bike: { name: 'Велосипед', type: 'repair', baseCost: 5, icon: 'fa-bicycle', desc: 'Ремонт ходовой' },
+            bag: { name: 'Сумка', type: 'repair', baseCost: 2, icon: 'fa-box-open', desc: 'Заплатка дыр' },
+            phone: { name: 'Связь', type: 'repair', baseCost: 1, icon: 'fa-mobile-screen', desc: 'Оплата интернета' },
+            gear: { name: 'Одежда', type: 'repair', baseCost: 3, icon: 'fa-shirt', desc: 'Химчистка' },
+            
+            // TAXI SPECIFIC ITEMS
+            car_main: { name: 'Автосервис', type: 'repair', baseCost: 100, icon: 'fa-wrench', desc: 'Ремонт подвески и ТО.' },
+            car_interior: { name: 'Химчистка салона', type: 'repair', baseCost: 40, icon: 'fa-sparkles', desc: 'Чистота для клиентов.' },
+            car_tires: { name: 'Шиномонтаж', type: 'repair', baseCost: 80, icon: 'fa-circle-notch', desc: 'Смена резины.' },
+            
+            water: { name: 'Вода (0.5л)', type: 'buy', cost: 2.0, icon: 'fa-bottle-water', effect: { water: 35, energy: 5 }, desc: 'Спасает от жажды.', target: 'water' },
+            bar: { name: 'Сникерс', type: 'buy', cost: 4.5, icon: 'fa-cookie-bite', effect: { energy: 20, mood: 15 }, desc: 'Баланс энергии.', target: 'energy' },
+            energy_drink: { name: 'Red Bull', type: 'buy', cost: 7.0, icon: 'fa-bolt', effect: { energy: 50, mood: 5, water: -5 }, desc: 'Энергетик временно останавливает расход энергии!', target: 'energy', special: 'no_drain' },
+            coffee: { name: 'Латте', type: 'buy', cost: 9.0, icon: 'fa-mug-hot', effect: { mood: 30, energy: 10 }, desc: 'Для Настроения!', target: 'mood' },
+            
+            // FUEL (For taxi mode)
+            gas: { name: 'Бензин (10л)', type: 'buy', cost: 12.0, icon: 'fa-gas-pump', effect: { energy: 80 }, desc: 'Заправка авто.', target: 'energy' }
+        };
+
+        // DEFAULT STATE (Used for resets and new players)
+        const DEFAULT_STATE = {
+            name: null, 
+            balance: 0, debt: 0, debtTimer: 0, debtOverdue: false,
+            loanStreak: 0, 
+            isOnline: false, isSearching: false, scheduledOffline: false,
+            items: { bike: 100, bag: 100, phone: 100, gear: 100 },
+            needs: { energy: 100, water: 100, mood: 100 },
+            inventory: { water: 0, bar: 0, energy_drink: 0, coffee: 0, gas: 0 },
+            repairs: { bike: 0, bag: 0, phone: 0, gear: 0 },
+            history: [],
+            energyBoostActive: false,
+            isAuth: false,
+            career: { totalOrders: 0 },
+            taxi: { unlocked: false, active: false, vehicle: null, licenses: { driver: false, insurance: false, taxi: false } }
+        };
+
+        let state = JSON.parse(JSON.stringify(DEFAULT_STATE)); // Copy default
+        state.id = 'u_' + Math.random().toString(36).substr(2, 9);
+
+        const restaurants = [
+            { name: "McDonald's", icon: "🍔" }, { name: "KFC", icon: "🍗" },
+            { name: "Pasibus", icon: "🍔" }, { name: "Kebab King", icon: "🌯" },
+            { name: "Sushi Master", icon: "🍣" }, { name: "Pizza Hut", icon: "🍕" }
+        ];
+
+        const taxiDestinations = [
+            { name: "Аэропорт Шопен", icon: "✈️" }, { name: "Центральный Вокзал", icon: "🚆" },
+            { name: "Бизнес Центр", icon: "🏢" }, { name: "Старый Город", icon: "🏛" },
+            { name: "Клуб 'Level 27'", icon: "🍸" }, { name: "ТЦ Zlote Tarasy", icon: "🛍" }
+        ];
+        
+        const clientNames = ["Анна", "Петр", "Кася", "Михал", "Ольга", "Томаш", "Юлия", "Якуб"];
+        const clientGreetings = [
+            "Добрый день, спешу в аэропорт!", 
+            "Привет! На вокзал, пожалуйста.", 
+            "Здравствуйте, можно побыстрее?", 
+            "Эй, шеф! В центр, плачу щедро!",
+            "Доброе утро, на работу опаздываю."
+        ];
+
+        let currentOrder = null;
+        let acceptTimeout = null;
+        let orderInterval = null;
+        let map;
+        let lastSync = 0;
+
+        function init() {
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.2297, 21.0122], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+            L.marker([52.2297, 21.0122]).addTo(map);
+            
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            
+            loadGame();
+
+            // TELEGRAM VS ANDROID DETECTION
+            if(tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                // TELEGRAM MODE
+                state.id = tg.initDataUnsafe.user.id.toString();
+                state.name = tg.initDataUnsafe.user.first_name;
+                if(tg.initDataUnsafe.user.username) {
+                    state.name += ` (@${tg.initDataUnsafe.user.username})`;
+                }
+                saveGame();
+                // Auth button is hidden by updateAuthUI()
+            } else {
+                // ANDROID / WEB MODE
+                if (!state.name) {
+                    state.name = "Guest Courier";
+                }
+            }
+            
+            // CHECK AUTH STATE for existing users
+            if(state.name !== "Guest Courier" && !state.isAuth) {
+                // Assume they are logged in if they have a name in Android mode
+                state.isAuth = true; 
+            }
+
+            // DEMO ALERT
+            if(state.name === "Guest Courier" && !tg.initDataUnsafe.user) {
+                document.getElementById('demo-mode-alert').style.display = 'block';
+            } else {
+                document.getElementById('demo-mode-alert').style.display = 'none';
+            }
+
+            document.getElementById('player-id-display').textContent = `ID: ${state.id}`;
+            document.getElementById('player-name-display').textContent = state.name;
+            document.getElementById('pedal-btn').addEventListener('click', pedal);
+            initSliders();
+            setInterval(checkDebt, 1000); 
+            listenToCloud(); syncToCloud(true);
+            updateMenuState();
+            updateAuthUI(); // NEW: Update button state
+            updateUI(); // force initial UI
+        }
+
+        // AUTH FUNCTIONS
+        function openAuthModal() {
+            toggleMenu();
+            document.getElementById('auth-modal').style.display = 'flex';
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        function performRegister() {
+            const login = document.getElementById('auth-login').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+
+            if(login.length < 3 || pass.length < 3) {
+                showToast('Логин и пароль мин. 3 символа', 'warn');
+                return;
+            }
+
+            db.ref('users_lookup/' + login).once('value', snap => {
+                if(snap.exists()) {
+                    showToast('Такой логин уже занят!', 'warn');
+                } else {
+                    const userData = {
+                        pass: pass,
+                        playerId: state.id,
+                        login: login
+                    };
+
+                    db.ref('users_lookup/' + login).set(userData)
+                      .then(() => {
+                          state.name = login; // Update name to login
+                          state.isAuth = true; // Set auth flag
+                          saveGame();
+                          syncToCloud(true);
+                          updateUI();
+                          updateAuthUI(); // Update button to Logout
+                          closeAuthModal();
+                          showToast('✅ Регистрация успешна!', 'success');
+                          document.getElementById('player-name-display').textContent = state.name;
+                          document.getElementById('demo-mode-alert').style.display = 'none';
+                      });
+                }
+            });
+        }
+
+        function performLogin() {
+            const login = document.getElementById('auth-login').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+
+            db.ref('users_lookup/' + login).once('value', snap => {
+                if(!snap.exists()) {
+                    showToast('Пользователь не найден', 'warn');
+                    return;
+                }
+                
+                const data = snap.val();
+                if(data.pass !== pass) {
+                    showToast('Неверный пароль', 'warn');
+                    return;
+                }
+
+                // LOGIN SUCCESS
+                const targetId = data.playerId;
+                showToast('Вход выполняется...', 'success');
+                
+                // Fetch data for this ID
+                db.ref('players/' + targetId).once('value', playerSnap => {
+                    let playerData = playerSnap.val();
+                    
+                    // FIX: If player data is missing (deleted from DB but login exists), create new
+                    if (!playerData) {
+                         playerData = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                         playerData.name = login;
+                    }
+                    
+                    // MERGE SAFE LOGIC
+                    state = { ...DEFAULT_STATE, ...playerData };
+                    state.id = targetId; 
+                    state.isAuth = true;
+                    
+                    // SANITIZE DATA (Fix old save files)
+                    if(!state.items) state.items = { bike: 100, bag: 100, phone: 100, gear: 100 };
+                    if(!state.needs) state.needs = { energy: 100, water: 100, mood: 100 };
+                    if(!state.taxi) state.taxi = { unlocked: false, active: false, vehicle: null, licenses: { driver: false, insurance: false, taxi: false } };
+                    if(!state.inventory) state.inventory = { water: 0, bar: 0, energy_drink: 0, coffee: 0, gas: 0 };
+
+                    saveGame(); 
+                    
+                    // UPDATE UI INSTANTLY WITHOUT RELOAD
+                    updateUI();
+                    updateMenuState();
+                    updateAuthUI();
+                    document.getElementById('player-id-display').textContent = `ID: ${state.id}`;
+                    document.getElementById('player-name-display').textContent = state.name;
+                    document.getElementById('demo-mode-alert').style.display = 'none';
+                    
+                    // Restart listeners for new ID
+                    listenToCloud(); 
+                    closeAuthModal();
+                    showToast(`Привет, ${state.name}!`, 'success');
+                });
+            });
+        }
+
+        function performLogout() {
+            if(confirm("Вы действительно хотите выйти? Прогресс останется в облаке, но на этом устройстве будет сброшен.")) {
+                localStorage.removeItem(SAVE_KEY);
+                location.reload();
+            }
+        }
+
+        function updateAuthUI() {
+            const btn = document.getElementById('auth-menu-item');
+            if(!btn) return;
+
+            // Hide for Telegram
+            const tg = window.Telegram.WebApp;
+            if(tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                btn.style.display = 'none';
+                return;
+            }
+
+            // Android Logic
+            btn.style.display = 'flex';
+            
+            // Check if logged in (by flag or by name check for legacy compatibility)
+            const isLoggedIn = state.isAuth || (state.name && state.name !== "Guest Courier");
+
+            if (isLoggedIn) {
+                // SHOW LOGOUT
+                btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> 🚪 Выход';
+                btn.style.color = 'var(--accent-red)';
+                btn.onclick = performLogout;
+            } else {
+                // SHOW LOGIN
+                btn.innerHTML = '<i class="fa-solid fa-key"></i> 🔐 Вход / Регистрация';
+                btn.style.color = 'var(--accent-green)';
+                btn.onclick = openAuthModal;
+            }
+        }
+
+        function sendLog(msg, type='INFO') {
+            if(!db) return;
+            const logEntry = {
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                playerId: state.id,
+                playerName: state.name || 'Anon',
+                message: msg,
+                type: type
+            };
+            db.ref('logs').push(logEntry);
+        }
+
+        function syncToCloud(force = false) {
+            if (!db) return;
+            const now = Date.now();
+            if (force || now - lastSync > 3000) {
+                db.ref('players/' + state.id).update({
+                    name: state.name, 
+                    balance: state.balance, isOnline: state.isOnline, lastSeen: now,
+                    stats: state.needs, inventory: state.inventory, debt: state.debt, items: state.items,
+                    career: state.career,
+                    taxi: state.taxi,
+                    isAuth: state.isAuth || false
+                });
+                lastSync = now;
+            }
+        }
+
+        function listenToCloud() {
+            if (!db) return;
+            // 1. Listen for Config changes
+            db.ref('config').on('value', (snap) => {
+                const val = snap.val();
+                if (val) {
+                    gameConfig = { ...gameConfig, ...val };
+                    if (val.itemPrices) { 
+                        for(let k in val.itemPrices) { 
+                            if(ITEMS_DB[k]) ITEMS_DB[k].cost = val.itemPrices[k]; 
+                        } 
+                        const modalTitle = document.getElementById('modal-title');
+                        if(document.getElementById('full-modal').classList.contains('open') && modalTitle && modalTitle.textContent === 'Магазин') {
+                            renderShop(document.getElementById('modal-body'));
+                        }
+                    }
+                }
+            });
+
+            // 2. Listen for Player Data changes (Admin Ban/Money)
+            // WE MUST OFF previous listeners if any to avoid duplicates
+            db.ref('players/' + state.id).off(); 
+            
+            db.ref('players/' + state.id).on('value', (snap) => {
+                const data = snap.val();
+                if (!data) return;
+
+                if (data.isBanned) {
+                    document.body.innerHTML = `
+                        <div style="display:flex;justify-content:center;align-items:center;height:100%;background:black;color:#ff3d00;font-size:20px;font-weight:bold;flex-direction:column;text-align:center;padding:20px">
+                            <i class="fa-solid fa-ban" style="font-size:60px;margin-bottom:20px"></i>
+                            <div style="text-transform:uppercase;letter-spacing:2px">Доступ запрещен</div>
+                            <div style="font-size:14px;color:#666;margin-top:15px;font-weight:normal">Ваш аккаунт заблокирован администратором.</div>
+                            <div style="font-size:12px;color:#444;margin-top:30px">ID: ${state.id}</div>
+                        </div>`;
+                    return; 
+                }
+
+                // Balance Sync from Admin
+                if (data.balance !== undefined && Math.abs(data.balance - state.balance) > 0.1) {
+                    state.balance = data.balance;
+                    updateUI();
+                    // Optional toast if it was a big change
+                    if(Math.abs(data.balance - state.balance) > 5) showToast('💰 Баланс изменен', 'info');
+                }
+            });
+
+            // 3. Listen for Commands
+            db.ref('players/' + state.id + '/adminInbox').off();
+            db.ref('players/' + state.id + '/adminInbox').on('child_added', (snap) => {
+                const cmd = snap.val();
+                handleAdminCommand(cmd);
+                snap.ref.remove();
+            });
+        }
+
+        function handleAdminCommand(cmd) {
+            console.log("Admin Command Received:", cmd);
+            
+            if (cmd.type === 'SET_VAR') {
+                const path = cmd.path.split('.');
+                let target = state;
+                for (let i = 0; i < path.length - 1; i++) {
+                    if (target[path[i]] === undefined) target[path[i]] = {}; 
+                    target = target[path[i]];
+                }
+                target[path[path.length - 1]] = cmd.value;
+                showToast(`Админ изменил параметр: ${cmd.path}`, 'info');
+                if(cmd.path === 'taxi.unlocked') updateMenuState();
+            }
+
+            if (cmd.type === 'MATH_VAR') {
+                const path = cmd.path.split('.');
+                let target = state;
+                for (let i = 0; i < path.length - 1; i++) {
+                    target = target[path[i]];
+                }
+                const key = path[path.length - 1];
+                target[key] = (target[key] || 0) + cmd.value;
+                showToast(`Админ изменил значение: ${cmd.value > 0 ? '+' : ''}${cmd.value}`, 'success');
+            }
+
+            if (cmd.type === 'FULL_RESET') { 
+                let charge = cmd.charge || 0; 
+                localStorage.removeItem(SAVE_KEY);
+                if(charge > 0) localStorage.setItem('ADMIN_PENALTY', charge);
+                location.reload(); 
+            }
+            saveGame(); updateUI();
+        }
+
+        function loadGame() {
+            try {
+                const saved = localStorage.getItem(SAVE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = { ...DEFAULT_STATE, ...parsed }; // Merge ensuring defaults
+                    
+                    // Sanitize ID
+                    if (!state.id) state.id = 'u_' + Math.random().toString(36).substr(2, 9);
+                    
+                    // Restore complex objects if missing
+                    if(!state.taxi) state.taxi = DEFAULT_STATE.taxi;
+                    if(!state.career) state.career = DEFAULT_STATE.career;
+                    
+                } else {
+                    // New game
+                    state.id = 'u_' + Math.random().toString(36).substr(2, 9);
+                }
+                
+                const penalty = localStorage.getItem('ADMIN_PENALTY');
+                if(penalty) {
+                    state.debt += parseFloat(penalty);
+                    localStorage.removeItem('ADMIN_PENALTY');
+                    saveGame();
+                }
+                state.scheduledOffline = false;
+                
+            } catch(e) {
+                console.error("Save corrupted, resetting:", e);
+                localStorage.removeItem(SAVE_KEY);
+                state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                state.id = 'u_' + Math.random().toString(36).substr(2, 9);
+            }
+        }
+
+        function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); syncToCloud(); }
+
+        function checkDebt() {
+            if (state.debt > 0 && !state.debtOverdue) {
+                if (Date.now() > state.debtTimer) {
+                    state.debtOverdue = true; showToast('СРОК КРЕДИТА ИСТЕК! ШТРАФ ' + (getGarnishmentRate()*100).toFixed(0) + '%', 'warn'); updateUI();
+                    if(document.getElementById('full-modal').classList.contains('open') && document.getElementById('modal-title').textContent.includes('Банк')) renderBank(document.getElementById('modal-body'));
+                } else {
+                    if(document.getElementById('full-modal').classList.contains('open') && document.getElementById('modal-title').textContent.includes('Банк')) {
+                       updateBankTimer();
+                    }
+                }
+            }
+        }
+
+        function getGarnishmentRate() {
+            let s = state.loanStreak || 0;
+            if (s === 0) return 0.10; 
+            if (s === 1) return 0.20; 
+            if (s === 2) return 0.30; 
+            return 0.50;              
+        }
+
+        function updateUI() {
+            document.getElementById('balance-val').textContent = state.balance.toFixed(2) + ' PLN';
+            ['bike','bag','phone','gear'].forEach(k => updateBar(`bar-${k}`, state.items[k]));
+            ['energy','water','mood'].forEach(k => updateBar(`bar-${k}`, state.needs[k]));
+            const totalInv = Object.values(state.inventory).reduce((a,b)=>a+b, 0);
+            document.getElementById('bag-count').textContent = totalInv;
+            document.getElementById('bag-count').style.display = totalInv ? 'flex' : 'none';
+            const warn = document.getElementById('debt-warning');
+            const garnInfo = document.getElementById('garnishment-info');
+            
+            if (state.debtOverdue && state.debt > 0) { 
+                warn.style.display = 'inline'; 
+                garnInfo.style.display = 'block';
+                garnInfo.textContent = '⚠️ ПРОСРОЧКА! Удерживаем ' + (getGarnishmentRate()*100).toFixed(0) + '% с заказа';
+            } else { 
+                warn.style.display = 'none'; 
+                garnInfo.style.display = 'none'; 
+            }
+
+            // TAXI UI UPDATES
+            const isTaxi = state.taxi.active;
+            const sliders = document.querySelectorAll('.slider-container');
+            const pedal = document.getElementById('pedal-btn');
+            
+            // 1. Update Sliders
+            sliders.forEach(s => {
+                if(isTaxi) s.classList.add('taxi-mode');
+                else s.classList.remove('taxi-mode');
+            });
+
+            // 2. Update Icons and Text
+            const vehLabel = document.getElementById('label-vehicle');
+            const vehIcon = document.getElementById('icon-vehicle');
+            
+            const bagLabel = document.getElementById('label-bag');
+            const bagIcon = document.getElementById('icon-bag');
+            
+            const gearLabel = document.getElementById('label-gear');
+            const gearIcon = document.getElementById('icon-gear');
+            
+            const energyLabel = document.getElementById('label-energy');
+            const energyIcon = document.getElementById('icon-energy');
+            const energyBar = document.getElementById('bar-energy');
+            
+            const trackIcon = document.getElementById('track-icon');
+
+            if(isTaxi) {
+                // TAXI MODE UI
+                vehLabel.textContent = "АВТО";
+                vehIcon.className = "fa-solid fa-car equip-icon";
+                
+                bagLabel.textContent = "САЛОН";
+                bagIcon.className = "fa-solid fa-sparkles equip-icon";
+                
+                gearLabel.textContent = "ШИНЫ";
+                gearIcon.className = "fa-solid fa-circle-notch equip-icon";
+                
+                energyLabel.textContent = "БЕНЗИН";
+                energyIcon.className = "fa-solid fa-gas-pump equip-icon";
+                energyIcon.style.color = "orange";
+                energyBar.style.backgroundColor = "orange";
+                
+                trackIcon.innerHTML = '<i class="fa-solid fa-taxi"></i>';
+
+                document.getElementById('city-label').innerHTML = 'Варшава <span style="font-size:10px; color:#fbc02d; border:1px solid #fbc02d; padding:0 3px; border-radius:3px">TAXI</span>';
+                if(!currentOrder) pedal.textContent = "ПОИСК КЛИЕНТА...";
+                pedal.classList.add('taxi-pedal');
+            } else {
+                // COURIER MODE UI
+                vehLabel.textContent = "ВЕЛ";
+                vehIcon.className = "fa-solid fa-bicycle equip-icon";
+                
+                bagLabel.textContent = "СУМКА";
+                bagIcon.className = "fa-solid fa-box-open equip-icon";
+
+                gearLabel.textContent = "ОДЕЖДА";
+                gearIcon.className = "fa-solid fa-shirt equip-icon";
+                
+                energyLabel.textContent = "СИЛЫ";
+                energyIcon.className = "fa-solid fa-bolt equip-icon";
+                energyIcon.style.color = "yellow";
+                energyBar.style.backgroundColor = "yellow";
+                
+                trackIcon.innerHTML = '<i class="fa-solid fa-bicycle"></i>';
+
+                document.getElementById('city-label').textContent = 'Варшава';
+                if(!currentOrder) pedal.textContent = "ЖМИ ГАЗ (PEDAL)";
+                pedal.classList.remove('taxi-pedal');
+            }
+
+            // 3. Update Toggle Button Text
+            const btn = document.getElementById('taxi-toggle-btn');
+            if(isTaxi) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fa-solid fa-briefcase"></i> <span>ВЕРНУТЬСЯ К КУРЬЕРСТВУ</span>';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fa-solid fa-taxi"></i> <span>ВКЛЮЧИТЬ TAXI</span>';
+            }
+        }
+
+        function updateBar(id, val) { document.getElementById(id).style.width = Math.max(0, Math.min(100, val)) + '%'; }
+        function showToast(msg, type='info') {
+            const t = document.getElementById('toast'); t.innerHTML = msg;
+            t.className = 'game-toast show ' + (type === 'warn' ? 'toast-warn' : (type==='success' ? 'toast-success' : ''));
+            setTimeout(() => t.className = 'game-toast', 3000);
+        }
+
+        function startOrderLoop() {
+            if (orderInterval) clearInterval(orderInterval);
+            orderInterval = setInterval(() => {
+                if (!currentOrder || !currentOrder.accepted) return;
+                currentOrder.timeLeft--;
+                document.getElementById('delivery-timer').textContent = `⏱ ${currentOrder.timeLeft}с`;
+                if (currentOrder.timeLeft <= 0) { failOrder("time"); return; }
+                
+                if(!state.taxi.active) {
+                    let baseCooling = gameConfig.coolingRate || 0.5;
+                    let decay = baseCooling * (1 + ((100 - state.items.bag) / 100));
+                    currentOrder.foodTemp -= decay;
+                } else {
+                    // Taxi passenger patience decays slowly, accelerated by bad interior
+                    let interior = state.items.bag; // Using bag slot as Interior
+                    let decay = 0.2 + ((100 - interior) / 500);
+                    currentOrder.foodTemp -= decay; 
+                }
+                
+                if (currentOrder.foodTemp < 50 && !currentOrder.tempWarned) { showToast('⚠️ Клиент нервничает!', 'warn'); currentOrder.tempWarned = true; }
+                
+                let label = state.taxi.active ? 'Комфорт' : 'Еда';
+                document.getElementById('temp-val').textContent = `${label}: ` + Math.floor(currentOrder.foodTemp) + '%';
+                
+                if (currentOrder.foodTemp <= 0) { failOrder("cold"); return; }
+            }, 1000);
+        }
+
+        function stopOrderLoop() { if (orderInterval) clearInterval(orderInterval); orderInterval = null; document.getElementById('delivery-timer').textContent = ''; }
+
+        function failOrder(reason) {
+            stopOrderLoop();
+            let msg = reason === "time" ? "⏰ Время вышло!" : "😤 Клиент ушел!";
+            showToast(`${msg} Штраф -5.00 PLN`, 'warn');
+            state.balance -= 5.00; currentOrder = null; saveGame(); updateUI(); startSearching();
+        }
+
+        function pedal() {
+            if (!currentOrder) return;
+            if (!currentOrder.accepted) { acceptOrder(); return; }
+            
+            let fatigue = Math.max(0.3, state.needs.energy / 100);
+            
+            // Taxi logic
+            if(state.taxi.active) {
+                 // Check fuel (energy)
+                 if(state.needs.energy <= 0) {
+                     showToast('⛽ БЕНЗИН КОНЧИЛСЯ!', 'warn');
+                     openQuickInv(true); // Force open inv to buy/use gas
+                     return;
+                 }
+                 state.needs.energy -= 0.5; // Fuel burn per click
+                 state.needs.mood -= 0.02; // Driving is less stressful than biking
+                 state.items.bike -= 0.2; // Car suspension wear (mapped to bike)
+                 state.items.gear -= 0.1; // Tires wear (mapped to gear)
+                 
+                 // Progress
+                 currentOrder.progress += 4; // Cars are fast
+            } else {
+                // Bike Logic
+                if (state.needs.energy <= 5 || state.needs.water <= 5) { showToast('Сил нет! Открой рюкзак!', 'warn'); openQuickInv(true); return; }
+                if (!state.energyBoostActive) state.needs.energy -= gameConfig.energyDrain; 
+                state.needs.water -= gameConfig.waterDrain; 
+                state.needs.mood -= gameConfig.moodDrain;
+                state.items.bike -= 0.1; 
+                state.items.phone -= 0.05;
+                currentOrder.progress += (5 * fatigue);
+            }
+
+            updateTrack(currentOrder.progress);
+            
+            if (Math.random() < gameConfig.trafficChance && currentOrder.stage === 2) triggerRandomEvent();
+            if (currentOrder.progress >= 100) nextStage();
+            saveGame(); updateUI();
+        }
+
+        function triggerRandomEvent() {
+            const btn = document.getElementById('pedal-btn');
+            const events = [{ text: "🚧 ПРОБКА!", time: gameConfig.trafficDuration }, { text: "🚦 СВЕТОФОР", time: 2000 }, { text: "🚕 ОБЪЕЗД", time: 4000 }];
+            const ev = events[Math.floor(Math.random()*events.length)];
+            btn.disabled = true; btn.classList.add('blocked'); btn.textContent = ev.text; showToast('Задержка в пути!', 'warn');
+            setTimeout(() => { if (currentOrder) { btn.disabled = false; btn.classList.remove('blocked'); btn.textContent = state.taxi.active ? 'ГАЗ В ПОЛ' : 'ЖМИ ГАЗ (PEDAL)'; } }, ev.time);
+        }
+
+        function acceptOrder() {
+            currentOrder.accepted = true; clearTimeout(acceptTimeout);
+            document.getElementById('accept-timer').style.display = 'none';
+            document.getElementById('pedal-btn').textContent = state.taxi.active ? 'ПОДАЧА МАШИНЫ...' : 'ЖМИ ГАЗ (PEDAL)';
+            document.getElementById('order-offer').style.display = 'none'; 
+            startOrderLoop(); 
+        }
+
+        function missOrder() {
+            state.isSearching = true; currentOrder = null; state.balance -= 0.10; 
+            showToast('Заказ упущен! Штраф -0.10 PLN', 'warn'); saveGame(); updateUI(); startSearching();
+        }
+
+        function nextStage() {
+            currentOrder.stage++; currentOrder.progress = 0; updateTrack(0);
+            if (currentOrder.stage === 1) { 
+                const btn = document.getElementById('pedal-btn'); btn.disabled = true; 
+                
+                if(state.taxi.active) {
+                    // Taxi Interaction
+                    btn.textContent = 'КЛИЕНТ САДИТСЯ...';
+                    document.getElementById('status-label').textContent = 'Посадка...';
+                    
+                    // Show client greeting
+                    const name = currentOrder.clientName;
+                    const msg = currentOrder.clientMsg;
+                    showToast(`💬 ${name}: "${msg}"`, 'info');
+
+                } else {
+                    btn.textContent = 'ЖДЕМ ЗАКАЗ...';
+                    document.getElementById('status-label').textContent = 'Ресторан готовит...';
+                }
+
+                setTimeout(() => {
+                    btn.disabled = false; btn.textContent = state.taxi.active ? 'ГАЗ В ПОЛ' : 'ЖМИ ГАЗ (PEDAL)';
+                    document.getElementById('status-label').textContent = 'В пути';
+                    currentOrder.stage = 2;
+                }, 2000);
+            } else if (currentOrder.stage === 3) { completeOrder(); }
+        }
+
+        function completeOrder() {
+            stopOrderLoop();
+            
+            let pay = currentOrder.offerPrice; 
+            const totalRepairs = Object.values(state.repairs).reduce((a,b)=>a+b,0);
+            const inflationMult = 1 + (totalRepairs * gameConfig.inflationRate);
+
+            let tip = 0;
+            let minTemp = gameConfig.tipMinTemp || 60;
+            let minMood = gameConfig.tipMinMood || 80;
+            let chance = gameConfig.tipChance || 0.5;
+            
+            // Taxi tips are higher
+            let tipMult = state.taxi.active ? 2.5 : 1.0;
+
+            if (currentOrder.foodTemp > minTemp) { 
+                if (Math.random() <= chance) tip += ((2 + Math.random() * 3) * inflationMult) * tipMult; 
+            }
+            if (state.needs.mood > minMood && currentOrder.foodTemp > 40) { 
+                if (Math.random() <= 0.3) tip += (3 * inflationMult) * tipMult; 
+            }
+            
+            let totalEarn = pay + tip;
+
+            if (tip > 0) { 
+                let msg = (state.needs.mood > 80 && currentOrder.foodTemp > 70) ? `🔥 Супер! +${tip.toFixed(2)} чаевых!` : `👍 Доволен! +${tip.toFixed(2)} чаевых`; 
+                showToast(msg, 'success'); 
+            } 
+            else if (currentOrder.foodTemp < 50) { 
+                showToast('Клиент недоволен... Без чаевых.', 'warn'); 
+            }
+
+            if(!state.taxi.active) {
+                state.items.bag -= 1.5; state.items.gear -= 0.8;
+            } else {
+                state.items.bike -= 1.0; // Car wear
+                state.items.bag -= 2.0; // Interior gets dirty
+            }
+            
+            if (state.debtOverdue && state.debt > 0) {
+                const rate = getGarnishmentRate();
+                let penalty = totalEarn * rate; 
+                
+                if (penalty > state.debt) penalty = state.debt;
+                state.debt -= penalty; totalEarn -= penalty; 
+                showToast(`Долг (-${(rate*100).toFixed(0)}%): -${penalty.toFixed(2)} PLN`, 'warn');
+            }
+            
+            state.balance += totalEarn; 
+            state.career.totalOrders++;
+            updateMenuState(); 
+
+            state.history.push({ 
+                rest: currentOrder.rest.name, 
+                pay: pay, 
+                tip: tip, 
+                total: pay + tip 
+            });
+            
+            sendLog(`Завершил заказ: +${(pay+tip).toFixed(2)} PLN (${currentOrder.rest.name}) [${state.taxi.active?'TAXI':'BIKE'}]`, 'ORDER');
+
+            setTimeout(() => { showToast(`+${(pay+tip).toFixed(2)} PLN`, 'success'); }, 500);
+            if (state.scheduledOffline) { goOffline(); } else { startSearching(); }
+            saveGame(); syncToCloud(true); updateUI();
+        }
+
+        function startSearching() {
+            if (state.scheduledOffline) { goOffline(); return; }
+            if (!state.isOnline) return;
+
+            stopOrderLoop(); state.isSearching = true;
+            document.getElementById('active-order-view').style.display = 'flex';
+            document.getElementById('rest-name').textContent = 'Поиск...';
+            document.getElementById('rest-icon').textContent = '🔍';
+            document.getElementById('status-label').textContent = 'Ищем клиента...';
+            document.getElementById('order-dest').textContent = 'Ожидание...';
+            document.getElementById('order-offer').textContent = '-- PLN'; 
+            document.getElementById('accept-timer').style.display = 'none';
+            document.getElementById('delivery-timer').textContent = '';
+            resetSlider('online');
+            const box = document.getElementById('online-slider-box');
+            const txt = document.getElementById('online-slider-text');
+            box.classList.remove('scheduled'); txt.textContent = "СВАЙП ДЛЯ ОФЛАЙНА";
+            document.getElementById('pedal-btn').disabled = true;
+            document.getElementById('pedal-btn').textContent = 'ПОИСК...';
+            updateTrack(0);
+            setTimeout(() => { 
+                if (state.isOnline && state.isSearching && !state.scheduledOffline) createOrder(); 
+            }, 2000);
+            syncToCloud(); 
+        }
+
+        function createOrder() {
+            if (!state.isOnline) return;
+            state.isSearching = false;
+            
+            // Taxi vs Bike Logic
+            let r;
+            if(state.taxi.active) {
+                 r = taxiDestinations[Math.floor(Math.random() * taxiDestinations.length)];
+            } else {
+                 r = restaurants[Math.floor(Math.random() * restaurants.length)];
+            }
+            
+            const dist = (0.8 + Math.random() * 5.7).toFixed(1);
+            
+            const totalRepairs = Object.values(state.repairs).reduce((a,b)=>a+b,0);
+            const inflationMult = 1 + (totalRepairs * gameConfig.inflationRate);
+            
+            let rawPay = (gameConfig.basePickupPay || 4.0) + (dist * (gameConfig.perKmPay || 1.5));
+            let finalOffer = rawPay * inflationMult;
+            
+            // TAXI MULTIPLIER
+            if(state.taxi.active) {
+                finalOffer = finalOffer * 4.0; // TAXI PAYS MORE
+            }
+            
+            finalOffer += (Math.random() * gameConfig.payVariance) - (gameConfig.payVariance / 2);
+            if(finalOffer < 2) finalOffer = 2; 
+
+            let time = gameConfig.deliveryTime || 60;
+            currentOrder = { 
+                rest: r, 
+                progress: 0, 
+                stage: 0, 
+                foodTemp: 100, 
+                accepted: false, 
+                timeLeft: time, 
+                tempWarned: false,
+                distance: dist,
+                offerPrice: finalOffer,
+                // Taxi Specifics
+                clientName: clientNames[Math.floor(Math.random() * clientNames.length)],
+                clientMsg: clientGreetings[Math.floor(Math.random() * clientGreetings.length)]
+            };
+
+            document.getElementById('rest-name').textContent = state.taxi.active ? `Заказ: ${r.name}` : `Едем в ${r.name}`;
+            document.getElementById('rest-icon').textContent = r.icon;
+            document.getElementById('status-label').textContent = '🔥 ПРИМИ ВЫЗОВ! 🔥';
+            
+            document.getElementById('order-dest').textContent = state.taxi.active ? `Поездка: ${dist} km` : `Забрать: ${dist} km`;
+            const offerEl = document.getElementById('order-offer');
+            offerEl.style.display = 'block';
+            offerEl.textContent = `💰 ${finalOffer.toFixed(2)} PLN`;
+
+            document.getElementById('pedal-btn').textContent = state.taxi.active ? 'ПРИНЯТЬ ВЫЗОВ' : 'ПРИНЯТЬ ЗАКАЗ';
+            document.getElementById('pedal-btn').disabled = false;
+            const bar = document.getElementById('accept-timer');
+            const fill = document.getElementById('accept-timer-fill');
+            bar.style.display = 'block';
+            fill.classList.remove('animate-timer');
+            void fill.offsetWidth; fill.classList.add('animate-timer');
+            acceptTimeout = setTimeout(missOrder, 15000); 
+            resetSlider('online');
+            const box = document.getElementById('online-slider-box');
+            const txt = document.getElementById('online-slider-text');
+            box.classList.add('scheduled'); txt.textContent = "ЗАПЛАНИРОВАТЬ ОФЛАЙН";
+        }
+
+        function goOffline() {
+            state.isOnline = false; state.isSearching = false; state.scheduledOffline = false;
+            stopOrderLoop(); if (acceptTimeout) clearTimeout(acceptTimeout);
+            document.getElementById('active-order-view').style.display = 'none';
+            document.getElementById('offline-view').style.display = 'block';
+            resetSlider('offline'); saveGame(); syncToCloud();
+            sendLog('Ушел с линии (Офлайн)', 'STATUS');
+        }
+
+        function initSliders() {
+            setupSlider('offline', () => { 
+                state.isOnline = true; 
+                document.getElementById('offline-view').style.display = 'none'; 
+                startSearching(); 
+                sendLog(`Вышел на линию (${state.taxi.active?'TAXI':'BIKE'})`, 'STATUS');
+            });
+            setupSlider('online', () => {
+                if (state.isSearching) { goOffline(); }
+                else {
+                    state.scheduledOffline = true;
+                    saveGame(); 
+                    const box = document.getElementById('online-slider-box');
+                    const txt = document.getElementById('online-slider-text');
+                    box.classList.add('scheduled'); txt.textContent = "ОФЛАЙН ПОСЛЕ ЗАКАЗА";
+                    resetSlider('online');
+                }
+            });
+        }
+
+        function setupSlider(prefix, callback) {
+            const knob = document.getElementById(`${prefix}-slider-knob`);
+            const box = document.getElementById(`${prefix}-slider-box`);
+            const fill = document.getElementById(`${prefix}-slider-fill`);
+            let isDragging = false, startX = 0;
+            knob.addEventListener('mousedown', start); knob.addEventListener('touchstart', start);
+            function start(e) { isDragging = true; startX = (e.type === 'mousedown') ? e.clientX : e.touches[0].clientX; document.addEventListener('mousemove', move); document.addEventListener('touchmove', move); document.addEventListener('mouseup', end); document.addEventListener('touchend', end); }
+            function move(e) { if (!isDragging) return; const clientX = (e.type === 'mousemove') ? e.clientX : e.touches[0].clientX; let x = clientX - startX; let max = box.offsetWidth - knob.offsetWidth - 8; x = Math.max(0, Math.min(x, max)); knob.style.transform = `translateX(${x}px)`; fill.style.width = `${(x / max) * 100}%`; if (x >= max * 0.95) { isDragging = false; end(); callback(); } }
+            function end() { isDragging = false; document.removeEventListener('mousemove', move); document.removeEventListener('touchmove', move); document.removeEventListener('mouseup', end); document.removeEventListener('touchend', end); knob.style.transform = 'translateX(0)'; fill.style.width = '0%'; }
+        }
+
+        function resetSlider(prefix) { document.getElementById(`${prefix}-slider-knob`).style.transform = 'translateX(0)'; document.getElementById(`${prefix}-slider-fill`).style.width = '0%'; }
+
+        function toggleQuickInv() { const menu = document.getElementById('quick-inv'); menu.style.display === 'flex' ? menu.style.display = 'none' : openQuickInv(); }
+        function openQuickInv(forced = false) {
+            const menu = document.getElementById('quick-inv'); menu.innerHTML = '';
+            
+            // Filter logic based on Mode
+            let neededStat = 'energy'; // default
+            
+            let owned = [];
+            for (let [k, c] of Object.entries(state.inventory)) { 
+                if (c > 0) {
+                     // Check if item is valid for current mode
+                     const itemData = ITEMS_DB[k];
+                     if(state.taxi.active) {
+                         // In taxi mode, hide non-relevant stuff if needed? No, let user eat snickers.
+                         // But prioritize Gas
+                         owned.push({ k, c, data: itemData });
+                     } else {
+                         // In bike mode, hide Gas
+                         if(k !== 'gas') owned.push({ k, c, data: itemData });
+                     }
+                } 
+            }
+            
+            if (owned.length === 0) { menu.innerHTML = `<div style="padding:5px; color:#fff; text-align:center; font-size:12px">Пусто!</div><div class="inv-item link-btn" onclick="openModal('shop')">В МАГАЗИН</div>`; }
+            else {
+                owned.forEach(item => {
+                    const div = document.createElement('div'); div.className = 'inv-item';
+                    div.innerHTML = `<span><i class="fa-solid ${item.data.icon}"></i> ${item.data.name}</span><span class="inv-count">x${item.c}</span>`;
+                    div.onclick = () => useItem(item.k); menu.appendChild(div);
+                });
+            }
+            menu.style.display = 'flex'; menu.classList.add('open');
+        }
+
+        function useItem(key) {
+            const item = ITEMS_DB[key]; 
+            if(state.inventory[key] <= 0) return;
+            state.inventory[key]--;
+            if (item.effect.energy) state.needs.energy += item.effect.energy;
+            if (item.effect.water) state.needs.water += item.effect.water;
+            if (item.effect.mood) state.needs.mood += item.effect.mood;
+            if (item.special === 'no_drain') {
+                state.energyBoostActive = true; showToast('🚀 ЭНЕРГЕТИК: Усталость остановлена!', 'success');
+                setTimeout(() => { state.energyBoostActive = false; showToast('Действие энергетика закончилось', 'info'); }, 30000);
+            }
+            ['energy','water','mood'].forEach(k => { if(state.needs[k]>100) state.needs[k]=100; });
+            showToast(`${item.name} использован!`, 'success'); toggleQuickInv(); saveGame(); updateUI();
+        }
+
+        function toggleMenu() { 
+            updateMenuState();
+            document.getElementById('side-menu-overlay').classList.toggle('open'); 
+            document.getElementById('side-menu').classList.toggle('open'); 
+        }
+        function closeModal() { document.getElementById('full-modal').classList.remove('open'); }
+        function openModal(type) {
+            toggleMenu(); 
+            const m = document.getElementById('full-modal'); const b = document.getElementById('modal-body'); m.classList.add('open');
+            if (type === 'shop') { document.getElementById('modal-title').textContent = 'Магазин'; renderShop(b); }
+            else if (type === 'bank') { document.getElementById('modal-title').textContent = 'Банк (Кредит)'; renderBank(b); }
+            else if (type === 'deflation') { document.getElementById('modal-title').textContent = 'Борьба с инфляцией'; renderDeflation(b); }
+            else if (type === 'taxi-shop') { document.getElementById('modal-title').textContent = 'Автосалон'; renderTaxiShop(b); }
+            else if (type === 'taxi-licenses') { document.getElementById('modal-title').textContent = 'Лицензии и Документы'; renderTaxiLicenses(b); }
+            else { document.getElementById('modal-title').textContent = 'История'; renderHistory(b); }
+        }
+
+        function updateMenuState() {
+            const total = state.career.totalOrders;
+            document.getElementById('career-count').textContent = total;
+            const isUnlocked = state.taxi.unlocked || total >= TAXI_UNLOCK_REQ;
+            const btns = document.querySelectorAll('.taxi-item');
+            const msg = document.getElementById('taxi-lock-msg');
+            const toggleBtn = document.getElementById('taxi-toggle-btn');
+            
+            if (isUnlocked) {
+                btns.forEach(b => { 
+                    b.classList.remove('locked'); 
+                    b.onclick = null; 
+                    if(b.id === 'taxi-showroom-btn') b.onclick = () => openModal('taxi-shop');
+                    if(b.id === 'taxi-licenses-btn') b.onclick = () => openModal('taxi-licenses');
+                });
+                msg.style.display = 'none';
+
+                // Check if ready for taxi work
+                const hasCar = state.taxi.vehicle !== null;
+                const hasLic = state.taxi.licenses.driver && state.taxi.licenses.insurance && state.taxi.licenses.taxi;
+                
+                if(hasCar && hasLic) {
+                    toggleBtn.style.display = 'flex';
+                } else {
+                    toggleBtn.style.display = 'none';
+                }
+
+            } else {
+                btns.forEach(b => { 
+                    b.classList.add('locked'); 
+                    b.onclick = showLockedMsg; 
+                });
+                msg.style.display = 'block';
+                toggleBtn.style.display = 'none';
+            }
+        }
+
+        function showLockedMsg() {
+            showToast(`Нужно ${TAXI_UNLOCK_REQ} выполненных заказов!`, 'warn');
+        }
+
+        function toggleTaxiMode() {
+            // Safety check
+            if (!state.taxi.vehicle || !state.taxi.licenses.driver || !state.taxi.licenses.insurance) {
+                showToast('Купите машину и лицензии!', 'warn');
+                return;
+            }
+
+            if(state.isOnline) {
+                showToast('Сначала уйди в офлайн!', 'warn');
+                return;
+            }
+
+            state.taxi.active = !state.taxi.active;
+            saveGame();
+            updateUI();
+            updateMenuState();
+            
+            let msg = state.taxi.active ? '🚕 РЕЖИМ ТАКСИ ВКЛЮЧЕН' : '🚲 РЕЖИМ КУРЬЕРА ВКЛЮЧЕН';
+            showToast(msg, 'success');
+        }
+
+        // --- TAXI SYSTEM LOGIC ---
+        
+        function renderTaxiShop(c) {
+            const owned = state.taxi.vehicle;
+            const cars = [
+                { id: 'skoda', name: 'Skoda Fabia (LPG)', price: 15000, desc: 'Надежная рабочая лошадка. Дешевый ремонт.', icon: 'fa-car-side' },
+                { id: 'toyota', name: 'Toyota Prius (Hybrid)', price: 45000, desc: 'Экономия топлива и хороший чай от клиентов.', icon: 'fa-car' },
+                { id: 'tesla', name: 'Tesla Model 3', price: 120000, desc: 'Престиж. Доступ к VIP заказам.', icon: 'fa-bolt' }
+            ];
+
+            let html = '<div style="text-align:center; padding:10px; color:#666; font-size:12px">Автомобили для работы в такси.</div>';
+            
+            cars.forEach(car => {
+                const isOwned = (owned === car.id);
+                const btnClass = isOwned ? 'shop-btn bought' : 'shop-btn buy';
+                const btnText = isOwned ? 'КУПЛЕНО' : `${car.price.toLocaleString()} PLN`;
+                const action = isOwned ? '' : `onclick="buyVehicle('${car.id}', ${car.price})"`;
+                
+                html += `
+                <div class="shop-card">
+                    <div><div style="font-weight:bold"><i class="fa-solid ${car.icon}"></i> ${car.name}</div><div class="shop-desc">${car.desc}</div></div>
+                    <button class="${btnClass}" ${action} ${isOwned ? 'disabled' : ''}>${btnText}</button>
+                </div>`;
+            });
+            c.innerHTML = html;
+        }
+
+        function renderTaxiLicenses(c) {
+            const l = state.taxi.licenses;
+            
+            const licenses = [
+                { id: 'driver', name: 'Водительские права (B)', price: 2500 },
+                { id: 'insurance', name: 'Страховка OC/AC', price: 1200 },
+                { id: 'taxi', name: 'Лицензия Такси', price: 5000 }
+            ];
+
+            let html = '';
+            licenses.forEach(lic => {
+                const hasIt = l[lic.id];
+                const btnClass = hasIt ? 'shop-btn bought' : 'shop-btn buy';
+                const btnText = hasIt ? 'ЕСТЬ' : `${lic.price.toLocaleString()} PLN`;
+                const action = hasIt ? '' : `onclick="buyLicense('${lic.id}', ${lic.price})"`;
+
+                html += `
+                <div class="shop-card">
+                    <div><div style="font-weight:bold">${lic.name}</div></div>
+                    <button class="${btnClass}" ${action} ${hasIt ? 'disabled' : ''}>${btnText}</button>
+                </div>`;
+            });
+            c.innerHTML = html;
+        }
+
+        function buyVehicle(id, price) {
+            if (state.balance >= price) {
+                state.balance -= price;
+                state.taxi.vehicle = id;
+                showToast('🚗 Машина куплена! Поздравляем!', 'success');
+                sendLog(`Купил машину: ${id}`, 'BUY');
+                saveGame(); syncToCloud(true); updateUI();
+                renderTaxiShop(document.getElementById('modal-body'));
+                updateMenuState(); // Check if toggle button should appear
+            } else {
+                showToast('Недостаточно средств', 'warn');
+            }
+        }
+
+        function buyLicense(id, price) {
+            if (state.balance >= price) {
+                state.balance -= price;
+                state.taxi.licenses[id] = true;
+                showToast('📄 Документ получен!', 'success');
+                sendLog(`Купил лицензию: ${id}`, 'BUY');
+                saveGame(); syncToCloud(true); updateUI();
+                renderTaxiLicenses(document.getElementById('modal-body'));
+                updateMenuState(); // Check if toggle button should appear
+            } else {
+                showToast('Недостаточно средств', 'warn');
+            }
+        }
+
+        function renderShop(c) {
+            let html = '';
+            const levelSum = Object.values(state.repairs).reduce((a,b)=>a+b,0);
+            const inflation = 1 + (levelSum * gameConfig.inflationRate); 
+            
+            // Consumables (Show Gas only in Taxi Mode)
+            html += '<div class="shop-section"><h3>🎒 Расходники</h3>';
+            ['gas', 'water', 'bar', 'energy_drink', 'coffee'].forEach(k => {
+                // If Taxi mode, show GAS. If Courier mode, hide GAS.
+                if(state.taxi.active) {
+                    if(k !== 'gas' && k !== 'coffee' && k !== 'water' && k !== 'bar' && k !== 'energy_drink') return; // Show all for now, maybe filtered?
+                } else {
+                    if(k === 'gas') return; // Hide gas in bike mode
+                }
+
+                const i = ITEMS_DB[k];
+                const price = i.cost * inflation;
+                const owned = state.inventory[k] || 0;
+                html += `<div class="shop-card"><div><div style="font-weight:bold">${i.name} <span style="font-size:11px; color:#009de0; font-weight:normal">(В наличии: ${owned})</span></div><div class="shop-desc">${i.desc}</div></div><button class="shop-btn buy" onclick="buyItem('${k}', ${price}, this)">${price.toFixed(1)}</button></div>`;
+            });
+            html += '</div>';
+
+            // Repairs (Swap items based on Mode)
+            html += '<div class="shop-section"><h3>🛠 Сервис (Только 0%)</h3>';
+            
+            // Mapping real item keys to display logic
+            let repairKeys = [];
+            if(state.taxi.active) {
+                // Taxi Mode: Map slots to Car stuff visually
+                // We use the same slots in DB but show different items to buy repair for
+                // Let's use custom logic here since costs are different
+                
+                const carItems = [
+                    { key: 'bike', db: ITEMS_DB.car_main },      // Car Health
+                    { key: 'bag', db: ITEMS_DB.car_interior },   // Interior
+                    { key: 'gear', db: ITEMS_DB.car_tires }      // Tires
+                ];
+
+                carItems.forEach(obj => {
+                    const i = obj.db;
+                    const base = i.baseCost + ((state.repairs[obj.key]||0)*2.0); // Higher scaling for car
+                    const price = base * inflation;
+                    const currentHealth = Math.floor(state.items[obj.key]);
+                    const isBroken = currentHealth <= 0;
+                    const btnText = isBroken ? `Починить -${price.toFixed(1)}` : `Целое (${currentHealth}%)`;
+                    html += `<div class="shop-card"><div><div style="font-weight:bold">${i.name} (Lvl ${state.repairs[obj.key]||0})</div><div class="shop-desc">Состояние: ${currentHealth}%</div></div><button class="shop-btn" ${isBroken ? '' : 'disabled'} onclick="buyRepair('${obj.key}', ${price}, this)">${btnText}</button></div>`;
+                });
+
+            } else {
+                // Courier Mode
+                ['bike', 'bag', 'phone', 'gear'].forEach(k => {
+                    const i = ITEMS_DB[k];
+                    const base = i.baseCost + ((state.repairs[k]||0)*0.5);
+                    const price = base * inflation;
+                    const currentHealth = Math.floor(state.items[k]);
+                    const isBroken = currentHealth <= 0;
+                    const btnText = isBroken ? `Починить -${price.toFixed(1)}` : `Целое (${currentHealth}%)`;
+                    html += `<div class="shop-card"><div><div style="font-weight:bold">${i.name} (Lvl ${state.repairs[k]||0})</div><div class="shop-desc">Состояние: ${currentHealth}%</div></div><button class="shop-btn" ${isBroken ? '' : 'disabled'} onclick="buyRepair('${k}', ${price}, this)">${btnText}</button></div>`;
+                });
+            }
+            html += '</div>'; c.innerHTML = html;
+        }
+
+        function renderDeflation(c) {
+            const levelSum = Object.values(state.repairs).reduce((a,b)=>a+b,0);
+            const inflation = 1 + (levelSum * gameConfig.inflationRate);
+            const cost1 = 2700 * inflation; const cost2 = 5000 * inflation;
+            c.innerHTML = `<div style="text-align:center; padding:20px 0;"><i class="fa-solid fa-scale-unbalanced-flip" style="font-size:40px; color:#90a4ae"></i><h2>Инфляция: ${((inflation-1)*100).toFixed(0)}%</h2><p style="color:#666; font-size:14px">Снижение инфляции уменьшает цены в магазинах, но стоит больших денег.</p></div><div class="shop-card"><div><div style="font-weight:bold">Откат (-1 уровень)</div><div class="shop-desc">Снижает цены на шаг назад</div></div><button class="shop-btn govt-btn" onclick="buyDeflation(1, ${cost1})">-${cost1.toFixed(0)}</button></div><div class="shop-card"><div><div style="font-weight:bold">Сильный откат (-2 ур.)</div><div class="shop-desc">Серьезное снижение цен</div></div><button class="shop-btn govt-btn" onclick="buyDeflation(2, ${cost2})">-${cost2.toFixed(0)}</button></div>`;
+        }
+
+        function buyItem(k, cost, btn) {
+            if(state.balance >= cost) { 
+                state.balance-=cost; 
+                state.inventory[k]=(state.inventory[k]||0)+1; 
+                const originalText = btn.textContent; btn.textContent = 'КУПЛЕНО!'; btn.className = 'shop-btn bought'; 
+                sendLog(`Купил: ${ITEMS_DB[k].name} за ${cost.toFixed(2)}`, 'BUY');
+                setTimeout(() => { btn.textContent = originalText; btn.className = 'shop-btn buy'; renderShop(document.getElementById('modal-body')); }, 600); 
+                saveGame(); syncToCloud(true); updateUI(); 
+            } else showToast('Нет денег','warn');
+        }
+
+        function buyRepair(k, cost, btn) {
+            if (state.items[k] > 0) return;
+            if(state.balance >= cost) { 
+                state.balance-=cost; state.items[k]=100; state.repairs[k]=(state.repairs[k]||0)+1; btn.textContent = 'ГОТОВО!'; btn.className = 'shop-btn bought'; 
+                // Determine name based on mode
+                let itemName = ITEMS_DB[k] ? ITEMS_DB[k].name : 'Repair';
+                if(state.taxi.active) {
+                    if(k==='bike') itemName = ITEMS_DB.car_main.name;
+                    if(k==='bag') itemName = ITEMS_DB.car_interior.name;
+                    if(k==='gear') itemName = ITEMS_DB.car_tires.name;
+                }
+
+                sendLog(`Починил: ${itemName}`, 'REPAIR');
+                setTimeout(() => { renderShop(document.getElementById('modal-body')); }, 600); saveGame(); syncToCloud(true); updateUI(); 
+            } else showToast('Нет денег','warn');
+        }
+
+        function buyDeflation(levels, cost) {
+            if (state.balance < cost) { showToast('Недостаточно средств', 'warn'); return; }
+            let reduced = 0;
+            for (let i = 0; i < levels; i++) { const key = Object.keys(state.repairs).find(k => state.repairs[k] > 0); if (key) { state.repairs[key]--; reduced++; } }
+            if (reduced > 0) { state.balance -= cost; showToast(`Инфляция снижена на ${reduced} ур.!`, 'success'); saveGame(); syncToCloud(true); updateUI(); renderDeflation(document.getElementById('modal-body')); } else { showToast('Инфляция уже на минимуме!', 'warn'); }
+        }
+
+        function renderBank(c) {
+            let timeLeftStr = "00:00";
+            if(state.debt > 0 && !state.debtOverdue) {
+                let diff = Math.max(0, state.debtTimer - Date.now());
+                let m = Math.floor(diff / 60000); let s = Math.floor((diff % 60000) / 1000);
+                timeLeftStr = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }
+
+            if(document.getElementById('bank-ui-root')) {
+                updateBankTimer(); 
+                return;
+            }
+
+            let interestRate = 0;
+            let streak = state.loanStreak || 0;
+            if (streak === 0) interestRate = 0;      
+            else if (streak === 1) interestRate = 10; 
+            else if (streak === 2) interestRate = 20; 
+            else interestRate = 50;  
+
+            // --- НОВОЕ: РАСЧЕТ ЛИМИТА ---
+            const limit = 1000 + (state.career.totalOrders * 50);
+
+            const hasFood = (state.inventory.bar > 0 || state.inventory.water > 0 || state.inventory.energy_drink > 0);
+            const isCrisis = state.balance < 5 && !hasFood;
+            
+            let sosHtml = '';
+            if (isCrisis) {
+                sosHtml = `
+                <div style="margin-bottom:15px; padding:10px; background:#37474f; border:1px border:#cfd8dc; border-radius:10px; text-align:center">
+                    <div style="color:#ff9100; font-weight:bold; font-size:12px; margin-bottom:5px">🆘 ПАКЕТ ВЫЖИВАНИЯ</div>
+                    <div style="font-size:11px; color:#b0bec5">Вода + Сникерс. Цена x2 в долг.</div>
+                    <button class="bank-btn" style="background:#ff3d00; color:white; margin-top:5px; padding:8px" onclick="takeSOS()">ВЗЯТЬ (ДОЛГ x2)</button>
+                </div>`;
+            }
+
+            const garnishmentPercent = (getGarnishmentRate() * 100).toFixed(0);
+
+            c.innerHTML = `
+                <div id="bank-ui-root">
+                    <div class="debt-alert-box" id="bank-alert" style="display:${state.debtOverdue?'block':'none'}">⚠️ <strong>ПРОСРОЧЕНО!</strong><br>Удерживаем ${garnishmentPercent}% с каждого заказа.</div>
+                    
+                    <div style="text-align:center; margin-bottom:20px">
+                        <div style="font-size:14px; color:#666">Текущий долг</div>
+                        <div style="font-size:32px; font-weight:800; color:${state.debt>0?'var(--accent-red)':'#333'}" id="bank-debt-display">${state.debt.toFixed(2)} PLN</div>
+                        <div style="font-size:12px; color:${state.debtOverdue?'red':'#00c853'}; font-weight:bold; margin-top:5px" id="bank-timer-display">
+                            ${state.debt > 0 ? (state.debtOverdue ? 'ВЗЫСКАНИЕ АКТИВНО' : 'Осталось времени: ' + timeLeftStr) : 'Нет долгов'}
+                        </div>
+                    </div>
+                    
+                    <div style="text-align:center; margin-bottom:10px; color:#aaa; font-size:12px">
+                        Ваш кредитный лимит: <span style="color:white; font-weight:bold">${limit.toLocaleString()} PLN</span>
+                    </div>
+
+                    ${sosHtml}
+
+                    <div style="background:#f5f5f5; padding:10px; border-radius:10px; margin-bottom:10px">
+                        <div style="font-size:11px; color:#666; margin-bottom:5px">УСЛОВИЯ КРЕДИТА:</div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px">
+                            <span>Попытка №${streak + 1}</span>
+                            <span style="font-weight:bold; color:${interestRate>0?'var(--accent-red)':'var(--accent-green)'}">Комиссия: +${interestRate}%</span>
+                        </div>
+                    </div>
+
+                    <input type="number" id="loan-amount" class="bank-input" placeholder="Сумма кредита...">
+                    <div class="bank-actions">
+                        <button class="bank-btn btn-loan" onclick="takeLoan()">ВЗЯТЬ</button>
+                        ${state.debt > 0 ? '<button class="bank-btn btn-repay" onclick="repayLoan()">ВЕРНУТЬ</button>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateBankTimer() {
+            const timerDisplay = document.getElementById('bank-timer-display');
+            const debtDisplay = document.getElementById('bank-debt-display');
+            
+            let timeStr = "00:00";
+            if(state.debt > 0 && !state.debtOverdue) {
+                let diff = Math.max(0, state.debtTimer - Date.now());
+                let m = Math.floor(diff / 60000); let s = Math.floor((diff % 60000) / 1000);
+                timeStr = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }
+
+            if(timerDisplay) {
+                if(state.debt > 0) {
+                    timerDisplay.textContent = state.debtOverdue ? 'ВЗЫСКАНИЕ АКТИВНО' : 'Осталось времени: ' + timeStr;
+                    timerDisplay.style.color = state.debtOverdue ? 'red' : '#00c853';
+                    document.getElementById('bank-alert').style.display = state.debtOverdue ? 'block' : 'none';
+                } else {
+                    timerDisplay.textContent = 'Нет долгов';
+                    document.getElementById('bank-alert').style.display = 'none';
+                }
+            }
+            if(debtDisplay) debtDisplay.textContent = state.debt.toFixed(2) + ' PLN';
+        }
+
+        function takeSOS() {
+            const costWater = (ITEMS_DB.water.cost || 2.0);
+            const costBar = (ITEMS_DB.bar.cost || 4.5);
+            const totalVal = costWater + costBar;
+            const debtIncrease = totalVal * 2;
+
+            state.inventory.water = (state.inventory.water || 0) + 1;
+            state.inventory.bar = (state.inventory.bar || 0) + 1;
+
+            state.debt += debtIncrease;
+            
+            if (state.debtTimer === 0 || state.debt <= debtIncrease) {
+                state.debtTimer = Date.now() + (5 * 60 * 1000); 
+                state.debtOverdue = false;
+            }
+
+            showToast(`🆘 SOS получен! Долг +${debtIncrease.toFixed(2)} PLN`, 'warn');
+            sendLog(`Взял SOS пакет. Долг +${debtIncrease}`, 'LOAN');
+            
+            document.getElementById('modal-body').innerHTML = ''; 
+            renderBank(document.getElementById('modal-body')); 
+            saveGame(); syncToCloud(true); updateUI();
+        }
+
+        function takeLoan() {
+            const input = document.getElementById('loan-amount'); 
+            const amt = parseFloat(input.value);
+            if (!amt || amt <= 0) return;
+
+            // --- НОВОЕ: ПРОВЕРКА ЛИМИТА И ДОЛГА ---
+            const limit = 1000 + (state.career.totalOrders * 50);
+
+            if (state.debt > 0.1) {
+                showToast('❌ У вас уже есть активный кредит!', 'warn');
+                return;
+            }
+
+            if (amt > limit) {
+                showToast(`⛔ Лимит доверия: ${limit} PLN. Работайте больше!`, 'warn');
+                return;
+            }
+            // ----------------------------------------
+
+            let streak = state.loanStreak || 0;
+            let interest = 0;
+            
+            if (streak === 0) interest = 0;      
+            else if (streak === 1) interest = 0.10; 
+            else if (streak === 2) interest = 0.20; 
+            else interest = 0.50;                 
+
+            const debtIncrease = amt * (1 + interest);
+
+            state.balance += amt; 
+            state.debt += debtIncrease; 
+            state.loanStreak = streak + 1;
+
+            if (state.debt <= debtIncrease) { 
+                state.debtTimer = Date.now() + (5 * 60 * 1000); 
+                state.debtOverdue = false; 
+            }
+            
+            let msg = interest === 0 ? `Взят кредит: ${amt} PLN (0%)` : `Взято: ${amt}. Долг: +${debtIncrease.toFixed(2)} (+${interest*100}%)`;
+            showToast(msg, interest > 0 ? 'warn' : 'success'); 
+            input.value = ''; 
+            
+            sendLog(`Взял кредит: ${amt} (Streak: ${state.loanStreak})`, 'LOAN');
+            document.getElementById('modal-body').innerHTML = ''; renderBank(document.getElementById('modal-body')); 
+            saveGame(); syncToCloud(true); updateUI();
+        }
+
+        function repayLoan() {
+            const input = document.getElementById('loan-amount'); 
+            let amt = parseFloat(input.value);
+            if (!amt || amt <= 0) return;
+            
+            if (amt > state.balance) amt = state.balance; 
+            if (amt > state.debt) amt = state.debt;
+            
+            state.balance -= amt; 
+            state.debt -= amt; 
+            
+            if (state.debt <= 0.01) { 
+                state.debt = 0; 
+                state.debtOverdue = false;
+                state.debtTimer = 0;
+                state.loanStreak = 0; 
+                showToast(`Долг полностью погашен! Процент сброшен.`, 'success');
+            } else {
+                showToast(`Погашено: ${amt} PLN. Остаток: ${state.debt.toFixed(2)}`, 'success'); 
+            }
+
+            input.value = ''; 
+            sendLog(`Вернул долг: ${amt} PLN`, 'LOAN');
+            document.getElementById('modal-body').innerHTML = ''; renderBank(document.getElementById('modal-body')); 
+            saveGame(); syncToCloud(true); updateUI();
+        }
+
+        function renderHistory(c) { 
+            c.innerHTML = state.history.slice().reverse().map(h => {
+                let amount = 0;
+                let tipStr = "";
+                if (h.total) {
+                    amount = h.total;
+                    if (h.tip > 0) {
+                        tipStr = `<span style="color:#00e676; font-size:10px; margin-left:5px">(+${h.tip.toFixed(2)} napiwek)</span>`;
+                    }
+                } else {
+                    amount = parseFloat(h.earn); 
+                }
+                return `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
+                    <div><b>${h.rest}</b>${tipStr}</div>
+                    <span style="font-weight:bold">+${amount.toFixed(2)}</span>
+                </div>`;
+            }).join(''); 
+        }
+
+        function updateTrack(p) { document.getElementById('track-fill').style.width=p+'%'; document.getElementById('track-icon').style.left=p+'%'; }
+        
+        function resetGame(penalty = 0) {
+            let msg = 'Сбросить прогресс?';
+            if (penalty > 0) msg += ` С вас будет списано ${penalty} PLN на старте новой игры.`;
+            if(confirm(msg)) {
+                localStorage.removeItem(SAVE_KEY);
+                const newState = {
+                    id: state.id, 
+                    name: null,
+                    balance: 0, debt: (7000 + penalty), debtTimer: Date.now(), debtOverdue: true,
+                    loanStreak: 0, 
+                    isOnline: false, isSearching: false, scheduledOffline: false,
+                    items: { bike: 100, bag: 100, phone: 100, gear: 100 },
+                    needs: { energy: 100, water: 100, mood: 100 },
+                    inventory: { water: 0, bar: 0, energy_drink: 0, coffee: 0 },
+                    repairs: { bike: 0, bag: 0, phone: 0, gear: 0 },
+                    history: []
+                };
+                localStorage.setItem(SAVE_KEY, JSON.stringify(newState));
+                location.reload();
+            }
+        }
+
+    init();
+  </script>
+<script src="patches/design_update.js"></script>
+
+</body> </html>
+
