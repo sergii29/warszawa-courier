@@ -9,182 +9,206 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#fff}
+body{margin:0;font-family:system-ui;background:#fff;overflow:hidden}
 #map{height:72vh}
-#panel{height:28vh;padding:10px;box-shadow:0 -6px 20px rgba(0,0,0,.15)}
-button{width:100%;padding:14px;font-size:16px;font-weight:600;border:none;border-radius:12px;background:#00aaff;color:#fff;margin-top:6px}
-button.gray{background:#e4eef4;color:#333}
-.tab{display:none}
-.tab.active{display:block}
-.order{background:#f4f8fb;padding:10px;border-radius:10px;margin-top:6px;font-size:14px}
-.small{font-size:13px;opacity:.8}
+.topbar{
+  position:absolute;top:0;left:0;right:0;height:50px;
+  background:#fff;display:flex;align-items:center;
+  justify-content:space-between;padding:0 12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:1000
+}
+.menuBtn{font-size:22px}
+.balance{font-weight:600}
+.rep{font-size:13px;color:#555}
+
+#panel{
+  position:absolute;bottom:0;left:0;right:0;height:28vh;
+  background:#fff;padding:10px;
+  box-shadow:0 -6px 20px rgba(0,0,0,.2)
+}
+button{
+  width:100%;padding:14px;font-size:16px;
+  border:none;border-radius:12px;
+  background:#00aaff;color:#fff;margin-top:6px;font-weight:600
+}
+.gray{background:#e4eef4;color:#333}
+
+.statline{font-size:13px;margin:4px 0}
+.orderBox{background:#f3f8fb;padding:8px;border-radius:10px;margin-top:6px;font-size:14px}
+
+#menu{
+  position:absolute;top:0;left:-260px;width:260px;height:100%;
+  background:#fff;z-index:2000;
+  box-shadow:4px 0 20px rgba(0,0,0,.25);
+  transition:.3s;padding:10px
+}
+#menu.open{left:0}
+.menuItem{padding:12px;border-bottom:1px solid #eee;font-size:15px}
+
+.rain{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;
+  background-image:linear-gradient(
+    rgba(0,0,255,.2) 1px, transparent 1px);
+  background-size:2px 8px;
+  animation:rain 0.3s linear infinite;
+}
+@keyframes rain{to{background-position:0 8px}}
 </style>
 </head>
 
 <body>
 
+<div id="menu">
+  <div class="menuItem"><b>👤 Курьер</b></div>
+  <div class="menuItem">🛒 Магазин</div>
+  <div class="menuItem">📊 Статистика</div>
+  <div class="menuItem">💰 Финансы</div>
+  <div class="menuItem">⚙️ Настройки</div>
+</div>
+
+<div class="topbar">
+  <div class="menuBtn" onclick="toggleMenu()">☰</div>
+  <div>
+    <div class="balance">💰 <span id="money">500</span> PLN</div>
+    <div class="rep">⭐ Репутация: <span id="rep">50</span></div>
+  </div>
+</div>
+
 <div id="map"></div>
 
 <div id="panel">
-  <div id="mainTab" class="tab active">
-    <div id="status">🔘 Офлайн</div>
-    <div class="small">
-      ⚡ <span id="energy">100</span>% |
-      🍔 <span id="food">60</span>% |
-      🚲 <span id="bike">100</span>% |
-      🔋 <span id="battery">100</span>%
-      💰 <span id="money">0</span> zł
-    </div>
-
-    <div id="orderBox"></div>
-
-    <button onclick="mainAction()" id="mainBtn">🟢 Выйти онлайн</button>
-    <button class="gray" onclick="openShop()">🛒 Магазин</button>
+  <div id="status">🔘 Офлайн</div>
+  <div class="statline">
+    🍔 Голод: <span id="food">60</span>% |
+    🙂 Настроение: <span id="mood">70</span>% |
+    ⚡ Бодрость: <span id="energy">100</span>%
   </div>
 
-  <div id="shopTab" class="tab">
-    <b>🛒 Магазин</b>
-    <button onclick="buy('food')">🍔 Еда (+30%) — 12 zł</button>
-    <button onclick="buy('bike')">🔧 Ремонт вело — 20 zł</button>
-    <button onclick="buy('battery')">🔋 Заряд — 10 zł</button>
-    <button onclick="buy('energy')">☕ Кофе — 15 zł</button>
-    <button class="gray" onclick="closeShop()">⬅ Назад</button>
-  </div>
+  <div id="orderBox"></div>
+
+  <button onclick="mainAction()" id="mainBtn">🟢 Выйти онлайн</button>
 </div>
 
 <script>
 /* ===== СОСТОЯНИЕ ===== */
-let s = JSON.parse(localStorage.getItem("courier_warsaw")) || {
+let s = JSON.parse(localStorage.getItem("courier_full")) || {
   phase:"offline",
-  energy:100, food:60, bike:100, battery:100,
-  money:0,
-  step:0,
-  order:null
+  money:500,
+  rep:50,
+  food:60,
+  mood:70,
+  energy:100,
+  order:null,
+  rain:false,
+  step:0
 };
 
 /* ===== КАРТА ===== */
-const map = L.map('map').setView([52.2297,21.0122],13);
+const map=L.map('map').setView([52.2297,21.0122],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-let courierPos=[52.2297,21.0122];
-const courier=L.marker(courierPos).addTo(map);
+let pos=[52.2297,21.0122];
+const courier=L.marker(pos).addTo(map);
 let route=null;
-
-/* ===== ДАННЫЕ ЗАКАЗОВ ===== */
-const restaurants=[
-  {name:"La Pizza Napoletana",pos:[52.2335,21.002]},
-  {name:"Kebab King",pos:[52.221,21.01]},
-  {name:"Burger House",pos:[52.226,21.025]}
-];
 
 /* ===== UI ===== */
 function updateUI(){
-  energy.innerText=Math.floor(s.energy);
-  food.innerText=Math.floor(s.food);
-  bike.innerText=Math.floor(s.bike);
-  battery.innerText=Math.floor(s.battery);
   money.innerText=s.money;
+  rep.innerText=s.rep;
+  food.innerText=s.food;
+  mood.innerText=s.mood;
+  energy.innerText=s.energy;
 }
-function save(){localStorage.setItem("courier_warsaw",JSON.stringify(s));}
+function save(){localStorage.setItem("courier_full",JSON.stringify(s));}
 
-/* ===== ОСНОВНАЯ КНОПКА ===== */
+/* ===== МЕНЮ ===== */
+function toggleMenu(){
+  document.getElementById("menu").classList.toggle("open");
+}
+
+/* ===== ЗАКАЗ ===== */
+function spawnOrder(){
+  const dist=(Math.random()*6+2);
+  const base=7+dist*2.5;
+  const repMod=1+(s.rep/100);
+  const rainMod=s.rain?1.2:1;
+  const pay=Math.floor(base*repMod*rainMod);
+
+  s.order={
+    dist,
+    time:Math.floor(dist*4),
+    pay
+  };
+
+  orderBox.innerHTML=`
+    <div class="orderBox">
+      📍 Дистанция: ${dist.toFixed(1)} км<br>
+      ⏱ Время: ${s.order.time} мин<br>
+      💰 Оплата: ${pay} PLN
+    </div>`;
+}
+
+/* ===== ОСНОВНАЯ ЛОГИКА ===== */
 function mainAction(){
   if(s.phase==="offline"){
     s.phase="online";
     status.innerText="🟢 Онлайн. Ожидание заказа…";
     mainBtn.innerText="🔔 Ждать заказ";
+    weatherRoll();
   }
   else if(s.phase==="online"){
     spawnOrder();
+    s.phase="delivering";
+    status.innerText="🚴 Доставка началась";
+    mainBtn.innerText="🚴 Ехать";
   }
-  else if(s.phase==="toRestaurant"){
-    moveStep(s.order.restaurant.pos,()=>{
-      s.phase="waiting";
-      status.innerText="⏳ Ожидание заказа…";
-      setTimeout(()=>{
-        s.phase="toClient";
-        status.innerText="📦 Забрал заказ. Едешь к клиенту";
-        drawRoute(courierPos,s.order.clientPos);
-        mainBtn.innerText="🚴 Ехать";
-      },2000);
-    });
+  else if(s.phase==="delivering"){
+    move();
   }
-  else if(s.phase==="toClient"){
-    moveStep(s.order.clientPos,()=>{
-      s.money+=s.order.pay;
-      s.phase="online";
-      orderBox.innerHTML="";
-      status.innerText="🟢 Онлайн. Заказ завершён";
-      mainBtn.innerText="🔔 Ждать заказ";
-    });
-  }
-  drain();
   save();updateUI();
 }
 
-/* ===== ЗАКАЗ ===== */
-function spawnOrder(){
-  const r=restaurants[Math.floor(Math.random()*restaurants.length)];
-  const client=[52.22+Math.random()*0.02,21.01+Math.random()*0.02];
-  const dist=distance(courierPos,r.pos);
-  const pay=Math.floor(6+dist*2.5);
-
-  s.order={restaurant:r,clientPos:client,pay,dist};
-
-  orderBox.innerHTML=`
-    <div class="order">
-      🍴 ${r.name}<br>
-      📏 ${dist.toFixed(1)} км<br>
-      💰 ${pay} zł
-    </div>`;
-  s.phase="toRestaurant";
-  status.innerText="🍔 Принят заказ. Едешь в ресторан";
-  mainBtn.innerText="🚴 Ехать";
-  drawRoute(courierPos,r.pos);
-}
-
 /* ===== ДВИЖЕНИЕ ===== */
-function moveStep(target,done){
-  const dx=(target[0]-courierPos[0])/15;
-  const dy=(target[1]-courierPos[1])/15;
-  courierPos[0]+=dx; courierPos[1]+=dy;
-  courier.setLatLng(courierPos);
-  map.panTo(courierPos,{animate:true});
+function move(){
+  s.energy-=3;
+  s.food-=2;
+  s.mood-=1;
+
   s.step++;
-  if(s.step>=15){
-    courierPos=[...target];
-    courier.setLatLng(courierPos);
-    clearRoute();
-    s.step=0;
-    done();
+  if(s.step>=s.order.time){
+    finishOrder();
   }
 }
 
-/* ===== РАСХОД ===== */
-function drain(){
-  if(s.phase==="toRestaurant"||s.phase==="toClient"){
-    s.energy-=2; s.food-=1; s.bike-=1; s.battery-=1;
+/* ===== ФИНИШ ===== */
+function finishOrder(){
+  if(s.energy<=0){
+    s.money-=20;
+    s.rep-=5;
+    status.innerText="❌ Заказ сорван. Штраф!";
+  }else{
+    s.money+=s.order.pay;
+    s.rep+=2;
+    status.innerText="✅ Заказ выполнен";
+  }
+  s.phase="online";
+  s.step=0;
+  orderBox.innerHTML="";
+  mainBtn.innerText="🔔 Ждать заказ";
+}
+
+/* ===== ПОГОДА ===== */
+function weatherRoll(){
+  s.rain=Math.random()<0.3;
+  if(s.rain){
+    const rain=document.createElement("div");
+    rain.className="rain";
+    document.body.appendChild(rain);
+    setTimeout(()=>rain.remove(),6000);
   }
 }
 
-/* ===== МАГАЗИН ===== */
-function openShop(){mainTab.classList.remove("active");shopTab.classList.add("active")}
-function closeShop(){shopTab.classList.remove("active");mainTab.classList.add("active")}
-function buy(type){
-  if(type==="food"&&s.money>=12){s.money-=12;s.food+=30}
-  if(type==="bike"&&s.money>=20){s.money-=20;s.bike=100}
-  if(type==="battery"&&s.money>=10){s.money-=10;s.battery=100}
-  if(type==="energy"&&s.money>=15){s.money-=15;s.energy+=30}
-  updateUI();save();
-}
-
-/* ===== ВСПОМОГ ===== */
-function drawRoute(a,b){clearRoute();route=L.polyline([a,b],{color:"#00aaff"}).addTo(map)}
-function clearRoute(){if(route)map.removeLayer(route)}
-function distance(a,b){
-  return Math.sqrt(Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2))*111;
-}
-
+/* INIT */
 updateUI();
 </script>
 
