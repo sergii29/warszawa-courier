@@ -1,169 +1,130 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Warsaw Courier Sim</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<title>Courier Simulator</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-html,body{margin:0;padding:0;height:100%;background:#111;color:#fff;font-family:system-ui;overflow:hidden}
-#map{height:100%;width:100%}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui;}
+html,body{height:100%;overflow:hidden;background:#f3f4f6}
 
-.topbar{
-position:absolute;top:10px;left:10px;right:10px;
-display:flex;justify-content:space-between;z-index:1000
+/* HEADER */
+header{
+  height:56px;
+  background:#0b3a5a;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+  position:relative;
+  z-index:1001;
 }
-.btn{
-background:#fff;color:#000;border:none;border-radius:50%;
-width:44px;height:44px;font-size:18px;cursor:pointer
+.menu-btn{font-size:26px;cursor:pointer}
+.balance{display:flex;gap:12px;font-weight:600}
+
+/* MAP */
+#map{height:calc(100vh - 56px);z-index:1}
+
+/* BOTTOM */
+.bottom-card{
+  position:absolute;
+  bottom:10px;left:10px;right:10px;
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.15);
+  z-index:500;
 }
-.balance{
-background:rgba(0,0,0,.7);padding:10px 15px;border-radius:20px
+.btn-online{
+  width:100%;margin-top:10px;
+  background:#1fb6e9;border:none;color:#fff;
+  padding:14px;border-radius:12px;font-size:18px;
+}
+.stats{display:flex;justify-content:space-around;margin-top:10px}
+
+/* OVERLAY */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.4);
+  z-index:1000;display:none;
 }
 
-#pedal{
-position:absolute;bottom:20px;left:50%;
-transform:translateX(-50%);
-padding:20px 40px;font-size:20px;
-border:none;border-radius:20px;
-background:#00ccff;color:#000;font-weight:700;
-z-index:1000;cursor:pointer
+/* MENU */
+.side-menu{
+  position:fixed;top:0;left:0;height:100%;width:260px;
+  background:#fff;transform:translateX(-100%);
+  transition:.3s ease;z-index:1001;padding-top:56px;
 }
+.side-menu.open{transform:translateX(0)}
+.side-menu li{padding:16px;border-bottom:1px solid #eee;font-size:18px}
 
-#menuOverlay{
-position:fixed;inset:0;background:rgba(0,0,0,.6);
-display:none;z-index:2000
-}
-#menu{
-position:fixed;top:0;left:-280px;width:280px;height:100%;
-background:#1e1e1e;padding:20px;
-transition:.3s;z-index:2001
-}
-.menu-item{
-padding:15px 0;border-bottom:1px solid #333;cursor:pointer
-}
-
-#orderBox{
-position:absolute;bottom:100px;left:50%;
-transform:translateX(-50%);
-background:#222;padding:15px 20px;border-radius:15px;
-display:none;z-index:1000
+/* 🔒 ОТКЛЮЧАЕМ КЛИК ПО АТРИБУЦИИ */
+.leaflet-control-attribution{
+  pointer-events:none;
+  opacity:.6;
 }
 </style>
 </head>
 
 <body>
 
+<header>
+  <div class="menu-btn" onclick="openMenu()">☰</div>
+  <div class="balance">
+    <span>💰 500 PLN</span>
+    <span>⭐ 50</span>
+  </div>
+</header>
+
 <div id="map"></div>
 
-<div class="topbar">
-<button class="btn" onclick="toggleMenu()"><i class="fa fa-bars"></i></button>
-<div class="balance" id="balance">0.00 PLN</div>
-<button class="btn" onclick="toggleOnline()"><i class="fa fa-power-off"></i></button>
+<div class="bottom-card">
+  <h2>Warsaw</h2>
+  <div>Доступность заказов: <b>Низкая</b></div>
+  <button class="btn-online">▶ Выйти онлайн</button>
+  <div class="stats">
+    <div>🍔 60%</div>
+    <div>🙂 70%</div>
+    <div>⚡ 80%</div>
+  </div>
 </div>
 
-<button id="pedal">ВЫЙТИ В ОНЛАЙН</button>
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
-<div id="orderBox"></div>
-
-<div id="menuOverlay" onclick="toggleMenu()"></div>
-<div id="menu">
-<div class="menu-item" onclick="alert('Магазин (заглушка)')">🛒 Магазин</div>
-<div class="menu-item" onclick="alert('Банк (заглушка)')">🏦 Банк</div>
-<div class="menu-item" onclick="alert('Такси (позже)')">🚕 Такси</div>
-<div class="menu-item" onclick="resetGame()">♻️ Сброс</div>
-</div>
+<nav class="side-menu" id="menu">
+  <ul>
+    <li>🛒 Магазин</li>
+    <li>🎒 Экипировка</li>
+    <li>📊 Статистика</li>
+    <li>💼 Финансы</li>
+    <li>⭐ Репутация</li>
+    <li>⚙️ Настройки</li>
+  </ul>
+</nav>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
-/* ================= STATE ================= */
-let state={
-balance:0,
-online:false,
-order:null
-};
-
-/* ================= MAP ================= */
-const map=L.map('map',{zoomControl:false})
-.setView([52.2297,21.0122],13);
-L.tileLayer(
-'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-{maxZoom:19}
-).addTo(map);
-
-/* ================= MENU ================= */
-function toggleMenu(){
-const o=document.getElementById('menuOverlay');
-const m=document.getElementById('menu');
-const open=o.style.display==='block';
-o.style.display=open?'none':'block';
-m.style.left=open?'-280px':'0';
+function openMenu(){
+  menu.classList.add('open');
+  overlay.style.display='block';
+}
+function closeMenu(){
+  menu.classList.remove('open');
+  overlay.style.display='none';
 }
 
-/* ================= ONLINE ================= */
-const pedal=document.getElementById('pedal');
-const orderBox=document.getElementById('orderBox');
+const map=L.map('map',{zoomControl:true}).setView([52.2297,21.0122],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© OpenStreetMap'
+}).addTo(map);
 
-pedal.addEventListener('click',pedalPress);
-pedal.addEventListener('touchstart',e=>{
-e.preventDefault();pedalPress();
-},{passive:false});
-
-function toggleOnline(){
-state.online=!state.online;
-pedal.textContent=state.online?'ЖМИ ГАЗ':'ВЫЙТИ В ОНЛАЙН';
-if(state.online) findOrder();
-else clearOrder();
-}
-
-function pedalPress(){
-if(!state.online){toggleOnline();return;}
-if(!state.order){findOrder();return;}
-progressOrder();
-}
-
-/* ================= ORDERS ================= */
-function findOrder(){
-state.order={
-progress:0,
-pay:(5+Math.random()*10).toFixed(2)
-};
-orderBox.style.display='block';
-orderBox.textContent='📦 Заказ: '+state.order.pay+' PLN';
-pedal.textContent='ВЫПОЛНЯТЬ';
-}
-
-function progressOrder(){
-state.order.progress+=25;
-orderBox.textContent='🚴 В пути: '+state.order.progress+'%';
-if(state.order.progress>=100) completeOrder();
-}
-
-function completeOrder(){
-state.balance+=parseFloat(state.order.pay);
-document.getElementById('balance').textContent=
-state.balance.toFixed(2)+' PLN';
-clearOrder();
-}
-
-function clearOrder(){
-state.order=null;
-orderBox.style.display='none';
-pedal.textContent='ЖМИ ГАЗ';
-}
-
-/* ================= RESET ================= */
-function resetGame(){
-if(confirm('Сбросить игру?')){
-state={balance:0,online:false,order:null};
-document.getElementById('balance').textContent='0.00 PLN';
-clearOrder();
-}
-}
+L.marker([52.2297,21.0122]).addTo(map).bindPopup('Ты здесь');
 </script>
 
 </body>
