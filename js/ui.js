@@ -1,29 +1,18 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const menuBtn = document.getElementById("menuBtn");
-  const menu = document.getElementById("sideMenu");
+const menu = document.getElementById("sideMenu");
+const btn = document.getElementById("menuBtn");
 
-  // создаём overlay программно (чтоб не лезть в index)
-  const overlay = document.createElement("div");
-  overlay.id = "overlay";
-  document.body.appendChild(overlay);
+btn.onclick = e => {
+  e.stopPropagation();
+  menu.classList.toggle("open");
+};
 
-  function openMenu() {
-    menu.classList.add("open");
-    overlay.classList.add("show");
-  }
-
-  function closeMenu() {
-    menu.classList.remove("open");
-    overlay.classList.remove("show");
-  }
-
-  menuBtn.addEventListener("click", () => {
-    if (menu.classList.contains("open")) {
-      closeMenu();
-    } else {
-      openMenu();
-    }
-  });
-
-  overlay.addEventListener("click", closeMenu);
+document.addEventListener("click", () => {
+  menu.classList.remove("open");
 });
+
+menu.onclick = e => e.stopPropagation();
+
+function openShop() {
+  menu.classList.remove("open");
+  alert("Магазин (в разработке)");
+}
