@@ -5,56 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Courier Simulator</title>
 
-  <!-- UI STYLE -->
-  <link rel="stylesheet" href="css/ui.css">
-
   <!-- LEAFLET -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-</head>
 
+  <!-- UI -->
+  <link rel="stylesheet" href="css/ui.css" />
+</head>
 <body>
 
-  <!-- HEADER -->
-  <div class="header">
-    <div id="menuBtn">☰</div>
-    <div class="balance">💰 500 PLN ⭐ 50</div>
-  </div>
+<!-- HEADER -->
+<div class="header">
+  <div id="menuBtn">☰</div>
+  <div class="balance">💰 500 PLN ⭐ 50</div>
+</div>
 
-  <!-- SIDE MENU -->
-  <div class="menu">
-    <div class="menu-item">🛒 Магазин</div>
-    <div class="menu-item">🎒 Экипировка</div>
-    <div class="menu-item">📊 Статистика</div>
-    <div class="menu-item">💼 Финансы</div>
-    <div class="menu-item">⭐ Репутация</div>
-    <div class="menu-item">⚙️ Настройки</div>
-  </div>
+<!-- SIDE MENU -->
+<div class="menu">
+  <div class="menu-item">🛒 Магазин</div>
+  <div class="menu-item">🎒 Экипировка</div>
+  <div class="menu-item">📊 Статистика</div>
+  <div class="menu-item">💼 Финансы</div>
+  <div class="menu-item">⭐ Репутация</div>
+  <div class="menu-item">⚙️ Настройки</div>
+</div>
 
-  <!-- MAP -->
-  <div id="map" style="height: 55vh;"></div>
+<!-- MAP -->
+<div id="map" style="height: 60vh;"></div>
 
-  <!-- MAIN CARD -->
-  <div class="card">
-    <h2>Warsaw</h2>
-    <p>Доступность заказов: <b>Низкая</b></p>
-    <button class="btn" onclick="goOnline()">▶ Выйти онлайн</button>
-  </div>
+<!-- CARD -->
+<div class="card">
+  <h2>Warsaw</h2>
+  <p>Доступность заказов: <b>Низкая</b></p>
+  <button class="btn">▶ Выйти онлайн</button>
+</div>
 
-  <!-- STATUS -->
-  <div class="status">
-    <div>🍔 60%</div>
-    <div>🙂 70%</div>
-    <div>⚡ 80%</div>
-  </div>
+<!-- STATUS -->
+<div class="status">
+  🍔 60% 😊 70% ⚡ 80%
+</div>
 
-  <!-- SCRIPTS -->
-  <script src="js/state.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/app.js"></script>
+<!-- SCRIPTS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/map.js"></script>
 
 </body>
 </html>
