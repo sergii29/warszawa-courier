@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>President Simulator Real</title>
+    <title>President Simulator Ultimate</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -13,10 +13,8 @@
 <body>
 
     <div id="countrySelectScreen" class="full-screen-modal">
-        <h1>ВЫБЕРИТЕ ДЕРЖАВУ</h1>
-        <p>Кем вы будете управлять?</p>
-        <div id="countryList" class="country-grid">
-            </div>
+        <h1 style="color:var(--gold)">ВЫБЕРИТЕ ДЕРЖАВУ</h1>
+        <div id="countryList" class="country-grid"></div>
     </div>
 
     <div id="gameInterface" style="display:none;">
@@ -24,79 +22,86 @@
         <header class="topbar">
             <div class="country-info">
                 <span id="flag" class="flag-icon">🏳️</span>
-                <span id="countryName">Страна</span>
             </div>
             <div class="stat-group">
                 <div class="stat-val rating"><span id="approval">50</span>%</div>
-                <div class="stat-label">ОДОБРЕНИЕ</div>
+                <div class="stat-label">РЕЙТИНГ</div>
+            </div>
+            <div class="stat-group" onclick="stealMoney()">
+                <div class="stat-val offshore"><span id="personalCash">0</span> $</div>
+                <div class="stat-label">ЛИЧНЫЙ СЧЕТ 🔒</div>
             </div>
         </header>
 
-        <div class="main-stats">
-            <div class="budget-box">
-                <div class="label">ГОСБЮДЖЕТ</div>
-                <div class="value"><span id="budget">0</span> <span id="currency">USD</span></div>
-            </div>
-            <div class="pop-box">
-                <i class="fa fa-users"></i> <span id="population">0</span> чел.
-            </div>
+        <div class="news-ticker-wrap">
+            <div class="news-ticker" id="newsTicker">Срочные новости: Президент вступил в должность...</div>
         </div>
 
         <div class="screen">
             
+            <div class="budget-card">
+                <div class="b-label">БЮДЖЕТ ГОСУДАРСТВА</div>
+                <div class="b-val"><span id="budget">0</span> <span id="currency">USD</span></div>
+                <div class="b-pop"><i class="fa fa-users"></i> <span id="population">0</span> чел.</div>
+            </div>
+
             <div class="desk-container">
                 <div class="desk-bg"></div>
                 <i class="fa fa-user-tie desk-person"></i>
-                <div class="status-msg" id="statusMsg">Народ ждет ваших решений...</div>
+                
+                <div id="eventCard" class="event-card" style="display:none">
+                    <h4 id="eventTitle">ЧП!</h4>
+                    <p id="eventDesc">Описание...</p>
+                    <div class="event-btns">
+                        <button class="ev-btn bad" onclick="resolveEvent(false)">Игнор</button>
+                        <button class="ev-btn good" onclick="resolveEvent(true)">Решить ($)</button>
+                    </div>
+                </div>
             </div>
 
             <button class="tax-btn" id="taxBtn" onclick="startFiscalYear()">
                 <div class="tax-content">
-                    <span id="taxBtnText">НАЧАТЬ ФИНАНСОВЫЙ ГОД</span>
-                    <small>Сбор налогов с населения</small>
+                    <span id="taxBtnText">СОБРАТЬ НАЛОГИ</span>
+                    <small>Нажмите, чтобы запустить налоговую</small>
                 </div>
-                <div class="progress-bg">
-                    <div id="taxProgress" class="progress-fill"></div>
-                </div>
+                <div class="progress-bg"><div id="taxProgress" class="progress-fill"></div></div>
             </button>
 
+            <h3 class="section-title">КАБИНЕТ МИНИСТРОВ</h3>
+            <div class="advisors-grid">
+                <div class="advisor-slot" onclick="hireAdvisor('general')">
+                    <i class="fa fa-person-military-rifle"></i>
+                    <span id="adv_general">Нет Генерала</span>
+                </div>
+                <div class="advisor-slot" onclick="hireAdvisor('banker')">
+                    <i class="fa fa-sack-dollar"></i>
+                    <span id="adv_banker">Нет Банкира</span>
+                </div>
+                <div class="advisor-slot" onclick="hireAdvisor('spy')">
+                    <i class="fa fa-user-secret"></i>
+                    <span id="adv_spy">Нет Шпиона</span>
+                </div>
+            </div>
+
             <div class="control-grid">
-                <div class="c-card" onclick="openInfrastructure()">
-                    <i class="fa fa-city" style="color:#3498db"></i>
-                    <span>Инфраструктура</span>
-                </div>
-                <div class="c-card" onclick="openLaws()">
-                    <i class="fa fa-scroll" style="color:#e67e22"></i>
-                    <span>Законы</span>
-                </div>
-                <div class="c-card" onclick="openShop()">
-                    <i class="fa fa-briefcase" style="color:#f1c40f"></i>
-                    <span>Офшор / Stars</span>
-                </div>
+                <div class="c-card" onclick="openMenu('infra')"><i class="fa fa-city"></i><span>Стройка</span></div>
+                <div class="c-card" onclick="openMenu('laws')"><i class="fa fa-scroll"></i><span>Законы</span></div>
+                <div class="c-card" onclick="openMenu('shop')"><i class="fa fa-star"></i><span>Донат</span></div>
             </div>
         </div>
     </div>
 
     <div id="infraModal" class="modal">
         <div class="modal-content">
-            <h3>РАЗВИТИЕ ГОСУДАРСТВА</h3>
-            
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchInfraTab('social')">Соц</button>
-                <button class="tab-btn" onclick="switchInfraTab('economy')">Экон</button>
-                <button class="tab-btn" onclick="switchInfraTab('power')">Сила</button>
-            </div>
-
-            <div id="infraList" class="scroll-list">
-                </div>
-
+            <h3>РАЗВИТИЕ</h3>
+            <div id="infraList" class="scroll-list"></div>
             <button class="close-btn" onclick="closeModal()">Закрыть</button>
         </div>
     </div>
 
     <div id="lawsModal" class="modal">
         <div class="modal-content">
-            <h3>ЗАКОНОДАТЕЛЬСТВО</h3>
+            <h3>ЗАКОНЫ</h3>
             <div id="lawsList" class="scroll-list"></div>
             <button class="close-btn" onclick="closeModal()">Закрыть</button>
         </div>
@@ -104,16 +109,9 @@
 
     <div id="shopModal" class="modal">
         <div class="modal-content">
-            <h2><i class="fa fa-star"></i> МВФ / ДОНАТ</h2>
-            <p>Нужен транш от МВФ?</p>
-            <div class="shop-item" onclick="buyBudget(50)">
-                <span>Транш в бюджет</span>
-                <button class="buy-btn">50 Stars</button>
-            </div>
-            <div class="shop-item premium" onclick="buyRating()">
-                <span>Пропаганда (+20%)</span>
-                <button class="buy-btn">100 Stars</button>
-            </div>
+            <h2><i class="fa fa-star"></i> SECRET SERVICE</h2>
+            <div class="shop-item" onclick="buyBudget(50)"><span>Транш МВФ</span><button class="buy-btn">50 Stars</button></div>
+            <div class="shop-item premium" onclick="buyRating()"><span>Пропаганда (+20%)</span><button class="buy-btn">100 Stars</button></div>
             <button class="close-btn" onclick="closeModal()">Закрыть</button>
         </div>
     </div>
