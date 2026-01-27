@@ -3,87 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cyber Racer Tycoon</title>
-    
+    <title>Mr. President Simulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
     <header class="topbar">
-        <div class="stat-box cash">
-            <i class="fa fa-bolt"></i> <span id="cash">0</span>
+        <div class="stat-group">
+            <div class="stat-label">БЮДЖЕТ</div>
+            <div class="stat-val cash"><span id="budget">0</span> $</div>
         </div>
-        <div class="stat-box stars" onclick="openShop()">
-            <i class="fa fa-star"></i> <span id="stars">0</span> +
+        <div class="stat-group">
+            <div class="stat-label">РЕЙТИНГ</div>
+            <div class="stat-val rating"><span id="approval">50</span>%</div>
         </div>
     </header>
 
-    <div id="garageScreen" class="screen active">
+    <div class="population-bar">
+        <i class="fa fa-users"></i> Население: <span id="population">1000</span> чел.
+    </div>
+
+    <div id="mainScreen" class="screen active">
         
-        <div class="car-display">
-            <div class="level-badge">LVL <span id="carLevel">1</span></div>
-            <i class="fa fa-car-sport car-icon"></i>
-            <div class="car-neon"></div>
+        <div class="president-desk">
+            <div class="flag-bg"></div>
+            <i class="fa fa-user-tie president-icon"></i>
+            <div class="desk-plate">ПРЕЗИДЕНТ</div>
         </div>
 
-        <button class="race-btn" onclick="startRace()">
+        <button class="action-btn" onclick="collectTaxes()">
             <div class="btn-content">
-                <span>НА СТАРТ</span>
-                <small>Заработать +<span id="incomeDisplay">100</span> $</small>
+                <span>СОБРАТЬ НАЛОГИ</span>
+                <small>+<span id="taxIncome">100</span> $ в казну</small>
             </div>
+            <div class="btn-icon"><i class="fa fa-hand-holding-dollar"></i></div>
         </button>
 
-        <div class="upgrade-panel">
-            <h3>ТЮНИНГ</h3>
+        <div class="control-panel">
+            <h3>УПРАВЛЕНИЕ ГОСУДАРСТВОМ</h3>
             
-            <div class="upgrade-card" onclick="upgrade('engine')">
-                <div class="icon"><i class="fa fa-cogs"></i></div>
+            <div class="card" onclick="openMenu('laws')">
+                <div class="icon red"><i class="fa fa-gavel"></i></div>
                 <div class="info">
-                    <div class="name">Двигатель</div>
-                    <div class="cost"><span id="engineCost">100</span> $</div>
+                    <div class="name">ИЗДАТЬ ЗАКОНЫ</div>
+                    <div class="desc">Вводи налоги и запреты</div>
                 </div>
-                <div class="lvl" id="engineLvl">1</div>
             </div>
 
-            <div class="upgrade-card" onclick="upgrade('turbo')">
-                <div class="icon"><i class="fa fa-tachometer-alt"></i></div>
+            <div class="card" onclick="openMenu('ministry')">
+                <div class="icon blue"><i class="fa fa-building-columns"></i></div>
                 <div class="info">
-                    <div class="name">Турбо</div>
-                    <div class="cost"><span id="turboCost">250</span> $</div>
+                    <div class="name">МИНИСТЕРСТВА</div>
+                    <div class="desc">Строй жилье и полицию</div>
                 </div>
-                <div class="lvl" id="turboLvl">1</div>
+            </div>
+
+            <div class="card" onclick="openShop()">
+                <div class="icon gold"><i class="fa fa-briefcase"></i></div>
+                <div class="info">
+                    <div class="name">СЧЕТ В ШВЕЙЦАРИИ</div>
+                    <div class="desc">Купить валюту (Stars)</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="raceOverlay">
-        <div class="race-track">
-            <div class="race-car"><i class="fa fa-car-side"></i></div>
-            <div class="finish-line"></div>
+    <div id="lawsModal" class="modal">
+        <div class="modal-content">
+            <h3>НОВЫЕ ЗАКОНЫ</h3>
+            <div id="lawsList"></div>
+            <button class="close-btn" onclick="closeModal()">Закрыть</button>
         </div>
-        <div class="race-status">ГОНКА...</div>
+    </div>
+
+    <div id="ministryModal" class="modal">
+        <div class="modal-content">
+            <h3>ИНФРАСТРУКТУРА</h3>
+            
+            <div class="upgrade-item" onclick="upgrade('housing')">
+                <div class="u-info">
+                    <b>Социальное жилье</b> (+Люди)
+                    <small>Цена: <span id="housingCost">0</span> $</small>
+                </div>
+                <div class="u-lvl" id="housingLvl">0</div>
+            </div>
+
+            <div class="upgrade-item" onclick="upgrade('propaganda')">
+                <div class="u-info">
+                    <b>Отдел Пропаганды</b> (+Налоги)
+                    <small>Цена: <span id="propagandaCost">0</span> $</small>
+                </div>
+                <div class="u-lvl" id="propagandaLvl">0</div>
+            </div>
+
+            <div class="upgrade-item" onclick="upgrade('police')">
+                <div class="u-info">
+                    <b>ОМОН</b> (Защита рейтинга)
+                    <small>Цена: <span id="policeCost">0</span> $</small>
+                </div>
+                <div class="u-lvl" id="policeLvl">0</div>
+            </div>
+
+            <button class="close-btn" onclick="closeModal()">Закрыть</button>
+        </div>
     </div>
 
     <div id="shopModal" class="modal">
         <div class="modal-content">
-            <h2><i class="fa fa-star"></i> VIP SHOP</h2>
-            <p>Покупай Звезды для быстрого роста!</p>
-            
-            <div class="shop-item" onclick="buyStars(50)">
-                <span>50 Stars</span>
-                <button class="buy-btn">КУПИТЬ</button>
+            <h2><i class="fa fa-star"></i> ОФШОРНЫЙ СЧЕТ</h2>
+            <p>Нужны деньги на предвыборную кампанию?</p>
+            <div class="shop-item" onclick="buyBudget(50)">
+                <span>Пополнить бюджет</span>
+                <button class="buy-btn">50 Stars</button>
             </div>
-            <div class="shop-item premium" onclick="buyStars(100)">
-                <span>100 Stars (X2 Бонус)</span>
-                <button class="buy-btn">КУПИТЬ</button>
+            <div class="shop-item premium" onclick="buyRating()">
+                <span>Накрутить рейтинг (+20%)</span>
+                <button class="buy-btn">100 Stars</button>
             </div>
-
-            <button class="close-btn" onclick="closeShop()">Закрыть</button>
+            <button class="close-btn" onclick="closeModal()">Закрыть</button>
         </div>
     </div>
 
