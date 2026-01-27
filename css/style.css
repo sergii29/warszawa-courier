@@ -1,33 +1,56 @@
-:root { --bg: #090910; --card-bg: #151520; --neon-blue: #00f2ff; --neon-purple: #bc13fe; --green: #00ff88; --gold: #ffd700; }
-body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none; }
-.topbar { padding: 15px; display: flex; justify-content: space-between; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); position: fixed; top: 0; left: 0; right: 0; z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.stat-box { background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
-.stat-box.cash { color: var(--neon-blue); border: 1px solid var(--neon-blue); }
-.stat-box.stars { color: var(--gold); border: 1px solid var(--gold); cursor: pointer; }
-.screen { padding-top: 80px; height: 100vh; display: flex; flex-direction: column; align-items: center; }
-.car-display { position: relative; width: 280px; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px; }
-.car-icon { font-size: 100px; color: var(--neon-purple); z-index: 2; filter: drop-shadow(0 0 15px var(--neon-purple)); animation: float 3s ease-in-out infinite; }
-.car-neon { position: absolute; bottom: 40px; width: 140px; height: 20px; background: var(--neon-purple); border-radius: 50%; filter: blur(20px); opacity: 0.6; }
-.level-badge { position: absolute; top: 0; right: 0; background: var(--green); color: black; padding: 4px 10px; border-radius: 10px; font-weight: 900; transform: rotate(5deg); }
-.race-btn { width: 90%; max-width: 350px; height: 70px; background: linear-gradient(90deg, var(--neon-blue), #00aaff); border: none; border-radius: 15px; color: #000; font-weight: 900; font-size: 20px; cursor: pointer; box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); display: flex; align-items: center; justify-content: center; margin-bottom: 30px; transition: 0.2s; }
-.race-btn:active { transform: scale(0.95); }
-.btn-content { display: flex; flex-direction: column; line-height: 1.2; }
-.btn-content small { font-size: 12px; opacity: 0.8; }
-.upgrade-panel { width: 90%; max-width: 350px; }
-.upgrade-panel h3 { color: rgba(255,255,255,0.5); margin-bottom: 15px; }
-.upgrade-card { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; }
-.upgrade-card .icon { width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: var(--neon-blue); }
-.upgrade-card .info { flex: 1; }
-.upgrade-card .name { font-weight: bold; }
-.upgrade-card .cost { color: var(--green); font-size: 14px; }
-.upgrade-card .lvl { font-weight: bold; color: rgba(255,255,255,0.3); }
-#raceOverlay { position: fixed; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; justify-content: center; }
-.race-track { width: 100%; height: 60px; border-top: 2px dashed rgba(255,255,255,0.2); border-bottom: 2px dashed rgba(255,255,255,0.2); position: relative; margin-bottom: 20px; }
-.race-car { font-size: 40px; color: var(--neon-blue); position: absolute; left: 10px; top: 5px; transition: left 2s ease-in-out; }
-.race-status { text-align: center; font-size: 24px; font-weight: bold; color: var(--neon-blue); }
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; }
-.modal-content { background: #1a1a25; padding: 25px; border-radius: 20px; border: 1px solid var(--gold); text-align: center; width: 80%; }
-.shop-item { background: rgba(255,215,0,0.1); margin: 10px 0; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
-.buy-btn { background: var(--gold); border: none; padding: 5px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-.close-btn { background: transparent; border: 1px solid white; color: white; padding: 8px 20px; margin-top: 15px; border-radius: 20px; cursor: pointer; }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+:root { --bg: #1a1a1a; --gold: #d4af37; --red: #e74c3c; --blue: #3498db; --green: #2ecc71; --text: #ecf0f1; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Times New Roman', serif; overflow: hidden; user-select: none; }
+
+/* ВЕРХНЯЯ ПАНЕЛЬ */
+.topbar { display: flex; justify-content: space-between; padding: 10px 15px; background: #000; border-bottom: 2px solid var(--gold); }
+.stat-group { text-align: center; }
+.stat-label { font-size: 10px; color: #7f8c8d; letter-spacing: 1px; }
+.stat-val { font-size: 18px; font-weight: bold; }
+.stat-val.cash { color: var(--green); }
+.stat-val.rating { color: var(--gold); }
+
+.population-bar { background: #2c3e50; padding: 5px; text-align: center; font-size: 12px; border-bottom: 1px solid #34495e; }
+
+/* ЭКРАН */
+.screen { padding: 20px; height: calc(100vh - 80px); display: flex; flex-direction: column; align-items: center; }
+
+/* СТОЛ ПРЕЗИДЕНТА */
+.president-desk { position: relative; width: 100%; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 20px; border: 4px solid var(--gold); border-radius: 10px; background: radial-gradient(circle, #2c3e50 0%, #000 100%); }
+.president-icon { font-size: 80px; color: var(--gold); z-index: 2; margin-bottom: 10px; }
+.desk-plate { background: var(--gold); color: #000; padding: 5px 15px; font-weight: bold; font-family: sans-serif; letter-spacing: 2px; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+
+/* КНОПКА ДЕЙСТВИЯ */
+.action-btn { width: 100%; height: 80px; background: linear-gradient(180deg, #27ae60, #219150); border: 2px solid #fff; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; margin-bottom: 30px; cursor: pointer; box-shadow: 0 5px 0 #145a32; transition: 0.1s; }
+.action-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #145a32; }
+.btn-content { display: flex; flex-direction: column; text-align: left; color: #fff; }
+.btn-content span { font-size: 20px; font-weight: bold; font-family: sans-serif; }
+.btn-content small { font-size: 12px; opacity: 0.9; }
+.btn-icon { font-size: 30px; color: #fff; }
+
+/* МЕНЮ */
+.control-panel { width: 100%; }
+.control-panel h3 { text-align: center; color: var(--gold); border-bottom: 1px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px; font-size: 14px; }
+
+.card { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; border: 1px solid #444; cursor: pointer; }
+.card .icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 18px; color: #fff; }
+.card .icon.red { background: var(--red); }
+.card .icon.blue { background: var(--blue); }
+.card .icon.gold { background: var(--gold); color: #000; }
+.card .info .name { font-weight: bold; font-family: sans-serif; font-size: 14px; }
+.card .info .desc { font-size: 12px; color: #95a5a6; }
+
+/* МОДАЛКИ */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
+.modal-content { background: #1a1a1a; border: 2px solid var(--gold); padding: 20px; width: 85%; max-height: 80vh; overflow-y: auto; border-radius: 10px; text-align: center; }
+.modal-content h3 { color: var(--gold); margin-top: 0; }
+
+.upgrade-item { background: #2c3e50; padding: 12px; margin-bottom: 8px; border-radius: 6px; text-align: left; display: flex; justify-content: space-between; align-items: center; border: 1px solid #34495e; }
+.upgrade-item.signed { opacity: 0.5; border-color: var(--green); }
+.u-info { flex: 1; }
+.u-info b { display: block; font-size: 14px; margin-bottom: 4px; }
+.u-info small { color: var(--gold); font-size: 12px; }
+.u-lvl { background: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+
+.shop-item { background: #222; margin: 10px 0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--gold); }
+.buy-btn { background: var(--gold); border: none; padding: 5px 10px; font-weight: bold; cursor: pointer; }
+.close-btn { background: transparent; border: 1px solid #7f8c8d; color: #bdc3c7; padding: 10px 20px; margin-top: 15px; width: 100%; border-radius: 5px; cursor: pointer; }
