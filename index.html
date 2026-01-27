@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dictator Logic Sim</title>
+    <title>AI Face Swap</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -12,132 +12,86 @@
 </head>
 <body>
 
-    <div id="countrySelectScreen" class="full-screen-modal">
-        <h1 class="neon-text">ГДЕ БУДЕМ ПРАВИТЬ?</h1>
-        <div id="countryList" class="country-grid"></div>
-    </div>
+    <header class="topbar">
+        <div class="logo">🎭 FACE MAGIC</div>
+        <div class="balance" onclick="openShop()">
+            <span id="starsVal">0</span> <i class="fa fa-star"></i>
+        </div>
+    </header>
 
-    <div id="gameInterface" style="display:none;">
+    <div class="app-container">
         
-        <header class="topbar">
-            <div class="stat-group">
-                <div class="stat-val rating"><span id="approval">50</span>%</div>
-                <div class="stat-label">НАРОД</div>
+        <div class="upload-card" onclick="document.getElementById('fileInput').click()">
+            <img id="preview" src="" style="display:none">
+            <div id="placeholder">
+                <i class="fa fa-camera"></i>
+                <p>Загрузи фото лица</p>
             </div>
-            <div class="stat-group" onclick="openMenu('parliament')">
-                <div class="stat-val loyalty"><span id="parlLoyalty">50</span>%</div>
-                <div class="stat-label">ПАРЛАМЕНТ</div>
-            </div>
-            <div class="stat-group red-stat">
-                <div class="stat-val stress"><span id="stress">0</span>%</div>
-                <div class="stat-label">СТРЕСС</div>
-            </div>
-        </header>
+            <input type="file" id="fileInput" accept="image/*" hidden onchange="handleFile(this)">
+        </div>
 
-        <div class="screen">
-            
-            <div class="finance-block">
-                <div class="budget-card">
-                    <div class="b-label">ГОСБЮДЖЕТ</div>
-                    <div class="b-val"><span id="budget">0</span> <span class="currency">USD</span></div>
-                </div>
-                <div class="pension-card" onclick="stealPensions()">
-                    <div class="b-label">ПЕНСИОННЫЙ ФОНД ⚠️</div>
-                    <div class="b-val small"><span id="pensionFund">0</span> <span class="currency">USD</span></div>
-                    <div class="hint">Нажми, чтобы украсть</div>
-                </div>
+        <h3 class="section-title">ВЫБЕРИ ОБРАЗ:</h3>
+        <div class="styles-grid">
+            <div class="style-card" onclick="selectStyle('bum')">
+                <div class="emoji">🗑️</div>
+                <span>Бомж</span>
             </div>
-
-            <div class="desk-container">
-                <i class="fa fa-user-tie desk-person"></i>
-                <div class="personal-stash" onclick="openMenu('escape')">
-                    <i class="fa fa-lock"></i> Личный счет: <span id="personalCash">0</span> $
-                </div>
+            <div class="style-card" onclick="selectStyle('rich')">
+                <div class="emoji">🤵</div>
+                <span>Олигарх</span>
             </div>
+            <div class="style-card" onclick="selectStyle('gym')">
+                <div class="emoji">💪</div>
+                <span>Качок</span>
+            </div>
+            <div class="style-card" onclick="selectStyle('clown')">
+                <div class="emoji">🤡</div>
+                <span>Клоун</span>
+            </div>
+        </div>
 
-            <button class="year-btn" id="yearBtn" onclick="endFiscalYear()">
-                <div class="btn-main">ЗАВЕРШИТЬ ФИНАНСОВЫЙ ГОД</div>
-                <div class="btn-sub">Собрать налоги • Выплатить зарплаты • Пенсии</div>
-                <div class="progress-bg"><div id="yearProgress" class="progress-fill"></div></div>
+        <div class="action-area">
+            <div class="selected-style" id="selectedStyleName">Стиль не выбран</div>
+            <button class="generate-btn" onclick="startGeneration()">
+                СОЗДАТЬ ОБРАЗ
+                <small id="priceLabel">Бесплатно (1/1)</small>
             </button>
+        </div>
 
-            <h3 class="section-title">КАБИНЕТ (Зарплаты)</h3>
-            <div class="advisors-grid">
-                <div class="advisor-slot" onclick="hireAdvisor('general')">
-                    <i class="fa fa-person-military-rifle"></i>
-                    <span id="adv_general">--</span>
-                    <small id="sal_general"></small>
+        <div id="resultModal" class="modal">
+            <div class="modal-content">
+                <h3>ГОТОВО!</h3>
+                <div class="result-wrapper">
+                    <img id="resultImage" src="">
+                    <div class="watermark">t.me/MagicFaceBot</div>
                 </div>
-                <div class="advisor-slot" onclick="hireAdvisor('banker')">
-                    <i class="fa fa-sack-dollar"></i>
-                    <span id="adv_banker">--</span>
-                    <small id="sal_banker"></small>
-                </div>
-                <div class="advisor-slot" onclick="hireAdvisor('spy')">
-                    <i class="fa fa-user-secret"></i>
-                    <span id="adv_spy">--</span>
-                    <small id="sal_spy"></small>
+                <div class="result-actions">
+                    <button class="action-btn" onclick="closeResult()">ЕЩЕ РАЗ</button>
+                    <button class="action-btn share" onclick="tg.close()">ОТПРАВИТЬ</button>
                 </div>
             </div>
+        </div>
 
-            <div class="control-grid">
-                <div class="c-card" onclick="openMenu('infra')"><i class="fa fa-city"></i><span>Стройка</span></div>
-                <div class="c-card" onclick="openMenu('parliament')"><i class="fa fa-gavel"></i><span>Законы</span></div>
-                <div class="c-card" onclick="openMenu('escape')"><i class="fa fa-plane"></i><span>Побег</span></div>
+        <div id="loader" class="modal" style="background:rgba(0,0,0,0.9)">
+            <div class="loader-content">
+                <div class="spinner"></div>
+                <p id="loaderText">Анализ лица...</p>
             </div>
         </div>
-    </div>
 
-    <div id="parliamentModal" class="modal">
-        <div class="modal-content">
-            <h3>ПАРЛАМЕНТ</h3>
-            <p>Лояльность депутатов: <b id="modalLoyalty">50%</b></p>
-            <div class="parliament-actions">
-                <button class="action-btn" onclick="bribeParliament()">Подкупить (-1k Личных)</button>
-                <button class="action-btn red" onclick="intimidateParliament()">Запугать (Нужен Генерал)</button>
+        <div id="shopModal" class="modal">
+            <div class="modal-content shop">
+                <i class="fa fa-lock" style="font-size:40px; color:#e74c3c"></i>
+                <h2>ЛИМИТ ИСЧЕРПАН</h2>
+                <p>Бесплатная попытка потрачена.</p>
+                <button class="buy-btn" onclick="buyPack()">
+                    <div>5 ГЕНЕРАЦИЙ</div>
+                    <div class="price">25 Stars</div>
+                </button>
+                <button class="close-btn" onclick="document.getElementById('shopModal').style.display='none'">Закрыть</button>
             </div>
-            <hr>
-            <h4>ГОЛОСОВАНИЕ ЗА ЗАКОНЫ:</h4>
-            <div id="lawsList" class="scroll-list"></div>
-            <button class="close-btn" onclick="closeModal()">Закрыть</button>
         </div>
-    </div>
 
-    <div id="escapeModal" class="modal">
-        <div class="modal-content">
-            <h3>ЛИЧНАЯ ЖИЗНЬ</h3>
-            <p>Ваши деньги: <b id="modalPersonal" style="color:#f1c40f">0 $</b></p>
-            <p>Стресс: <b id="modalStress" style="color:red">0%</b></p>
-            
-            <div class="scroll-list">
-                <div class="upgrade-item" onclick="relax(1000)">
-                    <div><b>Массаж и Виски</b><br><small>-10% Стресс</small></div>
-                    <div class="price-tag">1,000 $</div>
-                </div>
-                <div class="upgrade-item" onclick="buyEscape('passport', 50000)">
-                    <div><b>Паспорт Кипра</b><br><small>Запасной выход</small></div>
-                    <div class="price-tag">50k $</div>
-                </div>
-                <div class="upgrade-item gold-bg" onclick="buyEscape('island', 1000000)">
-                    <div><b>ОСТРОВ (ПОБЕДА)</b><br><small>Сбежать навсегда</small></div>
-                    <div class="price-tag">1M $</div>
-                </div>
-                <hr>
-                <div class="upgrade-item" onclick="stealFromBudget()">
-                    <div><b>УКРАСТЬ ИЗ БЮДЖЕТА</b><br><small>Риск + Стресс</small></div>
-                    <div class="price-tag">+10k</div>
-                </div>
-            </div>
-            <button class="close-btn" onclick="closeModal()">Закрыть</button>
-        </div>
-    </div>
-
-    <div id="infraModal" class="modal">
-        <div class="modal-content">
-            <h3>БЮДЖЕТНЫЕ РАСХОДЫ</h3>
-            <div id="infraList" class="scroll-list"></div>
-            <button class="close-btn" onclick="closeModal()">Закрыть</button>
-        </div>
     </div>
 
     <script src="js/firebase.js"></script>
