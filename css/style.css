@@ -1,56 +1,61 @@
-:root { --bg: #1a1a1a; --gold: #d4af37; --red: #e74c3c; --blue: #3498db; --green: #2ecc71; --text: #ecf0f1; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Times New Roman', serif; overflow: hidden; user-select: none; }
+:root { --bg: #111; --panel: #1e1e1e; --gold: #f1c40f; --text: #eee; --green: #2ecc71; --red: #e74c3c; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; user-select: none; }
 
-/* ВЕРХНЯЯ ПАНЕЛЬ */
-.topbar { display: flex; justify-content: space-between; padding: 10px 15px; background: #000; border-bottom: 2px solid var(--gold); }
-.stat-group { text-align: center; }
-.stat-label { font-size: 10px; color: #7f8c8d; letter-spacing: 1px; }
-.stat-val { font-size: 18px; font-weight: bold; }
-.stat-val.cash { color: var(--green); }
-.stat-val.rating { color: var(--gold); }
+/* ВЫБОР СТРАНЫ */
+.full-screen-modal { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+.country-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; margin-top: 20px; }
+.country-card { background: #222; border: 1px solid #444; border-radius: 10px; padding: 15px; cursor: pointer; transition: 0.2s; }
+.country-card:active { border-color: var(--gold); background: #333; }
 
-.population-bar { background: #2c3e50; padding: 5px; text-align: center; font-size: 12px; border-bottom: 1px solid #34495e; }
+/* ИНТЕРФЕЙС */
+.topbar { display: flex; justify-content: space-between; padding: 10px 15px; background: rgba(0,0,0,0.5); border-bottom: 1px solid #333; }
+.country-info { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 18px; }
+.stat-group { text-align: right; }
+.stat-val.rating { color: var(--green); font-weight: 900; font-size: 18px; }
+.stat-label { font-size: 10px; opacity: 0.7; }
 
-/* ЭКРАН */
-.screen { padding: 20px; height: calc(100vh - 80px); display: flex; flex-direction: column; align-items: center; }
+/* БЮДЖЕТ */
+.main-stats { display: flex; gap: 10px; padding: 15px; }
+.budget-box { flex: 2; background: linear-gradient(45deg, #16a085, #27ae60); padding: 15px; border-radius: 12px; color: #fff; }
+.pop-box { flex: 1; background: #2c3e50; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-direction: column; }
+.budget-box .label { font-size: 11px; opacity: 0.8; margin-bottom: 5px; }
+.budget-box .value { font-size: 22px; font-weight: bold; }
 
-/* СТОЛ ПРЕЗИДЕНТА */
-.president-desk { position: relative; width: 100%; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 20px; border: 4px solid var(--gold); border-radius: 10px; background: radial-gradient(circle, #2c3e50 0%, #000 100%); }
-.president-icon { font-size: 80px; color: var(--gold); z-index: 2; margin-bottom: 10px; }
-.desk-plate { background: var(--gold); color: #000; padding: 5px 15px; font-weight: bold; font-family: sans-serif; letter-spacing: 2px; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+/* ПРЕЗИДЕНТ */
+.screen { padding: 15px; }
+.desk-container { position: relative; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 20px; }
+.desk-person { font-size: 80px; color: #555; z-index: 2; }
+.status-msg { margin-top: 10px; font-size: 13px; color: #aaa; text-align: center; height: 20px; }
 
-/* КНОПКА ДЕЙСТВИЯ */
-.action-btn { width: 100%; height: 80px; background: linear-gradient(180deg, #27ae60, #219150); border: 2px solid #fff; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; margin-bottom: 30px; cursor: pointer; box-shadow: 0 5px 0 #145a32; transition: 0.1s; }
-.action-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #145a32; }
-.btn-content { display: flex; flex-direction: column; text-align: left; color: #fff; }
-.btn-content span { font-size: 20px; font-weight: bold; font-family: sans-serif; }
-.btn-content small { font-size: 12px; opacity: 0.9; }
-.btn-icon { font-size: 30px; color: #fff; }
+/* КНОПКА СБОРА (ПРОГРЕСС) */
+.tax-btn { width: 100%; height: 70px; background: #333; border: 2px solid #555; border-radius: 12px; position: relative; overflow: hidden; cursor: pointer; margin-bottom: 30px; }
+.tax-btn.active { border-color: var(--gold); }
+.tax-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #fff; }
+.tax-content span { font-weight: bold; font-size: 16px; }
+.tax-content small { font-size: 11px; opacity: 0.7; }
+.progress-bg { position: absolute; inset: 0; z-index: 1; }
+.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #d35400, #e67e22); transition: width 0s linear; }
 
 /* МЕНЮ */
-.control-panel { width: 100%; }
-.control-panel h3 { text-align: center; color: var(--gold); border-bottom: 1px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px; font-size: 14px; }
-
-.card { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; border: 1px solid #444; cursor: pointer; }
-.card .icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 18px; color: #fff; }
-.card .icon.red { background: var(--red); }
-.card .icon.blue { background: var(--blue); }
-.card .icon.gold { background: var(--gold); color: #000; }
-.card .info .name { font-weight: bold; font-family: sans-serif; font-size: 14px; }
-.card .info .desc { font-size: 12px; color: #95a5a6; }
+.control-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.c-card { background: var(--panel); padding: 15px 5px; border-radius: 10px; text-align: center; border: 1px solid #333; cursor: pointer; }
+.c-card i { font-size: 24px; margin-bottom: 8px; display: block; }
+.c-card span { font-size: 12px; }
 
 /* МОДАЛКИ */
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
-.modal-content { background: #1a1a1a; border: 2px solid var(--gold); padding: 20px; width: 85%; max-height: 80vh; overflow-y: auto; border-radius: 10px; text-align: center; }
-.modal-content h3 { color: var(--gold); margin-top: 0; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+.modal-content { background: #222; width: 90%; max-height: 80vh; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; }
+.tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+.tab-btn { flex: 1; padding: 8px; background: #111; border: 1px solid #444; color: #888; border-radius: 5px; cursor: pointer; }
+.tab-btn.active { background: #333; color: #fff; border-color: var(--gold); }
 
-.upgrade-item { background: #2c3e50; padding: 12px; margin-bottom: 8px; border-radius: 6px; text-align: left; display: flex; justify-content: space-between; align-items: center; border: 1px solid #34495e; }
-.upgrade-item.signed { opacity: 0.5; border-color: var(--green); }
-.u-info { flex: 1; }
-.u-info b { display: block; font-size: 14px; margin-bottom: 4px; }
-.u-info small { color: var(--gold); font-size: 12px; }
-.u-lvl { background: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+.scroll-list { overflow-y: auto; flex: 1; }
+.upgrade-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #333; align-items: center; }
+.lvl-badge { background: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+.price-tag { color: var(--gold); font-weight: bold; font-size: 14px; }
 
-.shop-item { background: #222; margin: 10px 0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--gold); }
-.buy-btn { background: var(--gold); border: none; padding: 5px 10px; font-weight: bold; cursor: pointer; }
-.close-btn { background: transparent; border: 1px solid #7f8c8d; color: #bdc3c7; padding: 10px 20px; margin-top: 15px; width: 100%; border-radius: 5px; cursor: pointer; }
+.close-btn { margin-top: 15px; padding: 12px; background: transparent; border: 1px solid #555; color: #fff; border-radius: 8px; cursor: pointer; }
+
+/* МАГАЗИН */
+.shop-item { background: #111; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--gold); }
+.buy-btn { background: var(--gold); border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; color: #000; }
