@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Racer Tycoon</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="stat-box cash">
+            <i class="fa fa-bolt"></i> <span id="cash">0</span>
+        </div>
+        <div class="stat-box stars" onclick="openShop()">
+            <i class="fa fa-star"></i> <span id="stars">0</span> +
+        </div>
+    </header>
+
+    <div id="garageScreen" class="screen active">
+        
+        <div class="car-display">
+            <div class="level-badge">LVL <span id="carLevel">1</span></div>
+            <i class="fa fa-car-sport car-icon"></i>
+            <div class="car-neon"></div>
+        </div>
+
+        <button class="race-btn" onclick="startRace()">
+            <div class="btn-content">
+                <span>НА СТАРТ</span>
+                <small>Заработать +<span id="incomeDisplay">100</span> $</small>
+            </div>
+        </button>
+
+        <div class="upgrade-panel">
+            <h3>ТЮНИНГ</h3>
+            
+            <div class="upgrade-card" onclick="upgrade('engine')">
+                <div class="icon"><i class="fa fa-cogs"></i></div>
+                <div class="info">
+                    <div class="name">Двигатель</div>
+                    <div class="cost"><span id="engineCost">100</span> $</div>
+                </div>
+                <div class="lvl" id="engineLvl">1</div>
+            </div>
+
+            <div class="upgrade-card" onclick="upgrade('turbo')">
+                <div class="icon"><i class="fa fa-tachometer-alt"></i></div>
+                <div class="info">
+                    <div class="name">Турбо</div>
+                    <div class="cost"><span id="turboCost">250</span> $</div>
+                </div>
+                <div class="lvl" id="turboLvl">1</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="raceOverlay">
+        <div class="race-track">
+            <div class="race-car"><i class="fa fa-car-side"></i></div>
+            <div class="finish-line"></div>
+        </div>
+        <div class="race-status">ГОНКА...</div>
+    </div>
+
+    <div id="shopModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fa fa-star"></i> VIP SHOP</h2>
+            <p>Покупай Звезды для быстрого роста!</p>
+            
+            <div class="shop-item" onclick="buyStars(50)">
+                <span>50 Stars</span>
+                <button class="buy-btn">КУПИТЬ</button>
+            </div>
+            <div class="shop-item premium" onclick="buyStars(100)">
+                <span>100 Stars (X2 Бонус)</span>
+                <button class="buy-btn">КУПИТЬ</button>
+            </div>
+
+            <button class="close-btn" onclick="closeShop()">Закрыть</button>
+        </div>
+    </div>
+
+    <script src="js/firebase.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
