@@ -1,62 +1,55 @@
 const tg = window.Telegram.WebApp; tg.expand();
-const SAVE_KEY = "PRESIDENT_REAL_SIM_V1"; 
-const userId = tg.initDataUnsafe?.user?.id || "test_pres_2";
+const SAVE_KEY = "PRESIDENT_ULTIMATE_V1"; 
+const userId = tg.initDataUnsafe?.user?.id || "test_pres_3";
 const dbRef = db.ref(`${SAVE_KEY}/${userId}`);
 
-// === ДАННЫЕ СТРАН ===
+// === ДАННЫЕ ===
 const COUNTRIES = [
+    { id: 'us', name: 'США', flag: '🇺🇸', currency: 'USD', taxRate: 3.0 },
     { id: 'pl', name: 'Польша', flag: '🇵🇱', currency: 'PLN', taxRate: 1.0 },
-    { id: 'ua', name: 'Украина', flag: '🇺🇦', currency: 'UAH', taxRate: 0.9 },
-    { id: 'us', name: 'США', flag: '🇺🇸', currency: 'USD', taxRate: 2.5 }, // Доллар дорогой, сложнее играть
-    { id: 'de', name: 'Германия', flag: '🇩🇪', currency: 'EUR', taxRate: 2.2 },
-    { id: 'ru', name: 'Россия', flag: '🇷🇺', currency: 'RUB', taxRate: 0.8 },
-    { id: 'kz', name: 'Казахстан', flag: '🇰🇿', currency: 'KZT', taxRate: 0.7 }
+    { id: 'ua', name: 'Украина', flag: '🇺🇦', currency: 'UAH', taxRate: 0.8 },
+    { id: 'ru', name: 'Россия', flag: '🇷🇺', currency: 'RUB', taxRate: 0.7 },
+    { id: 'cn', name: 'Китай', flag: '🇨🇳', currency: 'CNY', taxRate: 1.5 },
+    { id: 'ae', name: 'ОАЭ', flag: '🇦🇪', currency: 'AED', taxRate: 5.0 }
 ];
 
-// === ВЕТКИ РАЗВИТИЯ ===
-const INFRASTRUCTURE = {
-    social: [
-        { id: 'hospitals', name: 'Больницы', desc: '+Рост населения', baseCost: 1000 },
-        { id: 'schools', name: 'Школы', desc: '+Одобрение', baseCost: 500 },
-        { id: 'parks', name: 'Парки', desc: 'Народ счастлив', baseCost: 300 }
-    ],
-    economy: [
-        { id: 'factories', name: 'Заводы', desc: '+Налоги', baseCost: 2000 },
-        { id: 'roads', name: 'Дороги', desc: '+Эффективность', baseCost: 1500 },
-        { id: 'banks', name: 'Банки', desc: 'Больше денег', baseCost: 5000 }
-    ],
-    power: [
-        { id: 'police', name: 'Полиция', desc: 'Меньше бунтов', baseCost: 1000 },
-        { id: 'army', name: 'Армия', desc: 'Уважение', baseCost: 5000 },
-        { id: 'propaganda', name: 'ТВ Каналы', desc: 'Рейтинг не падает', baseCost: 3000 }
-    ]
-};
+const EVENTS = [
+    { text: "Наводнение в провинции!", cost: 5000, hit: 10, goodMsg: "Вы спасли людей (+Rep)", badMsg: "Народ тонет (-Rep)" },
+    { text: "Оппозиция вышла на митинг!", cost: 2000, hit: 15, goodMsg: "Митинг разогнан чаем", badMsg: "Вас закидали яйцами" },
+    { text: "Эпидемия гриппа!", cost: 10000, hit: 20, goodMsg: "Вакцина создана!", badMsg: "Больницы переполнены" },
+    { text: "Олигарх предлагает взятку", cost: -50000, hit: 5, goodMsg: "Вы честно отказались", badMsg: "Деньги взяты, рейтинг упал" } // Отрицательная цена = доход
+];
 
-// Состояние
+const NEWS = [
+    "Президент пообещал, что завтра будет лучше, чем вчера.",
+    "Введен налог на бороды. Хипстеры негодуют.",
+    "Оппозиция заявляет, что бюджет пуст. Это фейк!",
+    "Уровень счастья достиг 146%.",
+    "Коты признаны стратегическим ресурсом."
+];
+
 let state = {
     countryId: null,
     budget: 0,
+    personal: 0, // Личный счет
     population: 5000,
     approval: 60,
-    upgrades: {}, // { hospitals: 1, factories: 2 ... }
+    advisors: { general: false, banker: false, spy: false },
+    upgrades: { housing: 0, police: 0, industry: 0 },
     laws: []
 };
 
-// === СТАРТ ===
+// === ИНИЦИАЛИЗАЦИЯ ===
 dbRef.once('value').then(snap => {
     if (snap.exists()) {
-        const data = snap.val();
-        state = { ...state, ...data };
+        state = { ...state, ...snap.val() };
     }
+    if (!state.countryId) showCountrySelection();
+    else startGame();
     
-    if (!state.countryId) {
-        showCountrySelection();
-    } else {
-        startGame();
-    }
-    
-    // Цикл жизни: население растет или умирает
-    setInterval(lifeCycle, 5000);
+    // Таймеры
+    setInterval(randomEventLoop, 15000); // Раз в 15 сек событие
+    setInterval(newsLoop, 5000); // Новости
 });
 
 function saveState() { dbRef.set(state); }
@@ -77,7 +70,7 @@ function showCountrySelection() {
 
 window.selectCountry = function(id) {
     state.countryId = id;
-    state.budget = 1000; // Подъемные
+    state.budget = 2000;
     saveState();
     document.getElementById('countrySelectScreen').style.display = 'none';
     startGame();
@@ -88,201 +81,237 @@ function startGame() {
     updateUI();
 }
 
-// === ЭКОНОМИКА (СЛОЖНАЯ) ===
+// === ЭКОНОМИКА ===
 let isCollecting = false;
 
 window.startFiscalYear = function() {
     if (isCollecting) return;
-    
-    // Проверка одобрения
-    if (state.approval <= 0) {
-        return tg.showAlert("Вас свергли! Рейтинг 0%. Сбросьте игру.");
-    }
+    if (state.approval <= 0) return tg.showAlert("ИМПИЧМЕНТ! Вы свергнуты.");
 
+    isCollecting = true;
     const btn = document.getElementById('taxBtn');
     const bar = document.getElementById('taxProgress');
-    const txt = document.getElementById('taxBtnText');
     
-    isCollecting = true;
-    btn.classList.add('active');
-    txt.textContent = "СБОР НАЛОГОВ...";
-    
-    // Время сбора зависит от размера населения (чем больше людей, тем дольше)
-    let duration = 2000 + (state.population / 100); 
-    if (duration > 5000) duration = 5000; // Макс 5 сек
+    // Банкир ускоряет сбор налогов в 2 раза
+    let speed = 3000;
+    if (state.advisors.banker) speed = 1500;
 
-    bar.style.transition = `width ${duration}ms linear`;
-    
-    // Запуск анимации
+    btn.classList.add('active');
+    bar.style.transition = `width ${speed}ms linear`;
     setTimeout(() => { bar.style.width = '100%'; }, 50);
 
-    // Конец года
     setTimeout(() => {
-        finishFiscalYear();
-        bar.style.transition = 'none';
-        bar.style.width = '0%';
-        btn.classList.remove('active');
-        txt.textContent = "НАЧАТЬ ФИНАНСОВЫЙ ГОД";
-        isCollecting = false;
-    }, duration);
+        finishTax(speed);
+    }, speed);
 };
 
-function finishFiscalYear() {
+function finishTax(speed) {
     const country = COUNTRIES.find(c => c.id === state.countryId);
     
-    // Формула налогов:
-    // (Люди * Ставка страны) + (Заводы * 100)
-    const baseIncome = state.population * 0.5 * country.taxRate;
-    const factoryBonus = (state.upgrades.factories || 0) * 200 * country.taxRate;
-    let total = Math.floor(baseIncome + factoryBonus);
-
-    // Если народ зол, они платят меньше (уклонение)
-    if (state.approval < 50) {
-        total = Math.floor(total * (state.approval / 100));
-        showMessage("Народ недоволен! Уклонение от налогов!", "red");
-    } else {
-        showMessage(`Бюджет пополнен: +${formatNumber(total)} ${country.currency}`);
-    }
-
-    state.budget += total;
+    // Формула дохода
+    let income = state.population * country.taxRate;
+    income += (state.upgrades.industry || 0) * 500;
     
-    // Налоги бесят людей
-    if (Math.random() > 0.3) {
-        changeApproval(-2);
+    state.budget += Math.floor(income);
+    
+    // Шанс падения рейтинга (Генерал защищает)
+    if (!state.advisors.general && Math.random() > 0.7) {
+        state.approval -= 2;
+        showTicker("Народ недоволен налогами!");
     }
 
+    // Сброс UI
+    const bar = document.getElementById('taxProgress');
+    const btn = document.getElementById('taxBtn');
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    btn.classList.remove('active');
+    isCollecting = false;
+    
     saveState();
     updateUI();
     tg.HapticFeedback.notificationOccurred('success');
 }
 
-// === ЖИЗНЬ ===
-function lifeCycle() {
-    // Рост населения (зависит от больниц)
-    const hospitals = state.upgrades.hospitals || 0;
-    const growth = Math.floor(5 + (hospitals * 5));
+// === ВОРОВСТВО ===
+window.stealMoney = function() {
+    if (state.budget < 1000) return tg.showAlert("В казне пусто, нечего красть!");
     
-    // Если нет денег, люди уезжают
-    if (state.budget < 0) {
-        state.population = Math.max(0, state.population - 50);
-        changeApproval(-5);
+    const amount = Math.floor(state.budget * 0.1); // Крадем 10%
+    state.budget -= amount;
+    state.personal += amount;
+    
+    // Шанс спалиться (Шпион уменьшает шанс)
+    let risk = 0.5;
+    if (state.advisors.spy) risk = 0.1;
+    
+    if (Math.random() < risk) {
+        state.approval -= 10;
+        tg.showAlert("СМИ узнали о коррупции! Рейтинг рухнул!");
     } else {
-        state.population += growth;
+        tg.showAlert(`Вывели ${amount} в офшор. Никто не заметил.`);
     }
     
-    updateUI();
-}
-
-function changeApproval(amount) {
-    // Пропаганда смягчает падение
-    if (amount < 0) {
-        const propaganda = state.upgrades.propaganda || 0;
-        if (Math.random() < (propaganda * 0.1)) amount = 0; // Шанс игнора негатива
+    if (state.personal >= 1000000000) {
+        alert("ВЫ НАКОПИЛИ $1 МЛРД! ПОБЕДА! Вы улетаете на Мальдивы.");
     }
-    state.approval = Math.min(100, Math.max(0, state.approval + amount));
+
+    saveState();
     updateUI();
+};
+
+// === СОВЕТНИКИ ===
+window.hireAdvisor = function(type) {
+    if (state.advisors[type]) return tg.showAlert("Уже нанят!");
+    
+    const cost = 5000;
+    if (state.budget >= cost) {
+        state.budget -= cost;
+        state.advisors[type] = true;
+        saveState();
+        updateUI();
+        tg.showAlert("Министр назначен!");
+    } else {
+        tg.showAlert(`Нужно ${cost} на зарплату министру.`);
+    }
+};
+
+// === СОБЫТИЯ ===
+let activeEvent = null;
+
+function randomEventLoop() {
+    if (activeEvent || document.getElementById('gameInterface').style.display === 'none') return;
+    if (Math.random() > 0.4) return; // Не всегда срабатывает
+
+    activeEvent = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+    
+    document.getElementById('eventTitle').textContent = "⚠️ СРОЧНОЕ СООБЩЕНИЕ";
+    document.getElementById('eventDesc').textContent = activeEvent.text;
+    
+    // Кнопка решения
+    const btnText = activeEvent.cost < 0 ? `Взять (+${Math.abs(activeEvent.cost)})` : `Решить (-${activeEvent.cost})`;
+    document.querySelector('.ev-btn.good').textContent = btnText;
+    
+    document.getElementById('eventCard').style.display = 'block';
+    tg.HapticFeedback.notificationOccurred('warning');
 }
 
-function showMessage(msg, color='white') {
-    const el = document.getElementById('statusMsg');
-    el.textContent = msg;
-    el.style.color = color;
-    setTimeout(() => {
-        el.textContent = "Народ ждет ваших решений...";
-        el.style.color = "#aaa";
-    }, 3000);
+window.resolveEvent = function(pay) {
+    if (pay) {
+        if (activeEvent.cost < 0) {
+            // Это взятка (получаем деньги)
+            state.budget += Math.abs(activeEvent.cost);
+            state.approval -= activeEvent.hit;
+            showTicker(activeEvent.badMsg);
+        } else {
+            // Это проблема (платим деньги)
+            if (state.budget >= activeEvent.cost) {
+                state.budget -= activeEvent.cost;
+                state.approval += 5;
+                showTicker(activeEvent.goodMsg);
+            } else {
+                return tg.showAlert("Нет денег в бюджете!");
+            }
+        }
+    } else {
+        // Игнор
+        state.approval -= activeEvent.hit;
+        showTicker(activeEvent.badMsg);
+    }
+    
+    document.getElementById('eventCard').style.display = 'none';
+    activeEvent = null;
+    saveState();
+    updateUI();
+};
+
+// === НОВОСТИ ===
+function newsLoop() {
+    const text = NEWS[Math.floor(Math.random() * NEWS.length)];
+    showTicker(text);
 }
 
-// === UI ОБНОВЛЕНИЕ ===
+function showTicker(text) {
+    const el = document.getElementById('newsTicker');
+    el.textContent = "📢 " + text;
+}
+
+// === UI ===
 function updateUI() {
     if (!state.countryId) return;
     const country = COUNTRIES.find(c => c.id === state.countryId);
 
     document.getElementById('flag').textContent = country.flag;
-    document.getElementById('countryName').textContent = country.name;
-    document.getElementById('currency').textContent = country.currency;
-    
     document.getElementById('budget').textContent = formatNumber(state.budget);
+    document.getElementById('currency').textContent = country.currency;
     document.getElementById('population').textContent = formatNumber(state.population);
+    document.getElementById('personalCash').textContent = formatNumber(state.personal);
     
     const appEl = document.getElementById('approval');
     appEl.textContent = state.approval;
-    appEl.style.color = state.approval < 30 ? '#e74c3c' : '#2ecc71';
+    appEl.style.color = state.approval < 30 ? 'red' : '#2ecc71';
+
+    // Советники
+    document.getElementById('adv_general').textContent = state.advisors.general ? "Генерал (Активен)" : "Нанять Генерала (5k)";
+    document.getElementById('adv_general').style.color = state.advisors.general ? "#2ecc71" : "#888";
+
+    document.getElementById('adv_banker').textContent = state.advisors.banker ? "Банкир (Активен)" : "Нанять Банкира (5k)";
+    document.getElementById('adv_banker').style.color = state.advisors.banker ? "#2ecc71" : "#888";
+
+    document.getElementById('adv_spy').textContent = state.advisors.spy ? "Шпион (Активен)" : "Нанять Шпиона (5k)";
+    document.getElementById('adv_spy').style.color = state.advisors.spy ? "#2ecc71" : "#888";
 }
 
-// === ИНФРАСТРУКТУРА ===
-let currentTab = 'social';
-
-window.openInfrastructure = function() {
-    document.getElementById('infraModal').style.display = 'flex';
-    renderInfra();
-};
-
-window.switchInfraTab = function(tab) {
-    currentTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    renderInfra();
+// === ИНФРАСТРУКТУРА (МЕНЮ) ===
+window.openMenu = function(type) {
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    if (type === 'infra') {
+        renderInfra();
+        document.getElementById('infraModal').style.display = 'flex';
+    }
+    if (type === 'laws') { /* Реализуй сам по аналогии */ tg.showAlert('Дума закрыта'); }
+    if (type === 'shop') { document.getElementById('shopModal').style.display = 'flex'; }
 };
 
 function renderInfra() {
     const list = document.getElementById('infraList');
     list.innerHTML = '';
-    const country = COUNTRIES.find(c => c.id === state.countryId);
     
-    INFRASTRUCTURE[currentTab].forEach(item => {
-        const lvl = state.upgrades[item.id] || 0;
-        const cost = Math.floor(item.baseCost * Math.pow(1.5, lvl));
-        
+    const ITEMS = [
+        { id: 'housing', name: 'Соц. жилье', cost: 1000 },
+        { id: 'police', name: 'Полицейский участок', cost: 2000 },
+        { id: 'industry', name: 'Завод', cost: 5000 }
+    ];
+
+    ITEMS.forEach(i => {
+        const lvl = state.upgrades[i.id] || 0;
+        const cost = Math.floor(i.cost * Math.pow(1.5, lvl));
         list.innerHTML += `
-        <div class="upgrade-item" onclick="buyUpgrade('${item.id}', ${cost})">
-            <div>
-                <div style="font-weight:bold">${item.name} <span class="lvl-badge">${lvl}</span></div>
-                <div style="font-size:12px; color:#888">${item.desc}</div>
-            </div>
-            <div class="price-tag">${formatNumber(cost)} ${country.currency}</div>
+        <div class="upgrade-item" onclick="buyInfra('${i.id}', ${cost})">
+            <div><b>${i.name} (Lvl ${lvl})</b><br><small>Цена: ${formatNumber(cost)}</small></div>
+            <div class="buy-btn">КУПИТЬ</div>
         </div>`;
     });
 }
 
-window.buyUpgrade = function(id, cost) {
+window.buyInfra = function(id, cost) {
     if (state.budget >= cost) {
         state.budget -= cost;
         state.upgrades[id] = (state.upgrades[id] || 0) + 1;
-        
-        // Эффекты сразу
-        if (id === 'schools') changeApproval(5);
-        if (id === 'parks') changeApproval(3);
-        
-        saveState();
-        updateUI();
-        renderInfra();
-        tg.HapticFeedback.impactOccurred('medium');
-    } else {
-        tg.showAlert("Бюджет пуст! Собирайте налоги.");
-    }
+        state.population += 100; // Бонус людей
+        saveState(); updateUI(); renderInfra();
+    } else { tg.showAlert('Мало денег!'); }
 };
 
-// === ОСТАЛЬНОЕ ===
 window.closeModal = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-window.openShop = () => document.getElementById('shopModal').style.display = 'flex';
-
-window.openLaws = function() {
-    tg.showAlert("Госдума на каникулах (в разработке)"); 
-    // Сюда можно добавить законы по аналогии с прошлой версией
-};
 
 // Донат
 window.buyBudget = function(amount) {
-    tg.showConfirm(`Взять транш МВФ за ${amount} Stars?`, (ok) => {
-        if(ok) {
-            state.budget += 100000;
-            saveState(); updateUI(); closeModal();
-        }
-    });
+    tg.showConfirm('Взять транш за Stars?', ok => { if(ok) { state.budget += 50000; saveState(); updateUI(); closeModal(); }});
 };
 
 function formatNumber(num) {
+    if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
     return Math.floor(num);
