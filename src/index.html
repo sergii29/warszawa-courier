@@ -10,12 +10,18 @@
 
 
   <script type="module">
+(async () => {
     import { state } from "./state.js";
 
    const hud = document.getElementById("hud");
    const btn = document.getElementById("orderBtn");
    const restBtn = document.getElementById("restBtn");
    const timeBtn = document.getElementById("timeBtn");
+   await loadState(state);render();
+  })();
+</script>
+
+
 
 
   function render() {
@@ -41,7 +47,7 @@ if (state.energy <= 0) {
   return;
 }
 
-restBtn.onclick = () => {
+restBtn.onclick = saveState(state);() => {
   state.energy += 30;
   if (state.energy > 100) state.energy = 100;
 
@@ -92,7 +98,7 @@ if (state.xp >= state.level * 100) {
 
     render();
   </script>
-  timeBtn.onclick = () => {
+  timeBtn.onclick = saveState(state);() => {
   state.isNight = !state.isNight;
   render();
 };
