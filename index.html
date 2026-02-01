@@ -15,419 +15,203 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --bg-card-light: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --border: #334155;
-            --shadow: rgba(0, 0, 0, 0.3);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding-bottom: 80px;
-            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 60px;
         }
 
-        /* Header */
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            padding: 20px;
-            box-shadow: 0 4px 20px var(--shadow);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: #2196F3;
+            color: white;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        .balance-section {
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .balance {
-            font-size: 32px;
-            font-weight: 800;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 24px;
+            font-weight: bold;
         }
 
         .balance.debt {
-            color: #fca5a5;
-        }
-
-        .balance.positive {
-            color: #86efac;
+            color: #ffcdd2;
         }
 
         .sim-name {
-            font-size: 14px;
+            font-size: 12px;
             opacity: 0.9;
-            background: rgba(255,255,255,0.2);
-            padding: 5px 12px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
         }
 
-        /* Stats Grid */
-        .stats-grid {
+        .stats {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 15px;
+            margin-top: 10px;
         }
 
-        .stat-item {
-            background: rgba(255,255,255,0.15);
-            padding: 10px 8px;
-            border-radius: 12px;
+        .stat {
+            background: rgba(255,255,255,0.2);
+            padding: 8px;
+            border-radius: 8px;
             text-align: center;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .stat-item:active {
-            transform: scale(0.95);
         }
 
         .stat-label {
-            font-size: 10px;
+            font-size: 11px;
             opacity: 0.8;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
 
         .stat-value {
-            font-size: 18px;
-            font-weight: 700;
-            transition: color 0.3s ease;
+            font-size: 16px;
+            font-weight: bold;
         }
 
+        /* ИСПРАВЛЕНИЕ БАГА - правильные цвета для процентов */
         .stat-value.good {
-            color: #86efac;
+            color: #4CAF50;
         }
 
         .stat-value.medium {
-            color: #fde047;
+            color: #FFC107;
         }
 
         .stat-value.low {
-            color: #fca5a5;
+            color: #FF9800;
         }
 
         .stat-value.critical {
-            color: #ef4444;
-            animation: pulse 1s infinite;
+            color: #F44336;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        /* Progress Bar */
-        .stat-progress {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
-
-        .stat-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--success), var(--primary));
-            border-radius: 2px;
-            transition: width 0.5s ease, background 0.3s ease;
-        }
-
-        .stat-progress-fill.low {
-            background: linear-gradient(90deg, var(--warning), var(--danger));
-        }
-
-        /* Level & XP System */
-        .level-section {
-            background: rgba(255,255,255,0.1);
-            padding: 12px 15px;
-            border-radius: 12px;
-            margin: 15px 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .level-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .level-badge {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 14px;
-            box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
-        }
-
-        .xp-text {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .xp-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .xp-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #10b981, #059669);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-        }
-
-        /* City Info */
         .city-section {
-            background: var(--bg-card);
-            margin: 20px;
+            background: white;
+            margin: 15px;
             padding: 15px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px var(--shadow);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .city-title {
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
         }
 
-        .demo-badge {
-            background: linear-gradient(135deg, var(--warning), #d97706);
-            padding: 4px 12px;
+        .demo-warning {
+            background: #FFF3CD;
+            border: 1px solid #FFC107;
+            padding: 8px;
             border-radius: 6px;
             font-size: 12px;
-            font-weight: 700;
-            animation: glow 2s infinite;
-        }
-
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
-            50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+            margin-bottom: 10px;
+            color: #856404;
         }
 
         .city-info {
             display: flex;
-            gap: 15px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .info-chip {
-            background: rgba(255,255,255,0.1);
-            padding: 6px 12px;
-            border-radius: 8px;
+            gap: 10px;
             font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
 
-        .info-chip.high-demand {
-            border-left: 3px solid var(--success);
+        .info-item {
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 6px;
         }
 
-        .info-chip.inflation {
-            border-left: 3px solid var(--danger);
-        }
-
-        /* Order Card */
         .order-section {
-            background: var(--bg-card);
-            margin: 20px;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px var(--shadow);
+            background: white;
+            margin: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .order-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .order-title {
-            font-size: 18px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 16px;
+            font-weight: bold;
         }
 
-        .swipe-indicator {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            padding: 6px 12px;
-            border-radius: 20px;
+        .swipe-hint {
             font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+            background: #2196F3;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
         }
 
         .order-card {
-            background: var(--bg-card-light);
-            padding: 20px;
-            border-radius: 12px;
-            border: 2px solid var(--border);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .order-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(180deg, var(--success), var(--primary));
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
         }
 
         .order-status {
             font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--warning);
-            animation: pulse-dot 1.5s infinite;
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
+            color: #666;
+            margin-bottom: 10px;
         }
 
         .order-details {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .detail-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            font-size: 13px;
         }
 
         .detail-label {
+            color: #888;
             font-size: 11px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .detail-value {
-            font-size: 20px;
-            font-weight: 700;
+            font-weight: bold;
+            font-size: 18px;
         }
 
-        .detail-value.payment {
-            color: var(--success);
-            font-size: 24px;
-        }
-
-        .vehicle-condition {
+        .vehicle-info {
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid var(--border);
-        }
-
-        .condition-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .condition-label {
+            border-top: 1px solid #e0e0e0;
             font-size: 13px;
-            color: var(--text-secondary);
-            white-space: nowrap;
         }
 
-        .condition-progress {
-            flex: 1;
-            height: 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .condition-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--success), #059669);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-
-        .condition-value {
-            font-weight: 700;
-            font-size: 14px;
-            min-width: 45px;
-            text-align: right;
-        }
-
-        .searching-animation {
+        .searching {
             text-align: center;
-            padding: 40px 20px;
+            padding: 30px;
+            color: #999;
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255,255,255,0.1);
-            border-top: 4px solid var(--primary);
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2196F3;
             border-radius: 50%;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
@@ -435,97 +219,91 @@
             100% { transform: rotate(360deg); }
         }
 
-        .searching-text {
-            font-size: 16px;
-            color: var(--text-secondary);
-        }
-
-        /* Navigation */
         .nav-menu {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border);
+            background: white;
+            border-top: 1px solid #e0e0e0;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            box-shadow: 0 -4px 20px var(--shadow);
-            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
 
         .nav-item {
             padding: 12px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
             border: none;
             background: transparent;
-            color: var(--text-secondary);
+            transition: background 0.3s;
         }
 
         .nav-item:active {
-            background: rgba(255,255,255,0.1);
+            background: #f5f5f5;
         }
 
         .nav-item.locked {
-            opacity: 0.4;
+            opacity: 0.3;
             cursor: not-allowed;
         }
 
         .nav-icon {
-            font-size: 24px;
+            font-size: 20px;
             margin-bottom: 4px;
         }
 
         .nav-label {
             font-size: 11px;
-            font-weight: 500;
+            color: #666;
         }
 
-        .lock-icon {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            font-size: 12px;
-            color: var(--danger);
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 24px;
+        .auth-section {
+            background: white;
+            margin: 15px;
+            padding: 15px;
             border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .auth-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .auth-desc {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
             border: none;
-            font-weight: 600;
-            font-size: 14px;
+            border-radius: 8px;
+            font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px var(--shadow);
+            width: 100%;
+            margin-top: 8px;
+            transition: opacity 0.3s;
         }
 
         .btn:active {
-            transform: scale(0.95);
+            opacity: 0.7;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success), #059669);
+            background: #2196F3;
             color: white;
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, var(--danger), #dc2626);
+            background: #F44336;
             color: white;
         }
 
-        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -533,12 +311,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.5);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            padding: 20px;
         }
 
         .modal.active {
@@ -546,179 +322,22 @@
         }
 
         .modal-content {
-            background: var(--bg-card);
-            padding: 25px;
-            border-radius: 20px;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 90%;
+            width: 350px;
         }
 
         .modal-header {
-            font-size: 22px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: bold;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .modal-body {
-            margin: 20px 0;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .modal-buttons .btn {
-            flex: 1;
-        }
-
-        /* Auth Section */
-        .auth-section {
-            background: var(--bg-card);
-            margin: 20px;
-            padding: 20px;
-            border-radius: 16px;
-            text-align: center;
-            box-shadow: 0 4px 15px var(--shadow);
-        }
-
-        .auth-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        /* Achievements Preview */
-        .achievements-mini {
-            background: var(--bg-card);
-            margin: 20px;
-            padding: 15px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px var(--shadow);
-        }
-
-        .achievements-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .achievement-badges {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 5px 0;
-        }
-
-        .achievement-badge {
-            min-width: 60px;
-            height: 60px;
-            background: var(--bg-card-light);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            border: 2px solid var(--border);
-            position: relative;
-        }
-
-        .achievement-badge.unlocked {
-            border-color: var(--warning);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
-        }
-
-        .achievement-badge.locked {
-            opacity: 0.3;
-            filter: grayscale(100%);
-        }
-
-        /* Money Animation */
-        .money-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            font-weight: 800;
-            color: var(--success);
-            text-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
-            pointer-events: none;
-            opacity: 0;
-            animation: moneyPop 1.5s ease;
-            z-index: 2000;
-        }
-
-        @keyframes moneyPop {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.5);
-            }
-            50% {
-                opacity: 1;
-                transform: translate(-50%, -60%) scale(1.2);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -80%) scale(0.8);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 380px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .stat-label {
-                font-size: 9px;
-            }
-            
-            .stat-value {
-                font-size: 16px;
-            }
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-dark);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-dark);
+            margin-bottom: 15px;
+            color: #666;
         }
     </style>
 </head>
@@ -726,163 +345,97 @@
 
     <!-- Header -->
     <div class="header">
-        <div class="balance-section">
-            <div class="balance" id="balance">0.00 PLN</div>
-            <div class="sim-name" id="simName">Warsaw Courier Sim</div>
+        <div class="top-bar">
+            <div class="balance debt" id="balance">0.00 PLN</div>
+            <div class="sim-name">Warsaw Courier Sim</div>
         </div>
         
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-label">⚡ Энергия</div>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">ВЕЛСУМ</div>
                 <div class="stat-value good" id="energy">100</div>
-                <div class="stat-progress">
-                    <div class="stat-progress-fill" id="energyBar" style="width: 100%"></div>
-                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">📶 Связь</div>
+            <div class="stat">
+                <div class="stat-label">КАСВЯЗЬ</div>
                 <div class="stat-value good" id="connection">100</div>
-                <div class="stat-progress">
-                    <div class="stat-progress-fill" id="connectionBar" style="width: 100%"></div>
-                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">👕 Одежда</div>
+            <div class="stat">
+                <div class="stat-label">ОДЕЖДА</div>
                 <div class="stat-value good" id="clothes">100</div>
-                <div class="stat-progress">
-                    <div class="stat-progress-fill" id="clothesBar" style="width: 100%"></div>
-                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">💪 Силы</div>
+            <div class="stat">
+                <div class="stat-label">СИЛЫ</div>
                 <div class="stat-value good" id="strength">100</div>
-                <div class="stat-progress">
-                    <div class="stat-progress-fill" id="strengthBar" style="width: 100%"></div>
-                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">💧 Вода</div>
+            <div class="stat">
+                <div class="stat-label">ВОДА</div>
                 <div class="stat-value good" id="water">100</div>
-                <div class="stat-progress">
-                    <div class="stat-progress-fill" id="waterBar" style="width: 100%"></div>
-                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">😊 Настр.</div>
+            <div class="stat">
+                <div class="stat-label">НАСТР</div>
                 <div class="stat-value good" id="mood">100</div>
-                <div class="stat-progress">
-                    <div class="stat-progress-fill" id="moodBar" style="width: 100%"></div>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Level System -->
-    <div class="level-section">
-        <div class="level-header">
-            <div class="level-badge" id="levelBadge">🚀 Уровень 1</div>
-            <div class="xp-text" id="xpText">0 / 100 XP</div>
-        </div>
-        <div class="xp-bar">
-            <div class="xp-fill" id="xpFill" style="width: 0%"></div>
-        </div>
-    </div>
-
-    <!-- City Info -->
+    <!-- City Section -->
     <div class="city-section">
-        <div class="city-title">
-            🏙️ Варшава
-            <span class="demo-badge">⚠️ ДЕМО РЕЖИМ</span>
+        <div class="city-title">🏙️ Варшава</div>
+        <div class="demo-warning">
+            ⚠️ ДЕМО РЕЖИМ (Android/Web) Войдите или Зарегистрируйтесь для сохранения!
         </div>
         <div class="city-info">
-            <div class="info-chip high-demand">
-                📈 Спрос: <strong>Высокий</strong>
-            </div>
-            <div class="info-chip inflation">
-                💹 Инфляция: <strong>Активна</strong>
-            </div>
-        </div>
-    </div>
-
-    <!-- Achievements Preview -->
-    <div class="achievements-mini">
-        <div class="achievements-title">
-            🏆 Достижения
-        </div>
-        <div class="achievement-badges">
-            <div class="achievement-badge unlocked" title="Первый заказ">🎯</div>
-            <div class="achievement-badge locked" title="10 доставок">📦</div>
-            <div class="achievement-badge locked" title="Погасить долг">💰</div>
-            <div class="achievement-badge locked" title="Ночной курьер">🌙</div>
-            <div class="achievement-badge locked" title="100 доставок">⭐</div>
+            <div class="info-item">Спрос: <strong>Высокий</strong></div>
+            <div class="info-item">Инфляция: <strong>Активна</strong></div>
         </div>
     </div>
 
     <!-- Order Section -->
     <div class="order-section">
         <div class="order-header">
-            <div class="order-title">
-                🍔 Поиск заказа
-            </div>
-            <div class="swipe-indicator">Свайп для онлайна</div>
+            <div class="order-title">🍔 Поиск заказа</div>
+            <div class="swipe-hint">СВАЙП ДЛЯ ОНЛАЙНА</div>
         </div>
         
         <div class="order-card" id="orderCard">
-            <div class="searching-animation" id="searchingAnim">
+            <div class="searching" id="searchingAnim">
                 <div class="spinner"></div>
-                <div class="searching-text">Поиск доступных заказов...</div>
+                <div>Поиск...</div>
             </div>
             
             <div id="orderContent" style="display: none;">
-                <div class="order-status">
-                    <span class="status-dot"></span>
-                    <span>Ожидание принятия</span>
-                </div>
+                <div class="order-status">Ожидание</div>
                 
                 <div class="order-details">
                     <div class="detail-item">
                         <div class="detail-label">Оплата</div>
-                        <div class="detail-value payment" id="orderPayment">-- PLN</div>
+                        <div class="detail-value" id="orderPayment">-- PLN</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Расстояние</div>
-                        <div class="detail-value" id="orderDistance">--</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Тип</div>
-                        <div class="detail-value" id="orderType">🍕 Еда</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Время</div>
-                        <div class="detail-value" id="orderTime">--</div>
+                        <div class="detail-value" id="orderDistance">-- км</div>
                     </div>
                 </div>
                 
-                <div class="vehicle-condition">
-                    <div class="condition-bar">
-                        <span class="condition-label">Состояние велосипеда:</span>
-                        <div class="condition-progress">
-                            <div class="condition-fill" id="vehicleConditionBar" style="width: 100%"></div>
-                        </div>
-                        <span class="condition-value" id="vehicleCondition">100%</span>
-                    </div>
+                <div class="vehicle-info">
+                    Состояние: <strong id="vehicleCondition">100%</strong>
                 </div>
             </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #999;">
+            СВАЙП ДЛЯ ОФЛАЙНА
         </div>
     </div>
 
     <!-- Auth Section -->
     <div class="auth-section">
-        <div style="font-size: 18px; font-weight: 700; margin-bottom: 10px;">
-            🔐 Вход / Регистрация
-        </div>
-        <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;">
+        <div class="auth-title">🔐 Вход / Регистрация</div>
+        <div class="auth-desc">
             Для сохранения прогресса на Android/Web. Telegram входит автоматически.
         </div>
-        <div class="auth-buttons">
-            <button class="btn btn-primary" onclick="handleAuth()">Войти через Google</button>
-            <button class="btn btn-danger" onclick="resetProgress()">🔄 Сброс прогресса</button>
-        </div>
+        <button class="btn btn-primary" onclick="handleAuth()">Войти</button>
+        <button class="btn btn-danger" onclick="resetProgress()">🔄 Сброс прогресса</button>
     </div>
 
     <!-- Bottom Navigation -->
@@ -898,7 +451,6 @@
         <button class="nav-item locked" onclick="openGarage()">
             <div class="nav-icon">🚗</div>
             <div class="nav-label">Автосалон</div>
-            <div class="lock-icon">🔒</div>
         </button>
         <button class="nav-item" onclick="openStats()">
             <div class="nav-icon">📊</div>
@@ -909,15 +461,9 @@
     <!-- Modal -->
     <div class="modal" id="modal">
         <div class="modal-content">
-            <div class="modal-header" id="modalHeader">
-                💬 Уведомление
-            </div>
-            <div class="modal-body" id="modalBody">
-                Содержимое модального окна
-            </div>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="closeModal()">Закрыть</button>
-            </div>
+            <div class="modal-header" id="modalHeader">Уведомление</div>
+            <div class="modal-body" id="modalBody">...</div>
+            <button class="btn btn-primary" onclick="closeModal()">Закрыть</button>
         </div>
     </div>
 
@@ -939,7 +485,7 @@
         const db = firebase.database();
         const auth = firebase.auth();
         window.db = db;
-        console.log("✅ Firebase initialized for Warsaw Courier");
+        console.log("Firebase initialized for Warsaw Courier");
 
         // Game State
         let gameState = {
@@ -951,55 +497,31 @@
             water: 100,
             mood: 100,
             vehicleCondition: 100,
-            level: 1,
-            xp: 0,
-            xpToNextLevel: 100,
-            totalDeliveries: 0,
-            totalEarned: 0,
-            achievements: {
-                firstOrder: false,
-                tenOrders: false,
-                debtFree: false,
-                nightCourier: false,
-                hundredOrders: false
-            }
+            totalDeliveries: 0
         };
 
-        // Level Ranks
-        const levelRanks = [
-            { level: 1, name: "Новичок", color: "#94a3b8" },
-            { level: 5, name: "Курьер", color: "#3b82f6" },
-            { level: 10, name: "Эксперт", color: "#8b5cf6" },
-            { level: 20, name: "Мастер", color: "#f59e0b" },
-            { level: 50, name: "Легенда", color: "#ef4444" }
-        ];
-
-        // Initialize Game
+        // Initialize
         function initGame() {
-            console.log("🎮 Initializing game...");
             loadGameState();
             updateUI();
             startGameLoop();
         }
 
-        // Load Game State from Firebase or LocalStorage
+        // Load from localStorage
         function loadGameState() {
-            const localData = localStorage.getItem('warsawCourierState');
-            if (localData) {
+            const saved = localStorage.getItem('warsawCourierState');
+            if (saved) {
                 try {
-                    const parsed = JSON.parse(localData);
-                    gameState = { ...gameState, ...parsed };
-                    console.log("📦 Loaded state from localStorage");
+                    gameState = { ...gameState, ...JSON.parse(saved) };
                 } catch (e) {
-                    console.error("❌ Error parsing localStorage:", e);
+                    console.error("Error loading state:", e);
                 }
             }
         }
 
-        // Save Game State
+        // Save to localStorage
         function saveGameState() {
             localStorage.setItem('warsawCourierState', JSON.stringify(gameState));
-            console.log("💾 Game state saved");
         }
 
         // Update UI
@@ -1007,9 +529,9 @@
             // Balance
             const balanceEl = document.getElementById('balance');
             balanceEl.textContent = gameState.balance.toFixed(2) + ' PLN';
-            balanceEl.className = 'balance ' + (gameState.balance < 0 ? 'debt' : 'positive');
+            balanceEl.className = 'balance ' + (gameState.balance < 0 ? 'debt' : '');
 
-            // Stats
+            // Stats - ИСПРАВЛЕНИЕ БАГА ЗДЕСЬ!
             updateStat('energy', gameState.energy);
             updateStat('connection', gameState.connection);
             updateStat('clothes', gameState.clothes);
@@ -1017,143 +539,60 @@
             updateStat('water', gameState.water);
             updateStat('mood', gameState.mood);
 
-            // Vehicle Condition
-            updateVehicleCondition();
-
-            // Level & XP
-            updateLevelDisplay();
+            // Vehicle
+            document.getElementById('vehicleCondition').textContent = Math.round(gameState.vehicleCondition) + '%';
         }
 
-        // Update Individual Stat with proper color classes - ИСПРАВЛЕНИЕ БАГА!
+        // ИСПРАВЛЕНИЕ БАГА - правильное обновление цвета процентов
         function updateStat(statName, value) {
             const statEl = document.getElementById(statName);
-            const barEl = document.getElementById(statName + 'Bar');
-            
-            if (!statEl || !barEl) return;
+            if (!statEl) return;
 
-            // Update value
+            // Обновляем значение
             statEl.textContent = Math.round(value);
 
-            // ИСПРАВЛЕНИЕ: Правильное удаление и добавление классов
+            // ИСПРАВЛЕНИЕ: Удаляем ВСЕ классы цветов перед добавлением нового
             statEl.classList.remove('good', 'medium', 'low', 'critical');
-            barEl.classList.remove('low');
 
-            // Определяем цвет на основе значения
+            // Добавляем правильный класс на основе значения
             if (value >= 70) {
                 statEl.classList.add('good');
             } else if (value >= 40) {
                 statEl.classList.add('medium');
             } else if (value >= 20) {
                 statEl.classList.add('low');
-                barEl.classList.add('low');
             } else {
                 statEl.classList.add('critical');
-                barEl.classList.add('low');
             }
-
-            // Update progress bar
-            barEl.style.width = Math.max(0, Math.min(100, value)) + '%';
-        }
-
-        // Update Vehicle Condition
-        function updateVehicleCondition() {
-            const conditionEl = document.getElementById('vehicleCondition');
-            const barEl = document.getElementById('vehicleConditionBar');
-            
-            if (conditionEl && barEl) {
-                conditionEl.textContent = Math.round(gameState.vehicleCondition) + '%';
-                barEl.style.width = gameState.vehicleCondition + '%';
-            }
-        }
-
-        // Update Level Display
-        function updateLevelDisplay() {
-            const levelBadge = document.getElementById('levelBadge');
-            const xpText = document.getElementById('xpText');
-            const xpFill = document.getElementById('xpFill');
-
-            const rank = getCurrentRank();
-            levelBadge.textContent = `${rank.name} • Ур. ${gameState.level}`;
-            levelBadge.style.background = `linear-gradient(135deg, ${rank.color}, ${adjustColor(rank.color, -20)})`;
-
-            xpText.textContent = `${gameState.xp} / ${gameState.xpToNextLevel} XP`;
-            
-            const xpPercent = (gameState.xp / gameState.xpToNextLevel) * 100;
-            xpFill.style.width = xpPercent + '%';
-        }
-
-        // Get Current Rank
-        function getCurrentRank() {
-            for (let i = levelRanks.length - 1; i >= 0; i--) {
-                if (gameState.level >= levelRanks[i].level) {
-                    return levelRanks[i];
-                }
-            }
-            return levelRanks[0];
-        }
-
-        // Adjust Color (darken/lighten)
-        function adjustColor(color, amount) {
-            return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
-        }
-
-        // Add XP and Level Up
-        function addXP(amount) {
-            gameState.xp += amount;
-            
-            if (gameState.xp >= gameState.xpToNextLevel) {
-                gameState.level++;
-                gameState.xp -= gameState.xpToNextLevel;
-                gameState.xpToNextLevel = Math.floor(gameState.xpToNextLevel * 1.5);
-                
-                showMoneyPopup(`⬆️ УРОВЕНЬ ${gameState.level}!`);
-                
-                // Level up bonuses
-                gameState.energy = Math.min(100, gameState.energy + 20);
-                gameState.water = Math.min(100, gameState.water + 20);
-                gameState.mood = Math.min(100, gameState.mood + 20);
-            }
-            
-            updateLevelDisplay();
         }
 
         // Game Loop
         function startGameLoop() {
             setInterval(() => {
-                // Passive stat degradation
                 gameState.energy = Math.max(0, gameState.energy - 0.1);
                 gameState.water = Math.max(0, gameState.water - 0.15);
                 gameState.mood = Math.max(0, gameState.mood - 0.05);
                 gameState.vehicleCondition = Math.max(0, gameState.vehicleCondition - 0.02);
                 
                 updateUI();
-            }, 3000); // Every 3 seconds
-
-            // Auto-save every 30 seconds
-            setInterval(() => {
                 saveGameState();
-            }, 30000);
+            }, 3000);
         }
 
-        // Simulate Order Search
+        // Search Order
         function searchOrder() {
-            const searchAnim = document.getElementById('searchingAnim');
-            const orderContent = document.getElementById('orderContent');
-            
-            searchAnim.style.display = 'block';
-            orderContent.style.display = 'none';
+            document.getElementById('searchingAnim').style.display = 'block';
+            document.getElementById('orderContent').style.display = 'none';
             
             setTimeout(() => {
                 const payment = Math.floor(Math.random() * 50) + 30;
                 const distance = (Math.random() * 5 + 1).toFixed(1);
-                const time = Math.floor(Math.random() * 20) + 10;
                 
                 document.getElementById('orderPayment').textContent = payment + ' PLN';
                 document.getElementById('orderDistance').textContent = distance + ' км';
-                document.getElementById('orderTime').textContent = time + ' мин';
                 
-                searchAnim.style.display = 'none';
-                orderContent.style.display = 'block';
+                document.getElementById('searchingAnim').style.display = 'none';
+                document.getElementById('orderContent').style.display = 'block';
             }, 2000);
         }
 
@@ -1163,136 +602,74 @@
             
             gameState.balance += payment;
             gameState.totalDeliveries++;
-            gameState.totalEarned += payment;
             
-            // Consume stats
             gameState.energy -= 15;
             gameState.water -= 10;
             gameState.strength -= 8;
             gameState.mood -= 5;
             gameState.vehicleCondition -= 2;
             
-            // Add XP
-            addXP(20);
-            
-            // Check achievements
-            checkAchievements();
-            
-            showMoneyPopup(`+${payment.toFixed(2)} PLN`);
             updateUI();
             saveGameState();
-            
             searchOrder();
         }
 
-        // Check Achievements
-        function checkAchievements() {
-            if (gameState.totalDeliveries >= 1 && !gameState.achievements.firstOrder) {
-                gameState.achievements.firstOrder = true;
-                showModal('🎯 Достижение!', 'Вы выполнили свой первый заказ!');
-            }
-            
-            if (gameState.totalDeliveries >= 10 && !gameState.achievements.tenOrders) {
-                gameState.achievements.tenOrders = true;
-                showModal('📦 Достижение!', 'Вы выполнили 10 доставок!');
-            }
-            
-            if (gameState.balance >= 0 && !gameState.achievements.debtFree) {
-                gameState.achievements.debtFree = true;
-                showModal('💰 Достижение!', 'Вы погасили весь долг!');
-            }
-        }
-
-        // Show Money Popup
-        function showMoneyPopup(text) {
-            const popup = document.createElement('div');
-            popup.className = 'money-popup';
-            popup.textContent = text;
-            document.body.appendChild(popup);
-            
-            setTimeout(() => {
-                popup.remove();
-            }, 1500);
-        }
-
-        // Show Modal
-        function showModal(title, body) {
-            document.getElementById('modalHeader').textContent = title;
-            document.getElementById('modalBody').textContent = body;
-            document.getElementById('modal').classList.add('active');
-        }
-
-        // Close Modal
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-        }
-
-        // Navigation Functions
-        function openShop() {
-            showModal('🏪 Магазин', 'Здесь вы сможете купить воду, еду, одежду и улучшения. (В разработке)');
-        }
-
-        function openBank() {
-            showModal('🏦 Банк', 'Управление кредитами и вкладами. (В разработке)');
-        }
-
-        function openGarage() {
-            if (gameState.totalDeliveries < 50) {
-                showModal('🔒 Автосалон', `Требуется 50 доставок. У вас: ${gameState.totalDeliveries}`);
-            } else {
-                showModal('🚗 Автосалон', 'Покупка и улучшение транспорта. (В разработке)');
-            }
-        }
-
-        function openStats() {
-            const stats = `
-                📊 Ваша статистика:
-                
-                🎯 Всего доставок: ${gameState.totalDeliveries}
-                💰 Всего заработано: ${gameState.totalEarned.toFixed(2)} PLN
-                📈 Уровень: ${gameState.level}
-                ⭐ Опыт: ${gameState.xp} / ${gameState.xpToNextLevel} XP
-                🏆 Достижений: ${Object.values(gameState.achievements).filter(a => a).length} / 5
-            `;
-            showModal('📊 Статистика', stats);
-        }
-
-        // Auth Functions
-        function handleAuth() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then((result) => {
-                    console.log("✅ Logged in:", result.user.email);
-                    showModal('✅ Успех', 'Вы успешно вошли в систему!');
-                    // Load data from Firebase here
-                })
-                .catch((error) => {
-                    console.error("❌ Auth error:", error);
-                    showModal('❌ Ошибка', 'Не удалось войти: ' + error.message);
-                });
-        }
-
-        function resetProgress() {
-            if (confirm('Вы уверены? Весь прогресс будет удален!')) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        // Touch/Click handlers for order card
+        // Click on order card to complete
         document.getElementById('orderCard').addEventListener('click', function() {
             if (document.getElementById('orderContent').style.display !== 'none') {
                 completeOrder();
             }
         });
 
-        // Initialize on load
+        // Navigation
+        function openShop() {
+            showModal('🏪 Магазин', 'Покупка еды, воды, одежды. (В разработке)');
+        }
+
+        function openBank() {
+            showModal('🏦 Банк', 'Кредиты и погашение долгов. (В разработке)');
+        }
+
+        function openGarage() {
+            if (gameState.totalDeliveries < 50) {
+                showModal('🔒 Автосалон', `Требуется 50 доставок. У вас: ${gameState.totalDeliveries}`);
+            } else {
+                showModal('🚗 Автосалон', 'Покупка транспорта. (В разработке)');
+            }
+        }
+
+        function openStats() {
+            showModal('📊 Статистика', `Доставок: ${gameState.totalDeliveries}\nБаланс: ${gameState.balance.toFixed(2)} PLN`);
+        }
+
+        // Auth
+        function handleAuth() {
+            showModal('🔐 Вход', 'Авторизация в разработке');
+        }
+
+        function resetProgress() {
+            if (confirm('Удалить весь прогресс?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Modal
+        function showModal(title, body) {
+            document.getElementById('modalHeader').textContent = title;
+            document.getElementById('modalBody').textContent = body;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Init on load
         window.addEventListener('load', () => {
             initGame();
             searchOrder();
         });
-
-        console.log("🚀 Warsaw Courier Sim v2.0 - Ready!");
     </script>
 
 </body>
