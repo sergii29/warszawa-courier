@@ -14,5 +14,3 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
-
-console.log("Firebase OK");
