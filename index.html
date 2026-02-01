@@ -46,6 +46,7 @@
             justify-content: space-between;
         }
 
+        /* Верхняя панель */
         .top-bar {
             background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
             padding: 15px;
@@ -67,6 +68,7 @@
         .res-bar-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top:2px; }
         .res-bar-fill { height: 100%; transition: width 0.3s; }
         
+        /* Нижняя панель */
         .bottom-dock {
             background: var(--bg-glass);
             backdrop-filter: blur(12px);
@@ -116,8 +118,24 @@
             transition: all 0.2s;
         }
         .btn-repair { background: var(--accent-repair) !important; }
+        .btn-tired { background: #555 !important; box-shadow: none !important; } /* Стиль для усталости */
 
-        /* --- НОВОЕ: МОДАЛКА ПРЕДЛОЖЕНИЯ ЗАКАЗА --- */
+        /* ЭКРАН ОТДЫХА */
+        #rest-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            color: white;
+        }
+        .pulse-text { animation: pulseSlow 2s infinite; }
+        @keyframes pulseSlow { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* Модалка Предложения */
         #offer-modal {
             display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -128,41 +146,21 @@
             backdrop-filter: blur(5px);
         }
         .offer-card {
-            background: #1c1c1e;
-            width: 85%;
-            max-width: 320px;
-            border-radius: 24px;
-            padding: 25px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: #1c1c1e; width: 85%; max-width: 320px; border-radius: 24px; padding: 25px;
+            text-align: center; border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .timer-ring {
-            width: 60px; height: 60px;
-            border: 4px solid #333;
-            border-top: 4px solid var(--accent);
-            border-radius: 50%;
-            margin: 0 auto 15px auto;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 20px; font-weight: bold;
-            animation: spin 1s linear infinite; /* Будет меняться JS-ом */
-        }
-
-        .offer-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn-accept { background: var(--success); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        .btn-decline { background: #333; color: var(--danger); border: 1px solid var(--danger); padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-
-        /* Модалка магазина */
+        /* Обычные Модалки */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: flex-end; }
         .modal-content { background: #1c1c1e; width: 100%; padding: 20px; border-radius: 24px 24px 0 0; color: #fff; max-height: 80vh; overflow-y: auto; }
         
         .toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: #333; color: #fff; padding: 10px 20px;
-            border-radius: 30px; font-size: 13px; z-index: 1000;
+            border-radius: 30px; font-size: 13px; z-index: 3000;
             display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
     </style>
@@ -202,7 +200,7 @@
             <div class="nav-grid">
                 <button class="nav-btn" onclick="openShop()"><i class="fas fa-shopping-cart"></i> <span>МАГАЗИН</span></button>
                 <button class="nav-btn" onclick="drinkFreeWater()"><i class="fas fa-faucet" style="color:#0ea5e9;"></i> <span>ПОПИТЬ</span></button>
-                <button class="nav-btn" onclick="showToast('В разработке')"><i class="fas fa-user"></i> <span>ПРОФИЛЬ</span></button>
+                <button class="nav-btn" onclick="toggleRest()"><i class="fas fa-couch" style="color:#d946ef;"></i> <span>ОТДЫХ</span></button>
             </div>
 
             <button id="main-btn" class="action-btn" onclick="pedal()">
@@ -214,20 +212,23 @@
         </div>
     </div>
 
+    <div id="rest-overlay" onclick="toggleRest()">
+        <div style="font-size:60px; margin-bottom:20px;">😴</div>
+        <h2 class="pulse-text">ВОССТАНОВЛЕНИЕ СИЛ...</h2>
+        <p style="color:#aaa;">Нажми, чтобы встать</p>
+        <div style="width:200px; height:4px; background:#333; margin-top:20px; border-radius:2px;">
+            <div id="rest-bar" style="width:0%; height:100%; background:#10b981; transition:width 0.2s;"></div>
+        </div>
+    </div>
+
     <div id="offer-modal">
         <div class="offer-card">
-            <h2 style="margin:0 0 15px 0;">📦 НОВЫЙ ЗАКАЗ</h2>
-            <div class="timer-ring" id="offer-timer-ui">10</div>
-            <div style="font-size:14px; color:#aaa;">Оплата за доставку:</div>
-            <div style="font-size:32px; color:var(--success); font-weight:bold; margin-bottom:20px;" id="offer-price">0 PLN</div>
-            
-            <div class="offer-btn-grid">
-                <button class="btn-decline" onclick="rejectOrder()">
-                    ОТКАЗ<br><span style="font-size:10px">-5 PLN</span>
-                </button>
-                <button class="btn-accept" onclick="acceptOrder()">
-                    ПРИНЯТЬ<br><span style="font-size:10px">Вперед!</span>
-                </button>
+            <h2 style="margin:0 0 15px 0;">📦 ЗАКАЗ</h2>
+            <div style="font-size:32px; color:var(--success); font-weight:bold; margin-bottom:10px;" id="offer-price">0 PLN</div>
+            <p style="color:#aaa; font-size:12px; margin-bottom:20px;">У вас есть 10 секунд на решение</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button onclick="rejectOrder()" style="background:#333; color:var(--danger); border:1px solid var(--danger); padding:15px; border-radius:12px; font-weight:bold;">ОТКАЗ<br><span style="font-size:10px">-5 PLN</span></button>
+                <button onclick="acceptOrder()" style="background:var(--success); color:white; border:none; padding:15px; border-radius:12px; font-weight:bold;">ПРИНЯТЬ</button>
             </div>
         </div>
     </div>
@@ -246,7 +247,7 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        const SAVE_KEY = 'PROJECT2_OFFER_V2'; 
+        const SAVE_KEY = 'PROJECT2_ENERGY_V3'; 
 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.2297, 21.0122], 13);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
@@ -265,58 +266,95 @@
             currentOrder: null
         };
         
-        // Переменные для механики предложения
-        let pendingOrder = null; // Заказ, который висит в предложении
-        let offerInterval = null; // Таймер
-        let offerTimeLeft = 10;
+        let pendingOrder = null;
+        let offerInterval = null;
+        let isResting = false; // Режим отдыха
         let lastDrinkTime = 0;
 
         function init() {
             loadGame();
             updateUI();
             updateMainButtonState();
-            setInterval(autoTick, 5000); 
-            setInterval(saveGame, 10000);
+            setInterval(autoTick, 1000); // Тик раз в секунду
+            setInterval(saveGame, 5000);
         }
 
+        // --- ЛОГИКА ВРЕМЕНИ И ВОССТАНОВЛЕНИЯ ---
         function autoTick() {
-            if(state.currentOrder) {
-                state.water = Math.max(0, state.water - 0.2);
-                state.mood = Math.max(0, state.mood - 0.2);
-            } else {
-                if(state.energy < 50) state.energy += 0.5;
+            // Если мы отдыхаем - быстро регеним энергию
+            if (isResting) {
+                if (state.energy < 100) {
+                    state.energy += 2; // +2% в секунду (за 50 сек полный бак)
+                    if(state.energy > 100) state.energy = 100;
+                    
+                    // Обновляем полоску отдыха
+                    document.getElementById('rest-bar').style.width = state.energy + '%';
+                } else {
+                    // Энергия полная - можно вставать
+                    showToast("🔋 Вы полностью отдохнули!");
+                    toggleRest(); 
+                }
             }
+
+            // Вода и настроение тратятся только если мы НЕ отдыхаем (или медленнее)
+            // Мы убрали пассивный расход энергии. Она тратится только при педалировании.
+            
+            // Если есть заказ, вода уходит медленно
+            if (state.currentOrder && !isResting) {
+                 if (Math.random() < 0.1) state.water -= 1; // Раз в ~10 сек
+            }
+            
             updateUI();
         }
 
+        // --- ГЛАВНАЯ МЕХАНИКА (ПЕДАЛИ) ---
         function pedal() {
+            // Если отдыхаем - встаем
+            if (isResting) {
+                toggleRest();
+                return;
+            }
+
             // 1. РЕМОНТ
             if (state.bike <= 0) {
                 if (state.energy >= 10) {
                     state.energy -= 10; state.bike += 15;
-                    showToast("🔧 Гайки подкручены! (+15% HP)", "success");
-                } else showToast("😫 Нет сил чинить! Поешь.", "error");
+                    showToast("🔧 Починил (+15% HP)", "success");
+                } else showToast("😫 Нет сил чинить! Отдохни.", "error");
                 updateUI(); updateMainButtonState(); return;
             }
 
-            // 2. ПОИСК ЗАКАЗА (ИЗМЕНЕНО)
+            // 2. ПОИСК
             if (!state.currentOrder) {
-                findOrder(); // Теперь вызывает окно предложения
-                return;
+                findOrder(); return;
             }
 
-            // 3. ЕЗДА
-            if (state.energy <= 0) { showToast("⚡ Нет энергии!", "error"); return; }
+            // 3. ЕЗДА (С УМНОЙ ЭНЕРГИЕЙ)
+            let speedMultiplier = 1;
+            let energyCost = 2;
+
+            if (state.energy <= 0) {
+                // ВТОРОЕ ДЫХАНИЕ: Энергии нет, но мы едем МЕДЛЕННО
+                speedMultiplier = 0.2; // 20% от скорости
+                energyCost = 0; // Больше не тратим, так как её нет
+                showToast("🐌 Сил нет... Вы плететесь пешком.", "error");
+            } else {
+                // Нормальная езда
+                state.energy = Math.max(0, state.energy - energyCost);
+            }
 
             const dest = state.currentOrder.dest;
             const pos = courierMarker.getLatLng();
-            const newLat = pos.lat + (dest[0] - pos.lat) * 0.1; 
-            const newLng = pos.lng + (dest[1] - pos.lng) * 0.1;
+            
+            // Двигаемся
+            const moveStep = 0.1 * speedMultiplier;
+            const newLat = pos.lat + (dest[0] - pos.lat) * moveStep; 
+            const newLng = pos.lng + (dest[1] - pos.lng) * moveStep;
 
             courierMarker.setLatLng([newLat, newLng]);
             map.setView([newLat, newLng]); 
 
-            state.energy = Math.max(0, state.energy - 2);
+            // Износ
             state.bike = Math.max(0, state.bike - 0.5); 
             state.gear = Math.max(0, state.gear - 0.2);
 
@@ -328,105 +366,76 @@
             updateUI(); updateMainButtonState();
         }
 
-        // --- НОВАЯ ЛОГИКА ЗАКАЗОВ ---
+        // --- МЕХАНИКА ОТДЫХА ---
+        function toggleRest() {
+            isResting = !isResting;
+            const overlay = document.getElementById('rest-overlay');
+            
+            if (isResting) {
+                overlay.style.display = 'flex';
+                document.getElementById('rest-bar').style.width = state.energy + '%';
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
 
+        // --- ЗАКАЗЫ ---
         function findOrder() {
-            // Генерируем "Предлагаемый заказ"
             const center = [52.2297, 21.0122];
             const dest = [ center[0] + (Math.random() - 0.5) * 0.03, center[1] + (Math.random() - 0.5) * 0.03 ];
-            
-            pendingOrder = {
-                dest: dest,
-                pay: 15 + Math.floor(Math.random() * 25) // 15-40 PLN
-            };
+            pendingOrder = { dest: dest, pay: 15 + Math.floor(Math.random() * 25) };
 
-            // Открываем модалку
             document.getElementById('offer-price').innerText = pendingOrder.pay + " PLN";
             document.getElementById('offer-modal').style.display = 'flex';
             
-            // Запускаем таймер
-            offerTimeLeft = 10;
-            updateTimerUI();
-            
-            if (offerInterval) clearInterval(offerInterval);
-            offerInterval = setInterval(() => {
-                offerTimeLeft--;
-                updateTimerUI();
-                if (offerTimeLeft <= 0) {
-                    rejectOrder(true); // true значит "по времени"
-                }
-            }, 1000);
-        }
-
-        function updateTimerUI() {
-            const el = document.getElementById('offer-timer-ui');
-            el.innerText = offerTimeLeft;
-            // Краснеет когда мало времени
-            el.style.borderColor = offerTimeLeft < 4 ? '#ef4444' : '#3b82f6';
-            el.style.color = offerTimeLeft < 4 ? '#ef4444' : '#fff';
+            if(offerInterval) clearTimeout(offerInterval);
+            offerInterval = setTimeout(() => rejectOrder(true), 10000); // 10 сек авто-отказ
         }
 
         function acceptOrder() {
-            clearInterval(offerInterval);
+            clearTimeout(offerInterval);
             document.getElementById('offer-modal').style.display = 'none';
-            
             state.currentOrder = pendingOrder;
-            pendingOrder = null;
             
-            // Ставим маркер
-            if (targetIcon) map.removeLayer(targetIcon); // Очистка старого если был
+            if (targetIcon) map.removeLayer(targetIcon);
             targetMarker = L.marker(state.currentOrder.dest, {icon: targetIcon}).addTo(map);
             
             document.getElementById('order-info').style.display = 'block';
-            showToast("✅ Заказ принят! Вперед!", "success");
-            updateMainButtonState();
-            saveGame();
+            showToast("✅ Заказ принят!", "success");
+            updateMainButtonState(); saveGame();
         }
 
-        function rejectOrder(isTimeout = false) {
-            clearInterval(offerInterval);
+        function rejectOrder(timeout=false) {
+            clearTimeout(offerInterval);
             document.getElementById('offer-modal').style.display = 'none';
-            pendingOrder = null;
-
-            // ШТРАФ
             state.cash -= 5;
-            
-            if (isTimeout) {
-                showToast("⏰ Время вышло! Штраф -5 PLN", "error");
-            } else {
-                showToast("❌ Отказ от заказа. Штраф -5 PLN", "error");
-            }
+            showToast(timeout ? "⏰ Время вышло (-5 PLN)" : "❌ Отказ (-5 PLN)", "error");
             updateUI();
-            saveGame();
         }
 
         function finishOrder() {
             state.cash += state.currentOrder.pay;
             state.exp += 10;
-            if (state.exp > 100 * state.lvl) { state.lvl++; state.exp = 0; showToast("🎉 LEVEL UP!"); }
+            if (state.exp > 100 * state.lvl) { state.lvl++; state.exp=0; showToast("🎉 LEVEL UP!"); }
             
-            showToast(`💵 Доставлено! +${state.currentOrder.pay} PLN`, "success");
+            showToast(`💵 +${state.currentOrder.pay} PLN`, "success");
             state.currentOrder = null;
             if (targetMarker) map.removeLayer(targetMarker);
             document.getElementById('order-info').style.display = 'none';
-            saveGame();
-            updateMainButtonState();
+            saveGame(); updateMainButtonState();
         }
 
-        // --- ОСТАЛЬНЫЕ ФУНКЦИИ ---
+        // --- ОСТАЛЬНОЕ ---
         function drinkFreeWater() {
             const now = Date.now();
-            if (now - lastDrinkTime < 60000) { 
-                showToast(`⏳ Жди еще ${Math.ceil((60000 - (now - lastDrinkTime))/1000)} сек.`); return; 
-            }
+            if (now - lastDrinkTime < 60000) { showToast(`⏳ Жди еще ${Math.ceil((60000-(now-lastDrinkTime))/1000)} сек.`); return; }
             state.water = Math.min(100, state.water + 25);
-            lastDrinkTime = now;
-            showToast("💧 Глоток воды (+25%)", "success"); updateUI();
+            lastDrinkTime = now; showToast("💧 +25% Воды", "success"); updateUI();
         }
 
         const items = [
-            { id: 'snickers', name: 'Сникерс', price: 10, effect: { energy: 30 }, icon: '🍫' },
-            { id: 'water', name: 'Вода 0.5', price: 5, effect: { water: 50 }, icon: '💧' },
+            { id: 'snickers', name: 'Сникерс', price: 10, effect: { energy: 40 }, icon: '🍫' },
+            { id: 'coffee', name: 'Кофе', price: 15, effect: { energy: 20, mood: 20 }, icon: '☕' },
             { id: 'repair', name: 'Мастерская', price: 40, effect: { bike: 100 }, icon: '🔧' }
         ];
 
@@ -463,29 +472,39 @@
 
         function updateMainButtonState() {
             const btn = document.getElementById('main-btn');
+            
+            // Если отдыхаем
+            if (isResting) {
+                 // Кнопка не активна, управляется оверлеем
+                 return;
+            }
+
             if (state.bike <= 0) {
-                btn.innerHTML = '<i class="fas fa-wrench"></i> ЧИНИТЬ (Руками)';
-                btn.classList.add('btn-repair');
+                btn.innerHTML = '<i class="fas fa-wrench"></i> ЧИНИТЬ';
+                btn.className = 'action-btn btn-repair';
+            } else if (state.currentOrder) {
+                if (state.energy <= 0) {
+                    btn.innerHTML = '<i class="fas fa-walking"></i> ИДТИ ПЕШКОМ (0 Энергии)';
+                    btn.className = 'action-btn btn-tired';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-bicycle"></i> КРУТИТЬ ПЕДАЛИ';
+                    btn.className = 'action-btn';
+                }
             } else {
-                btn.classList.remove('btn-repair');
-                if (state.currentOrder) btn.innerHTML = '<i class="fas fa-bicycle"></i> КРУТИТЬ ПЕДАЛИ';
-                else btn.innerHTML = '<i class="fas fa-search"></i> НАЙТИ ЗАКАЗ';
+                btn.innerHTML = '<i class="fas fa-search"></i> НАЙТИ ЗАКАЗ';
+                btn.className = 'action-btn';
             }
         }
 
         function showToast(msg, type="info") {
             const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.style.display = 'block';
+            t.innerText = msg; t.style.display = 'block';
             t.style.border = type === 'error' ? '1px solid red' : '1px solid #333';
             setTimeout(() => t.style.display = 'none', 2000);
         }
 
         function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
-        function loadGame() {
-            const saved = localStorage.getItem(SAVE_KEY);
-            if (saved) state = JSON.parse(saved);
-        }
+        function loadGame() { const saved = localStorage.getItem(SAVE_KEY); if (saved) state = JSON.parse(saved); }
 
         init();
     </script>
