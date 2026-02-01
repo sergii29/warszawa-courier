@@ -3,322 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw App</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
+    <title>Warszawa Courier - inDrive Style</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        /* --- НАСТРОЙКИ ДИЗАЙНА --- */
         :root {
-            --bg-color: #0d0d0d;        /* Почти черный фон */
-            --card-bg: #1c1c1e;         /* Темно-серый для кнопок */
-            --primary-gradient: linear-gradient(135deg, #0066ff 0%, #00ccff 100%); /* Синий градиент */
-            --text-white: #ffffff;
-            --text-grey: #8e8e93;
-            --menu-bg: #141414;
+            --bg-color: #f9f9e8;
+            --grid-color: #e2e2ca;
+            --main-dark: #2c2e3a;
+            --accent-lime: #c8ff00;
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
+        body, html {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-white);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* --- ВЕРХНЯЯ ШАПКА --- */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            padding-top: 30px;
-        }
-
-        .app-title {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
-        .menu-btn {
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-white);
-            padding: 5px;
-        }
-
-        /* --- БОКОВОЕ МЕНЮ (Скрыто) --- */
-        .side-menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 998;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        .side-menu-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .side-menu {
-            position: fixed;
-            top: 0;
-            right: -280px; /* Спрятано справа */
-            width: 280px;
-            height: 100%;
-            background: var(--menu-bg);
-            z-index: 999;
-            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-left: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-        
-        .side-menu.active {
-            right: 0;
-        }
-
-        .menu-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #555;
-        }
-        
-        .close-menu-btn {
-            cursor: pointer;
-            font-size: 24px;
-        }
-
-        /* --- ОСНОВНОЙ КОНТЕНТ --- */
-        .content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        /* КАРТОЧКА БАЛАНСА */
-        .balance-card {
-            background: var(--primary-gradient);
-            border-radius: 20px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 10px 20px rgba(0, 102, 255, 0.2);
-            margin-bottom: 30px;
-            position: relative;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
             overflow: hidden;
+            color: var(--main-dark);
         }
 
-        /* Декор на фоне карточки */
-        .balance-card::after {
+        /* Фоновая сетка как на карте */
+        #map-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Верхняя панель баланса */
+        #header {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .balance-card {
+            background: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: inline-block;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* Велосипедист (вместо авто) */
+        .player-courier {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            transition: transform 0.3s ease;
+            z-index: 5;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+        }
+
+        /* Пузыри цен вокруг */
+        .order-marker {
+            position: absolute;
+            background: #d1d1d1;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #444;
+        }
+        .order-marker::after {
             content: '';
             position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            filter: blur(40px);
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #d1d1d1;
         }
 
-        .balance-label {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 8px;
-        }
-
-        .balance-amount {
-            font-size: 36px;
-            font-weight: 800;
-            margin-bottom: 5px;
-        }
-
-        .balance-diff {
-            font-size: 13px;
-            color: #ccffcc; /* Светло-зеленый */
-            background: rgba(0,0,0,0.15);
-            padding: 4px 8px;
-            border-radius: 10px;
-            align-self: flex-start;
-            display: inline-flex;
+        /* Центральный контроллер цены */
+        .price-selector {
+            position: absolute;
+            bottom: 30%;
+            display: flex;
             align-items: center;
-            gap: 4px;
-        }
-
-        /* СЕТКА КНОПОК */
-        .action-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* Две колонки */
+            background: var(--main-dark);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 15px;
             gap: 15px;
+            z-index: 10;
         }
 
-        .action-btn {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+        .price-selector button {
+            background: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
             cursor: pointer;
-            transition: transform 0.1s, background 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .action-btn:active {
-            transform: scale(0.96);
-            background: #2c2c2e;
+        .price-display {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--accent-lime);
         }
 
-        .icon-box {
-            width: 45px;
-            height: 45px;
+        /* Нижняя кнопка действия */
+        .action-button {
+            position: absolute;
+            bottom: 40px;
+            left: 10%;
+            right: 10%;
+            background: var(--accent-lime);
+            color: black;
+            padding: 18px;
             border-radius: 12px;
-            background: rgba(255,255,255,0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: #00ccff;
-        }
-
-        .btn-text {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        /* --- НИЖНЯЯ НАВИГАЦИЯ --- */
-        .bottom-nav {
-            background: var(--bg-color);
-            border-top: 1px solid #222;
-            height: 70px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            color: var(--text-grey);
-            font-size: 10px;
+            text-align: center;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 0 #a2ce00;
             cursor: pointer;
         }
-
-        .nav-item.active {
-            color: #ffffff; /* Белый для активного */
-        }
-        
-        .nav-item.active i {
-            color: #00ccff; /* Синий для иконки */
-        }
-
-        .nav-item i {
-            font-size: 20px;
-            margin-bottom: 2px;
-        }
-
     </style>
 </head>
 <body>
 
-    <div class="side-menu-overlay" id="menuOverlay"></div>
-    <div class="side-menu" id="sideMenu">
-        <div class="menu-header">
-            <span>Меню</span>
-            <div class="close-menu-btn" id="closeMenuBtn"><i class="fa-solid fa-xmark"></i></div>
-        </div>
-        <div style="color: #666; font-size: 14px; text-align: center; margin-top: 50px;">
-            Пока пусто...
-        </div>
-    </div>
-
-    <div class="header">
-        <div class="app-title">Warsaw App</div>
-        <div class="menu-btn" id="openMenuBtn">
-            <i class="fa-solid fa-bars"></i>
-        </div>
-    </div>
-
-    <div class="content">
-        
+    <div id="header">
         <div class="balance-card">
-            <div class="balance-label">Общий баланс</div>
-            <div class="balance-amount">
-                <span id="display-balance">0.00</span> PLN
-            </div>
-            <div class="balance-diff">
-                <i class="fa-solid fa-arrow-trend-up"></i> +0.0% за неделю
-            </div>
+            <span id="balance">0,00</span> PLN
         </div>
-
-        <div class="action-grid">
-            <div class="action-btn" onclick="doAction('earn')">
-                <div class="icon-box"><i class="fa-solid fa-coins"></i></div>
-                <div class="btn-text">Заработать</div>
-            </div>
-            <div class="action-btn" onclick="doAction('tasks')">
-                <div class="icon-box"><i class="fa-solid fa-list-check"></i></div>
-                <div class="btn-text">Задания</div>
-            </div>
-            <div class="action-btn" onclick="doAction('friends')">
-                <div class="icon-box"><i class="fa-solid fa-user-group"></i></div>
-                <div class="btn-text">Друзья</div>
-            </div>
-            <div class="action-btn" onclick="doAction('wallet')">
-                <div class="icon-box"><i class="fa-solid fa-wallet"></i></div>
-                <div class="btn-text">Кошелек</div>
-            </div>
-        </div>
-
     </div>
 
-    <div class="bottom-nav">
-        <div class="nav-item active">
-            <i class="fa-solid fa-house"></i>
-            <span>Домой</span>
+    <div id="map-container">
+        <div class="order-marker" style="top: 25%; right: 15%;">9.5 zł</div>
+        <div class="order-marker" style="top: 55%; left: 10%;">9.0 zł</div>
+        <div class="order-marker" style="bottom: 35%; right: 20%;">9.0 zł</div>
+
+        <div class="player-courier">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" fill="#c8ff00"/> <path d="M35 70C38.3137 70 41 67.3137 41 64C41 60.6863 38.3137 58 35 58C31.6863 58 29 60.6863 29 64C29 67.3137 31.6863 70 35 70Z" stroke="black" stroke-width="3"/>
+                <path d="M65 70C68.3137 70 71 67.3137 71 64C71 60.6863 68.3137 58 65 58C61.6863 58 59 60.6863 59 64C59 67.3137 61.6863 70 65 70Z" stroke="black" stroke-width="3"/>
+                <path d="M35 64L50 64L58 45H70" stroke="black" stroke-width="3" stroke-linecap="round"/>
+                <path d="M50 64L45 42L55 35" stroke="black" stroke-width="3" stroke-linecap="round"/>
+            </svg>
         </div>
-        <div class="nav-item">
-            <i class="fa-solid fa-chart-simple"></i>
-            <span>Активность</span>
+
+        <div class="price-selector">
+            <button onclick="changePrice(-0.5)">−</button>
+            <div class="price-display"><span id="order-price">7.0</span> zł</div>
+            <button onclick="changePrice(0.5)">+</button>
         </div>
-        <div class="nav-item">
-            <i class="fa-solid fa-gear"></i>
-            <span>Настройки</span>
+
+        <div class="action-button" onclick="takeOrder()">
+            Взять заказ
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIG FIREBASE (Тот же, что ты давал) ---
+        // Твой конфиг Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
             authDomain: "warszawa-courier.firebaseapp.com",
@@ -332,59 +191,20 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        console.log("Warsaw App Base Initialized");
+        window.db = db;
+        console.log("Firebase initialized for Warsaw Courier");
 
-        // --- 2. ЛОГИКА МЕНЮ ---
-        const menuBtn = document.getElementById('openMenuBtn');
-        const closeBtn = document.getElementById('closeMenuBtn');
-        const sideMenu = document.getElementById('sideMenu');
-        const overlay = document.getElementById('menuOverlay');
-
-        function toggleMenu() {
-            sideMenu.classList.toggle('active');
-            overlay.classList.toggle('active');
+        // Логика цены заказа
+        let currentOrderPrice = 7.0;
+        function changePrice(delta) {
+            currentOrderPrice += delta;
+            if (currentOrderPrice < 5) currentOrderPrice = 5; // Минимум
+            document.getElementById('order-price').innerText = currentOrderPrice.toFixed(1);
         }
 
-        menuBtn.addEventListener('click', toggleMenu);
-        closeBtn.addEventListener('click', toggleMenu);
-        overlay.addEventListener('click', toggleMenu);
-
-        // --- 3. ПОЛУЧЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ ---
-        const tg = window.Telegram.WebApp;
-        tg.expand(); 
-        
-        // ID игрока (или тестовый)
-        const userId = tg.initDataUnsafe?.user?.id || 'test_user_new_project';
-        
-        const userRef = db.ref('users/' + userId);
-
-        // Слушаем баланс
-        userRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.balance !== undefined) {
-                // Красивый формат числа (например 24,350.00)
-                const formatted = parseFloat(data.balance).toLocaleString('ru-RU', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-                document.getElementById('display-balance').innerText = formatted;
-            } else {
-                // Если юзера нет, ставим 0
-                document.getElementById('display-balance').innerText = "0.00";
-            }
-        });
-
-        // --- 4. ЗАГЛУШКА ДЛЯ КНОПОК ---
-        function doAction(action) {
-            // Вибрация
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            
-            console.log("Нажато: " + action);
-            
-            // Тут пока ничего, просто пример клика
-            // Позже добавим функционал
+        function takeOrder() {
+            alert("Заказ принят за " + currentOrderPrice.toFixed(1) + " PLN. Погнали!");
         }
-
     </script>
 </body>
 </html>
