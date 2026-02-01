@@ -1,97 +1,133 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Warszawa Courier</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- ВОТ ТУТ ПОДКЛЮЧАЕТСЯ СТИЛЬ -->
-  <link rel="stylesheet" href="css/main.css">
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
-  <div class="app">
+  <!-- MAP -->
+  <div id="map"></div>
 
-    <!-- HUD -->
-    <div class="hud">
-      <div class="stat money">💰 <span id="money">0</span></div>
-      <div class="stat energy">⚡ <span id="energy">0</span></div>
-      <div class="stat stress">😵 <span id="stress">0</span></div>
+  <!-- HUD -->
+  <div class="hud">
+    <div class="balance">
+      <span>Баланс</span>
+      <b><span id="money">0</span> PLN</b>
     </div>
-
-    <!-- CENTER -->
-    <div class="center">
-      <div id="time" class="time">День ☀️</div>
-    </div>
-
-    <!-- BOTTOM BAR -->
-    <div class="bottom-bar">
-      <button id="orderBtn" class="btn primary">🚴 Заказ</button>
-      <button id="restBtn" class="btn">🛏 Отдых</button>
-      <button id="timeBtn" class="btn">🌗</button>
-    </div>
-
   </div>
 
+  <!-- ORDER SLIDE PANEL -->
+  <div class="order-panel" id="orderPanel">
+    <div class="grabber"></div>
+
+    <div class="order-info">
+      <div>📦 Доставка</div>
+      <div class="price">+ <span id="orderPrice">18</span> PLN</div>
+    </div>
+
+    <button id="acceptOrder" class="accept-btn">
+      Принять доставку
+    </button>
+  </div>
+
+  <!-- SCRIPT -->
   <script type="module">
     import { state } from "./state.js";
     import { saveState, loadState } from "./save.js";
 
-    const moneyEl = document.getElementById("money");
-    const energyEl = document.getElementById("energy");
-    const stressEl = document.getElementById("stress");
-    const timeEl = document.getElementById("time");
+    /* ---------- MAP ---------- */
+    const map = L.map("map", { zoomControl: false }).setView(
+      [52.2297, 21.0122],
+      14
+    );
 
-    const orderBtn = document.getElementById("orderBtn");
-    const restBtn = document.getElementById("restBtn");
-    const timeBtn = document.getElementById("timeBtn");
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      { attribution: "&copy; OpenStreetMap" }
+    ).addTo(map);
+
+    let courierPos = [52.2297, 21.0122];
+
+    const courier = L.circleMarker(courierPos, {
+      radius: 8,
+      color: "#2a7cff",
+      fillColor: "#2a7cff",
+      fillOpacity: 1,
+    }).addTo(map);
+
+    function moveTo(targetPos) {
+      const timer = setInterval(() => {
+        courierPos[0] += (targetPos[0] - courierPos[0]) * 0.08;
+        courierPos[1] += (targetPos[1] - courierPos[1]) * 0.08;
+        courier.setLatLng(courierPos);
+
+        if (
+          Math.hypot(
+            targetPos[0] - courierPos[0],
+            targetPos[1] - courierPos[1]
+          ) < 0.0003
+        ) {
+          clearInterval(timer);
+        }
+      }, 50);
+    }
+
+    /* ---------- HUD ---------- */
+    const moneyEl = document.getElementById("money");
 
     function render() {
       moneyEl.textContent = state.money;
-      energyEl.textContent = state.energy;
-      stressEl.textContent = state.stress;
-      timeEl.textContent = state.isNight ? "Ночь 🌙" : "День ☀️";
     }
 
-    orderBtn.onclick = () => {
-      orderBtn.classList.add("press");
-      setTimeout(() => orderBtn.classList.remove("press"), 150);
+    /* ---------- ORDER PANEL ---------- */
+    const orderPanel = document.getElementById("orderPanel");
+    const acceptOrder = document.getElementById("acceptOrder");
+    const orderPriceEl = document.getElementById("orderPrice");
 
-      if (state.energy <= 0) return alert("Нужно отдохнуть");
+    let currentOrderPrice = 0;
 
-      const roll = Math.random();
-      state.energy -= state.isNight ? 15 : 10;
+    function spawnOrder() {
+      currentOrderPrice = Math.floor(12 + Math.random() * 20);
+      orderPriceEl.textContent = currentOrderPrice;
+      orderPanel.classList.add("show");
 
-      if (roll < 0.6) state.money += state.isNight ? 80 : 50;
-      else if (roll < 0.85) state.money += state.isNight ? 180 : 120;
-      else {
-        state.money -= 40;
-        state.stress += 15;
-      }
+      const dx = (Math.random() - 0.5) * 0.02;
+      const dy = (Math.random() - 0.5) * 0.02;
+      return [courierPos[0] + dx, courierPos[1] + dy];
+    }
 
+    acceptOrder.onclick = () => {
+      orderPanel.classList.remove("show");
+
+      state.money += currentOrderPrice;
+      state.energy -= 10;
       state.stress += 5;
+
       saveState(state);
       render();
+
+      const target = spawnOrder();
+      moveTo(target);
     };
 
-    restBtn.onclick = () => {
-      restBtn.classList.add("press");
-      setTimeout(() => restBtn.classList.remove("press"), 150);
-
-      state.energy = Math.min(100, state.energy + 30);
-      state.stress = Math.max(0, state.stress - 20);
-      saveState(state);
-      render();
-    };
-
-    timeBtn.onclick = () => {
-      state.isNight = !state.isNight;
-      saveState(state);
-      render();
-    };
-
+    /* ---------- INIT ---------- */
     await loadState(state);
     render();
+
+    // Показать первый заказ автоматически
+    spawnOrder();
   </script>
 </body>
 </html>
