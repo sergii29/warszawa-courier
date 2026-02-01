@@ -3,888 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier Sim</title>
+    <title>Warsaw App</title>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
+        /* --- НАСТРОЙКИ ДИЗАЙНА --- */
+        :root {
+            --bg-color: #0d0d0d;        /* Почти черный фон */
+            --card-bg: #1c1c1e;         /* Темно-серый для кнопок */
+            --primary-gradient: linear-gradient(135deg, #0066ff 0%, #00ccff 100%); /* Синий градиент */
+            --text-white: #ffffff;
+            --text-grey: #8e8e93;
+            --menu-bg: #141414;
+        }
+
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
-            padding-bottom: 70px;
-            overflow-x: hidden;
-        }
-
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 15px 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .sim-name {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .balance-display {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-white);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
-        }
-
-        .balance-label {
-            font-size: 10px;
-            opacity: 0.8;
-            text-transform: uppercase;
-        }
-
-        .balance {
-            font-size: 24px;
-            font-weight: 700;
-            transition: all 0.3s ease;
-        }
-
-        .balance.debt {
-            color: #ff6b6b;
-        }
-
-        .balance.positive {
-            color: #51cf66;
-        }
-
-        .balance.earn {
-            animation: earn 0.5s ease;
-        }
-
-        @keyframes earn {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); color: #51cf66; }
-        }
-
-        /* Stats */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .stat {
-            background: rgba(255,255,255,0.1);
-            padding: 8px;
-            border-radius: 8px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .stat:active {
-            transform: scale(0.95);
-        }
-
-        .stat-label {
-            font-size: 10px;
-            opacity: 0.8;
-            margin-bottom: 3px;
-        }
-
-        .stat-value {
-            font-size: 16px;
-            font-weight: 700;
-            transition: color 0.3s ease;
-        }
-
-        /* ИСПРАВЛЕНИЕ БАГА С ПРОЦЕНТАМИ */
-        .stat-value.good {
-            color: #51cf66;
-        }
-
-        .stat-value.medium {
-            color: #ffd43b;
-        }
-
-        .stat-value.low {
-            color: #ff8787;
-        }
-
-        .stat-value.critical {
-            color: #ff6b6b;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #2d2d44;
-            padding: 12px 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            z-index: 1000;
-            animation: slideDown 0.3s ease;
-            max-width: 90%;
-            text-align: center;
-        }
-
-        .notification.success {
-            border-left: 4px solid #51cf66;
-        }
-
-        .notification.warning {
-            border-left: 4px solid #ffd43b;
-        }
-
-        .notification.danger {
-            border-left: 4px solid #ff6b6b;
-        }
-
-        .notification.info {
-            border-left: 4px solid #667eea;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
-        /* Main Content */
-        .container {
-            padding: 15px;
-        }
-
-        .section {
-            background: #2d2d44;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .badge {
-            background: #ff6b6b;
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .badge.success {
-            background: #51cf66;
-        }
-
-        .badge.warning {
-            background: #ffd43b;
-            color: #333;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            opacity: 0.7;
-            font-size: 14px;
-        }
-
-        .info-value {
-            font-weight: 600;
-        }
-
-        /* Order Card */
-        .order-card {
-            background: #383854;
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-            margin-top: 10px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .order-card:active {
-            transform: scale(0.98);
-        }
-
-        .order-card.searching {
-            border-left-color: #ffd43b;
-        }
-
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .order-type {
-            font-size: 20px;
-        }
-
-        .order-payment {
-            font-size: 20px;
-            font-weight: 700;
-            color: #51cf66;
-        }
-
-        .order-details {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .order-detail {
-            text-align: center;
-        }
-
-        .order-detail-label {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-bottom: 3px;
-        }
-
-        .order-detail-value {
-            font-weight: 700;
-        }
-
-        .vehicle-bar {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .vehicle-label {
-            font-size: 12px;
-            opacity: 0.7;
-            margin-bottom: 5px;
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
+            height: 100vh;
             overflow: hidden;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #51cf66, #40c057);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-
-        .searching-animation {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Shop Items */
-        .shop-items {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .shop-item {
-            background: #383854;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-        }
-
-        .shop-item:active {
-            transform: scale(0.95);
-            border-color: #667eea;
-        }
-
-        .shop-item.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .shop-icon {
-            font-size: 32px;
-            margin-bottom: 5px;
-        }
-
-        .shop-name {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-
-        .shop-price {
-            font-size: 14px;
-            color: #51cf66;
-            font-weight: 700;
-        }
-
-        .shop-effect {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 3px;
-        }
-
-        /* Progress to Garage */
-        .progress-section {
-            margin-top: 10px;
-        }
-
-        .progress-header {
+        /* --- ВЕРХНЯЯ ШАПКА --- */
+        .header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 13px;
+            align-items: center;
+            padding: 20px;
+            padding-top: 30px;
         }
 
-        .progress-text {
-            opacity: 0.8;
-        }
-
-        .progress-percent {
-            font-weight: 700;
-            color: #667eea;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .btn:active {
-            transform: scale(0.95);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #fa5252 100%);
-            color: white;
-        }
-
-        .btn.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #2d2d44;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-            z-index: 100;
-        }
-
-        .nav-item {
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-            background: transparent;
-            border: none;
-            color: #eee;
-        }
-
-        .nav-item:active {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .nav-item.locked {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .nav-icon {
+        .app-title {
             font-size: 20px;
-            margin-bottom: 3px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
-        .nav-label {
-            font-size: 11px;
+        .menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-white);
+            padding: 5px;
         }
 
-        .lock-badge {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            font-size: 10px;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
+        /* --- БОКОВОЕ МЕНЮ (Скрыто) --- */
+        .side-menu-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: #2d2d44;
-            padding: 20px;
-            border-radius: 15px;
-            max-width: 400px;
             width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            animation: modalSlide 0.3s ease;
-        }
-
-        @keyframes modalSlide {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .modal-body {
-            margin: 15px 0;
-            line-height: 1.6;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .modal-buttons .btn {
-            margin-top: 0;
-        }
-
-        /* Achievement Toast */
-        .achievement-toast {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #ffd43b 0%, #fab005 100%);
-            color: #333;
-            padding: 15px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(255, 212, 59, 0.5);
-            z-index: 1001;
-            animation: achievementPop 0.5s ease;
-            font-weight: 700;
-            max-width: 90%;
-            text-align: center;
-        }
-
-        @keyframes achievementPop {
-            0% {
-                opacity: 0;
-                transform: translateX(-50%) scale(0.8);
-            }
-            50% {
-                transform: translateX(-50%) scale(1.1);
-            }
-            100% {
-                opacity: 1;
-                transform: translateX(-50%) scale(1);
-            }
-        }
-
-        /* Stat tooltip */
-        .stat-tooltip {
-            position: fixed;
-            background: #2d2d44;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 12px;
-            z-index: 1000;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+            opacity: 0;
             pointer-events: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            animation: fadeIn 0.2s ease;
+            transition: opacity 0.3s;
+        }
+        .side-menu-overlay.active {
+            opacity: 1;
+            pointer-events: all;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Credits section */
-        .credit-options {
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -280px; /* Спрятано справа */
+            width: 280px;
+            height: 100%;
+            background: var(--menu-bg);
+            z-index: 999;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 1px solid #333;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
+            padding: 20px;
+        }
+        
+        .side-menu.active {
+            right: 0;
         }
 
-        .credit-option {
-            background: #383854;
-            padding: 12px;
-            border-radius: 8px;
+        .menu-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-        }
-
-        .credit-option:active {
-            border-color: #667eea;
-            transform: scale(0.98);
-        }
-
-        .credit-amount {
+            margin-bottom: 30px;
             font-size: 18px;
-            font-weight: 700;
-            color: #51cf66;
+            font-weight: bold;
+            color: #555;
         }
-
-        .credit-rate {
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
-        /* Event card */
-        .event-card {
-            background: #383854;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 10px;
-            border-left: 4px solid #ffd43b;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .event-text {
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .event-choices {
-            display: flex;
-            gap: 8px;
-        }
-
-        .event-choice {
-            flex: 1;
-            padding: 8px;
-            border-radius: 6px;
-            background: #2d2d44;
-            border: 2px solid transparent;
+        
+        .close-menu-btn {
             cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s ease;
+            font-size: 24px;
         }
 
-        .event-choice:active {
-            border-color: #667eea;
-            transform: scale(0.95);
+        /* --- ОСНОВНОЙ КОНТЕНТ --- */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
         }
+
+        /* КАРТОЧКА БАЛАНСА */
+        .balance-card {
+            background: var(--primary-gradient);
+            border-radius: 20px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 20px rgba(0, 102, 255, 0.2);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Декор на фоне карточки */
+        .balance-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            filter: blur(40px);
+        }
+
+        .balance-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .balance-diff {
+            font-size: 13px;
+            color: #ccffcc; /* Светло-зеленый */
+            background: rgba(0,0,0,0.15);
+            padding: 4px 8px;
+            border-radius: 10px;
+            align-self: flex-start;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* СЕТКА КНОПОК */
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Две колонки */
+            gap: 15px;
+        }
+
+        .action-btn {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.96);
+            background: #2c2c2e;
+        }
+
+        .icon-box {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #00ccff;
+        }
+
+        .btn-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* --- НИЖНЯЯ НАВИГАЦИЯ --- */
+        .bottom-nav {
+            background: var(--bg-color);
+            border-top: 1px solid #222;
+            height: 70px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-grey);
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #ffffff; /* Белый для активного */
+        }
+        
+        .nav-item.active i {
+            color: #00ccff; /* Синий для иконки */
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
     </style>
 </head>
 <body>
 
-    <!-- Header -->
+    <div class="side-menu-overlay" id="menuOverlay"></div>
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <span>Меню</span>
+            <div class="close-menu-btn" id="closeMenuBtn"><i class="fa-solid fa-xmark"></i></div>
+        </div>
+        <div style="color: #666; font-size: 14px; text-align: center; margin-top: 50px;">
+            Пока пусто...
+        </div>
+    </div>
+
     <div class="header">
-        <div class="top-bar">
-            <div class="sim-name">Warsaw Courier Sim</div>
-            <div class="balance-display">
-                <div class="balance-label">Баланс</div>
-                <div class="balance debt" id="balance">-7000.00 PLN</div>
-            </div>
+        <div class="app-title">Warsaw App</div>
+        <div class="menu-btn" id="openMenuBtn">
+            <i class="fa-solid fa-bars"></i>
         </div>
+    </div>
+
+    <div class="content">
         
-        <div class="stats">
-            <div class="stat" data-stat="energy" title="Энергия">
-                <div class="stat-label">⚡ ВЕЛСУМ</div>
-                <div class="stat-value good" id="stat-energy">100</div>
+        <div class="balance-card">
+            <div class="balance-label">Общий баланс</div>
+            <div class="balance-amount">
+                <span id="display-balance">0.00</span> PLN
             </div>
-            <div class="stat" data-stat="connection" title="Связь">
-                <div class="stat-label">📶 КАСВЯЗЬ</div>
-                <div class="stat-value good" id="stat-connection">100</div>
-            </div>
-            <div class="stat" data-stat="clothes" title="Одежда">
-                <div class="stat-label">👕 ОДЕЖДА</div>
-                <div class="stat-value good" id="stat-clothes">100</div>
-            </div>
-            <div class="stat" data-stat="strength" title="Силы">
-                <div class="stat-label">💪 СИЛЫ</div>
-                <div class="stat-value good" id="stat-strength">100</div>
-            </div>
-            <div class="stat" data-stat="water" title="Вода">
-                <div class="stat-label">💧 ВОДА</div>
-                <div class="stat-value good" id="stat-water">100</div>
-            </div>
-            <div class="stat" data-stat="mood" title="Настроение">
-                <div class="stat-label">😊 НАСТР</div>
-                <div class="stat-value good" id="stat-mood">100</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Container -->
-    <div class="container">
-        
-        <!-- City Section -->
-        <div class="section">
-            <div class="section-title">
-                🏙️ Варшава
-                <span class="badge warning">⚠️ ДЕМО</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">📈 Спрос:</span>
-                <span class="info-value">Высокий</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">💹 Инфляция:</span>
-                <span class="info-value">Активна</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">🚴 Курьеров онлайн:</span>
-                <span class="info-value" id="couriers-online">12</span>
+            <div class="balance-diff">
+                <i class="fa-solid fa-arrow-trend-up"></i> +0.0% за неделю
             </div>
         </div>
 
-        <!-- Order Section -->
-        <div class="section">
-            <div class="section-title">
-                🍔 Поиск заказа
-                <span class="badge" id="mode-badge">СВАЙП → ОНЛАЙН</span>
+        <div class="action-grid">
+            <div class="action-btn" onclick="doAction('earn')">
+                <div class="icon-box"><i class="fa-solid fa-coins"></i></div>
+                <div class="btn-text">Заработать</div>
             </div>
-            
-            <div class="order-card" id="orderCard">
-                <div class="searching-animation" id="searchingAnim">
-                    <div class="spinner"></div>
-                    <div>Поиск доступных заказов...</div>
-                </div>
-                
-                <div id="orderContent" style="display: none;">
-                    <div class="order-header">
-                        <div class="order-type" id="orderType">🍕</div>
-                        <div class="order-payment" id="orderPayment">-- PLN</div>
-                    </div>
-                    
-                    <div id="orderDescription" style="font-size: 13px; opacity: 0.8; margin-bottom: 8px;">
-                        Нажмите для принятия заказа
-                    </div>
-                    
-                    <div class="order-details">
-                        <div class="order-detail">
-                            <div class="order-detail-label">Расстояние</div>
-                            <div class="order-detail-value" id="orderDistance">--</div>
-                        </div>
-                        <div class="order-detail">
-                            <div class="order-detail-label">Время</div>
-                            <div class="order-detail-value" id="orderTime">--</div>
-                        </div>
-                        <div class="order-detail">
-                            <div class="order-detail-label">Сложность</div>
-                            <div class="order-detail-value" id="orderDifficulty">⭐</div>
-                        </div>
-                    </div>
-                    
-                    <div class="vehicle-bar">
-                        <div class="vehicle-label">Состояние велосипеда: <span id="vehiclePercent">100%</span></div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="vehicleBar" style="width: 100%"></div>
-                        </div>
-                    </div>
-                </div>
+            <div class="action-btn" onclick="doAction('tasks')">
+                <div class="icon-box"><i class="fa-solid fa-list-check"></i></div>
+                <div class="btn-text">Задания</div>
             </div>
-
-            <!-- Event Card (появляется во время доставки) -->
-            <div id="eventContainer"></div>
-        </div>
-
-        <!-- Progress to Garage -->
-        <div class="section">
-            <div class="section-title">
-                🚗 Автосалон
-                <span class="badge" id="garageLockBadge">🔒 Закрыто</span>
+            <div class="action-btn" onclick="doAction('friends')">
+                <div class="icon-box"><i class="fa-solid fa-user-group"></i></div>
+                <div class="btn-text">Друзья</div>
             </div>
-            <div class="progress-section">
-                <div class="progress-header">
-                    <span class="progress-text">Прогресс до разблокировки:</span>
-                    <span class="progress-percent" id="garageProgress">0 / 50</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="garageBar" style="width: 0%"></div>
-                </div>
-            </div>
-            <div style="margin-top: 10px; font-size: 12px; opacity: 0.7;">
-                Доступно при разблокировке: Электровелосипед, Самокат, Мопед
+            <div class="action-btn" onclick="doAction('wallet')">
+                <div class="icon-box"><i class="fa-solid fa-wallet"></i></div>
+                <div class="btn-text">Кошелек</div>
             </div>
         </div>
 
     </div>
 
-    <!-- Bottom Navigation -->
-    <div class="nav">
-        <button class="nav-item" onclick="openShop()">
-            <div class="nav-icon">🏪</div>
-            <div class="nav-label">Магазин</div>
-        </button>
-        <button class="nav-item" onclick="openBank()">
-            <div class="nav-icon">🏦</div>
-            <div class="nav-label">Банк</div>
-        </button>
-        <button class="nav-item locked" id="garageNav" onclick="openGarage()">
-            <div class="nav-icon">🚗</div>
-            <div class="nav-label">Автосалон</div>
-            <div class="lock-badge">🔒</div>
-        </button>
-        <button class="nav-item" onclick="openStats()">
-            <div class="nav-icon">📊</div>
-            <div class="nav-label">Статистика</div>
-        </button>
-    </div>
-
-    <!-- Modal -->
-    <div class="modal" id="modal">
-        <div class="modal-content">
-            <div class="modal-header" id="modalHeader">
-                💬 Уведомление
-            </div>
-            <div class="modal-body" id="modalBody">
-                Содержимое
-            </div>
-            <div class="modal-buttons" id="modalButtons">
-                <button class="btn btn-primary" onclick="closeModal()">Закрыть</button>
-            </div>
+    <div class="bottom-nav">
+        <div class="nav-item active">
+            <i class="fa-solid fa-house"></i>
+            <span>Домой</span>
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span>Активность</span>
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-gear"></i>
+            <span>Настройки</span>
         </div>
     </div>
 
-    <!-- Firebase & Game Logic -->
     <script>
-        // ============================================
-        // FIREBASE CONFIGURATION
-        // ============================================
+        // --- 1. CONFIG FIREBASE (Тот же, что ты давал) ---
         const firebaseConfig = {
             apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
             authDomain: "warszawa-courier.firebaseapp.com",
@@ -898,690 +332,58 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
-        window.db = db;
-        console.log("✅ Firebase initialized");
+        console.log("Warsaw App Base Initialized");
 
-        // ============================================
-        // GAME STATE
-        // ============================================
-        let gameState = {
-            balance: -7000,
-            energy: 100,
-            connection: 100,
-            clothes: 100,
-            strength: 100,
-            water: 100,
-            mood: 100,
-            vehicleCondition: 100,
-            level: 1,
-            totalDeliveries: 0,
-            totalEarned: 0,
-            currentOrder: null,
-            isOnline: false,
-            achievements: {
-                firstOrder: false,
-                tenOrders: false,
-                debtFree: false,
-                nightCourier: false,
-                hundredOrders: false
-            }
-        };
+        // --- 2. ЛОГИКА МЕНЮ ---
+        const menuBtn = document.getElementById('openMenuBtn');
+        const closeBtn = document.getElementById('closeMenuBtn');
+        const sideMenu = document.getElementById('sideMenu');
+        const overlay = document.getElementById('menuOverlay');
 
-        // ============================================
-        // ORDER TYPES
-        // ============================================
-        const orderTypes = [
-            { icon: '🍕', name: 'Еда', basePrice: 35, minDist: 1, maxDist: 4, difficulty: 1 },
-            { icon: '📦', name: 'Посылка', basePrice: 50, minDist: 2, maxDist: 8, difficulty: 2 },
-            { icon: '⚡', name: 'Срочный', basePrice: 70, minDist: 1, maxDist: 6, difficulty: 3 },
-            { icon: '🎁', name: 'Хрупкое', basePrice: 60, minDist: 2, maxDist: 5, difficulty: 2 },
-            { icon: '🍔', name: 'Фастфуд', basePrice: 30, minDist: 1, maxDist: 3, difficulty: 1 },
-        ];
+        function toggleMenu() {
+            sideMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
 
-        // ============================================
-        // EVENTS
-        // ============================================
-        const randomEvents = [
-            {
-                text: '☔ Начался дождь! Клиент готов доплатить.',
-                effect: { mood: -10, payment: 1.2 },
-                icon: '☔'
-            },
-            {
-                text: '🐕 Собака погналась за вами!',
-                effect: { energy: -15, mood: -10 },
-                icon: '🐕'
-            },
-            {
-                text: '💡 Клиент оставил чаевые!',
-                effect: { balance: 15, mood: 10 },
-                icon: '💡'
-            },
-            {
-                text: '🚦 Попали в пробку...',
-                effect: { mood: -5, energy: -5 },
-                icon: '🚦'
-            },
-            {
-                text: '👵 Помогли бабушке перейти дорогу',
-                effect: { mood: 20, reputation: 10 },
-                icon: '👵'
-            },
-            {
-                text: '🎵 Любимая песня по радио!',
-                effect: { mood: 15, energy: 5 },
-                icon: '🎵'
-            }
-        ];
+        menuBtn.addEventListener('click', toggleMenu);
+        closeBtn.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
 
-        // ============================================
-        // SHOP ITEMS
-        // ============================================
-        const shopItems = [
-            { icon: '💧', name: 'Вода 0.5л', price: 3, effect: { water: 20 } },
-            { icon: '🍔', name: 'Бургер', price: 15, effect: { strength: 30, mood: 15 } },
-            { icon: '☕', name: 'Кофе', price: 8, effect: { energy: 25, mood: 10 } },
-            { icon: '🥤', name: 'Энергетик', price: 12, effect: { energy: 40, water: -10 } },
-            { icon: '🍕', name: 'Пицца', price: 25, effect: { strength: 50, mood: 25 } },
-            { icon: '👕', name: 'Футболка', price: 50, effect: { clothes: 40 } },
-            { icon: '🔋', name: 'Повербанк', price: 80, effect: { connection: 50 } },
-            { icon: '🛠️', name: 'Ремкомплект', price: 40, effect: { vehicle: 30 } },
-        ];
+        // --- 3. ПОЛУЧЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ ---
+        const tg = window.Telegram.WebApp;
+        tg.expand(); 
+        
+        // ID игрока (или тестовый)
+        const userId = tg.initDataUnsafe?.user?.id || 'test_user_new_project';
+        
+        const userRef = db.ref('users/' + userId);
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        function initGame() {
-            console.log("🎮 Game starting...");
-            loadGameState();
-            updateUI();
-            startGameLoop();
-            searchForOrder();
-            
-            // Stats tooltips
-            document.querySelectorAll('.stat').forEach(stat => {
-                stat.addEventListener('click', function() {
-                    const statName = this.dataset.stat;
-                    showStatInfo(statName);
+        // Слушаем баланс
+        userRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.balance !== undefined) {
+                // Красивый формат числа (например 24,350.00)
+                const formatted = parseFloat(data.balance).toLocaleString('ru-RU', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
                 });
-            });
-            
-            // Order card click
-            document.getElementById('orderCard').addEventListener('click', function() {
-                if (gameState.currentOrder && document.getElementById('orderContent').style.display !== 'none') {
-                    acceptOrder();
-                }
-            });
-        }
-
-        // ============================================
-        // SAVE/LOAD
-        // ============================================
-        function saveGameState() {
-            localStorage.setItem('warsawCourierState', JSON.stringify(gameState));
-            console.log("💾 Saved");
-        }
-
-        function loadGameState() {
-            const saved = localStorage.getItem('warsawCourierState');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    gameState = { ...gameState, ...parsed };
-                    console.log("📦 Loaded from storage");
-                } catch (e) {
-                    console.error("❌ Load error:", e);
-                }
-            }
-        }
-
-        // ============================================
-        // UPDATE UI - ИСПРАВЛЕНИЕ БАГА С ПРОЦЕНТАМИ!
-        // ============================================
-        function updateUI() {
-            // Balance
-            const balanceEl = document.getElementById('balance');
-            balanceEl.textContent = gameState.balance.toFixed(2) + ' PLN';
-            balanceEl.className = 'balance ' + (gameState.balance < 0 ? 'debt' : 'positive');
-
-            // Stats - ПРАВИЛЬНОЕ ОБНОВЛЕНИЕ!
-            updateStat('energy', gameState.energy);
-            updateStat('connection', gameState.connection);
-            updateStat('clothes', gameState.clothes);
-            updateStat('strength', gameState.strength);
-            updateStat('water', gameState.water);
-            updateStat('mood', gameState.mood);
-
-            // Vehicle
-            const vehiclePercent = Math.round(gameState.vehicleCondition);
-            document.getElementById('vehiclePercent').textContent = vehiclePercent + '%';
-            document.getElementById('vehicleBar').style.width = vehiclePercent + '%';
-
-            // Garage progress
-            const garageProgress = Math.min(gameState.totalDeliveries, 50);
-            const garagePercent = (garageProgress / 50) * 100;
-            document.getElementById('garageProgress').textContent = `${garageProgress} / 50`;
-            document.getElementById('garageBar').style.width = garagePercent + '%';
-            
-            if (garageProgress >= 50) {
-                document.getElementById('garageLockBadge').textContent = '✅ Открыто';
-                document.getElementById('garageLockBadge').className = 'badge success';
-                document.getElementById('garageNav').classList.remove('locked');
-            }
-        }
-
-        // ИСПРАВЛЕНИЕ БАГА: правильное обновление статов с удалением классов
-        function updateStat(statName, value) {
-            const statEl = document.getElementById('stat-' + statName);
-            if (!statEl) return;
-
-            // Обновляем значение
-            statEl.textContent = Math.round(value);
-
-            // ВАЖНО: Сначала удаляем ВСЕ классы цвета
-            statEl.classList.remove('good', 'medium', 'low', 'critical');
-
-            // Затем добавляем нужный класс на основе значения
-            if (value >= 70) {
-                statEl.classList.add('good');
-            } else if (value >= 40) {
-                statEl.classList.add('medium');
-            } else if (value >= 20) {
-                statEl.classList.add('low');
+                document.getElementById('display-balance').innerText = formatted;
             } else {
-                statEl.classList.add('critical');
-                // Вибрация для критических значений
-                vibrate([100]);
-            }
-
-            // Обновляем значение в gameState
-            gameState[statName] = Math.max(0, Math.min(100, value));
-        }
-
-        // ============================================
-        // GAME LOOP
-        // ============================================
-        function startGameLoop() {
-            setInterval(() => {
-                // Passive degradation
-                gameState.energy = Math.max(0, gameState.energy - 0.12);
-                gameState.water = Math.max(0, gameState.water - 0.18);
-                gameState.mood = Math.max(0, gameState.mood - 0.08);
-                gameState.vehicleCondition = Math.max(0, gameState.vehicleCondition - 0.03);
-                
-                updateUI();
-                
-                // Critical warnings
-                if (gameState.water < 15 && gameState.water > 14) {
-                    showNotification('💧 Вода критически низкая!', 'danger');
-                    vibrate([200, 100, 200]);
-                }
-                if (gameState.energy < 15 && gameState.energy > 14) {
-                    showNotification('⚡ Энергия на исходе!', 'danger');
-                }
-                
-            }, 3000); // Every 3 seconds
-
-            // Auto-save
-            setInterval(() => {
-                saveGameState();
-            }, 30000); // Every 30 seconds
-        }
-
-        // ============================================
-        // ORDER SYSTEM
-        // ============================================
-        function searchForOrder() {
-            document.getElementById('searchingAnim').style.display = 'block';
-            document.getElementById('orderContent').style.display = 'none';
-            
-            setTimeout(() => {
-                generateOrder();
-            }, Math.random() * 2000 + 1500);
-        }
-
-        function generateOrder() {
-            const type = orderTypes[Math.floor(Math.random() * orderTypes.length)];
-            const distance = (Math.random() * (type.maxDist - type.minDist) + type.minDist).toFixed(1);
-            const time = Math.floor(distance * 3 + Math.random() * 5 + 5);
-            const payment = Math.floor(type.basePrice + (distance * 8) + Math.random() * 20);
-            
-            gameState.currentOrder = {
-                type: type,
-                distance: distance,
-                time: time,
-                payment: payment,
-                difficulty: type.difficulty
-            };
-            
-            document.getElementById('orderType').textContent = type.icon;
-            document.getElementById('orderPayment').textContent = payment + ' PLN';
-            document.getElementById('orderDistance').textContent = distance + ' км';
-            document.getElementById('orderTime').textContent = time + ' мин';
-            document.getElementById('orderDifficulty').textContent = '⭐'.repeat(type.difficulty);
-            document.getElementById('orderDescription').textContent = type.name + ' • Нажмите для принятия';
-            
-            document.getElementById('searchingAnim').style.display = 'none';
-            document.getElementById('orderContent').style.display = 'block';
-        }
-
-        function acceptOrder() {
-            if (!gameState.currentOrder) return;
-            
-            const order = gameState.currentOrder;
-            
-            // Check stats
-            if (gameState.energy < 10) {
-                showNotification('⚡ Недостаточно энергии!', 'danger');
-                return;
-            }
-            if (gameState.vehicleCondition < 20) {
-                showNotification('🚲 Велосипед требует ремонта!', 'danger');
-                return;
-            }
-            
-            showNotification(`🚴 Доставка ${order.type.name}...`, 'info');
-            
-            // Simulate delivery
-            setTimeout(() => {
-                completeOrder();
-            }, 3000);
-            
-            // Random event chance
-            if (Math.random() < 0.3) {
-                setTimeout(() => {
-                    triggerRandomEvent();
-                }, 1500);
-            }
-        }
-
-        function completeOrder() {
-            const order = gameState.currentOrder;
-            let payment = order.payment;
-            
-            // Bonus for good stats
-            if (gameState.mood > 80) {
-                payment = Math.floor(payment * 1.1);
-            }
-            
-            // Apply order effects
-            gameState.balance += payment;
-            gameState.totalDeliveries++;
-            gameState.totalEarned += payment;
-            
-            gameState.energy -= 15 + (order.difficulty * 5);
-            gameState.water -= 10 + (order.difficulty * 3);
-            gameState.strength -= 8 + (order.difficulty * 2);
-            gameState.mood -= 3;
-            gameState.vehicleCondition -= 2 + order.difficulty;
-            
-            // Animate balance
-            const balanceEl = document.getElementById('balance');
-            balanceEl.classList.add('earn');
-            setTimeout(() => balanceEl.classList.remove('earn'), 500);
-            
-            showNotification(`✅ +${payment} PLN доставлено!`, 'success');
-            vibrate([50, 50, 100]);
-            
-            checkAchievements();
-            updateUI();
-            saveGameState();
-            
-            gameState.currentOrder = null;
-            searchForOrder();
-        }
-
-        function triggerRandomEvent() {
-            const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
-            
-            const eventContainer = document.getElementById('eventContainer');
-            eventContainer.innerHTML = `
-                <div class="event-card">
-                    <div class="event-text">${event.icon} ${event.text}</div>
-                </div>
-            `;
-            
-            // Apply effects
-            if (event.effect.mood) gameState.mood += event.effect.mood;
-            if (event.effect.energy) gameState.energy += event.effect.energy;
-            if (event.effect.balance) gameState.balance += event.effect.balance;
-            if (event.effect.payment) gameState.currentOrder.payment *= event.effect.payment;
-            
-            updateUI();
-            
-            setTimeout(() => {
-                eventContainer.innerHTML = '';
-            }, 4000);
-        }
-
-        // ============================================
-        // ACHIEVEMENTS
-        // ============================================
-        function checkAchievements() {
-            if (gameState.totalDeliveries === 1 && !gameState.achievements.firstOrder) {
-                gameState.achievements.firstOrder = true;
-                showAchievement('🎯 Первый шаг', 'Выполнен первый заказ!');
-            }
-            if (gameState.totalDeliveries === 10 && !gameState.achievements.tenOrders) {
-                gameState.achievements.tenOrders = true;
-                showAchievement('📦 Опытный курьер', '10 доставок выполнено!');
-            }
-            if (gameState.balance >= 0 && !gameState.achievements.debtFree) {
-                gameState.achievements.debtFree = true;
-                showAchievement('💰 Без долгов', 'Долг погашен полностью!');
-            }
-            if (gameState.totalDeliveries === 100 && !gameState.achievements.hundredOrders) {
-                gameState.achievements.hundredOrders = true;
-                showAchievement('🏆 Легенда', '100 доставок!');
-            }
-        }
-
-        function showAchievement(title, text) {
-            const toast = document.createElement('div');
-            toast.className = 'achievement-toast';
-            toast.innerHTML = `<div style="font-size: 18px; margin-bottom: 5px;">${title}</div><div style="font-size: 13px;">${text}</div>`;
-            document.body.appendChild(toast);
-            
-            vibrate([100, 50, 100, 50, 200]);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 4000);
-        }
-
-        // ============================================
-        // NOTIFICATIONS
-        // ============================================
-        function showNotification(text, type = 'info') {
-            const notif = document.createElement('div');
-            notif.className = `notification ${type}`;
-            notif.textContent = text;
-            document.body.appendChild(notif);
-            
-            setTimeout(() => {
-                notif.remove();
-            }, 3000);
-        }
-
-        // ============================================
-        // MODAL SYSTEM
-        // ============================================
-        function showModal(header, body, buttons = null) {
-            document.getElementById('modalHeader').innerHTML = header;
-            document.getElementById('modalBody').innerHTML = body;
-            
-            if (buttons) {
-                document.getElementById('modalButtons').innerHTML = buttons;
-            } else {
-                document.getElementById('modalButtons').innerHTML = '<button class="btn btn-primary" onclick="closeModal()">Закрыть</button>';
-            }
-            
-            document.getElementById('modal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-        }
-
-        // Close modal on background click
-        document.getElementById('modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
+                // Если юзера нет, ставим 0
+                document.getElementById('display-balance').innerText = "0.00";
             }
         });
 
-        // ============================================
-        // NAVIGATION FUNCTIONS
-        // ============================================
-        function openShop() {
-            let shopHTML = '<div class="shop-items">';
+        // --- 4. ЗАГЛУШКА ДЛЯ КНОПОК ---
+        function doAction(action) {
+            // Вибрация
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             
-            shopItems.forEach((item, index) => {
-                const canAfford = gameState.balance >= item.price;
-                const disabledClass = canAfford ? '' : 'disabled';
-                
-                shopHTML += `
-                    <div class="shop-item ${disabledClass}" onclick="buyItem(${index})">
-                        <div class="shop-icon">${item.icon}</div>
-                        <div class="shop-name">${item.name}</div>
-                        <div class="shop-price">${item.price} PLN</div>
-                        <div class="shop-effect">${getEffectText(item.effect)}</div>
-                    </div>
-                `;
-            });
+            console.log("Нажато: " + action);
             
-            shopHTML += '</div>';
-            
-            showModal('🏪 Магазин', shopHTML);
+            // Тут пока ничего, просто пример клика
+            // Позже добавим функционал
         }
-
-        function getEffectText(effect) {
-            let text = '';
-            if (effect.water) text += `💧+${effect.water}% `;
-            if (effect.energy) text += `⚡${effect.energy > 0 ? '+' : ''}${effect.energy}% `;
-            if (effect.strength) text += `💪+${effect.strength}% `;
-            if (effect.mood) text += `😊+${effect.mood}% `;
-            if (effect.clothes) text += `👕+${effect.clothes}% `;
-            if (effect.connection) text += `📶+${effect.connection}% `;
-            if (effect.vehicle) text += `🚲+${effect.vehicle}% `;
-            return text.trim();
-        }
-
-        function buyItem(index) {
-            const item = shopItems[index];
-            
-            if (gameState.balance < item.price) {
-                showNotification('💸 Недостаточно средств!', 'danger');
-                vibrate([100]);
-                return;
-            }
-            
-            gameState.balance -= item.price;
-            
-            // Apply effects
-            if (item.effect.water) gameState.water = Math.min(100, gameState.water + item.effect.water);
-            if (item.effect.energy) gameState.energy = Math.min(100, gameState.energy + item.effect.energy);
-            if (item.effect.strength) gameState.strength = Math.min(100, gameState.strength + item.effect.strength);
-            if (item.effect.mood) gameState.mood = Math.min(100, gameState.mood + item.effect.mood);
-            if (item.effect.clothes) gameState.clothes = Math.min(100, gameState.clothes + item.effect.clothes);
-            if (item.effect.connection) gameState.connection = Math.min(100, gameState.connection + item.effect.connection);
-            if (item.effect.vehicle) gameState.vehicleCondition = Math.min(100, gameState.vehicleCondition + item.effect.vehicle);
-            
-            showNotification(`✅ Куплено: ${item.name}`, 'success');
-            vibrate([50]);
-            updateUI();
-            saveGameState();
-            closeModal();
-            
-            // Reopen shop to update
-            setTimeout(() => openShop(), 300);
-        }
-
-        function openBank() {
-            const debt = Math.abs(Math.min(0, gameState.balance));
-            
-            let bankHTML = `
-                <div class="info-row">
-                    <span class="info-label">💳 Текущий долг:</span>
-                    <span class="info-value" style="color: #ff6b6b;">${debt.toFixed(2)} PLN</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">💰 Доступно:</span>
-                    <span class="info-value" style="color: #51cf66;">${Math.max(0, gameState.balance).toFixed(2)} PLN</span>
-                </div>
-                <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
-                    ${debt > 0 ? 'Погасите долг для получения новых кредитов.' : 'Кредиты доступны после погашения текущего долга.'}
-                </div>
-            `;
-            
-            if (debt > 0 && gameState.balance > 0) {
-                bankHTML += `
-                    <button class="btn btn-success" onclick="payOffDebt()">
-                        Погасить долг (${Math.min(gameState.balance, debt).toFixed(2)} PLN)
-                    </button>
-                `;
-            }
-            
-            if (debt === 0) {
-                bankHTML += `
-                    <div class="credit-options">
-                        <div class="credit-option" onclick="takeCredit(500)">
-                            <div>
-                                <div class="credit-amount">500 PLN</div>
-                                <div class="credit-rate">10% в день</div>
-                            </div>
-                            <div>→</div>
-                        </div>
-                        <div class="credit-option" onclick="takeCredit(1000)">
-                            <div>
-                                <div class="credit-amount">1000 PLN</div>
-                                <div class="credit-rate">8% в день</div>
-                            </div>
-                            <div>→</div>
-                        </div>
-                        <div class="credit-option" onclick="takeCredit(5000)">
-                            <div>
-                                <div class="credit-amount">5000 PLN</div>
-                                <div class="credit-rate">6% в день</div>
-                            </div>
-                            <div>→</div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            showModal('🏦 Банк', bankHTML);
-        }
-
-        function payOffDebt() {
-            const debt = Math.abs(Math.min(0, gameState.balance));
-            const payment = Math.min(gameState.balance, debt);
-            
-            gameState.balance -= payment;
-            showNotification(`💰 Погашено ${payment.toFixed(2)} PLN`, 'success');
-            updateUI();
-            saveGameState();
-            closeModal();
-        }
-
-        function takeCredit(amount) {
-            if (confirm(`Взять кредит ${amount} PLN? Вы сможете погасить его позже.`)) {
-                gameState.balance += amount;
-                showNotification(`💳 Кредит ${amount} PLN получен!`, 'success');
-                updateUI();
-                saveGameState();
-                closeModal();
-            }
-        }
-
-        function openGarage() {
-            if (gameState.totalDeliveries < 50) {
-                showModal('🔒 Автосалон закрыт', `Требуется 50 доставок.<br>У вас: ${gameState.totalDeliveries}`);
-                return;
-            }
-            
-            showModal('🚗 Автосалон', `
-                <div style="text-align: center; padding: 20px;">
-                    <div style="font-size: 48px; margin-bottom: 10px;">🚲</div>
-                    <div>Доступные транспорты:</div>
-                    <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
-                        🚲 Электровелосипед - 2000 PLN<br>
-                        🛴 Электросамокат - 3500 PLN<br>
-                        🏍️ Мопед - 8000 PLN
-                    </div>
-                    <div style="margin-top: 15px; font-size: 12px; opacity: 0.6;">
-                        (Функция в разработке)
-                    </div>
-                </div>
-            `);
-        }
-
-        function openStats() {
-            const achievementsCount = Object.values(gameState.achievements).filter(a => a).length;
-            const avgEarnings = gameState.totalDeliveries > 0 ? (gameState.totalEarned / gameState.totalDeliveries).toFixed(2) : 0;
-            
-            showModal('📊 Статистика', `
-                <div class="info-row">
-                    <span class="info-label">🎯 Всего доставок:</span>
-                    <span class="info-value">${gameState.totalDeliveries}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">💰 Всего заработано:</span>
-                    <span class="info-value">${gameState.totalEarned.toFixed(2)} PLN</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">📈 Средний чек:</span>
-                    <span class="info-value">${avgEarnings} PLN</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">🏆 Достижения:</span>
-                    <span class="info-value">${achievementsCount} / 5</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">🚲 Состояние велика:</span>
-                    <span class="info-value">${Math.round(gameState.vehicleCondition)}%</span>
-                </div>
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-danger" onclick="confirmReset()">🔄 Сбросить прогресс</button>
-                </div>
-            `);
-        }
-
-        function showStatInfo(statName) {
-            const statNames = {
-                energy: 'Энергия',
-                connection: 'Связь',
-                clothes: 'Одежда',
-                strength: 'Силы',
-                water: 'Вода',
-                mood: 'Настроение'
-            };
-            
-            const tips = {
-                energy: 'Восстанавливается кофе и энергетиками. Необходима для доставок.',
-                connection: 'Нужна для получения заказов. Купите повербанк.',
-                clothes: 'Влияет на репутацию. Покупайте новую одежду.',
-                strength: 'Восстанавливается едой. Влияет на скорость доставки.',
-                water: 'Критически важна! Покупайте воду регулярно.',
-                mood: 'Влияет на чаевые. Улучшается едой и событиями.'
-            };
-            
-            showNotification(`${statNames[statName]}: ${tips[statName]}`, 'info');
-        }
-
-        function confirmReset() {
-            showModal(
-                '⚠️ Подтверждение',
-                'Вы уверены? Весь прогресс будет удален!',
-                `
-                    <button class="btn btn-danger" onclick="resetProgress()">Да, сбросить</button>
-                    <button class="btn btn-primary" onclick="closeModal()">Отмена</button>
-                `
-            );
-        }
-
-        function resetProgress() {
-            localStorage.clear();
-            location.reload();
-        }
-
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
-        function vibrate(pattern = [50]) {
-            if (navigator.vibrate) {
-                navigator.vibrate(pattern);
-            }
-        }
-
-        // ============================================
-        // START GAME
-        // ============================================
-        window.addEventListener('load', () => {
-            initGame();
-            console.log("🚀 Warsaw Courier Sim v2.0 - Enhanced Edition");
-        });
 
     </script>
 </body>
