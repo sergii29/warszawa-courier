@@ -1,70 +1,72 @@
 <body>
-  <h1>Warszawa Courier</h1>
+  <div class="app">
 
-  <div id="hud"></div>
+    <!-- HUD -->
+    <div class="hud">
+      <div class="stat money">💰 <span id="money">0</span></div>
+      <div class="stat energy">⚡ <span id="energy">0</span></div>
+      <div class="stat stress">😵 <span id="stress">0</span></div>
+    </div>
 
-  <button id="orderBtn">🚴 Взять заказ</button>
-  <button id="restBtn">🛏 Отдохнуть</button>
-  <button id="timeBtn">🌗 День / Ночь</button>
+    <!-- CENTER -->
+    <div class="center">
+      <div id="time" class="time">День ☀️</div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+      <button id="orderBtn" class="btn primary">🚴 Заказ</button>
+      <button id="restBtn" class="btn">🛏 Отдых</button>
+      <button id="timeBtn" class="btn">🌗</button>
+    </div>
+
+  </div>
 
   <script type="module">
     import { state } from "./state.js";
     import { saveState, loadState } from "./save.js";
 
-    const hud = document.getElementById("hud");
+    const moneyEl = document.getElementById("money");
+    const energyEl = document.getElementById("energy");
+    const stressEl = document.getElementById("stress");
+    const timeEl = document.getElementById("time");
+
     const orderBtn = document.getElementById("orderBtn");
     const restBtn = document.getElementById("restBtn");
     const timeBtn = document.getElementById("timeBtn");
 
     function render() {
-      let warning = "";
-      if (state.energy <= 0) warning = "⚠️ Ты выжат. Нужно отдохнуть.";
-      if (state.stress >= 100) warning = "🚨 Нервный срыв! Штрафы растут.";
-
-      hud.innerHTML = `
-        🕒 Время: ${state.isNight ? "Ночь 🌙" : "День ☀️"}<br>
-        ⭐ Уровень: ${state.level} (XP: ${state.xp})<br>
-        💰 Деньги: ${state.money}<br>
-        ⚡ Энергия: ${state.energy}<br>
-        😵 Стресс: ${state.stress}<br>
-        <b>${warning}</b>
-      `;
+      moneyEl.textContent = state.money;
+      energyEl.textContent = state.energy;
+      stressEl.textContent = state.stress;
+      timeEl.textContent = state.isNight ? "Ночь 🌙" : "День ☀️";
     }
 
     orderBtn.onclick = () => {
-      if (state.energy <= 0) {
-        alert("Ты выжат. Отдыхай.");
-        return;
-      }
+      orderBtn.classList.add("press");
+      setTimeout(() => orderBtn.classList.remove("press"), 150);
+
+      if (state.energy <= 0) return alert("Нужно отдохнуть");
 
       const roll = Math.random();
       state.energy -= state.isNight ? 15 : 10;
 
-      if (roll < 0.6) {
-        state.money += state.isNight ? 80 : 50;
-      } else if (roll < 0.85) {
-        state.money += state.isNight ? 180 : 120;
-        alert("VIP клиент 💸");
-      } else {
-        state.money -= state.stress >= 100 ? 80 : 40;
+      if (roll < 0.6) state.money += state.isNight ? 80 : 50;
+      else if (roll < 0.85) state.money += state.isNight ? 180 : 120;
+      else {
+        state.money -= 40;
         state.stress += 15;
-        alert("Проблема с заказом 😡");
       }
 
       state.stress += 5;
-
-      state.xp += state.isNight ? 20 : 10;
-      if (state.xp >= state.level * 100) {
-        state.xp = 0;
-        state.level += 1;
-        alert("Новый уровень ⭐");
-      }
-
       saveState(state);
       render();
     };
 
     restBtn.onclick = () => {
+      restBtn.classList.add("press");
+      setTimeout(() => restBtn.classList.remove("press"), 150);
+
       state.energy = Math.min(100, state.energy + 30);
       state.stress = Math.max(0, state.stress - 20);
       saveState(state);
