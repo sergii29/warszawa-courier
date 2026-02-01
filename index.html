@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier</title>
+    <title>Warsaw Courier</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
@@ -13,68 +13,38 @@
             --lime: #c8ff00;
             --dark: #1a1a1a;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: white; font-family: sans-serif; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: white; font-family: 'Arial', sans-serif; }
 
-        /* Верхняя зона (Статичная) */
         #top-info {
-            height: 120px;
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 1px solid var(--grid);
+            height: 110px; background: var(--bg);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-bottom: 2px solid var(--grid);
         }
-        .warsaw-text { font-size: 14px; font-weight: 900; letter-spacing: 4px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+        .warsaw-text { font-size: 14px; font-weight: 900; letter-spacing: 5px; color: #999; text-transform: uppercase; margin-bottom: 5px; }
         .balance-pill { 
-            background: white; padding: 12px 40px; border-radius: 50px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08); font-size: 1.4rem; font-weight: bold;
+            background: white; padding: 10px 35px; border-radius: 50px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06); font-size: 1.4rem; font-weight: bold;
         }
 
-        /* Игровое поле (Изолировано от баланса) */
         #game-container {
-            position: relative;
-            width: 100%;
-            height: calc(100vh - 400px); /* Четкое ограничение высоты */
+            position: relative; width: 100%; height: calc(100vh - 380px);
             background-color: var(--bg);
-            background-image: 
-                linear-gradient(var(--grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 30px 30px;
-            overflow: hidden;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px; overflow: hidden;
         }
 
-        /* Персонаж и Цели */
-        .entity { position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: all 0.15s ease-out; }
-        #player { background: var(--lime); border: 2px solid var(--dark); border-radius: 6px; font-size: 16px; z-index: 20; }
-        #target { font-size: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        .entity { position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        #player { background: var(--lime); border: 2px solid var(--dark); border-radius: 4px; z-index: 20; transition: left 0.1s, top 0.1s; }
+        #target { font-size: 22px; z-index: 15; }
+        .obs { font-size: 16px; opacity: 0.7; }
 
-        /* Нижняя панель управления */
-        #ui-bottom {
-            height: 280px;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
+        #ui-bottom { height: 270px; background: white; display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+        #status-bar { height: 25px; font-weight: bold; color: #555; font-size: 14px; margin-bottom: 15px; }
 
-        #status-bar { height: 30px; font-weight: bold; color: #666; font-size: 14px; margin-bottom: 10px; }
-
-        .joy-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 80px);
-            grid-template-rows: repeat(2, 70px);
-            gap: 12px;
-        }
-        .btn-move {
-            background: #f0f0f0; border: none; border-radius: 18px;
-            font-size: 28px; color: var(--dark); 
-            box-shadow: 0 4px 0 #d0d0d0;
-        }
-        .btn-move:active { background: var(--lime); box-shadow: 0 0 0; transform: translateY(4px); }
+        .joy-grid { display: grid; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(2, 75px); gap: 10px; }
+        .btn-move { background: #f2f2f2; border: none; border-radius: 20px; font-size: 30px; color: var(--dark); box-shadow: 0 4px 0 #ddd; cursor: pointer; }
+        .btn-move:active { background: var(--lime); box-shadow: none; transform: translateY(4px); }
         
         .up { grid-column: 2; }
         .left { grid-column: 1; grid-row: 2; }
@@ -82,9 +52,9 @@
         .right { grid-column: 3; grid-row: 2; }
 
         #btn-online {
-            width: 90%; background: var(--lime); border: none; padding: 20px;
-            border-radius: 15px; font-size: 1.1rem; font-weight: 800; cursor: pointer;
-            box-shadow: 0 4px 0 #a2ce00; margin-bottom: 20px;
+            width: 85%; background: var(--lime); border: none; padding: 20px;
+            border-radius: 15px; font-size: 1.2rem; font-weight: 800; cursor: pointer;
+            box-shadow: 0 4px 0 #a2ce00;
         }
     </style>
 </head>
@@ -101,10 +71,8 @@
 </div>
 
 <div id="ui-bottom">
-    <div id="status-bar">Нажмите кнопку, чтобы начать</div>
-    
+    <div id="status-bar">Готов к смене в Варшаве?</div>
     <button id="btn-online" onclick="goOnline()">ВЫЙТИ В ОНЛАЙН</button>
-
     <div class="joy-grid" id="controls" style="display: none;">
         <button class="btn-move up" onclick="move(0, -30)">↑</button>
         <button class="btn-move left" onclick="move(-30, 0)">←</button>
@@ -114,10 +82,11 @@
 </div>
 
 <script>
-    let playerPos = { x: 150, y: 150 };
+    let playerPos = { x: 30, y: 30 };
     let targetPos = { x: 0, y: 0 };
     let balance = 0.00;
-    let jobState = 'NONE'; // RESTAURANT, CLIENT
+    let jobState = 'NONE';
+    let occupiedNodes = []; // Массив занятых преградами клеток
     const step = 30;
 
     function goOnline() {
@@ -129,35 +98,41 @@
 
     function spawnObstacles() {
         document.querySelectorAll('.obs').forEach(o => o.remove());
-        for(let i=0; i<12; i++) {
-            let ox = Math.floor(Math.random() * (window.innerWidth / step)) * step;
-            let oy = Math.floor(Math.random() * (document.getElementById('game-container').offsetHeight / step)) * step;
-            if(ox === playerPos.x && oy === playerPos.y) continue;
-            let div = document.createElement('div');
-            div.className = 'entity obs';
-            div.style.left = ox + 'px';
-            div.style.top = oy + 'px';
-            div.innerText = '🚧';
-            document.getElementById('game-container').appendChild(div);
+        occupiedNodes = [];
+        const container = document.getElementById('game-container');
+        const cols = Math.floor(container.offsetWidth / step);
+        const rows = Math.floor(container.offsetHeight / step);
+
+        for(let i=0; i < 18; i++) {
+            let ox = Math.floor(Math.random() * cols) * step;
+            let oy = Math.floor(Math.random() * rows) * step;
+            
+            // Проверка: не спавним там, где игрок (и в радиусе 1 клетки)
+            let distToPlayer = Math.abs(ox - playerPos.x) + Math.abs(oy - playerPos.y);
+            
+            if(distToPlayer > step * 2) {
+                occupiedNodes.push({x: ox, y: oy});
+                let div = document.createElement('div');
+                div.className = 'entity obs';
+                div.style.left = ox + 'px';
+                div.style.top = oy + 'px';
+                div.innerText = '🚧';
+                container.appendChild(div);
+            }
         }
     }
 
     function move(dx, dy) {
         let nx = playerPos.x + dx;
         let ny = playerPos.y + dy;
-
-        // Ограничения поля
         const container = document.getElementById('game-container');
-        if(nx < 0 || nx >= container.offsetWidth || ny < 0 || ny >= container.offsetHeight) return;
 
-        // Проверка столкновения с преградами
-        let blocked = false;
-        document.querySelectorAll('.obs').forEach(o => {
-            if(parseInt(o.style.left) === nx && parseInt(o.style.top) === ny) blocked = true;
-        });
+        if(nx < 0 || nx >= (Math.floor(container.offsetWidth/step)*step) || 
+           ny < 0 || ny >= (Math.floor(container.offsetHeight/step)*step)) return;
 
-        if(blocked) {
-            document.getElementById('status-bar').innerText = "🚧 ПРЕГРАДА! ОБЪЕЗЖАЙ!";
+        // Проверка на преграду
+        if(occupiedNodes.some(node => node.x === nx && node.y === ny)) {
+            document.getElementById('status-bar').innerText = "🚧 ПУТЬ ПЕРЕКРЫТ!";
             return;
         }
 
@@ -166,37 +141,50 @@
         checkTarget();
     }
 
+    function getFreeNode() {
+        const container = document.getElementById('game-container');
+        const cols = Math.floor(container.offsetWidth / step);
+        const rows = Math.floor(container.offsetHeight / step);
+        let node;
+        let isOccupied = true;
+
+        while(isOccupied) {
+            node = {
+                x: Math.floor(Math.random() * cols) * step,
+                y: Math.floor(Math.random() * rows) * step
+            };
+            // Проверка: клетка не занята преградой и не занята игроком
+            isOccupied = occupiedNodes.some(n => n.x === node.x && n.y === node.y) || 
+                         (node.x === playerPos.x && node.y === playerPos.y);
+        }
+        return node;
+    }
+
     function newOrder() {
         jobState = 'RESTAURANT';
-        targetPos = { 
-            x: Math.floor(Math.random() * 8 + 1) * step, 
-            y: Math.floor(Math.random() * 6 + 1) * step 
-        };
+        targetPos = getFreeNode();
         const t = document.getElementById('target');
         t.style.display = 'flex';
         t.style.left = targetPos.x + 'px';
         t.style.top = targetPos.y + 'px';
         t.innerHTML = '🍕';
-        document.getElementById('status-bar').innerText = "Новый заказ! Едь в ресторан.";
+        document.getElementById('status-bar').innerText = "Едь в ресторан (Pizza)";
     }
 
     function checkTarget() {
         if(playerPos.x === targetPos.x && playerPos.y === targetPos.y) {
             if(jobState === 'RESTAURANT') {
                 jobState = 'CLIENT';
-                targetPos = { 
-                    x: Math.floor(Math.random() * 8 + 1) * step, 
-                    y: Math.floor(Math.random() * 6 + 1) * step 
-                };
+                targetPos = getFreeNode();
                 const t = document.getElementById('target');
                 t.style.left = targetPos.x + 'px';
                 t.style.top = targetPos.y + 'px';
                 t.innerHTML = '📍';
-                document.getElementById('status-bar').innerText = "Забрал! Вези клиенту.";
+                document.getElementById('status-bar').innerText = "Вези клиенту!";
             } else if(jobState === 'CLIENT') {
-                balance += 14.50;
-                document.getElementById('status-bar').innerText = "Доставлено! +14.50 PLN";
-                newOrder();
+                balance += 15.00;
+                document.getElementById('status-bar').innerText = "Успех! +15.00 PLN";
+                newOrder(); // Новый цикл
             }
         }
     }
