@@ -10,9 +10,11 @@
   <p id="status">loading…</p>
 
   <script type="module">
-    import { db } from "./firebase.js";
-    document.getElementById("status").innerText = "Firebase подключён";
-    console.log("DB:", db);
-  </script>
-</body>
-</html>
+  import { state } from "./state.js";
+
+  document.getElementById("status").innerHTML = `
+    💰 Деньги: ${state.money}<br>
+    ⚡ Энергия: ${state.energy}<br>
+    😵 Стресс: ${state.stress}
+  `;
+</script>
