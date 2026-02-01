@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier: DEBUG</title>
-    
+    <title>Warsaw Courier: Full</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -20,409 +19,446 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Arial', sans-serif; }
 
-        /* --- КНОПКА МЕНЮ (3 ПОЛОСКИ) --- */
+        /* --- КНОПКА МЕНЮ (БУРГЕР) --- */
         #hamburger-btn {
-            position: fixed; /* Фиксируем намертво */
-            top: 15px; left: 15px;
-            width: 50px; height: 50px; 
-            background: white; 
-            border: 2px solid var(--dark);
-            border-radius: 10px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-            cursor: pointer;
-            z-index: 10000; /* Поверх всего */
-            box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+            position: fixed; top: 15px; left: 15px;
+            width: 45px; height: 45px; background: white; border: 2px solid #eee; border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            cursor: pointer; z-index: 5000; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        #hamburger-btn:active { transform: translateY(3px); box-shadow: none; }
-        .line { width: 30px; height: 4px; background: var(--dark); border-radius: 2px; }
-
-        /* --- UI TOP --- */
-        #top-info {
-            height: 140px; background: var(--bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border-bottom: 2px solid var(--grid);
-            position: relative; z-index: 100;
-            padding-top: 20px;
-        }
-        .balance-pill { 
-            background: white; padding: 5px 30px; border-radius: 50px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); font-size: 1.8rem; font-weight: 800; color: var(--dark);
-            border: 1px solid #eee; margin-bottom: 5px;
-        }
-        .stats-container { width: 90%; display: flex; justify-content: space-between; margin-top: 5px; }
-        .stat-box { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: bold; width: 48%; }
-        .bar-bg { flex-grow: 1; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 100%; transition: width 0.3s; }
-        #energy-bar { background: orange; }
-        #water-bar { background: #00aaff; }
-        #bike-hp-bar { background: #555; }
+        .line { width: 24px; height: 3px; background: var(--dark); border-radius: 2px; }
 
         /* --- БОКОВОЕ МЕНЮ --- */
         #sidebar-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 10001; display: none;
+            background: rgba(0,0,0,0.5); z-index: 5001; display: none;
         }
         #sidebar {
-            position: fixed; top: 0; left: -320px; /* Спрятано */
-            width: 85%; max-width: 300px; height: 100%;
-            background: #fff; z-index: 10002;
-            transition: left 0.3s ease-in-out;
-            display: flex; flex-direction: column;
-            border-right: 2px solid var(--dark);
+            position: fixed; top: 0; left: -320px; width: 85%; max-width: 300px; height: 100%;
+            background: #fff; z-index: 5002; transition: left 0.3s ease;
+            display: flex; flex-direction: column; border-right: 1px solid #ddd;
         }
-        #sidebar.open { left: 0; } 
+        #sidebar.open { left: 0; }
 
-        .sidebar-header {
-            padding: 20px; background: var(--dark); color: white;
-            display: flex; justify-content: space-between; align-items: center;
+        .sidebar-header { padding: 20px; background: var(--dark); color: white; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-tabs { display: flex; background: #f4f4f4; padding: 10px; gap: 5px; overflow-x: auto; }
+        .tab { padding: 8px 12px; background: white; border-radius: 6px; font-size: 12px; font-weight: bold; border: 1px solid #ccc; cursor: pointer; white-space: nowrap; }
+        .tab.active { background: var(--lime); border-color: #999; }
+        .sidebar-content { flex-grow: 1; overflow-y: auto; padding: 15px; }
+
+        .shop-item { background: #fafafa; border: 1px solid #eee; padding: 12px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .buy-btn { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ --- */
+        #top-info {
+            height: 140px; background: var(--bg); border-bottom: 2px solid var(--grid);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; z-index: 100; padding-top: 10px;
         }
-        .sidebar-tabs { display: flex; background: #eee; padding: 10px; gap: 5px; overflow-x: auto; }
-        .tab { 
-            padding: 8px 10px; background: white; border-radius: 5px; font-size: 12px; font-weight: bold; 
-            border: 1px solid #ccc; cursor: pointer; white-space: nowrap;
+        .balance-pill { 
+            background: white; padding: 6px 25px; border-radius: 50px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); font-size: 1.6rem; font-weight: 800; color: var(--dark);
+            border: 1px solid #eee; margin-bottom: 5px;
         }
-        .tab.active { background: var(--lime); border-color: black; }
-        .sidebar-content { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        
-        /* Элементы магазина */
-        .shop-item {
-            background: #fff; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .buy-btn { background: var(--dark); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;}
+        .stats-container { width: 90%; display: flex; justify-content: space-between; margin-top: 5px; }
+        .stat-box { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: bold; width: 48%; }
+        .bar-bg { flex-grow: 1; height: 6px; background: #ddd; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.3s; }
+        #energy-bar { background: orange; }
+        #water-bar { background: #00aaff; }
+        #hp-bar { background: #555; }
 
         /* --- ИГРОВОЕ ПОЛЕ --- */
         #game-container {
             position: relative; width: 100%; height: calc(100vh - 410px);
-            background-image: radial-gradient(var(--grid) 15%, transparent 16%);
-            background-size: 20px 20px; overflow: hidden;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px; overflow: hidden;
         }
-        .entity { 
-            position: absolute; width: 30px; height: 30px; 
-            display: flex; align-items: center; justify-content: center; 
-            z-index: 10; font-size: 20px; transition: all 0.2s linear;
-        }
+        .entity { position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 18px; transition: all 0.2s linear; }
         #player { background: var(--lime); border: 2px solid var(--dark); border-radius: 50%; z-index: 20; font-size: 16px; }
+        .obs { opacity: 0.6; z-index: 5; font-size: 16px; }
+        .police { font-size: 20px; z-index: 15; transition: left 0.5s ease, top 0.5s ease; }
 
-        /* --- КНОПКИ УПРАВЛЕНИЯ --- */
+        /* --- УПРАВЛЕНИЕ --- */
         #ui-bottom { 
-            height: 270px; background: white; 
-            display: flex; flex-direction: column; align-items: center; padding-top: 10px; 
-            border-top: 2px solid var(--grid); z-index: 90;
+            height: 270px; background: white; border-top: 2px solid #eee;
+            display: flex; flex-direction: column; align-items: center; padding-top: 15px; 
+            z-index: 90; position: relative;
         }
         #btn-online {
-            width: 80%; padding: 15px; background: var(--lime); border: 2px solid var(--dark);
-            font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 10px;
+            width: 85%; padding: 20px; background: var(--lime); border: none; border-radius: 15px;
+            font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 0 4px 0 #a2ce00; color: var(--dark);
         }
-        .joy-grid { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 5px; margin-top: 10px; }
-        .btn-move { background: #eee; border: 1px solid #ccc; font-size: 24px; border-radius: 10px; }
-        .btn-move:active { background: #ccc; }
+        #btn-offline {
+            margin-top: 10px; width: 150px; padding: 8px; background: #ff4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;
+        }
+        .joy-grid { display: none; grid-template-columns: repeat(3, 70px); grid-template-rows: repeat(2, 65px); gap: 8px; margin-top: 10px; }
+        .btn-move { background: #f4f4f4; border: 1px solid #ddd; border-radius: 12px; font-size: 24px; box-shadow: 0 4px 0 #eee; }
+        .btn-move:active { background: var(--lime); transform: translateY(2px); box-shadow: none; }
         .up { grid-column: 2; }
         .left { grid-column: 1; grid-row: 2; }
         .down { grid-column: 2; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
 
-        /* УВЕДОМЛЕНИЯ ОБ ОШИБКАХ */
-        #error-log {
-            position: fixed; bottom: 0; left: 0; width: 100%; max-height: 100px;
-            background: rgba(0,0,0,0.8); color: red; font-size: 10px; 
-            overflow-y: scroll; z-index: 20000; padding: 5px; display: none;
-        }
         .toast {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9); color: white; padding: 10px 20px; border-radius: 20px;
-            display: none; z-index: 20000;
+            background: rgba(0,0,0,0.85); color: white; padding: 15px 25px;
+            border-radius: 30px; font-weight: bold; z-index: 6000; display: none; text-align: center;
         }
+        .toast.red { background: rgba(220, 30, 30, 0.9); }
     </style>
 </head>
 <body>
 
-<div id="error-log"></div>
-
 <div id="hamburger-btn" onclick="toggleMenu()">
-    <div class="line"></div>
-    <div class="line"></div>
-    <div class="line"></div>
+    <div class="line"></div><div class="line"></div><div class="line"></div>
 </div>
 
 <div id="sidebar-overlay" onclick="toggleMenu()"></div>
 <div id="sidebar">
     <div class="sidebar-header">
-        <span>МЕНЮ</span>
-        <span onclick="toggleMenu()" style="font-size:24px; cursor:pointer;">✕</span>
+        <span>Warsaw OS</span> <span onclick="toggleMenu()" style="cursor:pointer; font-size:20px">✕</span>
     </div>
     <div class="sidebar-tabs">
         <div class="tab active" onclick="renderShop()">Магазин</div>
         <div class="tab" onclick="renderGarage()">Гараж</div>
-        <div class="tab" onclick="alert('Банк закрыт')">Банк</div>
+        <div class="tab" onclick="alert('Банк скоро')">Банк</div>
     </div>
-    <div id="menu-content" class="sidebar-content">
-        </div>
-    <div style="padding:10px; font-size:10px; text-align:center; color:#999;">ID: <span id="uid-disp">...</span></div>
+    <div id="menu-content" class="sidebar-content"></div>
+    <div style="text-align:center; font-size:10px; color:#ccc; padding:10px">ID: <span id="uid-disp">...</span></div>
 </div>
 
-<div id="toast" class="toast">Info</div>
+<div id="toast" class="toast">Alert</div>
 
 <div id="top-info">
+    <div style="font-size:10px; color:#999; font-weight:900; letter-spacing:2px; margin-bottom:5px">WARSZAWA COURIER</div>
     <div class="balance-pill"><span id="cash">0.00</span> PLN</div>
+    
     <div class="stats-container">
-        <div class="stat-box">⚡ <div class="bar-bg"><div id="energy-bar" class="bar-fill" style="width:100%"></div></div></div>
-        <div class="stat-box">💧 <div class="bar-bg"><div id="water-bar" class="bar-fill" style="width:100%"></div></div></div>
+        <div class="stat-box">⚡ <div class="bar-bg"><div id="energy-bar" class="bar-fill"></div></div></div>
+        <div class="stat-box">💧 <div class="bar-bg"><div id="water-bar" class="bar-fill"></div></div></div>
     </div>
-    <div class="stats-container" style="margin-top:5px">
-        <div class="stat-box" style="width:100%">🚲 <div class="bar-bg"><div id="bike-bar" class="bar-fill" style="width:100%; background:#555"></div></div></div>
+    <div class="stats-container" style="margin-top:5px;">
+        <div class="stat-box" style="width:100%">🚲 <div class="bar-bg"><div id="hp-bar" class="bar-fill"></div></div></div>
     </div>
 </div>
 
 <div id="game-container">
     <div id="player" class="entity">🚲</div>
-    <div id="target" class="entity" style="display:none">🍕</div>
+    <div id="target" class="entity" style="display:none"></div>
 </div>
 
 <div id="ui-bottom">
-    <button id="btn-online" onclick="goOnline()">НАЧАТЬ РАБОТУ</button>
-    <div class="joy-grid" id="controls" style="display:none">
+    <div id="status-text" style="margin-bottom:10px; font-weight:bold; color:#555; font-size:12px;">Смена не начата</div>
+    <button id="btn-online" onclick="goOnline()">ВЫЙТИ В ОНЛАЙН</button>
+    
+    <div class="joy-grid" id="controls">
         <button class="btn-move up" onclick="move(0, -30)">↑</button>
         <button class="btn-move left" onclick="move(-30, 0)">←</button>
         <button class="btn-move down" onclick="move(0, 30)">↓</button>
         <button class="btn-move right" onclick="move(30, 0)">→</button>
     </div>
+    <button id="btn-offline" onclick="goOffline()">ЗАКОНЧИТЬ СМЕНУ</button>
 </div>
 
 <script>
-    // 1. ЛОВИМ ОШИБКИ, ЧТОБЫ ТЫ ИХ ВИДЕЛ
-    window.onerror = function(msg, url, line) {
-        const log = document.getElementById('error-log');
-        log.style.display = 'block';
-        log.innerHTML += `ERR: ${msg} (Line ${line})<br>`;
-        return false;
+    // --- 1. FIREBASE & USER ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
+        authDomain: "warszawa-courier.firebaseapp.com",
+        databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "warszawa-courier",
+        storageBucket: "warszawa-courier.firebasestorage.app",
+        messagingSenderId: "295860613508",
+        appId: "1:295860613508:web:86fe8364377d6875612dd1",
+        measurementId: "G-TGSCHBVLX2"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    // 2. ИНИЦИАЛИЗАЦИЯ
-    let db = null;
-    let userId = 'demo_user';
-
-    try {
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        userId = tg.initDataUnsafe?.user?.id || 'browser_test_' + Math.floor(Math.random()*1000);
-        document.getElementById('uid-disp').innerText = userId;
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
-            authDomain: "warszawa-courier.firebaseapp.com",
-            databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "warszawa-courier",
-            storageBucket: "warszawa-courier.firebasestorage.app",
-            messagingSenderId: "295860613508",
-            appId: "1:295860613508:web:86fe8364377d6875612dd1",
-            measurementId: "G-TGSCHBVLX2"
-        };
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        console.log("DB OK");
-    } catch (e) {
-        console.error("Firebase/TG Fail:", e);
-        showToast("Ошибка соединения! Играем оффлайн.");
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    // Генерируем уникальный ID для браузера или берем из ТГ
+    let userId = tg.initDataUnsafe?.user?.id || localStorage.getItem('wc_real_id');
+    if(!userId) {
+        userId = 'user_' + Date.now(); // Уникальный ID, чтобы баланс был 0
+        localStorage.setItem('wc_real_id', userId);
     }
+    document.getElementById('uid-disp').innerText = userId;
 
-    // 3. ПЕРЕМЕННЫЕ ИГРЫ
+    // --- 2. STATE ---
     let state = {
-        bal: 0, en: 100, wat: 100, hp: 100,
+        bal: 0.00, en: 100, wat: 100, hp: 100,
         x: 30, y: 30,
         bike: 'default',
         bikes: ['default']
     };
-    
-    // 4. ЗАГРУЗКА ДАННЫХ
+    let isOnline = false;
+    let policeInterval = null;
+    let policeUnits = [];
+    let occupied = [];
+    let target = {x:0, y:0};
+    let jobStep = 0; // 0=none, 1=rest, 2=client
+
+    // --- 3. DB LOAD/SAVE ---
     function loadData() {
-        if(db) {
-            db.ref('users/' + userId).once('value', s => {
-                let d = s.val();
-                if(d) {
-                    state.bal = parseFloat(d.balance) || 0;
-                    state.en = d.energy ?? 100;
-                    state.wat = d.water ?? 100;
-                    state.hp = d.hp ?? 100;
-                    state.bikes = d.bikes || ['default'];
-                    state.bike = d.bike || 'default';
-                }
-                updateUI();
-            });
-        }
+        db.ref('users/' + userId).once('value', s => {
+            let d = s.val();
+            if(d) {
+                state.bal = parseFloat(d.balance) || 0;
+                state.en = d.energy ?? 100;
+                state.wat = d.water ?? 100;
+                state.hp = d.hp ?? 100;
+                state.bikes = d.bikes || ['default'];
+                state.bike = d.bike || 'default';
+            } else {
+                saveData(); // Создаем профиль
+            }
+            updateUI();
+        });
     }
     loadData();
 
     function saveData() {
-        if(db) {
-            db.ref('users/' + userId).update({
-                balance: state.bal, energy: state.en, water: state.wat, hp: state.hp,
-                bike: state.bike, bikes: state.bikes
-            });
-        }
-        updateUI();
+        db.ref('users/' + userId).update({
+            balance: state.bal, energy: state.en, water: state.wat, hp: state.hp,
+            bike: state.bike, bikes: state.bikes, lastLogin: Date.now()
+        });
     }
 
-    // 5. ЛОГИКА МЕНЮ (РАБОТАЕТ ЖЕЛЕЗНО)
+    // --- 4. MENU LOGIC ---
     function toggleMenu() {
         const sb = document.getElementById('sidebar');
         const ov = document.getElementById('sidebar-overlay');
         if(sb.classList.contains('open')) {
-            sb.classList.remove('open');
-            ov.style.display = 'none';
+            sb.classList.remove('open'); ov.style.display = 'none';
         } else {
-            sb.classList.add('open');
-            ov.style.display = 'block';
-            renderShop(); // Сразу грузим магазин
+            sb.classList.add('open'); ov.style.display = 'block';
+            renderShop();
         }
     }
 
     function renderShop() {
-        const c = document.getElementById('menu-content');
-        c.innerHTML = `
-            <div class="shop-item">
-                <div><b>Хот-дог (5 PLN)</b><br><small>+20 Энергии</small></div>
-                <button class="buy-btn" onclick="buy('food', 5)">Купить</button>
-            </div>
-            <div class="shop-item">
-                <div><b>Red Bull (12 PLN)</b><br><small>+50 Энергии</small></div>
-                <button class="buy-btn" onclick="buy('bull', 12)">Купить</button>
-            </div>
-            <div class="shop-item">
-                <div><b>E-Bike 250W (500 PLN)</b><br><small>Меньше усталости</small></div>
-                <button class="buy-btn" onclick="buyBike('ebike250', 500)">Купить</button>
-            </div>
+        document.getElementById('menu-content').innerHTML = `
+            <div class="shop-item"><div>🌭 Хот-дог (+20 Эн)</div><button class="buy-btn" onclick="buy('food', 5, 20, 0)">5 PLN</button></div>
+            <div class="shop-item"><div>🥤 Вода (+30 Воды)</div><button class="buy-btn" onclick="buy('water', 3, 0, 30)">3 PLN</button></div>
+            <div class="shop-item"><div>⚡ Red Bull (+50 Эн)</div><button class="buy-btn" onclick="buy('bull', 12, 50, 5)">12 PLN</button></div>
+            <div class="shop-item"><div>🚲 E-Bike 250W</div><button class="buy-btn" onclick="buyBike('ebike250', 500)">500 PLN</button></div>
         `;
     }
 
     function renderGarage() {
-        const c = document.getElementById('menu-content');
-        c.innerHTML = `<div style="padding:10px; text-align:center">
-            <h3>Твой байк: ${state.bike}</h3>
-            <p>Здоровье: ${state.hp.toFixed(0)}%</p>
-            <button class="buy-btn" style="width:100%; margin-bottom:10px" onclick="repair()">Починить (10 PLN)</button>
-            <hr>
-            <p>Доступно:</p>
-            ${state.bikes.map(b => `<div class="shop-item">${b} <button onclick="equip('${b}')">Взять</button></div>`).join('')}
-        </div>`;
+        document.getElementById('menu-content').innerHTML = `
+            <div style="padding:10px; text-align:center">
+                <h3>Твой: ${state.bike}</h3>
+                <p>Состояние: ${state.hp.toFixed(0)}%</p>
+                <button class="buy-btn" style="width:100%" onclick="repair()">Починить (15 PLN)</button>
+                <hr>
+                ${state.bikes.map(b => `<div class="shop-item">${b} <button class="buy-btn" onclick="equip('${b}')">Взять</button></div>`).join('')}
+            </div>
+        `;
     }
 
-    function buy(type, price) {
+    function buy(type, price, e, w) {
         if(state.bal >= price) {
-            state.bal -= price;
-            if(type === 'food') state.en = Math.min(100, state.en + 20);
-            if(type === 'bull') state.en = Math.min(100, state.en + 50);
-            showToast("Куплено!");
-            saveData();
-            renderShop(); // Обновить
-        } else {
-            showToast("Нет денег!");
-        }
+            state.bal -= price; state.en = Math.min(100, state.en+e); state.wat = Math.min(100, state.wat+w);
+            showToast("Куплено!"); saveData(); updateUI(); renderShop();
+        } else showToast("Нет денег!", true);
     }
-
     function buyBike(id, price) {
-        if(state.bikes.includes(id)) { showToast("Уже есть!"); return; }
+        if(state.bikes.includes(id)) return showToast("Уже есть!");
         if(state.bal >= price) {
-            state.bal -= price;
-            state.bikes.push(id);
-            showToast("Байк куплен!");
-            saveData();
-            renderShop();
-        } else { showToast("Нет денег!"); }
+            state.bal -= price; state.bikes.push(id); showToast("Куплен байк!");
+            saveData(); updateUI(); renderShop();
+        } else showToast("Нет денег!", true);
     }
-
     function repair() {
-        if(state.bal >= 10 && state.hp < 100) {
-            state.bal -= 10;
-            state.hp = 100;
-            showToast("Починил!");
-            saveData();
-            renderGarage();
-        } else { showToast("Не хватает денег или байк цел"); }
+        if(state.bal >= 15 && state.hp < 100) {
+            state.bal -= 15; state.hp = 100; showToast("Починил!"); saveData(); renderGarage(); updateUI();
+        } else showToast("Не хватает денег / цел", true);
     }
+    function equip(id) { state.bike = id; showToast("Взят: "+id); saveData(); renderGarage(); }
 
-    function equip(id) {
-        state.bike = id;
-        showToast("Взят: " + id);
-        saveData();
-        renderGarage();
-    }
+    // --- 5. GAME LOGIC ---
+    const step = 30;
 
-    // 6. ИГРОВОЙ ПРОЦЕСС
-    let isOnline = false;
     function goOnline() {
+        if(state.en < 10) return showToast("Мало энергии!", true);
         isOnline = true;
         document.getElementById('btn-online').style.display = 'none';
         document.getElementById('controls').style.display = 'grid';
-        spawnTarget();
+        document.getElementById('btn-offline').style.display = 'block';
+        document.getElementById('status-text').innerText = "Ищем заказ...";
+        
+        spawnObstacles();
+        spawnPolice();
+        
+        if(policeInterval) clearInterval(policeInterval);
+        policeInterval = setInterval(movePolice, 1500);
+        
+        startJob();
         updateUI();
+    }
+
+    function goOffline() {
+        isOnline = false;
+        document.getElementById('btn-online').style.display = 'block';
+        document.getElementById('controls').style.display = 'none';
+        document.getElementById('btn-offline').style.display = 'none';
+        document.getElementById('status-text').innerText = "Смена окончена";
+        document.querySelectorAll('.obs, .police').forEach(e => e.remove());
+        document.getElementById('target').style.display = 'none';
+        clearInterval(policeInterval);
+    }
+
+    function spawnObstacles() {
+        document.querySelectorAll('.obs').forEach(e => e.remove());
+        occupied = [];
+        const box = document.getElementById('game-container');
+        const cols = Math.floor(box.offsetWidth/step);
+        const rows = Math.floor(box.offsetHeight/step);
+        
+        for(let i=0; i<15; i++) {
+            let ox = Math.floor(Math.random()*cols)*step;
+            let oy = Math.floor(Math.random()*rows)*step;
+            if(Math.abs(ox-state.x)+Math.abs(oy-state.y) > 90) {
+                occupied.push({x:ox, y:oy});
+                let d = document.createElement('div');
+                d.className = 'entity obs'; d.innerText = '🚧';
+                d.style.left = ox+'px'; d.style.top = oy+'px';
+                box.appendChild(d);
+            }
+        }
+    }
+
+    function spawnPolice() {
+        document.querySelectorAll('.police').forEach(e => e.remove());
+        policeUnits = [];
+        const box = document.getElementById('game-container');
+        const cols = Math.floor(box.offsetWidth/step);
+        const rows = Math.floor(box.offsetHeight/step);
+        
+        for(let i=0; i<3; i++) {
+            let px = Math.floor(Math.random()*cols)*step;
+            let py = Math.floor(Math.random()*rows)*step;
+            if(!occupied.some(o=>o.x===px && o.y===py) && Math.abs(px-state.x)>90) {
+                let d = document.createElement('div');
+                d.className = 'entity police'; d.innerText = '🚓';
+                d.style.left = px+'px'; d.style.top = py+'px';
+                box.appendChild(d);
+                policeUnits.push({x:px, y:py, el:d});
+            }
+        }
+    }
+
+    function movePolice() {
+        if(!isOnline) return;
+        const box = document.getElementById('game-container');
+        const cols = Math.floor(box.offsetWidth/step);
+        const rows = Math.floor(box.offsetHeight/step);
+
+        policeUnits.forEach(p => {
+            let dirs = [{dx:0, dy:-30}, {dx:0, dy:30}, {dx:-30, dy:0}, {dx:30, dy:0}];
+            let m = dirs[Math.floor(Math.random()*4)];
+            let nx = p.x + m.dx; let ny = p.y + m.dy;
+            
+            // Проверка границ и стен
+            if(nx>=0 && ny>=0 && nx<cols*step && ny<rows*step && !occupied.some(o=>o.x===nx && o.y===ny)) {
+                p.x = nx; p.y = ny;
+                p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
+            }
+            if(p.x === state.x && p.y === state.y) catchPlayer();
+        });
+    }
+
+    function catchPlayer() {
+        showToast("ПОЛИЦИЯ! ШТРАФ 50 PLN!", true);
+        state.bal -= 50; if(state.bal<0) state.bal=0;
+        state.x = 30; state.y = 30; // Respawn
+        updateUI(); saveData();
     }
 
     function move(dx, dy) {
         if(!isOnline) return;
-        if(state.en <= 0) { showToast("НЕТ ЭНЕРГИИ! Скушай Хот-дог."); toggleMenu(); return; }
-        
+        if(state.en <= 0) { showToast("Нет энергии!", true); toggleMenu(); return; }
+        if(state.hp <= 0) { showToast("Велик сломан!", true); toggleMenu(); return; }
+
+        let nx = state.x + dx; let ny = state.y + dy;
+        const box = document.getElementById('game-container');
+        const cols = Math.floor(box.offsetWidth/step);
+        const rows = Math.floor(box.offsetHeight/step);
+
         // Границы
-        let nx = state.x + dx;
-        let ny = state.y + dy;
-        // Просто проверка границ контейнера примерно
-        let maxW = document.getElementById('game-container').offsetWidth - 30;
-        let maxH = document.getElementById('game-container').offsetHeight - 30;
-        
-        if(nx < 0 || ny < 0 || nx > maxW || ny > maxH) return;
+        if(nx<0 || ny<0 || nx>=cols*step || ny>=rows*step) return;
+        // Стены
+        if(occupied.some(o=>o.x===nx && o.y===ny)) { showToast("Тупик"); return; }
+        // Полиция
+        if(policeUnits.some(p=>p.x===nx && p.y===ny)) { catchPlayer(); return; }
 
         state.x = nx; state.y = ny;
-        state.en -= (state.bike === 'ebike250' ? 0.5 : 1.5);
-        state.wat -= 0.5;
-        state.hp -= 0.2;
-
-        checkCollisions();
-        updateUI();
-        saveData();
-    }
-
-    let target = {x: 100, y: 100, active: true};
-    function spawnTarget() {
-        let maxW = document.getElementById('game-container').offsetWidth - 60;
-        let maxH = document.getElementById('game-container').offsetHeight - 60;
-        target.x = Math.floor(Math.random() * maxW / 30) * 30;
-        target.y = Math.floor(Math.random() * maxH / 30) * 30;
-        target.active = true;
         
-        let t = document.getElementById('target');
-        t.style.display = 'flex';
-        t.style.left = target.x + 'px';
-        t.style.top = target.y + 'px';
+        // Расход
+        let drain = state.bike === 'ebike250' ? 0.3 : 1.0;
+        state.en -= drain; state.wat -= 0.5; state.hp -= 0.1;
+
+        checkJob();
+        updateUI(); saveData();
     }
 
-    function checkCollisions() {
-        // Простая проверка дистанции
-        if(Math.abs(state.x - target.x) < 20 && Math.abs(state.y - target.y) < 20 && target.active) {
-            state.bal += 15;
-            showToast("+15 PLN");
-            target.active = false;
-            setTimeout(spawnTarget, 500);
+    function startJob() {
+        jobStep = 1; 
+        spawnTarget('🍕');
+        document.getElementById('status-text').innerText = "Едь в ресторан (Пицца)";
+    }
+
+    function spawnTarget(icon) {
+        const box = document.getElementById('game-container');
+        const cols = Math.floor(box.offsetWidth/step);
+        const rows = Math.floor(box.offsetHeight/step);
+        
+        // Ищем свободное место
+        let tx, ty, ok=false;
+        while(!ok) {
+            tx = Math.floor(Math.random()*cols)*step;
+            ty = Math.floor(Math.random()*rows)*step;
+            ok = !occupied.some(o=>o.x===tx && o.y===ty) && !policeUnits.some(p=>p.x===tx && p.y===ty);
+        }
+        target = {x:tx, y:ty};
+        const el = document.getElementById('target');
+        el.style.display = 'flex'; el.innerText = icon || '📍';
+        el.style.left = tx+'px'; el.style.top = ty+'px';
+    }
+
+    function checkJob() {
+        if(state.x === target.x && state.y === target.y) {
+            if(jobStep === 1) {
+                jobStep = 2;
+                showToast("Пицца забрана!");
+                spawnTarget('👤');
+                document.getElementById('status-text').innerText = "Вези клиенту!";
+            } else if(jobStep === 2) {
+                state.bal += 15;
+                showToast("+15 PLN");
+                startJob(); // New loop
+            }
         }
     }
 
     function updateUI() {
         document.getElementById('cash').innerText = state.bal.toFixed(2);
-        document.getElementById('energy-bar').style.width = Math.max(0, state.en) + '%';
-        document.getElementById('water-bar').style.width = Math.max(0, state.wat) + '%';
-        document.getElementById('bike-bar').style.width = Math.max(0, state.hp) + '%';
+        document.getElementById('energy-bar').style.width = Math.max(0, state.en)+'%';
+        document.getElementById('water-bar').style.width = Math.max(0, state.wat)+'%';
+        document.getElementById('hp-bar').style.width = Math.max(0, state.hp)+'%';
         
-        let p = document.getElementById('player');
-        p.style.left = state.x + 'px';
-        p.style.top = state.y + 'px';
+        const p = document.getElementById('player');
+        p.style.left = state.x+'px'; p.style.top = state.y+'px';
     }
 
-    function showToast(msg) {
-        let t = document.getElementById('toast');
-        t.innerText = msg;
-        t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 1500);
+    function showToast(msg, red=false) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.className = red ? 'toast red' : 'toast';
+        t.style.display = 'block'; setTimeout(()=>t.style.display='none', 2000);
     }
-
 </script>
 </body>
 </html>
