@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Courier Pro: Warsaw</title>
+    <title>Courier Pro: Warsaw (Patched)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- ДИЗАЙН: DARK GLASS --- */
+        /* --- ДИЗАЙН ИНТЕРФЕЙСА --- */
         :root {
             --bg-glass: rgba(20, 20, 20, 0.85);
             --accent: #3b82f6; 
@@ -21,147 +21,91 @@
         }
 
         body {
-            margin: 0; padding: 0;
-            background: #000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: var(--text-main);
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            margin: 0; padding: 0; background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-main); overflow: hidden; height: 100vh;
+            display: flex; flex-direction: column;
         }
 
-        #map {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-            filter: grayscale(80%) invert(10%) contrast(110%);
-        }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; filter: grayscale(80%) invert(10%) contrast(110%); }
 
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            z-index: 10; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
 
         /* Верхняя панель */
         .top-bar {
             background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-            padding: 15px;
-            pointer-events: auto;
-            display: flex;
-            justify-content: space-between;
+            padding: 15px; pointer-events: auto; display: flex; justify-content: space-between;
         }
 
         .stats-card {
-            background: var(--bg-glass);
-            backdrop-filter: blur(10px);
-            padding: 10px 15px;
-            border-radius: var(--radius);
-            border: 1px solid rgba(255,255,255,0.1);
-            min-width: 100px;
+            background: var(--bg-glass); backdrop-filter: blur(10px);
+            padding: 10px 15px; border-radius: var(--radius);
+            border: 1px solid rgba(255,255,255,0.1); min-width: 100px;
         }
-
         .money-val { color: var(--success); font-size: 18px; font-weight: bold; }
         .res-bar-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top:2px; }
         .res-bar-fill { height: 100%; transition: width 0.3s; }
-        
+
+        /* Таймер доставки (НОВОЕ) */
+        #timer-widget {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(239, 68, 68, 0.9); padding: 5px 15px; border-radius: 20px;
+            font-weight: bold; font-family: monospace; font-size: 18px;
+            display: none; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+            animation: pulseTimer 1s infinite;
+        }
+        @keyframes pulseTimer { 0%{opacity:1;} 50%{opacity:0.8;} 100%{opacity:1;} }
+
         /* Нижняя панель */
         .bottom-dock {
-            background: var(--bg-glass);
-            backdrop-filter: blur(12px);
+            background: var(--bg-glass); backdrop-filter: blur(12px);
             border-top: 1px solid rgba(255,255,255,0.1);
-            padding: 20px 20px 40px 20px;
-            pointer-events: auto;
-            border-radius: 24px 24px 0 0;
+            padding: 20px 20px 40px 20px; pointer-events: auto; border-radius: 24px 24px 0 0;
         }
 
-        .nav-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         .nav-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.05);
-            color: #9ca3af;
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05);
+            color: #9ca3af; padding: 10px; border-radius: 12px; font-size: 11px;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;
         }
 
         .action-btn {
-            width: 100%;
-            background: var(--accent);
-            color: white;
-            font-size: 18px;
-            font-weight: 800;
-            padding: 18px;
-            border: none;
-            border-radius: var(--radius);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+            width: 100%; background: var(--accent); color: white;
+            font-size: 18px; font-weight: 800; padding: 18px; border: none;
+            border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
             transition: all 0.2s;
         }
         .btn-repair { background: var(--accent-repair) !important; }
-        .btn-tired { background: #555 !important; box-shadow: none !important; } /* Стиль для усталости */
+        .btn-tired { background: #555 !important; box-shadow: none !important; }
 
-        /* ЭКРАН ОТДЫХА */
+        /* Экраны и Модалки */
         #rest-overlay {
-            display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 2000;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-            color: white;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 2000; flex-direction: column;
+            justify-content: center; align-items: center; backdrop-filter: blur(5px); color: white;
         }
-        .pulse-text { animation: pulseSlow 2s infinite; }
-        @keyframes pulseSlow { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-
-        /* Модалка Предложения */
-        #offer-modal {
-            display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 500;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-        }
+        
+        #offer-modal, .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 500; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal { align-items: flex-end; background: rgba(0,0,0,0.6); z-index: 100; }
+        
         .offer-card {
             background: #1c1c1e; width: 85%; max-width: 320px; border-radius: 24px; padding: 25px;
-            text-align: center; border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        /* Обычные Модалки */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: flex-end; }
         .modal-content { background: #1c1c1e; width: 100%; padding: 20px; border-radius: 24px 24px 0 0; color: #fff; max-height: 80vh; overflow-y: auto; }
         
         .toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: #333; color: #fff; padding: 10px 20px;
-            border-radius: 30px; font-size: 13px; z-index: 3000;
-            display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border-radius: 30px; font-size: 13px; z-index: 3000; display: none;
+            border: 1px solid rgba(255,255,255,0.1);
         }
     </style>
 </head>
@@ -177,6 +121,8 @@
                 <div style="font-size:12px; color:#aaa; margin-top:5px;">РЕЙТИНГ</div>
                 <div style="color:var(--accent); font-weight:bold;" id="lvl-display">LVL 1</div>
             </div>
+            
+            <div id="timer-widget"><i class="fas fa-stopwatch"></i> <span id="time-left">00:00</span></div>
 
             <div class="stats-card" style="text-align:right;">
                 <div style="font-size:12px; color:#aaa;">ВЕЛОСИПЕД</div>
@@ -214,8 +160,8 @@
 
     <div id="rest-overlay" onclick="toggleRest()">
         <div style="font-size:60px; margin-bottom:20px;">😴</div>
-        <h2 class="pulse-text">ВОССТАНОВЛЕНИЕ СИЛ...</h2>
-        <p style="color:#aaa;">Нажми, чтобы встать</p>
+        <h2>ВОССТАНОВЛЕНИЕ СИЛ...</h2>
+        <p style="color:#ef4444; font-weight:bold;">ОСТОРОЖНО: Таймер заказа не останавливается!</p>
         <div style="width:200px; height:4px; background:#333; margin-top:20px; border-radius:2px;">
             <div id="rest-bar" style="width:0%; height:100%; background:#10b981; transition:width 0.2s;"></div>
         </div>
@@ -225,9 +171,12 @@
         <div class="offer-card">
             <h2 style="margin:0 0 15px 0;">📦 ЗАКАЗ</h2>
             <div style="font-size:32px; color:var(--success); font-weight:bold; margin-bottom:10px;" id="offer-price">0 PLN</div>
-            <p style="color:#aaa; font-size:12px; margin-bottom:20px;">У вас есть 10 секунд на решение</p>
+            <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; margin-bottom:15px;">
+                <div style="font-size:12px; color:#aaa;">Срок доставки:</div>
+                <div style="font-size:18px; font-weight:bold;" id="offer-time">--:--</div>
+            </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button onclick="rejectOrder()" style="background:#333; color:var(--danger); border:1px solid var(--danger); padding:15px; border-radius:12px; font-weight:bold;">ОТКАЗ<br><span style="font-size:10px">-5 PLN</span></button>
+                <button onclick="rejectOrder()" style="background:#333; color:var(--danger); border:1px solid var(--danger); padding:15px; border-radius:12px; font-weight:bold;">ОТКАЗ</button>
                 <button onclick="acceptOrder()" style="background:var(--success); color:white; border:none; padding:15px; border-radius:12px; font-weight:bold;">ПРИНЯТЬ</button>
             </div>
         </div>
@@ -244,272 +193,6 @@
     <div id="toast" class="toast"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        const SAVE_KEY = 'PROJECT2_ENERGY_V3'; 
-
-        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.2297, 21.0122], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
-
-        const courierIcon = L.divIcon({ html: '<div style="background:#3b82f6; width:15px; height:15px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px #3b82f6;"></div>', className: 'cm' });
-        const targetIcon = L.divIcon({ html: '<div style="background:#ef4444; width:15px; height:15px; border-radius:50%; border:2px solid white; animation: pulse 1s infinite;"></div>', className: 'tm' });
-
-        let courierMarker = L.marker([52.2297, 21.0122], {icon: courierIcon}).addTo(map);
-        let targetMarker = null;
-
-        let state = {
-            cash: 50,
-            energy: 100, water: 100, mood: 100,
-            bike: 100, gear: 100,
-            exp: 0, lvl: 1,
-            currentOrder: null
-        };
-        
-        let pendingOrder = null;
-        let offerInterval = null;
-        let isResting = false; // Режим отдыха
-        let lastDrinkTime = 0;
-
-        function init() {
-            loadGame();
-            updateUI();
-            updateMainButtonState();
-            setInterval(autoTick, 1000); // Тик раз в секунду
-            setInterval(saveGame, 5000);
-        }
-
-        // --- ЛОГИКА ВРЕМЕНИ И ВОССТАНОВЛЕНИЯ ---
-        function autoTick() {
-            // Если мы отдыхаем - быстро регеним энергию
-            if (isResting) {
-                if (state.energy < 100) {
-                    state.energy += 2; // +2% в секунду (за 50 сек полный бак)
-                    if(state.energy > 100) state.energy = 100;
-                    
-                    // Обновляем полоску отдыха
-                    document.getElementById('rest-bar').style.width = state.energy + '%';
-                } else {
-                    // Энергия полная - можно вставать
-                    showToast("🔋 Вы полностью отдохнули!");
-                    toggleRest(); 
-                }
-            }
-
-            // Вода и настроение тратятся только если мы НЕ отдыхаем (или медленнее)
-            // Мы убрали пассивный расход энергии. Она тратится только при педалировании.
-            
-            // Если есть заказ, вода уходит медленно
-            if (state.currentOrder && !isResting) {
-                 if (Math.random() < 0.1) state.water -= 1; // Раз в ~10 сек
-            }
-            
-            updateUI();
-        }
-
-        // --- ГЛАВНАЯ МЕХАНИКА (ПЕДАЛИ) ---
-        function pedal() {
-            // Если отдыхаем - встаем
-            if (isResting) {
-                toggleRest();
-                return;
-            }
-
-            // 1. РЕМОНТ
-            if (state.bike <= 0) {
-                if (state.energy >= 10) {
-                    state.energy -= 10; state.bike += 15;
-                    showToast("🔧 Починил (+15% HP)", "success");
-                } else showToast("😫 Нет сил чинить! Отдохни.", "error");
-                updateUI(); updateMainButtonState(); return;
-            }
-
-            // 2. ПОИСК
-            if (!state.currentOrder) {
-                findOrder(); return;
-            }
-
-            // 3. ЕЗДА (С УМНОЙ ЭНЕРГИЕЙ)
-            let speedMultiplier = 1;
-            let energyCost = 2;
-
-            if (state.energy <= 0) {
-                // ВТОРОЕ ДЫХАНИЕ: Энергии нет, но мы едем МЕДЛЕННО
-                speedMultiplier = 0.2; // 20% от скорости
-                energyCost = 0; // Больше не тратим, так как её нет
-                showToast("🐌 Сил нет... Вы плететесь пешком.", "error");
-            } else {
-                // Нормальная езда
-                state.energy = Math.max(0, state.energy - energyCost);
-            }
-
-            const dest = state.currentOrder.dest;
-            const pos = courierMarker.getLatLng();
-            
-            // Двигаемся
-            const moveStep = 0.1 * speedMultiplier;
-            const newLat = pos.lat + (dest[0] - pos.lat) * moveStep; 
-            const newLng = pos.lng + (dest[1] - pos.lng) * moveStep;
-
-            courierMarker.setLatLng([newLat, newLng]);
-            map.setView([newLat, newLng]); 
-
-            // Износ
-            state.bike = Math.max(0, state.bike - 0.5); 
-            state.gear = Math.max(0, state.gear - 0.2);
-
-            const dist = map.distance([newLat, newLng], dest);
-            document.getElementById('dist-display').innerText = Math.floor(dist);
-
-            if (dist < 20) finishOrder();
-            
-            updateUI(); updateMainButtonState();
-        }
-
-        // --- МЕХАНИКА ОТДЫХА ---
-        function toggleRest() {
-            isResting = !isResting;
-            const overlay = document.getElementById('rest-overlay');
-            
-            if (isResting) {
-                overlay.style.display = 'flex';
-                document.getElementById('rest-bar').style.width = state.energy + '%';
-            } else {
-                overlay.style.display = 'none';
-            }
-        }
-
-        // --- ЗАКАЗЫ ---
-        function findOrder() {
-            const center = [52.2297, 21.0122];
-            const dest = [ center[0] + (Math.random() - 0.5) * 0.03, center[1] + (Math.random() - 0.5) * 0.03 ];
-            pendingOrder = { dest: dest, pay: 15 + Math.floor(Math.random() * 25) };
-
-            document.getElementById('offer-price').innerText = pendingOrder.pay + " PLN";
-            document.getElementById('offer-modal').style.display = 'flex';
-            
-            if(offerInterval) clearTimeout(offerInterval);
-            offerInterval = setTimeout(() => rejectOrder(true), 10000); // 10 сек авто-отказ
-        }
-
-        function acceptOrder() {
-            clearTimeout(offerInterval);
-            document.getElementById('offer-modal').style.display = 'none';
-            state.currentOrder = pendingOrder;
-            
-            if (targetIcon) map.removeLayer(targetIcon);
-            targetMarker = L.marker(state.currentOrder.dest, {icon: targetIcon}).addTo(map);
-            
-            document.getElementById('order-info').style.display = 'block';
-            showToast("✅ Заказ принят!", "success");
-            updateMainButtonState(); saveGame();
-        }
-
-        function rejectOrder(timeout=false) {
-            clearTimeout(offerInterval);
-            document.getElementById('offer-modal').style.display = 'none';
-            state.cash -= 5;
-            showToast(timeout ? "⏰ Время вышло (-5 PLN)" : "❌ Отказ (-5 PLN)", "error");
-            updateUI();
-        }
-
-        function finishOrder() {
-            state.cash += state.currentOrder.pay;
-            state.exp += 10;
-            if (state.exp > 100 * state.lvl) { state.lvl++; state.exp=0; showToast("🎉 LEVEL UP!"); }
-            
-            showToast(`💵 +${state.currentOrder.pay} PLN`, "success");
-            state.currentOrder = null;
-            if (targetMarker) map.removeLayer(targetMarker);
-            document.getElementById('order-info').style.display = 'none';
-            saveGame(); updateMainButtonState();
-        }
-
-        // --- ОСТАЛЬНОЕ ---
-        function drinkFreeWater() {
-            const now = Date.now();
-            if (now - lastDrinkTime < 60000) { showToast(`⏳ Жди еще ${Math.ceil((60000-(now-lastDrinkTime))/1000)} сек.`); return; }
-            state.water = Math.min(100, state.water + 25);
-            lastDrinkTime = now; showToast("💧 +25% Воды", "success"); updateUI();
-        }
-
-        const items = [
-            { id: 'snickers', name: 'Сникерс', price: 10, effect: { energy: 40 }, icon: '🍫' },
-            { id: 'coffee', name: 'Кофе', price: 15, effect: { energy: 20, mood: 20 }, icon: '☕' },
-            { id: 'repair', name: 'Мастерская', price: 40, effect: { bike: 100 }, icon: '🔧' }
-        ];
-
-        function openShop() {
-            const list = document.getElementById('shop-list'); list.innerHTML = '';
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.style.cssText = "display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);";
-                div.innerHTML = `<div><span style="font-size:20px">${item.icon}</span> <b>${item.name}</b> <div style="font-size:12px;color:#aaa">${item.price} PLN</div></div> <button onclick="buyItem('${item.id}')" style="background:#10b981; border:none; padding:5px 15px; border-radius:15px;">Купить</button>`;
-                list.appendChild(div);
-            });
-            document.getElementById('shop-modal').style.display = 'flex';
-        }
-
-        function buyItem(id) {
-            const item = items.find(i => i.id === id);
-            if (state.cash >= item.price) {
-                state.cash -= item.price;
-                if (item.effect.energy) state.energy = Math.min(100, state.energy + item.effect.energy);
-                if (item.effect.water) state.water = Math.min(100, state.water + item.effect.water);
-                if (item.effect.bike) state.bike = Math.min(100, state.bike + item.effect.bike);
-                showToast(`Куплено: ${item.name}`, "success"); updateUI();
-            } else showToast("❌ Нет денег!", "error");
-        }
-
-        function updateUI() {
-            document.getElementById('cash-display').innerText = state.cash + ' PLN';
-            document.getElementById('lvl-display').innerText = 'LVL ' + state.lvl;
-            document.getElementById('energy-bar').style.width = state.energy + '%';
-            document.getElementById('water-bar').style.width = state.water + '%';
-            document.getElementById('bike-bar').style.width = state.bike + '%';
-            document.getElementById('bike-hp').innerText = Math.floor(state.bike) + '%';
-        }
-
-        function updateMainButtonState() {
-            const btn = document.getElementById('main-btn');
-            
-            // Если отдыхаем
-            if (isResting) {
-                 // Кнопка не активна, управляется оверлеем
-                 return;
-            }
-
-            if (state.bike <= 0) {
-                btn.innerHTML = '<i class="fas fa-wrench"></i> ЧИНИТЬ';
-                btn.className = 'action-btn btn-repair';
-            } else if (state.currentOrder) {
-                if (state.energy <= 0) {
-                    btn.innerHTML = '<i class="fas fa-walking"></i> ИДТИ ПЕШКОМ (0 Энергии)';
-                    btn.className = 'action-btn btn-tired';
-                } else {
-                    btn.innerHTML = '<i class="fas fa-bicycle"></i> КРУТИТЬ ПЕДАЛИ';
-                    btn.className = 'action-btn';
-                }
-            } else {
-                btn.innerHTML = '<i class="fas fa-search"></i> НАЙТИ ЗАКАЗ';
-                btn.className = 'action-btn';
-            }
-        }
-
-        function showToast(msg, type="info") {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.style.display = 'block';
-            t.style.border = type === 'error' ? '1px solid red' : '1px solid #333';
-            setTimeout(() => t.style.display = 'none', 2000);
-        }
-
-        function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
-        function loadGame() { const saved = localStorage.getItem(SAVE_KEY); if (saved) state = JSON.parse(saved); }
-
-        init();
-    </script>
-    <style>
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1.5); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-    </style>
+    <script src="game-patch.js"></script> 
 </body>
 </html>
