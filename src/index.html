@@ -36,11 +36,11 @@
 
 
 
-btn.onclick = () => {
-  if (state.energy <= 0) {
-    alert("Нет энергии");
-    return;
-  }
+if (state.energy <= 0) {
+  alert("Ты выжат. Отдыхай.");
+  return;
+}
+
 restBtn.onclick = () => {
   state.energy += 30;
   if (state.energy > 100) state.energy = 100;
@@ -77,8 +77,9 @@ if (state.xp >= state.level * 100) {
     alert("VIP клиент 💸");
   } else {
     // провал
-    state.money -= 40;
-    state.stress += 15;
+    state.money -= state.stress >= 100 ? 80 : 40;
+   state.stress += 15;
+
     alert("Проблема с заказом 😡");
   }
 
