@@ -5,6 +5,8 @@
 
   <button id="orderBtn">Взять заказ</button>
   <button id="restBtn">Отдохнуть</button>
+  <button id="timeBtn">Переключить день / ночь</button>
+
 
 
   <script type="module">
@@ -13,6 +15,8 @@
    const hud = document.getElementById("hud");
    const btn = document.getElementById("orderBtn");
    const restBtn = document.getElementById("restBtn");
+   const timeBtn = document.getElementById("timeBtn");
+
 
     function render() {
   hud.innerHTML = `
@@ -42,14 +46,17 @@ restBtn.onclick = () => {
   const roll = Math.random();
 
   // всегда тратим энергию
-  state.energy -= 10;
+  state.energy -= state.isNight ? 15 : 10;
+
 
   if (roll < 0.6) {
     // обычный заказ
-    state.money += 50;
+    state.money += state.isNight ? 80 : 50;
+
   } else if (roll < 0.85) {
     // бонус
-    state.money += 120;
+    state.money += state.isNight ? 180 : 120;
+
     alert("VIP клиент 💸");
   } else {
     // провал
@@ -67,4 +74,9 @@ restBtn.onclick = () => {
 
     render();
   </script>
+  timeBtn.onclick = () => {
+  state.isNight = !state.isNight;
+  render();
+};
+
 </body>
