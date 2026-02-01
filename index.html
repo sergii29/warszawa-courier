@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier Pro</title>
+    <title>Warszawa Courier: Pro Simulator</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
@@ -11,217 +11,219 @@
             --bg: #f4f4dc;
             --grid: #dadab9;
             --lime: #c8ff00;
-            --blue: #007bff;
-            --red: #ff4500;
+            --dark: #2c2e3a;
         }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: sans-serif; }
-        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Arial', sans-serif; }
+
+        /* Верхняя панель */
+        #top-bar {
+            position: absolute; top: 0; width: 100%; height: 50px;
+            background: white; display: flex; align-items: center; padding: 0 15px;
+            box-sizing: border-box; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .menu-btn { font-size: 24px; cursor: pointer; margin-right: 20px; }
+        .stat-badge { background: #f0f0f0; padding: 5px 12px; border-radius: 15px; font-size: 14px; font-weight: bold; margin-left: 10px; }
+
+        /* Боковое меню */
+        #sidebar {
+            position: fixed; left: -280px; top: 0; width: 260px; height: 100%;
+            background: var(--dark); color: white; transition: 0.3s; z-index: 2000; padding: 20px;
+        }
+        #sidebar.active { left: 0; }
+        .menu-item { padding: 15px; border-bottom: 1px solid #444; cursor: pointer; transition: 0.2s; }
+        .menu-item:hover { background: #3d3f4d; color: var(--lime); }
+
         /* Карта */
         #game-board {
-            position: relative; width: 100%; height: 60vh;
+            position: relative; width: 100%; height: 60vh; margin-top: 50px;
             background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 25px 25px; background-position: 0 0;
+            background-size: 20px 20px; overflow: hidden;
         }
 
-        /* Объекты */
-        .dot { position: absolute; width: 25px; height: 25px; transition: all 0.1s; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-        #player { z-index: 10; background: var(--lime); border-radius: 4px; border: 1px solid #000; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
-        #target { z-index: 5; border-radius: 50%; color: white; font-weight: bold; }
-        .obstacle { background: #bbb; z-index: 4; border-radius: 2px; }
+        /* Объекты на карте */
+        .entity { position: absolute; width: 20px; height: 20px; transition: 0.1s; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        #player { background: var(--lime); border: 1.5px solid #000; border-radius: 3px; font-size: 14px; }
+        .restaurant { filter: drop-shadow(0 0 5px orange); font-size: 18px; }
+        .client { filter: drop-shadow(0 0 5px red); font-size: 18px; }
+        .obstacle { opacity: 0.6; }
 
-        /* Интерфейс */
-        #ui-layer { height: 40vh; background: #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; border-top: 3px solid #ccc; }
-        .stats { display: flex; justify-content: space-between; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        
-        /* Джойстик */
-        .joystick { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 10px; }
-        .j-btn { background: #333; color: white; border: none; border-radius: 10px; font-size: 24px; font-weight: bold; }
-        .j-up { grid-column: 2; }
-        .j-left { grid-column: 1; grid-row: 2; }
-        .j-down { grid-column: 2; grid-row: 2; }
-        .j-right { grid-column: 3; grid-row: 2; }
+        /* Интерфейс управления */
+        #ui-controls { height: 35vh; background: white; display: flex; flex-direction: column; align-items: center; padding: 10px; border-top: 2px solid #ddd; }
+        .joystick { display: grid; grid-template-columns: repeat(3, 65px); gap: 8px; }
+        .j-btn { height: 65px; background: #333; color: white; border: none; border-radius: 12px; font-size: 24px; }
+        .j-btn:active { background: var(--lime); color: black; }
 
-        #msg-log { font-size: 14px; color: #555; height: 40px; text-align: center; }
-        .active-btn { background: var(--lime); color: #000; width: 100%; padding: 10px; border: none; border-radius: 8px; font-weight: bold; margin-top: 5px; }
-        .offline-btn { background: #ffcccc; color: #900; margin-top: 5px; border: none; padding: 5px 15px; border-radius: 5px; }
+        /* Магазин (модалки) */
+        .modal { display: none; position: fixed; top: 10%; left: 5%; width: 90%; height: 80%; background: white; z-index: 3000; border-radius: 15px; padding: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.5); overflow-y: auto; }
+        .close-modal { float: right; font-size: 24px; font-weight: bold; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .buy-btn { background: var(--lime); border: none; padding: 5px 15px; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="game-board">
-    <div id="player" class="dot">🚲</div>
-    <div id="target" class="dot"></div>
+<div id="top-bar">
+    <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+    <div class="stat-badge">💰 <span id="cash">0.00</span></div>
+    <div class="stat-badge">⚡ <span id="energy">100</span>%</div>
+    <div class="stat-badge">😊 <span id="mood">100</span>%</div>
 </div>
 
-<div id="ui-layer">
-    <div class="stats">
-        <div>Баланс: <span id="cash">0.00</span> PLN</div>
-        <div id="timer-box" style="color: red; display: none;">⏳ <span id="timer">30</span>с</div>
-    </div>
-    
-    <div id="msg-log">Нажми "Выйти в онлайн", чтобы начать</div>
-    
-    <button id="main-action" class="active-btn" onclick="toggleOnline()">ВЫЙТИ В ОНЛАЙН</button>
-    
-    <div class="joystick" id="controls" style="visibility: hidden;">
-        <button class="j-btn j-up" onclick="move(0, -25)">↑</button>
-        <button class="j-btn j-left" onclick="move(-25, 0)">←</button>
-        <button class="j-btn j-down" onclick="move(0, 25)">↓</button>
-        <button class="j-btn j-right" onclick="move(25, 0)">→</button>
-    </div>
+<div id="sidebar">
+    <div class="close-modal" onclick="toggleSidebar()">×</div>
+    <h2 style="color: var(--lime)">Меню</h2>
+    <div class="menu-item" onclick="openModal('shop-food')">🍔 Магазин (Еда/Энергия)</div>
+    <div class="menu-item" onclick="openModal('shop-tech')">🚲 Магазин техники</div>
+    <div class="menu-item">🛠 Инвентарь / Ремонт</div>
+    <div class="menu-item">🏦 Банк</div>
+    <br>
+    <button onclick="location.reload()" style="width: 100%; padding: 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">Уйти в оффлайн</button>
+</div>
 
-    <button id="off-btn" class="offline-btn" onclick="goOffline()" style="display:none">Уйти в оффлайн</button>
+<div id="shop-food" class="modal">
+    <span class="close-modal" onclick="closeModals()">×</span>
+    <h3>Магазин Продуктов</h3>
+    <div class="shop-item">
+        <span>Red Bull (⚡+30%)</span>
+        <span>15 PLN</span>
+        <button class="buy-btn" onclick="buyItem('energy', 30, 15)">Купить</button>
+    </div>
+    <div class="shop-item">
+        <span>Пицца (😊+20%)</span>
+        <span>25 PLN</span>
+        <button class="buy-btn" onclick="buyItem('mood', 20, 25)">Купить</button>
+    </div>
+</div>
+
+<div id="shop-tech" class="modal">
+    <span class="close-modal" onclick="closeModals()">×</span>
+    <h3>Магазин Техники</h3>
+    <div class="shop-item">
+        <span>Электро Вел 250W</span>
+        <span>1200 PLN</span>
+        <button class="buy-btn" onclick="buyTech(1.5, 1200)">Купить</button>
+    </div>
+    <div class="shop-item">
+        <span>Электро Вел 500W</span>
+        <span>2500 PLN</span>
+        <button class="buy-btn" onclick="buyTech(2.0, 2500)">Купить</button>
+    </div>
+</div>
+
+<div id="game-board">
+    <div id="player" class="entity">🚲</div>
+    <div id="target" class="entity" style="display:none"></div>
+</div>
+
+<div id="ui-controls">
+    <div id="status-text" style="margin-bottom: 10px; color: #666; font-size: 14px;">Нажми "Онлайн" в меню или жди заказ</div>
+    <div class="joystick">
+        <div id="online-trigger" onclick="startWork()" style="grid-column: 1/4; background: var(--lime); padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; cursor: pointer;">ВЫЙТИ В ОНЛАЙН</div>
+        
+        <button class="j-btn" style="grid-column: 2" onclick="move(0, -20)">↑</button>
+        <button class="j-btn" style="grid-column: 1; grid-row: 3" onclick="move(-20, 0)">←</button>
+        <button class="j-btn" style="grid-column: 2; grid-row: 3" onclick="move(0, 20)">↓</button>
+        <button class="j-btn" style="grid-column: 3; grid-row: 3" onclick="move(20, 0)">→</button>
+    </div>
 </div>
 
 <script>
-    // --- Инициализация Firebase ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
-        authDomain: "warszawa-courier.firebaseapp.com",
-        databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "warszawa-courier"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // Базовые данные
+    let stats = { cash: 50.00, energy: 100, mood: 100, speed: 1 };
+    let playerPos = { x: 100, y: 100 };
+    let targetPos = { x: 0, y: 0 };
+    let currentJob = null; // 'TO_REST', 'TO_CLIENT'
+    const cellSize = 20;
 
-    // --- Переменные игры ---
-    let balance = 0.00;
-    let pX = 150, pY = 150; // Позиция игрока
-    let tX, tY; // Позиция цели
-    let gameState = "IDLE"; // IDLE, TO_RESTAURANT, WAITING, TO_CLIENT
-    let timerInterval;
-    const cellSize = 25;
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+    function openModal(id) { closeModals(); document.getElementById(id).style.display = 'block'; }
+    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-    function updateUI() {
-        document.getElementById('player').style.left = pX + 'px';
-        document.getElementById('player').style.top = pY + 'px';
-        document.getElementById('cash').innerText = balance.toFixed(2);
+    function updateStats() {
+        document.getElementById('cash').innerText = stats.cash.toFixed(2);
+        document.getElementById('energy').innerText = Math.max(0, stats.energy);
+        document.getElementById('mood').innerText = Math.max(0, stats.mood);
+        document.getElementById('player').style.left = playerPos.x + 'px';
+        document.getElementById('player').style.top = playerPos.y + 'px';
     }
 
-    function toggleOnline() {
-        if(gameState === "IDLE") {
-            generateOrder();
-            document.getElementById('controls').style.visibility = 'visible';
-            document.getElementById('main-action').style.display = 'none';
-            document.getElementById('off-btn').style.display = 'block';
-        }
+    function startWork() {
+        document.getElementById('online-trigger').style.display = 'none';
+        newOrder();
     }
 
-    function generateOrder() {
-        gameState = "TO_RESTAURANT";
-        spawnTarget("RES");
-        spawnObstacles();
-        startTimer(45);
-        document.getElementById('msg-log').innerText = "Едь в ресторан (Синий маркер)";
-    }
-
-    function spawnTarget(type) {
-        tX = Math.floor(Math.random() * (window.innerWidth/cellSize - 2)) * cellSize;
-        tY = Math.floor(Math.random() * (window.innerHeight*0.6/cellSize - 2)) * cellSize;
-        const target = document.getElementById('target');
-        target.style.display = 'flex';
-        target.style.left = tX + 'px';
-        target.style.top = tY + 'px';
-        target.style.background = (type === "RES") ? "var(--blue)" : "var(--red)";
-        target.innerText = (type === "RES") ? "🏠" : "👤";
-    }
-
-    function spawnObstacles() {
-        // Удаляем старые преграды
-        document.querySelectorAll('.obstacle').forEach(el => el.remove());
-        for(let i=0; i<15; i++) {
-            let ox = Math.floor(Math.random() * (window.innerWidth/cellSize - 2)) * cellSize;
-            let oy = Math.floor(Math.random() * (window.innerHeight*0.6/cellSize - 2)) * cellSize;
-            if(ox === pX && oy === pY) continue;
-            let div = document.createElement('div');
-            div.className = 'dot obstacle';
-            div.style.left = ox + 'px';
-            div.style.top = oy + 'px';
-            div.innerText = "🚧";
-            document.getElementById('game-board').appendChild(div);
-        }
+    function newOrder() {
+        currentJob = 'TO_REST';
+        targetPos = { 
+            x: Math.floor(Math.random() * 15) * cellSize, 
+            y: Math.floor(Math.random() * 15) * cellSize 
+        };
+        const t = document.getElementById('target');
+        t.style.display = 'flex';
+        t.style.left = targetPos.x + 'px';
+        t.style.top = targetPos.y + 'px';
+        t.className = 'entity restaurant';
+        t.innerHTML = '🍕'; // Значок ресторана
+        document.getElementById('status-text').innerText = "Заказ: Ul. Marszałkowska 10. Едь в ресторан!";
     }
 
     function move(dx, dy) {
-        if(gameState === "IDLE" || gameState === "WAITING") return;
+        if(stats.energy <= 0) { alert("Нет энергии! Купи Red Bull."); return; }
         
-        let nextX = pX + dx;
-        let nextY = pY + dy;
-
-        // Проверка границ и преград
-        if(nextX < 0 || nextX > window.innerWidth - 25 || nextY < 0 || nextY > (window.innerHeight*0.6 - 25)) return;
+        playerPos.x += dx * stats.speed;
+        playerPos.y += dy * stats.speed;
         
-        let collision = false;
-        document.querySelectorAll('.obstacle').forEach(obs => {
-            if(parseInt(obs.style.left) === nextX && parseInt(obs.style.top) === nextY) collision = true;
-        });
-
-        if(collision) {
-            document.getElementById('msg-log').innerText = "Преграда! Ищи объезд!";
-            return;
-        }
-
-        pX = nextX; pY = nextY;
-        updateUI();
-        checkTarget();
+        stats.energy -= 1;
+        updateStats();
+        checkCollision();
     }
 
-    function checkTarget() {
-        if(pX === tX && pY === tY) {
-            if(gameState === "TO_RESTAURANT") {
-                processRestaurant();
-            } else if(gameState === "TO_CLIENT") {
-                finishOrder();
+    function checkCollision() {
+        let dist = Math.hypot(playerPos.x - targetPos.x, playerPos.y - targetPos.y);
+        if(dist < 15) {
+            if(currentJob === 'TO_REST') {
+                document.getElementById('status-text').innerText = "Ждем заказ (3с)...";
+                currentJob = 'WAITING';
+                setTimeout(() => {
+                    currentJob = 'TO_CLIENT';
+                    targetPos = { x: Math.floor(Math.random() * 15) * cellSize, y: Math.floor(Math.random() * 15) * cellSize };
+                    const t = document.getElementById('target');
+                    t.style.left = targetPos.x + 'px';
+                    t.style.top = targetPos.y + 'px';
+                    t.className = 'entity client';
+                    t.innerHTML = '📍'; // Значок клиента
+                    document.getElementById('status-text').innerText = "Вези клиенту: Ul. Nowy Świat 5";
+                }, 3000);
+            } else if(currentJob === 'TO_CLIENT') {
+                let reward = 12.50;
+                stats.cash += reward;
+                alert("Доставлено! + " + reward + " PLN");
+                newOrder();
+                updateStats();
             }
         }
     }
 
-    function processRestaurant() {
-        gameState = "WAITING";
-        clearInterval(timerInterval);
-        document.getElementById('target').style.display = 'none';
-        document.getElementById('msg-log').innerText = "Заказ готовится... Жди 3 сек.";
-        setTimeout(() => {
-            gameState = "TO_CLIENT";
-            spawnTarget("CLIENT");
-            startTimer(40);
-            document.getElementById('msg-log').innerText = "Заказ готов! Вези клиенту (Красный)";
-        }, 3000);
+    function buyItem(type, val, price) {
+        if(stats.cash >= price) {
+            stats.cash -= price;
+            stats[type] = Math.min(100, stats[type] + val);
+            updateStats();
+            alert("Успешно куплено!");
+        } else { alert("Мало денег!"); }
     }
 
-    function finishOrder() {
-        clearInterval(timerInterval);
-        let reward = (Math.random() * 5 + 10).toFixed(2);
-        balance += parseFloat(reward);
-        gameState = "IDLE";
-        document.getElementById('target').style.display = 'none';
-        document.getElementById('msg-log').innerText = `Доставлено! +${reward} PLN.`;
-        document.getElementById('main-action').style.display = 'block';
-        document.getElementById('main-action').innerText = "Искать новый заказ";
-        document.getElementById('timer-box').style.display = 'none';
-        updateUI();
+    function buyTech(speedMult, price) {
+        if(stats.cash >= price) {
+            stats.cash -= price;
+            stats.speed = speedMult;
+            updateStats();
+            alert("Новый велик! Теперь ты быстрее.");
+        } else { alert("Мало денег!"); }
     }
 
-    function startTimer(sec) {
-        let left = sec;
-        document.getElementById('timer-box').style.display = 'block';
-        clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            left--;
-            document.getElementById('timer').innerText = left;
-            if(left <= 0) {
-                clearInterval(timerInterval);
-                alert("Время вышло! Заказ отменен.");
-                location.reload();
-            }
-        }, 1000);
-    }
-
-    function goOffline() {
-        location.reload();
-    }
-
-    updateUI();
+    updateStats();
 </script>
+
 </body>
 </html>
