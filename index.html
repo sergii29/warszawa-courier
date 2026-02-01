@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier</title>
+    <title>Warszawa Courier</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
@@ -11,191 +11,200 @@
             --bg: #f9f9e8;
             --grid: #e2e2ca;
             --lime: #c8ff00;
-            --police: #0055ff;
             --dark: #1a1a1a;
         }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Arial', sans-serif; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: white; font-family: sans-serif; }
 
-        /* Шапка */
-        #header {
-            padding-top: 15px;
-            text-align: center;
+        /* Верхняя зона (Статичная) */
+        #top-info {
+            height: 120px;
             background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--grid);
         }
-        .city-name { font-size: 14px; font-weight: 900; letter-spacing: 5px; color: #555; margin-bottom: 5px; text-transform: uppercase; }
-        .balance-card { 
-            background: white; padding: 12px 30px; border-radius: 50px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: inline-block;
-            font-size: 1.3rem; font-weight: bold; border: 1px solid #eee;
-        }
-
-        /* Игровое поле */
-        #game-board {
-            position: relative; width: 100%; height: 50vh;
-            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 25px 25px; border-bottom: 2px solid #ddd;
+        .warsaw-text { font-size: 14px; font-weight: 900; letter-spacing: 4px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+        .balance-pill { 
+            background: white; padding: 12px 40px; border-radius: 50px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); font-size: 1.4rem; font-weight: bold;
         }
 
-        /* Объекты */
-        .entity { position: absolute; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 18px; }
-        #player { background: var(--lime); border-radius: 5px; border: 2px solid var(--dark); font-size: 14px; z-index: 20; transition: 0.1s linear; }
+        /* Игровое поле (Изолировано от баланса) */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 400px); /* Четкое ограничение высоты */
+            background-color: var(--bg);
+            background-image: 
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px;
+            overflow: hidden;
+        }
 
-        /* Управление */
-        #ui-bottom { height: 40vh; background: white; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
-        
-        .resource-row { display: flex; gap: 20px; font-size: 14px; font-weight: bold; color: #666; }
+        /* Персонаж и Цели */
+        .entity { position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: all 0.15s ease-out; }
+        #player { background: var(--lime); border: 2px solid var(--dark); border-radius: 6px; font-size: 16px; z-index: 20; }
+        #target { font-size: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
 
-        .joystick-container {
+        /* Нижняя панель управления */
+        #ui-bottom {
+            height: 280px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        #status-bar { height: 30px; font-weight: bold; color: #666; font-size: 14px; margin-bottom: 10px; }
+
+        .joy-grid {
             display: grid;
-            grid-template-columns: repeat(3, 75px);
-            grid-template-rows: repeat(2, 65px);
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(2, 70px);
+            gap: 12px;
         }
-        .j-btn { 
-            background: #f0f0f0; border: none; border-radius: 15px; 
-            font-size: 24px; color: var(--dark); font-weight: bold;
-            box-shadow: 0 4px 0 #ccc;
+        .btn-move {
+            background: #f0f0f0; border: none; border-radius: 18px;
+            font-size: 28px; color: var(--dark); 
+            box-shadow: 0 4px 0 #d0d0d0;
         }
-        .j-btn:active { background: var(--lime); box-shadow: 0 2px 0 #9cb800; transform: translateY(2px); }
-        .j-up { grid-column: 2; }
-        .j-left { grid-column: 1; grid-row: 2; }
-        .j-down { grid-column: 2; grid-row: 2; }
-        .j-right { grid-column: 3; grid-row: 2; }
-
-        /* Бургер меню */
-        .menu-icon { position: absolute; left: 20px; top: 20px; font-size: 30px; cursor: pointer; z-index: 100; }
+        .btn-move:active { background: var(--lime); box-shadow: 0 0 0; transform: translateY(4px); }
         
-        /* Сообщение */
-        #status-bar { font-size: 14px; font-weight: bold; color: #888; text-align: center; height: 20px; }
+        .up { grid-column: 2; }
+        .left { grid-column: 1; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
 
-        #online-btn {
-            width: 90%; background: var(--lime); padding: 18px; border-radius: 15px;
-            text-align: center; font-weight: 800; cursor: pointer; border: none;
+        #btn-online {
+            width: 90%; background: var(--lime); border: none; padding: 20px;
+            border-radius: 15px; font-size: 1.1rem; font-weight: 800; cursor: pointer;
+            box-shadow: 0 4px 0 #a2ce00; margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
 
-<div class="menu-icon" onclick="alert('Меню в разработке')">☰</div>
-
-<div id="header">
-    <div class="city-name">Warsaw</div>
-    <div class="balance-card"><span id="cash">0.00</span> PLN</div>
+<div id="top-info">
+    <div class="warsaw-text">Warsaw</div>
+    <div class="balance-pill"><span id="cash">0.00</span> PLN</div>
 </div>
 
-<div id="game-board">
+<div id="game-container">
     <div id="player" class="entity">🚲</div>
     <div id="target" class="entity" style="display:none"></div>
 </div>
 
 <div id="ui-bottom">
-    <div class="resource-row">
-        <span>⚡ <span id="energy">100</span>%</span>
-        <span>😊 <span id="mood">100</span>%</span>
-    </div>
+    <div id="status-bar">Нажмите кнопку, чтобы начать</div>
+    
+    <button id="btn-online" onclick="goOnline()">ВЫЙТИ В ОНЛАЙН</button>
 
-    <div id="status-bar">Готов к работе?</div>
-
-    <div id="online-btn" onclick="startWork()">ВЫЙТИ В ОНЛАЙН</div>
-
-    <div class="joystick-container" id="joy" style="display: none;">
-        <button class="j-btn j-up" onclick="move(0, -25)">↑</button>
-        <button class="j-btn j-left" onclick="move(-25, 0)">←</button>
-        <button class="j-btn j-down" onclick="move(0, 25)">↓</button>
-        <button class="j-btn j-right" onclick="move(25, 0)">→</button>
+    <div class="joy-grid" id="controls" style="display: none;">
+        <button class="btn-move up" onclick="move(0, -30)">↑</button>
+        <button class="btn-move left" onclick="move(-30, 0)">←</button>
+        <button class="btn-move down" onclick="move(0, 30)">↓</button>
+        <button class="btn-move right" onclick="move(30, 0)">→</button>
     </div>
 </div>
 
 <script>
-    let stats = { cash: 0.00, energy: 100, mood: 100 };
-    let pos = { x: 125, y: 125 };
-    let target = { x: 0, y: 0 };
-    let state = 'IDLE';
+    let playerPos = { x: 150, y: 150 };
+    let targetPos = { x: 0, y: 0 };
+    let balance = 0.00;
+    let jobState = 'NONE'; // RESTAURANT, CLIENT
+    const step = 30;
 
-    function startWork() {
-        document.getElementById('online-btn').style.display = 'none';
-        document.getElementById('joy').style.display = 'grid';
+    function goOnline() {
+        document.getElementById('btn-online').style.display = 'none';
+        document.getElementById('controls').style.display = 'grid';
         spawnObstacles();
-        generateOrder();
+        newOrder();
     }
 
     function spawnObstacles() {
         document.querySelectorAll('.obs').forEach(o => o.remove());
-        for(let i=0; i<15; i++) {
-            let ox = Math.floor(Math.random() * 10) * 25;
-            let oy = Math.floor(Math.random() * 10) * 25;
+        for(let i=0; i<12; i++) {
+            let ox = Math.floor(Math.random() * (window.innerWidth / step)) * step;
+            let oy = Math.floor(Math.random() * (document.getElementById('game-container').offsetHeight / step)) * step;
+            if(ox === playerPos.x && oy === playerPos.y) continue;
             let div = document.createElement('div');
             div.className = 'entity obs';
             div.style.left = ox + 'px';
             div.style.top = oy + 'px';
             div.innerText = '🚧';
-            document.getElementById('game-board').appendChild(div);
+            document.getElementById('game-container').appendChild(div);
         }
     }
 
     function move(dx, dy) {
-        if(stats.energy <= 0) return;
-        
-        let nx = pos.x + dx;
-        let ny = pos.y + dy;
+        let nx = playerPos.x + dx;
+        let ny = playerPos.y + dy;
 
-        // Границы карты
-        if(nx < 0 || nx >= window.innerWidth || ny < 0 || ny >= (window.innerHeight*0.5)) return;
+        // Ограничения поля
+        const container = document.getElementById('game-container');
+        if(nx < 0 || nx >= container.offsetWidth || ny < 0 || ny >= container.offsetHeight) return;
 
-        // Проверка преград
+        // Проверка столкновения с преградами
         let blocked = false;
         document.querySelectorAll('.obs').forEach(o => {
             if(parseInt(o.style.left) === nx && parseInt(o.style.top) === ny) blocked = true;
         });
 
         if(blocked) {
-            document.getElementById('status-bar').innerText = "ОБЪЕЗЖАЙ ПРЕГРАДУ!";
+            document.getElementById('status-bar').innerText = "🚧 ПРЕГРАДА! ОБЪЕЗЖАЙ!";
             return;
         }
 
-        pos.x = nx; pos.y = ny;
-        stats.energy -= 0.5;
+        playerPos.x = nx; playerPos.y = ny;
         updateUI();
         checkTarget();
     }
 
-    function generateOrder() {
-        state = 'RESTAURANT';
-        target.x = Math.floor(Math.random() * 8 + 1) * 25;
-        target.y = Math.floor(Math.random() * 8 + 1) * 25;
-        let t = document.getElementById('target');
+    function newOrder() {
+        jobState = 'RESTAURANT';
+        targetPos = { 
+            x: Math.floor(Math.random() * 8 + 1) * step, 
+            y: Math.floor(Math.random() * 6 + 1) * step 
+        };
+        const t = document.getElementById('target');
         t.style.display = 'flex';
-        t.style.left = target.x + 'px';
-        t.style.top = target.y + 'px';
+        t.style.left = targetPos.x + 'px';
+        t.style.top = targetPos.y + 'px';
         t.innerHTML = '🍕';
-        document.getElementById('status-bar').innerText = "Едь в ресторан за заказом";
+        document.getElementById('status-bar').innerText = "Новый заказ! Едь в ресторан.";
     }
 
     function checkTarget() {
-        if(pos.x === target.x && pos.y === target.y) {
-            if(state === 'RESTAURANT') {
-                state = 'CLIENT';
-                target.x = Math.floor(Math.random() * 8 + 1) * 25;
-                target.y = Math.floor(Math.random() * 8 + 1) * 25;
-                let t = document.getElementById('target');
-                t.style.left = target.x + 'px';
-                t.style.top = target.y + 'px';
+        if(playerPos.x === targetPos.x && playerPos.y === targetPos.y) {
+            if(jobState === 'RESTAURANT') {
+                jobState = 'CLIENT';
+                targetPos = { 
+                    x: Math.floor(Math.random() * 8 + 1) * step, 
+                    y: Math.floor(Math.random() * 6 + 1) * step 
+                };
+                const t = document.getElementById('target');
+                t.style.left = targetPos.x + 'px';
+                t.style.top = targetPos.y + 'px';
                 t.innerHTML = '📍';
-                document.getElementById('status-bar').innerText = "Вези клиенту!";
-            } else if(state === 'CLIENT') {
-                stats.cash += 12.00;
-                document.getElementById('status-bar').innerText = "Доставлено! +12.00 PLN";
-                generateOrder();
+                document.getElementById('status-bar').innerText = "Забрал! Вези клиенту.";
+            } else if(jobState === 'CLIENT') {
+                balance += 14.50;
+                document.getElementById('status-bar').innerText = "Доставлено! +14.50 PLN";
+                newOrder();
             }
         }
     }
 
     function updateUI() {
-        document.getElementById('player').style.left = pos.x + 'px';
-        document.getElementById('player').style.top = pos.y + 'px';
-        document.getElementById('cash').innerText = stats.cash.toFixed(2);
-        document.getElementById('energy').innerText = Math.floor(stats.energy);
+        document.getElementById('player').style.left = playerPos.x + 'px';
+        document.getElementById('player').style.top = playerPos.y + 'px';
+        document.getElementById('cash').innerText = balance.toFixed(2);
     }
 
     updateUI();
