@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="pl">
 <head>
   <meta charset="UTF-8" />
   <title>Warszawa Courier</title>
@@ -7,6 +7,7 @@
 
   <link rel="stylesheet" href="css/main.css" />
 
+  <!-- Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -18,40 +19,38 @@
   <!-- MAP -->
   <div id="map"></div>
 
-  <!-- HUD -->
-  <div class="hud">
-    <div class="balance">
-      <span>Баланс</span>
-      <b><span id="money">0</span> PLN</b>
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="home-btn">🏠</div>
+
+    <div class="balance-chip">
+      <span id="money">0,00</span><span class="pln"> zł</span>
     </div>
   </div>
 
-  <!-- ORDER PANEL -->
-  <div class="order-panel" id="orderPanel">
-    <div class="grabber"></div>
+  <!-- CENTER FLOAT BUTTON -->
+  <div class="go-wrapper">
+    <button id="goBtn" class="go-btn">RUSZAJ</button>
+  </div>
 
-    <div class="order-info">
-      <div>📦 Доставка</div>
-      <div class="price">+ <span id="orderPrice">0</span> PLN</div>
-    </div>
-
-    <button id="acceptOrder" class="accept-btn">
-      Принять доставку
-    </button>
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar">
+    <span class="offline">Jesteś w trybie offline</span>
+    <div class="menu-btn">☰</div>
   </div>
 
   <script type="module">
     import { state } from "./state.js";
     import { saveState, loadState } from "./save.js";
 
-    /* ================= MAP ================= */
+    /* MAP */
     const map = L.map("map", { zoomControl: false }).setView(
       [52.2297, 21.0122],
-      14
+      13
     );
 
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       { attribution: "&copy; OpenStreetMap" }
     ).addTo(map);
 
@@ -59,92 +58,61 @@
 
     const courier = L.circleMarker(courierPos, {
       radius: 8,
-      color: "#2a7cff",
-      fillColor: "#2a7cff",
+      color: "#000",
+      fillColor: "#000",
       fillOpacity: 1,
     }).addTo(map);
 
-    function moveTo(targetPos, onFinish) {
+    function moveRandom() {
+      const dx = (Math.random() - 0.5) * 0.03;
+      const dy = (Math.random() - 0.5) * 0.03;
+      const target = [courierPos[0] + dx, courierPos[1] + dy];
+
       const timer = setInterval(() => {
-        courierPos[0] += (targetPos[0] - courierPos[0]) * 0.06;
-        courierPos[1] += (targetPos[1] - courierPos[1]) * 0.06;
+        courierPos[0] += (target[0] - courierPos[0]) * 0.05;
+        courierPos[1] += (target[1] - courierPos[1]) * 0.05;
         courier.setLatLng(courierPos);
 
         if (
           Math.hypot(
-            targetPos[0] - courierPos[0],
-            targetPos[1] - courierPos[1]
-          ) < 0.00025
+            target[0] - courierPos[0],
+            target[1] - courierPos[1]
+          ) < 0.0003
         ) {
           clearInterval(timer);
-          onFinish && onFinish();
         }
       }, 50);
     }
 
-    /* ================= HUD ================= */
+    /* UI */
     const moneyEl = document.getElementById("money");
+    const goBtn = document.getElementById("goBtn");
 
     function render() {
-      moneyEl.textContent = Math.floor(state.money);
+      moneyEl.textContent = state.money.toFixed(2);
     }
 
-    /* ================= ORDERS ================= */
-    const orderPanel = document.getElementById("orderPanel");
-    const acceptOrder = document.getElementById("acceptOrder");
-    const orderPriceEl = document.getElementById("orderPrice");
+    goBtn.onclick = () => {
+      goBtn.classList.add("active");
 
-    let currentOrderPrice = 0;
-    let deliveryInProgress = false;
+      let steps = 40;
+      const gain = 0.6; // медленный рост
 
-    function spawnOrder() {
-      currentOrderPrice = Math.floor(15 + Math.random() * 25);
-      orderPriceEl.textContent = currentOrderPrice;
-      orderPanel.classList.add("show");
-
-      const dx = (Math.random() - 0.5) * 0.02;
-      const dy = (Math.random() - 0.5) * 0.02;
-      return [courierPos[0] + dx, courierPos[1] + dy];
-    }
-
-    acceptOrder.onclick = () => {
-      if (deliveryInProgress) return;
-
-      deliveryInProgress = true;
-      orderPanel.classList.remove("show");
-
-      state.energy -= 10;
-      state.stress += 5;
-      saveState(state);
-
-      const target = spawnOrder();
-
-      const total = currentOrderPrice;
-      const steps = 50;              // чем больше — тем медленнее
-      const stepValue = total / steps;
-      let step = 0;
-
-      const moneyTimer = setInterval(() => {
-        state.money += stepValue;
+      const timer = setInterval(() => {
+        state.money += gain;
         render();
-        step++;
+        steps--;
 
-        if (step >= steps) {
-          clearInterval(moneyTimer);
+        if (steps <= 0) {
+          clearInterval(timer);
+          saveState(state);
+          moveRandom();
         }
-      }, 250); // ~12 секунд доставка
-
-      moveTo(target, () => {
-        deliveryInProgress = false;
-        saveState(state);
-        spawnOrder(); // новый заказ после завершения
-      });
+      }, 300);
     };
 
-    /* ================= INIT ================= */
     await loadState(state);
     render();
-    spawnOrder();
   </script>
 </body>
 </html>
