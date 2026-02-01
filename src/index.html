@@ -7,6 +7,12 @@
 </head>
 <body>
   <h1>Warszawa Courier</h1>
-  <p>Game start</p>
+  <p id="status">loading…</p>
+
+  <script type="module">
+    import { db } from "./firebase.js";
+    document.getElementById("status").innerText = "Firebase подключён";
+    console.log("DB:", db);
+  </script>
 </body>
 </html>
