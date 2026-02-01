@@ -19,18 +19,37 @@
       `;
     }
 
-    btn.onclick = () => {
-      if (state.energy <= 0) {
-        alert("Нет энергии");
-        return;
-      }
+btn.onclick = () => {
+  if (state.energy <= 0) {
+    alert("Нет энергии");
+    return;
+  }
 
-      state.money += 50;
-      state.energy -= 10;
-      state.stress += 5;
+  const roll = Math.random();
 
-      render();
-    };
+  // всегда тратим энергию
+  state.energy -= 10;
+
+  if (roll < 0.6) {
+    // обычный заказ
+    state.money += 50;
+  } else if (roll < 0.85) {
+    // бонус
+    state.money += 120;
+    alert("VIP клиент 💸");
+  } else {
+    // провал
+    state.money -= 40;
+    state.stress += 15;
+    alert("Проблема с заказом 😡");
+  }
+
+  // стресс растёт всегда
+  state.stress += 5;
+
+  render();
+};
+
 
     render();
   </script>
