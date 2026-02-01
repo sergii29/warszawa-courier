@@ -18,14 +18,16 @@
    const timeBtn = document.getElementById("timeBtn");
 
 
-    function render() {
+   function render() {
   hud.innerHTML = `
     🕒 Время: ${state.isNight ? "Ночь 🌙" : "День ☀️"}<br>
+    ⭐ Уровень: ${state.level} (XP: ${state.xp})<br>
     💰 Деньги: ${state.money}<br>
     ⚡ Энергия: ${state.energy}<br>
     😵 Стресс: ${state.stress}
   `;
 }
+
 
 
 btn.onclick = () => {
@@ -39,6 +41,15 @@ restBtn.onclick = () => {
 
   state.stress -= 20;
   if (state.stress < 0) state.stress = 0;
+// опыт за заказ
+state.xp += state.isNight ? 20 : 10;
+
+// проверка уровня
+if (state.xp >= state.level * 100) {
+  state.xp = 0;
+  state.level += 1;
+  alert("Новый уровень ⭐");
+}
 
   render();
 };
