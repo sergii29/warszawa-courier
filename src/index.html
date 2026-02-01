@@ -1,130 +1,93 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8" />
-  <title>Warszawa Courier</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+}
 
-  <link rel="stylesheet" href="css/main.css" />
+#map {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-</head>
+/* TOP */
+.top-ui {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 3;
+}
 
-<body>
-  <!-- MAP -->
-  <div id="map"></div>
+.home-btn {
+  background: white;
+  border-radius: 50%;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
 
-  <!-- TOP UI -->
-  <div class="top-ui">
-    <div class="home-btn">🏠</div>
+.balance-chip {
+  background: black;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 22px;
+  font-size: 18px;
+  font-weight: 600;
+}
 
-    <div class="balance-chip">
-      <span id="money">0,00</span><span class="pln"> zł</span>
-    </div>
-  </div>
+.pln {
+  color: #4cff4c;
+}
 
-  <!-- CENTER NAV -->
-  <div class="nav-arrow">▲</div>
+/* CENTER */
+.nav-arrow {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 50%;
+  padding: 10px 12px;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
 
-  <!-- BOTTOM PANEL -->
-  <div class="bottom-panel">
-    <button id="onlineBtn" class="online-btn offline">
-      RUSZAJ
-    </button>
+/* BOTTOM */
+.bottom-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: white;
+  z-index: 3;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+}
 
-    <div class="status-text" id="statusText">
-      Jesteś w trybie offline
-    </div>
-  </div>
+.online-btn {
+  width: 100%;
+  height: 64px;
+  border-radius: 32px;
+  border: none;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
 
-  <script type="module">
-    import { state } from "./state.js";
-    import { saveState, loadState } from "./save.js";
+.online-btn.offline {
+  background: #1e6cff;
+  color: white;
+}
 
-    /* MAP */
-    const map = L.map("map", { zoomControl: false }).setView(
-      [52.2297, 21.0122],
-      13
-    );
+.online-btn.online {
+  background: #00c853;
+  color: white;
+}
 
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-      { attribution: "&copy; OpenStreetMap" }
-    ).addTo(map);
-
-    let courierPos = [52.2297, 21.0122];
-    const courier = L.circleMarker(courierPos, {
-      radius: 7,
-      color: "#000",
-      fillColor: "#000",
-      fillOpacity: 1,
-    }).addTo(map);
-
-    function randomMove() {
-      const dx = (Math.random() - 0.5) * 0.02;
-      const dy = (Math.random() - 0.5) * 0.02;
-      const target = [courierPos[0] + dx, courierPos[1] + dy];
-
-      const timer = setInterval(() => {
-        courierPos[0] += (target[0] - courierPos[0]) * 0.05;
-        courierPos[1] += (target[1] - courierPos[1]) * 0.05;
-        courier.setLatLng(courierPos);
-
-        if (
-          Math.hypot(
-            target[0] - courierPos[0],
-            target[1] - courierPos[1]
-          ) < 0.0003
-        ) {
-          clearInterval(timer);
-        }
-      }, 50);
-    }
-
-    /* UI */
-    const moneyEl = document.getElementById("money");
-    const onlineBtn = document.getElementById("onlineBtn");
-    const statusText = document.getElementById("statusText");
-
-    let online = false;
-    let earningTimer = null;
-
-    function render() {
-      moneyEl.textContent = state.money.toFixed(2);
-    }
-
-    onlineBtn.onclick = () => {
-      online = !online;
-
-      if (online) {
-        onlineBtn.textContent = "ONLINE";
-        onlineBtn.classList.remove("offline");
-        onlineBtn.classList.add("online");
-        statusText.textContent = "Szukamy zleceń…";
-
-        earningTimer = setInterval(() => {
-          state.money += 0.4; // МЕДЛЕННО
-          render();
-          randomMove();
-        }, 1200);
-      } else {
-        onlineBtn.textContent = "RUSZAJ";
-        onlineBtn.classList.remove("online");
-        onlineBtn.classList.add("offline");
-        statusText.textContent = "Jesteś w trybie offline";
-
-        clearInterval(earningTimer);
-        saveState(state);
-      }
-    };
-
-    await loadState(state);
-    render();
-  </script>
-</body>
-</html>
+.status-text {
+  text-align: center;
+  font-size: 16px;
+  color: #000;
+}
