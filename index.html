@@ -3,123 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier - Simulator</title>
+    <title>Warszawa Courier Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         :root {
-            --bg-color: #f4f4dc;
-            --grid-color: #dadab9;
-            --accent-lime: #c8ff00;
-            --dark: #1a1a1a;
+            --bg: #f4f4dc;
+            --grid: #dadab9;
+            --lime: #c8ff00;
+            --blue: #007bff;
+            --red: #ff4500;
         }
-
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            font-family: sans-serif; background: var(--bg-color);
-            overflow: hidden; touch-action: none;
-        }
-
-        /* Мелкая сетка */
-        #game-world {
-            position: relative;
-            width: 100%; height: 100vh;
-            background-image: 
-                linear-gradient(var(--grid-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-            background-size: 15px 15px; /* Уменьшенные клетки */
-            transition: background-position 0.1s linear;
-        }
-
-        #ui-top {
-            position: absolute; top: 20px; width: 100%;
-            display: flex; justify-content: center; z-index: 100;
-        }
-
-        .balance {
-            background: white; padding: 8px 20px;
-            border-radius: 20px; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        /* Уменьшенный велосипед */
-        #player {
-            position: absolute;
-            width: 20px; height: 20px;
-            background: var(--accent-lime);
-            border: 2px solid black;
-            border-radius: 4px;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 50;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px;
-        }
-
-        /* Окно заказа */
-        #order-modal, #event-modal {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: white; border-radius: 15px;
-            padding: 20px; width: 80%; text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 200; display: none;
-        }
-
-        /* Кнопки управления */
-        #controls {
-            position: absolute; bottom: 30px; width: 100%;
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-        }
-
-        .btn {
-            width: 85%; padding: 15px; border-radius: 12px;
-            border: none; font-weight: bold; font-size: 1rem;
-            cursor: pointer; text-transform: uppercase;
-        }
-
-        .btn-online { background: var(--accent-lime); color: black; }
-        .btn-gas { background: #ff4500; color: white; display: none; height: 80px; border-radius: 50%; width: 80px; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: sans-serif; }
         
-        .event-btn { background: var(--dark); color: white; margin-top: 5px; width: 100%; }
-
-        /* Маркер цели */
-        #target {
-            position: absolute; width: 15px; height: 15px;
-            background: red; border-radius: 50%; display: none;
+        /* Карта */
+        #game-board {
+            position: relative; width: 100%; height: 60vh;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 25px 25px; background-position: 0 0;
         }
+
+        /* Объекты */
+        .dot { position: absolute; width: 25px; height: 25px; transition: all 0.1s; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        #player { z-index: 10; background: var(--lime); border-radius: 4px; border: 1px solid #000; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
+        #target { z-index: 5; border-radius: 50%; color: white; font-weight: bold; }
+        .obstacle { background: #bbb; z-index: 4; border-radius: 2px; }
+
+        /* Интерфейс */
+        #ui-layer { height: 40vh; background: #fff; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; border-top: 3px solid #ccc; }
+        .stats { display: flex; justify-content: space-between; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        
+        /* Джойстик */
+        .joystick { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 10px; }
+        .j-btn { background: #333; color: white; border: none; border-radius: 10px; font-size: 24px; font-weight: bold; }
+        .j-up { grid-column: 2; }
+        .j-left { grid-column: 1; grid-row: 2; }
+        .j-down { grid-column: 2; grid-row: 2; }
+        .j-right { grid-column: 3; grid-row: 2; }
+
+        #msg-log { font-size: 14px; color: #555; height: 40px; text-align: center; }
+        .active-btn { background: var(--lime); color: #000; width: 100%; padding: 10px; border: none; border-radius: 8px; font-weight: bold; margin-top: 5px; }
+        .offline-btn { background: #ffcccc; color: #900; margin-top: 5px; border: none; padding: 5px 15px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div id="ui-top">
-    <div class="balance"><span id="cash">0,00</span> PLN</div>
+<div id="game-board">
+    <div id="player" class="dot">🚲</div>
+    <div id="target" class="dot"></div>
 </div>
 
-<div id="game-world">
-    <div id="player">🚲</div>
-    <div id="target"></div>
-</div>
+<div id="ui-layer">
+    <div class="stats">
+        <div>Баланс: <span id="cash">0.00</span> PLN</div>
+        <div id="timer-box" style="color: red; display: none;">⏳ <span id="timer">30</span>с</div>
+    </div>
+    
+    <div id="msg-log">Нажми "Выйти в онлайн", чтобы начать</div>
+    
+    <button id="main-action" class="active-btn" onclick="toggleOnline()">ВЫЙТИ В ОНЛАЙН</button>
+    
+    <div class="joystick" id="controls" style="visibility: hidden;">
+        <button class="j-btn j-up" onclick="move(0, -25)">↑</button>
+        <button class="j-btn j-left" onclick="move(-25, 0)">←</button>
+        <button class="j-btn j-down" onclick="move(0, 25)">↓</button>
+        <button class="j-btn j-right" onclick="move(25, 0)">→</button>
+    </div>
 
-<div id="order-modal">
-    <h3 id="res-name">Ресторан: Zapiecek</h3>
-    <p>Расстояние: <span id="dist">0</span> кл.</p>
-    <button class="btn btn-online" onclick="startDelivery()">Поехать за заказом</button>
-</div>
-
-<div id="event-modal">
-    <h3 id="event-title">Впереди Полиция!</h3>
-    <button class="btn event-btn" onclick="handleEvent('bribe')">Дать взятку (10 PLN)</button>
-    <button class="btn event-btn" onclick="handleEvent('bypass')">Объехать (трата времени)</button>
-</div>
-
-<div id="controls">
-    <button id="main-btn" class="btn btn-online" onclick="goOnline()">Выйти в онлайн</button>
-    <button id="gas-btn" class="btn btn-gas" onmousedown="hitGas()">ГАЗ</button>
+    <button id="off-btn" class="offline-btn" onclick="goOffline()" style="display:none">Уйти в оффлайн</button>
 </div>
 
 <script>
-    // Firebase Init (из твоего запроса)
+    // --- Инициализация Firebase ---
     const firebaseConfig = {
         apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
         authDomain: "warszawa-courier.firebaseapp.com",
@@ -127,66 +82,146 @@
         projectId: "warszawa-courier"
     };
     firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const restaurants = ["Barn Burger", "Zapiecek", "Hala Koszyki", "Manekin", "Krowarzywa"];
-    let isOnline = false;
-    let distanceToTarget = 0;
-    let worldOffset = 0;
+    // --- Переменные игры ---
+    let balance = 0.00;
+    let pX = 150, pY = 150; // Позиция игрока
+    let tX, tY; // Позиция цели
+    let gameState = "IDLE"; // IDLE, TO_RESTAURANT, WAITING, TO_CLIENT
+    let timerInterval;
+    const cellSize = 25;
 
-    function goOnline() {
-        const res = restaurants[Math.floor(Math.random() * restaurants.length)];
-        document.getElementById('res-name').innerText = "Ресторан: " + res;
-        distanceToTarget = Math.floor(Math.random() * 50) + 20;
-        document.getElementById('dist').innerText = distanceToTarget;
-        document.getElementById('order-modal').style.display = 'block';
-        document.getElementById('main-btn').style.display = 'none';
+    function updateUI() {
+        document.getElementById('player').style.left = pX + 'px';
+        document.getElementById('player').style.top = pY + 'px';
+        document.getElementById('cash').innerText = balance.toFixed(2);
     }
 
-    function startDelivery() {
-        document.getElementById('order-modal').style.display = 'none';
-        document.getElementById('gas-btn').style.display = 'block';
+    function toggleOnline() {
+        if(gameState === "IDLE") {
+            generateOrder();
+            document.getElementById('controls').style.visibility = 'visible';
+            document.getElementById('main-action').style.display = 'none';
+            document.getElementById('off-btn').style.display = 'block';
+        }
     }
 
-    function hitGas() {
-        if (distanceToTarget <= 0) return;
+    function generateOrder() {
+        gameState = "TO_RESTAURANT";
+        spawnTarget("RES");
+        spawnObstacles();
+        startTimer(45);
+        document.getElementById('msg-log').innerText = "Едь в ресторан (Синий маркер)";
+    }
 
-        // Шанс события (10%)
-        if (Math.random() < 0.1) {
-            triggerEvent();
+    function spawnTarget(type) {
+        tX = Math.floor(Math.random() * (window.innerWidth/cellSize - 2)) * cellSize;
+        tY = Math.floor(Math.random() * (window.innerHeight*0.6/cellSize - 2)) * cellSize;
+        const target = document.getElementById('target');
+        target.style.display = 'flex';
+        target.style.left = tX + 'px';
+        target.style.top = tY + 'px';
+        target.style.background = (type === "RES") ? "var(--blue)" : "var(--red)";
+        target.innerText = (type === "RES") ? "🏠" : "👤";
+    }
+
+    function spawnObstacles() {
+        // Удаляем старые преграды
+        document.querySelectorAll('.obstacle').forEach(el => el.remove());
+        for(let i=0; i<15; i++) {
+            let ox = Math.floor(Math.random() * (window.innerWidth/cellSize - 2)) * cellSize;
+            let oy = Math.floor(Math.random() * (window.innerHeight*0.6/cellSize - 2)) * cellSize;
+            if(ox === pX && oy === pY) continue;
+            let div = document.createElement('div');
+            div.className = 'dot obstacle';
+            div.style.left = ox + 'px';
+            div.style.top = oy + 'px';
+            div.innerText = "🚧";
+            document.getElementById('game-board').appendChild(div);
+        }
+    }
+
+    function move(dx, dy) {
+        if(gameState === "IDLE" || gameState === "WAITING") return;
+        
+        let nextX = pX + dx;
+        let nextY = pY + dy;
+
+        // Проверка границ и преград
+        if(nextX < 0 || nextX > window.innerWidth - 25 || nextY < 0 || nextY > (window.innerHeight*0.6 - 25)) return;
+        
+        let collision = false;
+        document.querySelectorAll('.obstacle').forEach(obs => {
+            if(parseInt(obs.style.left) === nextX && parseInt(obs.style.top) === nextY) collision = true;
+        });
+
+        if(collision) {
+            document.getElementById('msg-log').innerText = "Преграда! Ищи объезд!";
             return;
         }
 
-        // Движение мира (прыжок по клеткам)
-        distanceToTarget--;
-        worldOffset += 15; // Размер одной клетки
-        document.getElementById('game-world').style.backgroundPosition = `0px ${worldOffset}px`;
-        
-        if (distanceToTarget <= 0) {
-            finishDelivery();
+        pX = nextX; pY = nextY;
+        updateUI();
+        checkTarget();
+    }
+
+    function checkTarget() {
+        if(pX === tX && pY === tY) {
+            if(gameState === "TO_RESTAURANT") {
+                processRestaurant();
+            } else if(gameState === "TO_CLIENT") {
+                finishOrder();
+            }
         }
     }
 
-    function triggerEvent() {
-        const events = ["Полиция!", "Пробка!", "Ремонт дороги!"];
-        document.getElementById('event-title').innerText = events[Math.floor(Math.random() * events.length)];
-        document.getElementById('event-modal').style.display = 'block';
-        document.getElementById('gas-btn').disabled = true;
+    function processRestaurant() {
+        gameState = "WAITING";
+        clearInterval(timerInterval);
+        document.getElementById('target').style.display = 'none';
+        document.getElementById('msg-log').innerText = "Заказ готовится... Жди 3 сек.";
+        setTimeout(() => {
+            gameState = "TO_CLIENT";
+            spawnTarget("CLIENT");
+            startTimer(40);
+            document.getElementById('msg-log').innerText = "Заказ готов! Вези клиенту (Красный)";
+        }, 3000);
     }
 
-    function handleEvent(type) {
-        document.getElementById('event-modal').style.display = 'none';
-        document.getElementById('gas-btn').disabled = false;
-        alert(type === 'bribe' ? "Вы договорились." : "Вы потеряли время на объезд.");
+    function finishOrder() {
+        clearInterval(timerInterval);
+        let reward = (Math.random() * 5 + 10).toFixed(2);
+        balance += parseFloat(reward);
+        gameState = "IDLE";
+        document.getElementById('target').style.display = 'none';
+        document.getElementById('msg-log').innerText = `Доставлено! +${reward} PLN.`;
+        document.getElementById('main-action').style.display = 'block';
+        document.getElementById('main-action').innerText = "Искать новый заказ";
+        document.getElementById('timer-box').style.display = 'none';
+        updateUI();
     }
 
-    function finishDelivery() {
-        alert("Заказ доставлен в ресторан!");
-        document.getElementById('gas-btn').style.display = 'none';
-        document.getElementById('main-btn').style.display = 'block';
-        document.getElementById('main-btn').innerText = "Искать новый заказ";
-        // Тут можно добавить логику начисления денег в Firebase
+    function startTimer(sec) {
+        let left = sec;
+        document.getElementById('timer-box').style.display = 'block';
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            left--;
+            document.getElementById('timer').innerText = left;
+            if(left <= 0) {
+                clearInterval(timerInterval);
+                alert("Время вышло! Заказ отменен.");
+                location.reload();
+            }
+        }, 1000);
     }
+
+    function goOffline() {
+        location.reload();
+    }
+
+    updateUI();
 </script>
-
 </body>
 </html>
