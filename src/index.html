@@ -19,8 +19,8 @@
   <!-- MAP -->
   <div id="map"></div>
 
-  <!-- TOP BAR -->
-  <div class="top-bar">
+  <!-- TOP UI -->
+  <div class="top-ui">
     <div class="home-btn">🏠</div>
 
     <div class="balance-chip">
@@ -28,15 +28,18 @@
     </div>
   </div>
 
-  <!-- CENTER FLOAT BUTTON -->
-  <div class="go-wrapper">
-    <button id="goBtn" class="go-btn">RUSZAJ</button>
-  </div>
+  <!-- CENTER NAV -->
+  <div class="nav-arrow">▲</div>
 
-  <!-- BOTTOM BAR -->
-  <div class="bottom-bar">
-    <span class="offline">Jesteś w trybie offline</span>
-    <div class="menu-btn">☰</div>
+  <!-- BOTTOM PANEL -->
+  <div class="bottom-panel">
+    <button id="onlineBtn" class="online-btn offline">
+      RUSZAJ
+    </button>
+
+    <div class="status-text" id="statusText">
+      Jesteś w trybie offline
+    </div>
   </div>
 
   <script type="module">
@@ -55,17 +58,16 @@
     ).addTo(map);
 
     let courierPos = [52.2297, 21.0122];
-
     const courier = L.circleMarker(courierPos, {
-      radius: 8,
+      radius: 7,
       color: "#000",
       fillColor: "#000",
       fillOpacity: 1,
     }).addTo(map);
 
-    function moveRandom() {
-      const dx = (Math.random() - 0.5) * 0.03;
-      const dy = (Math.random() - 0.5) * 0.03;
+    function randomMove() {
+      const dx = (Math.random() - 0.5) * 0.02;
+      const dy = (Math.random() - 0.5) * 0.02;
       const target = [courierPos[0] + dx, courierPos[1] + dy];
 
       const timer = setInterval(() => {
@@ -86,29 +88,39 @@
 
     /* UI */
     const moneyEl = document.getElementById("money");
-    const goBtn = document.getElementById("goBtn");
+    const onlineBtn = document.getElementById("onlineBtn");
+    const statusText = document.getElementById("statusText");
+
+    let online = false;
+    let earningTimer = null;
 
     function render() {
       moneyEl.textContent = state.money.toFixed(2);
     }
 
-    goBtn.onclick = () => {
-      goBtn.classList.add("active");
+    onlineBtn.onclick = () => {
+      online = !online;
 
-      let steps = 40;
-      const gain = 0.6; // медленный рост
+      if (online) {
+        onlineBtn.textContent = "ONLINE";
+        onlineBtn.classList.remove("offline");
+        onlineBtn.classList.add("online");
+        statusText.textContent = "Szukamy zleceń…";
 
-      const timer = setInterval(() => {
-        state.money += gain;
-        render();
-        steps--;
+        earningTimer = setInterval(() => {
+          state.money += 0.4; // МЕДЛЕННО
+          render();
+          randomMove();
+        }, 1200);
+      } else {
+        onlineBtn.textContent = "RUSZAJ";
+        onlineBtn.classList.remove("online");
+        onlineBtn.classList.add("offline");
+        statusText.textContent = "Jesteś w trybie offline";
 
-        if (steps <= 0) {
-          clearInterval(timer);
-          saveState(state);
-          moveRandom();
-        }
-      }, 300);
+        clearInterval(earningTimer);
+        saveState(state);
+      }
     };
 
     await loadState(state);
