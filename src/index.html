@@ -4,12 +4,15 @@
   <div id="hud"></div>
 
   <button id="orderBtn">Взять заказ</button>
+  <button id="restBtn">Отдохнуть</button>
+
 
   <script type="module">
     import { state } from "./state.js";
 
-    const hud = document.getElementById("hud");
-    const btn = document.getElementById("orderBtn");
+   const hud = document.getElementById("hud");
+   const btn = document.getElementById("orderBtn");
+   const restBtn = document.getElementById("restBtn");
 
     function render() {
       hud.innerHTML = `
@@ -24,6 +27,15 @@ btn.onclick = () => {
     alert("Нет энергии");
     return;
   }
+restBtn.onclick = () => {
+  state.energy += 30;
+  if (state.energy > 100) state.energy = 100;
+
+  state.stress -= 20;
+  if (state.stress < 0) state.stress = 0;
+
+  render();
+};
 
   const roll = Math.random();
 
