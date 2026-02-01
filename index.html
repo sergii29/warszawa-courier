@@ -3,111 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier: Pro Simulator</title>
+    <title>Warszawa Courier Simulator</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         :root {
-            --bg: #f4f4dc;
-            --grid: #dadab9;
+            --bg: #f9f9e8;
+            --grid: #e2e2ca;
             --lime: #c8ff00;
-            --dark: #2c2e3a;
+            --police: #0055ff;
         }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Arial', sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Helvetica', sans-serif; }
+
+        /* Карта с мелкой сеткой */
+        #game-board {
+            position: relative; width: 100%; height: 65vh;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
 
         /* Верхняя панель */
-        #top-bar {
-            position: absolute; top: 0; width: 100%; height: 50px;
-            background: white; display: flex; align-items: center; padding: 0 15px;
-            box-sizing: border-box; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        #header {
+            position: absolute; top: 15px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 100;
         }
-        .menu-btn { font-size: 24px; cursor: pointer; margin-right: 20px; }
-        .stat-badge { background: #f0f0f0; padding: 5px 12px; border-radius: 15px; font-size: 14px; font-weight: bold; margin-left: 10px; }
+        .city-label { font-size: 10px; font-weight: 900; letter-spacing: 2px; color: #aaa; margin-bottom: 5px; }
+        .balance-box { background: white; padding: 10px 25px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-weight: bold; font-size: 1.2rem; }
 
-        /* Боковое меню */
-        #sidebar {
-            position: fixed; left: -280px; top: 0; width: 260px; height: 100%;
-            background: var(--dark); color: white; transition: 0.3s; z-index: 2000; padding: 20px;
+        /* Меню (Три полоски) */
+        .burger { position: absolute; left: 20px; top: 20px; font-size: 28px; cursor: pointer; z-index: 1001; }
+        #side-menu {
+            position: fixed; top: 0; left: -100%; width: 100%; height: 100%; 
+            background: rgba(255,255,255,0.95); transition: 0.4s; z-index: 1000; padding-top: 80px;
         }
-        #sidebar.active { left: 0; }
-        .menu-item { padding: 15px; border-bottom: 1px solid #444; cursor: pointer; transition: 0.2s; }
-        .menu-item:hover { background: #3d3f4d; color: var(--lime); }
+        #side-menu.open { left: 0; }
+        .menu-link { display: block; padding: 20px; font-size: 20px; font-weight: bold; text-align: center; color: #333; text-decoration: none; border-bottom: 1px solid #eee; }
 
-        /* Карта */
-        #game-board {
-            position: relative; width: 100%; height: 60vh; margin-top: 50px;
-            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 20px 20px; overflow: hidden;
+        /* Объекты */
+        .entity { position: absolute; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: 0.1s; }
+        #player { background: var(--lime); border-radius: 50%; border: 2px solid #000; font-size: 12px; }
+        .obstacle { font-size: 14px; opacity: 0.5; }
+
+        /* Полиция (Всплывающее событие) */
+        #police-alert {
+            position: fixed; top: 20%; left: 10%; right: 10%; background: var(--police); color: white;
+            padding: 20px; border-radius: 15px; text-align: center; display: none; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* Объекты на карте */
-        .entity { position: absolute; width: 20px; height: 20px; transition: 0.1s; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        #player { background: var(--lime); border: 1.5px solid #000; border-radius: 3px; font-size: 14px; }
-        .restaurant { filter: drop-shadow(0 0 5px orange); font-size: 18px; }
-        .client { filter: drop-shadow(0 0 5px red); font-size: 18px; }
-        .obstacle { opacity: 0.6; }
+        /* Управление */
+        #controls-area { height: 35vh; background: white; display: flex; flex-direction: column; align-items: center; padding: 10px; border-top: 1px solid #ddd; }
+        .joystick { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; }
+        .j-btn { height: 60px; background: #f0f0f0; border: none; border-radius: 15px; font-size: 24px; color: #333; }
+        .j-btn:active { background: var(--lime); }
+        
+        #status-msg { margin: 10px; font-size: 13px; font-weight: bold; color: #666; height: 20px; }
 
-        /* Интерфейс управления */
-        #ui-controls { height: 35vh; background: white; display: flex; flex-direction: column; align-items: center; padding: 10px; border-top: 2px solid #ddd; }
-        .joystick { display: grid; grid-template-columns: repeat(3, 65px); gap: 8px; }
-        .j-btn { height: 65px; background: #333; color: white; border: none; border-radius: 12px; font-size: 24px; }
-        .j-btn:active { background: var(--lime); color: black; }
-
-        /* Магазин (модалки) */
-        .modal { display: none; position: fixed; top: 10%; left: 5%; width: 90%; height: 80%; background: white; z-index: 3000; border-radius: 15px; padding: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.5); overflow-y: auto; }
-        .close-modal { float: right; font-size: 24px; font-weight: bold; }
-        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .buy-btn { background: var(--lime); border: none; padding: 5px 15px; border-radius: 5px; font-weight: bold; }
+        .resource-bar { display: flex; gap: 10px; margin-bottom: 10px; }
+        .res-item { font-size: 12px; background: #eee; padding: 4px 10px; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div id="top-bar">
-    <div class="menu-btn" onclick="toggleSidebar()">☰</div>
-    <div class="stat-badge">💰 <span id="cash">0.00</span></div>
-    <div class="stat-badge">⚡ <span id="energy">100</span>%</div>
-    <div class="stat-badge">😊 <span id="mood">100</span>%</div>
+<div class="burger" onclick="toggleMenu()">☰</div>
+
+<div id="side-menu">
+    <a href="#" class="menu-link" onclick="openShop('food')">🏪 Магазин продуктов</a>
+    <a href="#" class="menu-link" onclick="openShop('tech')">🚲 Магазин техники</a>
+    <a href="#" class="menu-link">🛠 Инвентарь / Ремонт</a>
+    <a href="#" class="menu-link">🏦 Банк</a>
+    <div style="text-align: center; margin-top: 50px;" onclick="toggleMenu()">← НАЗАД</div>
 </div>
 
-<div id="sidebar">
-    <div class="close-modal" onclick="toggleSidebar()">×</div>
-    <h2 style="color: var(--lime)">Меню</h2>
-    <div class="menu-item" onclick="openModal('shop-food')">🍔 Магазин (Еда/Энергия)</div>
-    <div class="menu-item" onclick="openModal('shop-tech')">🚲 Магазин техники</div>
-    <div class="menu-item">🛠 Инвентарь / Ремонт</div>
-    <div class="menu-item">🏦 Банк</div>
-    <br>
-    <button onclick="location.reload()" style="width: 100%; padding: 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">Уйти в оффлайн</button>
+<div id="header">
+    <div class="city-label">WARSAW DISTRICT</div>
+    <div class="balance-box"><span id="cash">0.00</span> PLN</div>
 </div>
 
-<div id="shop-food" class="modal">
-    <span class="close-modal" onclick="closeModals()">×</span>
-    <h3>Магазин Продуктов</h3>
-    <div class="shop-item">
-        <span>Red Bull (⚡+30%)</span>
-        <span>15 PLN</span>
-        <button class="buy-btn" onclick="buyItem('energy', 30, 15)">Купить</button>
-    </div>
-    <div class="shop-item">
-        <span>Пицца (😊+20%)</span>
-        <span>25 PLN</span>
-        <button class="buy-btn" onclick="buyItem('mood', 20, 25)">Купить</button>
-    </div>
-</div>
-
-<div id="shop-tech" class="modal">
-    <span class="close-modal" onclick="closeModals()">×</span>
-    <h3>Магазин Техники</h3>
-    <div class="shop-item">
-        <span>Электро Вел 250W</span>
-        <span>1200 PLN</span>
-        <button class="buy-btn" onclick="buyTech(1.5, 1200)">Купить</button>
-    </div>
-    <div class="shop-item">
-        <span>Электро Вел 500W</span>
-        <span>2500 PLN</span>
-        <button class="buy-btn" onclick="buyTech(2.0, 2500)">Купить</button>
-    </div>
+<div id="police-alert">
+    <h2>🚓 ПОЛИЦИЯ!</h2>
+    <p>Вас остановили для проверки.</p>
+    <button onclick="handlePolice('bribe')" style="padding: 10px; background: gold; border: none; margin-bottom: 5px; width: 100%;">Дать взятку (20 PLN)</button>
+    <button onclick="handlePolice('wait')" style="padding: 10px; background: white; border: none; width: 100%;">Ждать проверки (10 сек)</button>
 </div>
 
 <div id="game-board">
@@ -115,10 +90,15 @@
     <div id="target" class="entity" style="display:none"></div>
 </div>
 
-<div id="ui-controls">
-    <div id="status-text" style="margin-bottom: 10px; color: #666; font-size: 14px;">Нажми "Онлайн" в меню или жди заказ</div>
+<div id="controls-area">
+    <div class="resource-bar">
+        <div class="res-item">⚡ <span id="energy">100</span>%</div>
+        <div class="res-item">😊 <span id="mood">100</span>%</div>
+    </div>
+    <div id="status-msg">Нажми "ОНЛАЙН", чтобы начать смену</div>
+    
     <div class="joystick">
-        <div id="online-trigger" onclick="startWork()" style="grid-column: 1/4; background: var(--lime); padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; cursor: pointer;">ВЫЙТИ В ОНЛАЙН</div>
+        <div id="online-btn" onclick="startShift()" style="grid-column: 1/4; background: var(--lime); padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; margin-bottom: 5px;">ВЫЙТИ В ОНЛАЙН</div>
         
         <button class="j-btn" style="grid-column: 2" onclick="move(0, -20)">↑</button>
         <button class="j-btn" style="grid-column: 1; grid-row: 3" onclick="move(-20, 0)">←</button>
@@ -128,102 +108,122 @@
 </div>
 
 <script>
-    // Базовые данные
-    let stats = { cash: 50.00, energy: 100, mood: 100, speed: 1 };
-    let playerPos = { x: 100, y: 100 };
+    let stats = { cash: 0.00, energy: 100, mood: 100, speed: 1 };
+    let playerPos = { x: 160, y: 160 };
     let targetPos = { x: 0, y: 0 };
-    let currentJob = null; // 'TO_REST', 'TO_CLIENT'
-    const cellSize = 20;
+    let isWorking = false;
+    let jobStep = 'NONE'; // RESTAURANT, CLIENT
 
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
-    function openModal(id) { closeModals(); document.getElementById(id).style.display = 'block'; }
-    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+    function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
 
-    function updateStats() {
-        document.getElementById('cash').innerText = stats.cash.toFixed(2);
-        document.getElementById('energy').innerText = Math.max(0, stats.energy);
-        document.getElementById('mood').innerText = Math.max(0, stats.mood);
-        document.getElementById('player').style.left = playerPos.x + 'px';
-        document.getElementById('player').style.top = playerPos.y + 'px';
-    }
-
-    function startWork() {
-        document.getElementById('online-trigger').style.display = 'none';
+    function startShift() {
+        isWorking = true;
+        document.getElementById('online-btn').style.display = 'none';
+        spawnObstacles();
         newOrder();
     }
 
-    function newOrder() {
-        currentJob = 'TO_REST';
-        targetPos = { 
-            x: Math.floor(Math.random() * 15) * cellSize, 
-            y: Math.floor(Math.random() * 15) * cellSize 
-        };
-        const t = document.getElementById('target');
-        t.style.display = 'flex';
-        t.style.left = targetPos.x + 'px';
-        t.style.top = targetPos.y + 'px';
-        t.className = 'entity restaurant';
-        t.innerHTML = '🍕'; // Значок ресторана
-        document.getElementById('status-text').innerText = "Заказ: Ul. Marszałkowska 10. Едь в ресторан!";
+    function spawnObstacles() {
+        document.querySelectorAll('.obstacle').forEach(e => e.remove());
+        for(let i=0; i<20; i++) {
+            let ox = Math.floor(Math.random() * (window.innerWidth/20 - 2)) * 20;
+            let oy = Math.floor(Math.random() * (60/20 * 100)) * 20;
+            let div = document.createElement('div');
+            div.className = 'entity obstacle';
+            div.style.left = ox + 'px';
+            div.style.top = oy + 'px';
+            div.innerText = '🚧';
+            document.getElementById('game-board').appendChild(div);
+        }
     }
 
     function move(dx, dy) {
-        if(stats.energy <= 0) { alert("Нет энергии! Купи Red Bull."); return; }
-        
-        playerPos.x += dx * stats.speed;
-        playerPos.y += dy * stats.speed;
-        
-        stats.energy -= 1;
-        updateStats();
-        checkCollision();
+        if(!isWorking) return;
+        if(stats.energy <= 0) return alert("Нет сил! Нужен Red Bull.");
+
+        // Шанс полиции при каждом шаге (2%)
+        if(Math.random() < 0.02) {
+            triggerPolice();
+            return;
+        }
+
+        let nx = playerPos.x + dx;
+        let ny = playerPos.y + dy;
+
+        // Проверка границ и преград
+        let hitObstacle = false;
+        document.querySelectorAll('.obstacle').forEach(o => {
+            if(parseInt(o.style.left) === nx && parseInt(o.style.top) === ny) hitObstacle = true;
+        });
+
+        if(hitObstacle) {
+            document.getElementById('status-msg').innerText = "🚧 ТУПИК! ОБЪЕЗЖАЙ!";
+            return;
+        }
+
+        playerPos.x = nx; playerPos.y = ny;
+        stats.energy -= 0.5;
+        updateView();
+        checkTarget();
     }
 
-    function checkCollision() {
-        let dist = Math.hypot(playerPos.x - targetPos.x, playerPos.y - targetPos.y);
-        if(dist < 15) {
-            if(currentJob === 'TO_REST') {
-                document.getElementById('status-text').innerText = "Ждем заказ (3с)...";
-                currentJob = 'WAITING';
+    function newOrder() {
+        jobStep = 'RESTAURANT';
+        targetPos = { x: Math.floor(Math.random()*10+2)*20, y: Math.floor(Math.random()*10+2)*20 };
+        let t = document.getElementById('target');
+        t.style.display = 'flex';
+        t.style.left = targetPos.x + 'px';
+        t.style.top = targetPos.y + 'px';
+        t.innerHTML = '🍕';
+        document.getElementById('status-msg').innerText = "Заказ из Barn Burger. Едь в ресторан!";
+    }
+
+    function checkTarget() {
+        let d = Math.hypot(playerPos.x - targetPos.x, playerPos.y - targetPos.y);
+        if(d < 10) {
+            if(jobStep === 'RESTAURANT') {
+                jobStep = 'WAIT';
+                document.getElementById('status-msg').innerText = "Заказ готовится...";
                 setTimeout(() => {
-                    currentJob = 'TO_CLIENT';
-                    targetPos = { x: Math.floor(Math.random() * 15) * cellSize, y: Math.floor(Math.random() * 15) * cellSize };
-                    const t = document.getElementById('target');
+                    jobStep = 'CLIENT';
+                    targetPos = { x: Math.floor(Math.random()*10+2)*20, y: Math.floor(Math.random()*10+2)*20 };
+                    let t = document.getElementById('target');
                     t.style.left = targetPos.x + 'px';
                     t.style.top = targetPos.y + 'px';
-                    t.className = 'entity client';
-                    t.innerHTML = '📍'; // Значок клиента
-                    document.getElementById('status-text').innerText = "Вези клиенту: Ul. Nowy Świat 5";
-                }, 3000);
-            } else if(currentJob === 'TO_CLIENT') {
-                let reward = 12.50;
-                stats.cash += reward;
-                alert("Доставлено! + " + reward + " PLN");
+                    t.innerHTML = '📍';
+                    document.getElementById('status-msg').innerText = "Вези клиенту на ул. Chmielna";
+                }, 2000);
+            } else if(jobStep === 'CLIENT') {
+                stats.cash += 15.50;
                 newOrder();
-                updateStats();
             }
         }
     }
 
-    function buyItem(type, val, price) {
-        if(stats.cash >= price) {
-            stats.cash -= price;
-            stats[type] = Math.min(100, stats[type] + val);
-            updateStats();
-            alert("Успешно куплено!");
-        } else { alert("Мало денег!"); }
+    function triggerPolice() {
+        document.getElementById('police-alert').style.display = 'block';
     }
 
-    function buyTech(speedMult, price) {
-        if(stats.cash >= price) {
-            stats.cash -= price;
-            stats.speed = speedMult;
-            updateStats();
-            alert("Новый велик! Теперь ты быстрее.");
-        } else { alert("Мало денег!"); }
+    function handlePolice(action) {
+        if(action === 'bribe') {
+            stats.cash -= 20;
+            document.getElementById('police-alert').style.display = 'none';
+        } else {
+            document.getElementById('status-msg').innerText = "Проверка документов (10с)...";
+            document.getElementById('police-alert').style.display = 'none';
+            // Здесь можно добавить блокировку джойстика на 10 сек
+        }
+        updateView();
     }
 
-    updateStats();
+    function updateView() {
+        document.getElementById('player').style.left = playerPos.x + 'px';
+        document.getElementById('player').style.top = playerPos.y + 'px';
+        document.getElementById('cash').innerText = stats.cash.toFixed(2);
+        document.getElementById('energy').innerText = Math.floor(stats.energy);
+    }
+
+    updateView();
 </script>
-
 </body>
 </html>
