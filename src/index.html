@@ -15,12 +15,14 @@
    const restBtn = document.getElementById("restBtn");
 
     function render() {
-      hud.innerHTML = `
-        💰 Деньги: ${state.money}<br>
-        ⚡ Энергия: ${state.energy}<br>
-        😵 Стресс: ${state.stress}
-      `;
-    }
+  hud.innerHTML = `
+    🕒 Время: ${state.isNight ? "Ночь 🌙" : "День ☀️"}<br>
+    💰 Деньги: ${state.money}<br>
+    ⚡ Энергия: ${state.energy}<br>
+    😵 Стресс: ${state.stress}
+  `;
+}
+
 
 btn.onclick = () => {
   if (state.energy <= 0) {
