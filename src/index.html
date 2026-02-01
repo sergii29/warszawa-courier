@@ -5,10 +5,8 @@
   <title>Warszawa Courier</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Styles -->
   <link rel="stylesheet" href="css/main.css" />
 
-  <!-- Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -28,13 +26,13 @@
     </div>
   </div>
 
-  <!-- ORDER SLIDE PANEL -->
+  <!-- ORDER PANEL -->
   <div class="order-panel" id="orderPanel">
     <div class="grabber"></div>
 
     <div class="order-info">
       <div>📦 Доставка</div>
-      <div class="price">+ <span id="orderPrice">18</span> PLN</div>
+      <div class="price">+ <span id="orderPrice">0</span> PLN</div>
     </div>
 
     <button id="acceptOrder" class="accept-btn">
@@ -42,12 +40,11 @@
     </button>
   </div>
 
-  <!-- SCRIPT -->
   <script type="module">
     import { state } from "./state.js";
     import { saveState, loadState } from "./save.js";
 
-    /* ---------- MAP ---------- */
+    /* ================= MAP ================= */
     const map = L.map("map", { zoomControl: false }).setView(
       [52.2297, 21.0122],
       14
@@ -67,39 +64,41 @@
       fillOpacity: 1,
     }).addTo(map);
 
-    function moveTo(targetPos) {
+    function moveTo(targetPos, onFinish) {
       const timer = setInterval(() => {
-        courierPos[0] += (targetPos[0] - courierPos[0]) * 0.08;
-        courierPos[1] += (targetPos[1] - courierPos[1]) * 0.08;
+        courierPos[0] += (targetPos[0] - courierPos[0]) * 0.06;
+        courierPos[1] += (targetPos[1] - courierPos[1]) * 0.06;
         courier.setLatLng(courierPos);
 
         if (
           Math.hypot(
             targetPos[0] - courierPos[0],
             targetPos[1] - courierPos[1]
-          ) < 0.0003
+          ) < 0.00025
         ) {
           clearInterval(timer);
+          onFinish && onFinish();
         }
       }, 50);
     }
 
-    /* ---------- HUD ---------- */
+    /* ================= HUD ================= */
     const moneyEl = document.getElementById("money");
 
     function render() {
-      moneyEl.textContent = state.money;
+      moneyEl.textContent = Math.floor(state.money);
     }
 
-    /* ---------- ORDER PANEL ---------- */
+    /* ================= ORDERS ================= */
     const orderPanel = document.getElementById("orderPanel");
     const acceptOrder = document.getElementById("acceptOrder");
     const orderPriceEl = document.getElementById("orderPrice");
 
     let currentOrderPrice = 0;
+    let deliveryInProgress = false;
 
     function spawnOrder() {
-      currentOrderPrice = Math.floor(12 + Math.random() * 20);
+      currentOrderPrice = Math.floor(15 + Math.random() * 25);
       orderPriceEl.textContent = currentOrderPrice;
       orderPanel.classList.add("show");
 
@@ -109,24 +108,42 @@
     }
 
     acceptOrder.onclick = () => {
+      if (deliveryInProgress) return;
+
+      deliveryInProgress = true;
       orderPanel.classList.remove("show");
 
-      state.money += currentOrderPrice;
       state.energy -= 10;
       state.stress += 5;
-
       saveState(state);
-      render();
 
       const target = spawnOrder();
-      moveTo(target);
+
+      const total = currentOrderPrice;
+      const steps = 50;              // чем больше — тем медленнее
+      const stepValue = total / steps;
+      let step = 0;
+
+      const moneyTimer = setInterval(() => {
+        state.money += stepValue;
+        render();
+        step++;
+
+        if (step >= steps) {
+          clearInterval(moneyTimer);
+        }
+      }, 250); // ~12 секунд доставка
+
+      moveTo(target, () => {
+        deliveryInProgress = false;
+        saveState(state);
+        spawnOrder(); // новый заказ после завершения
+      });
     };
 
-    /* ---------- INIT ---------- */
+    /* ================= INIT ================= */
     await loadState(state);
     render();
-
-    // Показать первый заказ автоматически
     spawnOrder();
   </script>
 </body>
