@@ -18,15 +18,21 @@
    const timeBtn = document.getElementById("timeBtn");
 
 
-   function render() {
+  function render() {
+  let warning = "";
+  if (state.energy <= 0) warning = "⚠️ Ты выжат. Нужно отдохнуть.";
+  if (state.stress >= 100) warning = "🚨 Нервный срыв! Штрафы растут.";
+
   hud.innerHTML = `
     🕒 Время: ${state.isNight ? "Ночь 🌙" : "День ☀️"}<br>
     ⭐ Уровень: ${state.level} (XP: ${state.xp})<br>
     💰 Деньги: ${state.money}<br>
     ⚡ Энергия: ${state.energy}<br>
-    😵 Стресс: ${state.stress}
+    😵 Стресс: ${state.stress}<br>
+    <b>${warning}</b>
   `;
 }
+
 
 
 
