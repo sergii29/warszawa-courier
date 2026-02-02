@@ -3,178 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier: Survival</title>
+    <title>Warsaw Courier: Stable</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <style>
         :root {
-            --bg: #f4f4dc; --grid: #dcdcc0; --lime: #ccff00; --dark: #121212; --danger: #ff3b3b; --blue: #007bff;
+            --bg: #f4f4dc; --grid: #dcdcc0; --lime: #ccff00; --dark: #121212; --danger: #ff3b3b;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; font-family: 'Courier New', Courier, monospace; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; font-family: 'Courier New', monospace; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
 
-        /* ИНТЕРФЕЙС */
+        /* ИГРОВОЕ ПОЛЕ (Строгая позиция) */
+        #game-area {
+            position: absolute; top: 140px; left: 0; right: 0; bottom: 260px;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px; 
+            z-index: 1;
+            overflow: hidden; /* Обрезаем все что вылетает */
+            border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;
+        }
+
+        /* СУЩНОСТИ */
+        .entity { 
+            position: absolute; width: 30px; height: 30px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 20px; transition: all 0.15s linear; 
+        }
+        #player { 
+            z-index: 100; /* Игрок всегда выше всех */
+            font-size: 24px; 
+            background: rgba(200, 255, 0, 0.3); /* Подсветка чтобы видеть */
+            border-radius: 50%;
+            border: 2px solid var(--dark);
+        }
+        .police { z-index: 50; transition: top 0.8s linear, left 0.8s linear; }
+        .obs { z-index: 10; opacity: 0.7; }
+
+        /* ВЕРХНИЙ UI */
         #top-ui {
             position: absolute; top: 0; left: 0; width: 100%; height: 140px;
-            background: rgba(255,255,255,0.95); border-bottom: 2px solid var(--dark);
-            z-index: 100; padding: 10px; display: flex; flex-direction: column; align-items: center;
+            background: white; z-index: 200; padding: 10px; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-
-        /* МЕНЮ */
-        #burger {
-            position: absolute; top: 15px; left: 15px; width: 45px; height: 45px;
-            background: var(--dark); border-radius: 8px; cursor: pointer; z-index: 101;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
-        }
-        .b-line { width: 25px; height: 3px; background: var(--lime); }
-
-        /* STATS */
-        .wallet-box { font-size: 20px; font-weight: bold; margin-bottom: 5px; color: var(--dark); border-bottom: 1px dashed #aaa; width: 100%; text-align: center; padding-bottom: 5px;}
-        .level-badge { font-size: 10px; background: var(--dark); color: var(--lime); padding: 2px 6px; border-radius: 4px; position: absolute; top: 15px; right: 15px; }
+        .wallet { font-size: 22px; font-weight: 900; color: var(--dark); border-bottom: 2px dashed #ccc; width: 100%; text-align: center; padding-bottom: 5px; margin-bottom: 5px;}
         
         .bars { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; }
         .bar-row { display: flex; align-items: center; justify-content: space-between; }
-        .bar-track { flex-grow: 1; height: 8px; background: #ddd; margin-left: 5px; border: 1px solid #999; border-radius: 4px; overflow: hidden; }
+        .bar-track { flex-grow: 1; height: 8px; background: #eee; margin-left: 5px; border: 1px solid #999; border-radius: 4px; overflow: hidden; }
         .bar-val { height: 100%; transition: width 0.3s; }
 
-        /* ИГРОВОЕ ПОЛЕ */
-        #game-area {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 30px 30px; z-index: 1;
-        }
-        .entity { position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.1s linear; }
-        #player { z-index: 10; font-size: 22px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
-        .police { z-index: 5; transition: top 1s linear, left 1s linear; } /* Плавная полиция */
-        
-        /* НИЖНЯЯ ПАНЕЛЬ */
+        /* НИЖНИЙ UI */
         #bot-ui {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 260px;
-            background: rgba(255,255,255,0.95); border-top: 2px solid var(--dark);
-            z-index: 100; display: flex; flex-direction: column; align-items: center; padding-top: 10px;
+            background: white; z-index: 200; border-top: 2px solid var(--dark);
+            display: flex; flex-direction: column; align-items: center; padding-top: 10px;
         }
-        
-        #status-msg { font-weight: bold; margin-bottom: 10px; font-size: 14px; text-align: center; color: #555; height: 20px;}
-        .timer-box { color: var(--danger); font-weight: 900; font-size: 18px; display: none; margin-bottom: 5px;}
 
-        /* ДЖОЙСТИК */
-        .joy-pad { display: grid; grid-template-columns: 70px 70px 70px; grid-template-rows: 60px 60px; gap: 5px; }
-        .j-btn { width: 100%; height: 100%; background: #eee; border: 1px solid #999; border-radius: 12px; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-user-select: none; }
-        .j-btn:active { background: #ccc; transform: scale(0.95); }
-        .u { grid-column: 2; grid-row: 1; }
-        .l { grid-column: 1; grid-row: 2; }
-        .d { grid-column: 2; grid-row: 2; }
-        .r { grid-column: 3; grid-row: 2; }
+        /* УПРАВЛЕНИЕ */
+        .joy-pad { display: grid; grid-template-columns: 70px 70px 70px; grid-template-rows: 60px 60px; gap: 8px; margin-top: 10px;}
+        .j-btn { background: #f0f0f0; border: 1px solid #bbb; border-radius: 12px; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 0 #ccc; }
+        .j-btn:active { background: #e0e0e0; box-shadow: 0 2px 0 #ccc; transform: translateY(2px); }
+        .u { grid-column: 2; grid-row: 1; } .l { grid-column: 1; grid-row: 2; } 
+        .d { grid-column: 2; grid-row: 2; } .r { grid-column: 3; grid-row: 2; }
 
-        /* КНОПКИ */
-        .big-btn { background: var(--lime); color: var(--dark); border: 2px solid var(--dark); padding: 15px 40px; font-weight: bold; font-size: 16px; border-radius: 8px; cursor: pointer; margin-top: 40px;}
-        .off-btn { background: var(--danger); color: white; border: none; padding: 5px 15px; border-radius: 4px; position: absolute; top: 10px; right: 10px; font-weight: bold;}
+        .btn-main { background: var(--lime); color: black; border: 2px solid black; padding: 15px 40px; font-weight: bold; border-radius: 8px; margin-top: 40px; cursor: pointer; }
 
-        /* МОДАЛКИ (МЕНЮ, ЗАКАЗ) */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        /* MODALS */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .popup { background: white; padding: 20px; border-radius: 10px; text-align: center; width: 80%; max-width: 320px; border: 3px solid var(--lime); }
         
-        /* SIDEBAR */
-        #sidebar { 
-            position: fixed; top: 0; left: -320px; width: 85%; height: 100%; background: white; 
-            z-index: 2001; transition: 0.2s; border-right: 3px solid var(--dark); display: flex; flex-direction: column;
-        }
-        #sidebar.open { left: 0; }
-        .sb-head { padding: 20px; background: var(--dark); color: var(--lime); display: flex; justify-content: space-between; font-weight: bold; align-items: center; }
-        .tabs { display: flex; background: #eee; padding: 5px; }
-        .tab { flex: 1; text-align: center; padding: 10px; font-size: 12px; border: 1px solid #ccc; background: white; cursor: pointer; }
-        .tab.active { background: var(--lime); border-color: black; font-weight: bold; }
-        .sb-body { flex: 1; overflow-y: auto; padding: 10px; }
-        
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .price-tag { font-weight: bold; color: var(--danger); }
-        
-        /* ORDER POPUP */
-        .popup { background: white; border: 3px solid var(--dark); padding: 20px; width: 90%; max-width: 350px; text-align: center; border-radius: 10px; box-shadow: 10px 10px 0 rgba(0,0,0,0.2); }
-        .rest-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--dark); border-bottom: 2px solid var(--lime); display: inline-block;}
-        .order-info { margin: 15px 0; font-size: 14px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 5px;}
-        .p-actions { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-        .btn-acc { background: var(--lime); border: 2px solid black; padding: 10px 20px; font-weight: bold; flex: 1; }
-        .btn-dec { background: #eee; border: 2px solid #999; padding: 10px 20px; font-weight: bold; flex: 1; }
+        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: black; color: white; padding: 10px 20px; border-radius: 20px; z-index: 5000; display: none; }
 
-        /* TOAST */
-        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; padding: 15px 20px; border-radius: 20px; display: none; z-index: 5000; text-align: center; max-width: 80%; }
+        /* Side Menu */
+        #menu-btn { position: absolute; top: 10px; left: 10px; width: 40px; height: 40px; background: #333; z-index: 201; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap:4px; border-radius:6px; }
+        .ml { width: 24px; height: 2px; background: white; }
+        
+        #sidebar { position: fixed; top:0; left:-300px; width:280px; height:100%; background:white; z-index:2001; transition:0.3s; border-right:2px solid black; padding:20px; overflow-y:auto; }
+        #sidebar.open { left:0; }
+        .shop-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee; align-items: center; font-size: 12px;}
+        .buy-btn { background:var(--dark); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;}
+
+        /* Debug button */
+        .rescue-btn { position: absolute; top: 50px; right: 10px; font-size: 10px; background: red; color: white; padding: 5px; border-radius: 5px; z-index: 5000; opacity: 0.7; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="top-ui">
-    <div class="wallet-box">
-        💵 <span id="cash-disp">0.00</span> | 🏦 <span id="bank-disp">0.00</span>
-    </div>
-    <div class="level-badge">LVL <span id="lvl-disp">1</span></div>
+    <div class="wallet">💵 <span id="cash">0.00</span> | 🏦 <span id="bank">0.00</span></div>
+    <div style="font-size: 10px; margin-bottom: 5px;">LVL: <span id="lvl">1</span> (Инфляция: <span id="inf">0</span>%)</div>
     
     <div class="bars">
-        <div class="bar-row">⚡ <div class="bar-track"><div id="bar-en" class="bar-val" style="width:100%; background:orange"></div></div></div>
-        <div class="bar-row">💧 <div class="bar-track"><div id="bar-wat" class="bar-val" style="width:100%; background:#00aaff"></div></div></div>
-        <div class="bar-row">🚲 <div class="bar-track"><div id="bar-hp" class="bar-val" style="width:100%; background:#555"></div></div></div>
+        <div class="bar-row">⚡ <div class="bar-track"><div id="b-en" class="bar-val" style="width:100%; background:orange"></div></div></div>
+        <div class="bar-row">💧 <div class="bar-track"><div id="b-wat" class="bar-val" style="width:100%; background:#00aaff"></div></div></div>
+        <div class="bar-row">🚲 <div class="bar-track"><div id="b-hp" class="bar-val" style="width:100%; background:#555"></div></div></div>
     </div>
 </div>
 
-<div id="burger" onclick="openMenu()">
-    <div class="b-line"></div><div class="b-line"></div><div class="b-line"></div>
-</div>
+<div id="menu-btn" onclick="toggleMenu()"><div class="ml"></div><div class="ml"></div><div class="ml"></div></div>
+
+<div class="rescue-btn" onclick="forceRescue()">🆘 ЗАСТРЯЛ? ЖМИ</div>
 
 <div id="game-area">
     <div id="player" class="entity">🚲</div>
-    <div id="target" class="entity" style="display:none"></div>
+    <div id="target" class="entity" style="display:none">🍕</div>
 </div>
 
 <div id="bot-ui">
-    <div id="status-msg">Смена не начата</div>
-    <div id="timer-box" class="timer-box">⏰ <span id="timer-val">00:00</span></div>
+    <div id="status" style="font-weight:bold; margin-bottom:5px; height:20px; color:#555">Смена не начата</div>
+    <div id="timer" style="color:red; font-weight:900; display:none; margin-bottom:5px">00:00</div>
+    
+    <button id="btn-start" class="btn-main" onclick="startShift()">НАЧАТЬ РАБОТУ</button>
+    <button id="btn-stop" style="display:none; color:red; background:none; border:none; font-weight:bold; margin-top:5px;" onclick="endShift()">Закончить смену</button>
 
-    <button id="btn-start" class="big-btn" onclick="startShift()">НАЧАТЬ СМЕНУ</button>
-    <button id="btn-stop" class="off-btn" style="display:none" onclick="endShift()">X</button>
-
-    <div id="controls" class="joy-pad" style="display:none">
-        <div class="j-btn u" ontouchstart="move(0,-1); event.preventDefault()" onmousedown="move(0,-1)">↑</div>
-        <div class="j-btn l" ontouchstart="move(-1,0); event.preventDefault()" onmousedown="move(-1,0)">←</div>
-        <div class="j-btn d" ontouchstart="move(0,1); event.preventDefault()" onmousedown="move(0,1)">↓</div>
-        <div class="j-btn r" ontouchstart="move(1,0); event.preventDefault()" onmousedown="move(1,0)">→</div>
+    <div id="joy" class="joy-pad" style="display:none">
+        <div class="j-btn u" onclick="move(0, -1)">↑</div>
+        <div class="j-btn l" onclick="move(-1, 0)">←</div>
+        <div class="j-btn d" onclick="move(0, 1)">↓</div>
+        <div class="j-btn r" onclick="move(1, 0)">→</div>
     </div>
 </div>
 
-<div id="menu-overlay" class="modal-overlay" onclick="closeMenu()"></div>
 <div id="sidebar">
-    <div class="sb-head">
-        <span>WARSZAWA MENU</span> <span onclick="closeMenu()" style="font-size:20px">✕</span>
+    <h3>МЕНЮ</h3>
+    <p>Нажми сбоку чтобы закрыть</p>
+    <hr>
+    <h4>Магазин</h4>
+    <div id="shop-list"></div>
+    <hr>
+    <h4>Банк</h4>
+    <div style="text-align:center">
+        <h1>🏦</h1>
+        <button class="buy-btn" onclick="bankAll()">Положить всё</button>
+        <button class="buy-btn" style="background:red" onclick="withdrawAll()">Снять всё</button>
     </div>
-    <div class="tabs">
-        <div class="tab active" onclick="tab('shop')">Магазин</div>
-        <div class="tab" onclick="tab('garage')">Гараж</div>
-        <div class="tab" onclick="tab('bank')">Банк</div>
+    <hr>
+    <h4>Гараж</h4>
+    <div class="shop-row">
+        <span>Починить байк</span>
+        <button class="buy-btn" onclick="repairBike()">REPAIR</button>
     </div>
-    <div id="menu-content" class="sb-body"></div>
-    <div style="font-size:10px; text-align:center; padding:5px; color:#aaa">ID: <span id="uid">...</span> v3.0</div>
+    <div style="font-size:10px; color:gray; margin-top:10px">ID: <span id="uid">...</span></div>
 </div>
+<div id="side-overlay" onclick="toggleMenu()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; display:none"></div>
 
-<div id="job-modal" class="modal-overlay">
+<div id="job-modal" class="modal">
     <div class="popup">
-        <div class="rest-name" id="job-rest">Pizzeria Mario</div>
-        <div class="order-info">
-            <div>📏 Расстояние: <b id="job-dist">0</b> км</div>
-            <div>💰 Оплата: <b id="job-pay" style="color:green; font-size:16px">0.00</b> PLN</div>
-            <hr>
-            <div style="font-size:11px; color:#555">Цены и оплата индексируются уровнем инфляции.</div>
-        </div>
-        <div class="p-actions">
-            <button class="btn-dec" onclick="rejectJob()">Отказаться</button>
-            <button class="btn-acc" onclick="acceptJob()">ВЗЯТЬ ЗАКАЗ</button>
+        <h2 id="j-name">Pizzeria</h2>
+        <p>Расстояние: <span id="j-dist">0</span> км</p>
+        <p style="font-size:18px; color:green; font-weight:bold">Оплата: <span id="j-pay">0.00</span> PLN</p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:15px">
+            <button class="buy-btn" style="background:#ccc; color:black" onclick="ansJob(false)">Отказ</button>
+            <button class="buy-btn" style="background:var(--lime); color:black; font-weight:bold" onclick="ansJob(true)">ВЗЯТЬ</button>
         </div>
     </div>
 </div>
 
-<div id="toast">Message</div>
+<div id="toast">Msg</div>
 
 <script>
-    // --- FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
         authDomain: "warszawa-courier.firebaseapp.com",
@@ -186,22 +175,19 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    // --- USER & DATA ---
-    const tg = window.Telegram.WebApp; 
-    tg.expand();
-    const userId = tg.initDataUnsafe?.user?.id || 'browser_dev_user_3';
+    
+    const tg = window.Telegram.WebApp; tg.expand();
+    const userId = tg.initDataUnsafe?.user?.id || 'browser_test_user_v4';
     document.getElementById('uid').innerText = userId;
 
-    const DB_VER = 3; // СБРОС ДАННЫХ ДЛЯ НОВОЙ ЭКОНОМИКИ
-    const STEP = 30; // px
+    // --- CONFIG ---
+    const DB_VER = 4; // Новая версия для сброса координат
+    const STEP = 30;
     
-    // Начальное состояние
     let st = {
         bal: 0.00, bank: 0.00, lvl: 1,
         en: 100, wat: 100, hp: 100,
-        x: 30, y: 30,
-        bike: 'default', bikes: ['default']
+        x: 30, y: 30
     };
 
     let isShift = false;
@@ -209,47 +195,80 @@
     let obs = [];
     let loops = {};
     let target = { active: false, x:0, y:0, type:0, offer:null };
-    
-    // Рестораны для атмосферы
-    const RESTAURANTS = ["Pizzeria Mario", "Kebab King", "Pan Kanapka", "Pierogi World", "Burger Wwa", "Sushi Master", "Zapiekanki Center"];
 
-    // --- LOAD/SAVE ---
+    // --- INIT ---
     function init() {
         db.ref('users/' + userId).once('value', s => {
             const d = s.val();
             if(d && d.ver === DB_VER) {
-                st = {...st, ...d}; // Merge saved data
+                st = {...st, ...d};
             } else {
-                save(); // Create new profile
-                showToast("Добро пожаловать в Варшаву (v3.0)");
+                // Если версия старая - сохраняем деньги, но сбрасываем позицию
+                if(d) {
+                    st.bal = d.bal || 0;
+                    st.bank = d.bank || 0;
+                    st.lvl = d.lvl || 1;
+                }
+                forceRescue(); // Принудительный сброс на старт
+                save();
             }
-            renderTop();
+            render();
+            // Запуск "защитника границ"
+            setInterval(ensureBounds, 2000);
         });
     }
 
     function save() {
-        db.ref('users/' + userId).set({
-            ver: DB_VER, ...st, last: Date.now()
-        });
+        db.ref('users/' + userId).set({ver: DB_VER, ...st, last: Date.now()});
     }
 
-    // --- GAME LOOP & LOGIC ---
-    function startShift() {
-        if(st.en < 10) return showToast("Слишком голоден для работы!");
-        if(st.hp <= 0) return showToast("Велик сломан. В ремонт!");
+    // --- CORE MECHANICS ---
+    function getInflation() { return 1 + (st.lvl - 1) * 0.1; }
+    function price(base) { return Math.ceil(base * getInflation()); }
 
+    function ensureBounds() {
+        // Эта функция проверяет, не улетел ли игрок
+        const box = document.getElementById('game-area');
+        const maxX = box.offsetWidth - 30;
+        const maxY = box.offsetHeight - 30;
+
+        let fixed = false;
+        if(st.x < 0) { st.x = 0; fixed = true; }
+        if(st.y < 0) { st.y = 0; fixed = true; }
+        if(st.x > maxX) { st.x = maxX - (maxX%STEP); fixed = true; }
+        if(st.y > maxY) { st.y = maxY - (maxY%STEP); fixed = true; }
+        
+        if(fixed) {
+            console.log("Player rescued from void");
+            renderPlayer();
+            save();
+        }
+    }
+
+    function forceRescue() {
+        st.x = 30; st.y = 30;
+        st.en = 100;
+        renderPlayer();
+        save();
+        showToast("Координаты сброшены!");
+    }
+
+    // --- GAME LOOP ---
+    function startShift() {
+        if(st.en < 5) return showToast("Голоден!");
+        if(st.hp <= 0) return showToast("Велик сломан!");
+        
         isShift = true;
         document.getElementById('btn-start').style.display = 'none';
-        document.getElementById('controls').style.display = 'grid';
+        document.getElementById('joy').style.display = 'grid';
         document.getElementById('btn-stop').style.display = 'block';
-        document.getElementById('status-msg').innerText = "Поиск заказов...";
+        document.getElementById('status').innerText = "Поиск...";
         
         spawnWorld();
-        newJobPhase(1); // Find pizza
-
-        // Police loop
+        newJobPhase(1);
+        
         if(loops.pol) clearInterval(loops.pol);
-        loops.pol = setInterval(movePolice, 1000);
+        loops.pol = setInterval(movePolice, 800);
     }
 
     function endShift() {
@@ -257,354 +276,275 @@
         clearInterval(loops.timer);
         clearInterval(loops.pol);
         document.getElementById('btn-start').style.display = 'block';
-        document.getElementById('controls').style.display = 'none';
+        document.getElementById('joy').style.display = 'none';
         document.getElementById('btn-stop').style.display = 'none';
-        document.getElementById('timer-box').style.display = 'none';
         document.getElementById('target').style.display = 'none';
-        document.getElementById('status-msg').innerText = "Смена окончена";
+        document.getElementById('status').innerText = "Отдых";
         
-        // Clear entities
-        document.querySelectorAll('.obs, .police').forEach(e => e.remove());
-        obs = []; police = [];
+        obs.forEach(o => o.el.remove()); obs = [];
+        police.forEach(p => p.el.remove()); police = [];
+        document.getElementById('timer').style.display = 'none';
     }
 
     function move(dx, dy) {
         if(!isShift) return;
-        // Check Menu Block
-        if(document.getElementById('sidebar').classList.contains('open')) return;
-
-        if(st.en <= 0 || st.hp <= 0) {
-            showToast("Нет сил или байк сломан!");
-            endShift(); openMenu(); return;
-        }
-
+        
         const box = document.getElementById('game-area');
-        const cols = Math.floor(box.offsetWidth/STEP);
-        const rows = Math.floor(box.offsetHeight/STEP);
+        const maxW = box.offsetWidth;
+        const maxH = box.offsetHeight;
         
         let nx = st.x + (dx * STEP);
         let ny = st.y + (dy * STEP);
-
-        // Bounds
-        if(nx < 0 || ny < 0 || nx >= cols*STEP || ny >= rows*STEP) return;
         
-        // Obstacles
-        if(obs.some(o => o.x === nx && o.y === ny)) {
-            showToast("Препятствие!"); return;
+        // СТРОГАЯ ПРОВЕРКА ГРАНИЦ
+        if(nx < 0 || ny < 0 || nx > maxW - 30 || ny > maxH - 30) {
+            showToast("Граница!"); return;
+        }
+        
+        if(obs.some(o => Math.abs(o.x - nx) < 10 && Math.abs(o.y - ny) < 10)) {
+            showToast("Стена!"); return;
+        }
+        
+        if(police.some(p => Math.abs(p.x - nx) < 10 && Math.abs(p.y - ny) < 10)) {
+            gotCaught(); return;
         }
 
-        // Police Collision (Instant Fine)
-        if(police.some(p => p.x === nx && p.y === ny)) {
-            finePlayer(); return;
-        }
-
-        // Apply Move
         st.x = nx; st.y = ny;
-        const drain = st.bike === 'ebike' ? 0.2 : 0.8;
-        st.en -= drain; st.wat -= 0.4; st.hp -= 0.15; // Iznos
+        st.en -= 0.5; st.wat -= 0.2; st.hp -= 0.1;
         
         renderPlayer();
-        renderTop();
-        checkTarget();
+        checkJob();
         save();
     }
 
-    // --- JOBS & ECONOMY ---
-    
-    // Инфляция: 10% за каждый уровень
-    function getInflation() { return 1 + (st.lvl - 1) * 0.10; }
-
-    function newJobPhase(phase) {
-        // Phase 1: Spawn Pizza, Phase 2: Spawn Client
-        target.type = phase;
-        let t = spawnRandomPoint();
-        target.x = t.x; target.y = t.y; target.active = true;
-        
-        const el = document.getElementById('target');
-        el.style.display = 'flex';
-        el.style.left = t.x + 'px'; el.style.top = t.y + 'px';
-        
-        if(phase === 1) {
-            el.innerText = '🍕';
-            document.getElementById('status-msg').innerText = "Едь в ресторан";
-            // Timer logic for pickup? Let's keep it simple for pickup, strict for delivery
-            setTimer(30 + t.dist); 
-        } else {
-            el.innerText = '👤';
-            document.getElementById('status-msg').innerText = "Вези клиенту!";
-             // Strict timer for delivery
-            setTimer(15 + Math.ceil(t.dist * 1.2));
-        }
-    }
-
-    function checkTarget() {
-        if(!target.active) return;
-        if(st.x === target.x && st.y === target.y) {
-            if(target.type === 1) {
-                // Arrived at restaurant -> Show Offer
-                target.active = false; // Stop checking
-                clearInterval(loops.timer); // Pause timer
-                
-                // Calculate realistic Offer
-                let distToClient = Math.floor(Math.random() * 20) + 5; // Simulating next leg
-                let basePay = distToClient * 1.5; 
-                let finalPay = (basePay * getInflation()).toFixed(2);
-                let rName = RESTAURANTS[Math.floor(Math.random() * RESTAURANTS.length)];
-
-                // Store offer data
-                target.offer = { dist: distToClient, pay: parseFloat(finalPay) };
-                
-                // Show UI
-                document.getElementById('job-rest').innerText = rName;
-                document.getElementById('job-dist').innerText = distToClient;
-                document.getElementById('job-pay').innerText = finalPay;
-                document.getElementById('job-modal').style.display = 'flex';
-
-            } else if (target.type === 2) {
-                // Delivered
-                finishJob(true);
-            }
-        }
-    }
-
-    function acceptJob() {
-        document.getElementById('job-modal').style.display = 'none';
-        showToast("Заказ принят!");
-        newJobPhase(2); // Spawn client
-    }
-
-    function rejectJob() {
-        document.getElementById('job-modal').style.display = 'none';
-        showToast("Отказ. Штраф за простой -2 PLN");
-        st.bal -= 2; // Small penalty
-        renderTop();
-        newJobPhase(1); // Find new pizza
-    }
-
-    function finishJob(success) {
-        clearInterval(loops.timer);
-        target.active = false;
-        document.getElementById('target').style.display = 'none';
-        document.getElementById('timer-box').style.display = 'none';
-
-        if(success) {
-            let pay = target.offer.pay;
-            st.bal += pay;
-            showToast(`Доставлено! +${pay} PLN`);
-        } else {
-            showToast("Не успел! Штраф -5 PLN");
-            st.bal -= 5;
-        }
-        save();
-        renderTop();
-        
-        // Next job after delay
-        setTimeout(() => { if(isShift) newJobPhase(1); }, 2000);
-    }
-
-    // --- TIMERS & POLICE ---
-    function setTimer(sec) {
-        clearInterval(loops.timer);
-        let t = sec;
-        const box = document.getElementById('timer-box');
-        const val = document.getElementById('timer-val');
-        box.style.display = 'block';
-        
-        loops.timer = setInterval(() => {
-            t--;
-            let m = Math.floor(t/60);
-            let s = t%60;
-            val.innerText = `${m}:${s<10?'0'+s:s}`;
-            if(t <= 0) {
-                finishJob(false);
-            }
-        }, 1000);
-    }
-
+    // --- POLICE AI ---
     function spawnWorld() {
         const box = document.getElementById('game-area');
         const cols = Math.floor(box.offsetWidth/STEP);
         const rows = Math.floor(box.offsetHeight/STEP);
         
-        // Obs
-        for(let i=0; i<12; i++) {
-            let p = getEmptyPos(cols, rows);
-            obs.push(p);
-            let el = document.createElement('div');
-            el.className = 'entity obs'; el.innerText = '🚧';
-            el.style.left = p.x+'px'; el.style.top = p.y+'px';
-            box.appendChild(el);
+        // Walls
+        for(let i=0; i<10; i++) {
+            let p = getPos(cols, rows);
+            let el = mkEnt('obs', '🚧', p.x, p.y);
+            obs.push({x:p.x, y:p.y, el:el});
         }
-        // Police (More vigilance)
+        // Police
         for(let i=0; i<6; i++) {
-            let p = getEmptyPos(cols, rows);
-            let el = document.createElement('div');
-            el.className = 'entity police'; el.innerText = '🚓';
-            el.style.left = p.x+'px'; el.style.top = p.y+'px';
-            box.appendChild(el);
+            let p = getPos(cols, rows);
+            let el = mkEnt('police', '🚓', p.x, p.y);
             police.push({x:p.x, y:p.y, el:el});
         }
     }
-
+    
     function movePolice() {
         if(!isShift) return;
         const box = document.getElementById('game-area');
-        const cols = Math.floor(box.offsetWidth/STEP);
-        const rows = Math.floor(box.offsetHeight/STEP);
+        const maxW = box.offsetWidth;
+        const maxH = box.offsetHeight;
 
         police.forEach(p => {
-            let moves = [{x:0,y:-STEP}, {x:0,y:STEP}, {x:-STEP,y:0}, {x:STEP,y:0}];
-            let m = moves[Math.floor(Math.random()*4)];
+            let dirs = [{x:0,y:-STEP}, {x:0,y:STEP}, {x:-STEP,y:0}, {x:STEP,y:0}];
+            let m = dirs[Math.floor(Math.random()*4)];
             let nx = p.x + m.x; let ny = p.y + m.y;
             
-            // Basic bounds check
-            if(nx>=0 && ny>=0 && nx<cols*STEP && ny<rows*STEP) {
+            // AI Bounds Check
+            if(nx >= 0 && ny >= 0 && nx <= maxW - 30 && ny <= maxH - 30) {
                 p.x = nx; p.y = ny;
                 p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
             }
-            // Check catch
-            if(Math.abs(p.x - st.x) < 10 && Math.abs(p.y - st.y) < 10) {
-                finePlayer();
+            
+            if(Math.abs(p.x - st.x) < 15 && Math.abs(p.y - st.y) < 15) {
+                gotCaught();
             }
         });
     }
 
-    function finePlayer() {
-        showToast("ПОЛИЦИЯ! ШТРАФ 50 PLN!");
-        st.bal -= 50; // Bank money is safe, cash is taken
-        st.x = 30; st.y = 30; // Respawn home
-        renderPlayer(); renderTop(); save();
+    function gotCaught() {
+        showToast("ПОЛИЦИЯ! -50 PLN");
+        st.bal -= 50;
+        forceRescue();
     }
 
-    function getEmptyPos(cols, rows) {
-        while(true) {
-            let x = Math.floor(Math.random()*cols)*STEP;
-            let y = Math.floor(Math.random()*rows)*STEP;
-            // Simple check away from player
-            if(Math.abs(x-st.x) > 60 && !obs.some(o=>o.x===x && o.y===y)) {
-                return {x,y};
+    // --- JOBS ---
+    function newJobPhase(ph) {
+        const box = document.getElementById('game-area');
+        const cols = Math.floor(box.offsetWidth/STEP);
+        const rows = Math.floor(box.offsetHeight/STEP);
+        
+        target.type = ph;
+        let p = getPos(cols, rows);
+        target.x = p.x; target.y = p.y; target.active = true;
+        
+        const el = document.getElementById('target');
+        el.style.display = 'flex';
+        el.style.left = p.x+'px'; el.style.top = p.y+'px';
+        
+        if(ph===1) {
+            el.innerText = '🍕';
+            document.getElementById('status').innerText = "Забери пиццу";
+            startTimer(40);
+        } else {
+            el.innerText = '👤';
+            document.getElementById('status').innerText = "Вези клиенту!";
+            startTimer(20);
+        }
+    }
+    
+    function checkJob() {
+        if(!target.active) return;
+        if(Math.abs(st.x - target.x) < 15 && Math.abs(st.y - target.y) < 15) {
+            if(target.type === 1) {
+                // Предложение
+                clearInterval(loops.timer);
+                target.active = false;
+                let dist = Math.floor(Math.random()*15)+5;
+                let pay = (dist * 1.5 * getInflation()).toFixed(2);
+                
+                target.offer = {dist, pay: parseFloat(pay)};
+                
+                document.getElementById('j-name').innerText = "Pizza " + Math.floor(Math.random()*100);
+                document.getElementById('j-dist').innerText = dist;
+                document.getElementById('j-pay').innerText = pay;
+                document.getElementById('job-modal').style.display = 'flex';
+            } else {
+                // Финиш
+                finish(true);
             }
         }
     }
     
-    function spawnRandomPoint() {
-        const box = document.getElementById('game-area');
-        const cols = Math.floor(box.offsetWidth/STEP);
-        const rows = Math.floor(box.offsetHeight/STEP);
-        let p = getEmptyPos(cols, rows);
-        let dist = (Math.abs(p.x-st.x) + Math.abs(p.y-st.y))/STEP;
-        return {...p, dist};
-    }
-
-    // --- MENU & SYSTEM ---
-    function openMenu() { 
-        document.getElementById('sidebar').classList.add('open'); 
-        document.getElementById('menu-overlay').style.display = 'flex';
-        tab('shop'); // Default tab
-    }
-    function closeMenu() { 
-        document.getElementById('sidebar').classList.remove('open'); 
-        document.getElementById('menu-overlay').style.display = 'none';
-    }
-
-    // Helper to calculate price based on inflation
-    function p(base) { return Math.ceil(base * getInflation()); }
-
-    function tab(name) {
-        const c = document.getElementById('menu-content');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active'); // Highlight tab logic simplified for brevity
-
-        if(name === 'shop') {
-            c.innerHTML = `
-                <div class="item-row"><div>🌭 Хот-дог (+20 En)</div> <div class="price-tag" onclick="buy('en', 20, ${p(8)})">${p(8)} PLN</div></div>
-                <div class="item-row"><div>🥤 Вода (+30 Wat)</div> <div class="price-tag" onclick="buy('wat', 30, ${p(5)})">${p(5)} PLN</div></div>
-                <div class="item-row"><div>⚡ Red Bull (+50 En)</div> <div class="price-tag" onclick="buy('bull', 50, ${p(15)})">${p(15)} PLN</div></div>
-                <div class="item-row" style="margin-top:20px; font-size:11px; color:#777">Инфляция: +${((getInflation()-1)*100).toFixed(0)}%</div>
-            `;
-        } else if(name === 'garage') {
-            c.innerHTML = `
-                <div style="text-align:center; padding:10px; border:1px solid #ddd; border-radius:8px;">
-                    <h3>🔧 Сервис</h3>
-                    <p>Состояние: ${st.hp.toFixed(0)}%</p>
-                    <button class="big-btn" style="width:100%; margin-top:5px; background:#eee; font-size:14px" onclick="repairBike()">Починить (${p(20)} PLN)</button>
-                    <p style="font-size:10px; margin-top:5px">Ремонт повышает уровень и цены (Инфляция)</p>
-                </div>
-            `;
-        } else if(name === 'bank') {
-            c.innerHTML = `
-                <div style="text-align:center; padding:10px;">
-                    <h3>PKO Bank Polski</h3>
-                    <div style="font-size:30px; margin:10px">🏦 ${st.bank.toFixed(2)}</div>
-                    <p style="font-size:12px; color:#555">Деньги в банке защищены от штрафов.</p>
-                    <div style="display:flex; gap:10px; margin-top:20px;">
-                        <button class="btn-acc" onclick="bankOp('dep')">Вклад</button>
-                        <button class="btn-dec" onclick="bankOp('wit')">Снять</button>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    function buy(type, val, cost) {
-        if(st.bal >= cost) {
-            st.bal -= cost;
-            if(type === 'en' || type === 'bull') st.en = Math.min(100, st.en + val);
-            if(type === 'wat') st.wat = Math.min(100, st.wat + val);
-            showToast("Куплено!"); save(); renderTop(); tab('shop');
-        } else showToast("Не хватает денег!");
-    }
-
-    function repairBike() {
-        let cost = p(20);
-        if(st.bal >= cost) {
-            st.bal -= cost;
-            st.hp = 100;
-            st.lvl++; // LEVEL UP
-            showToast(`Байк как новый! Уровень ${st.lvl}. Цены выросли!`);
-            save(); renderTop(); tab('garage');
-        } else showToast("Нет денег на ремонт.");
-    }
-
-    function bankOp(op) {
-        if(op === 'dep') {
-            if(st.bal > 0) {
-                st.bank += st.bal; st.bal = 0;
-                showToast("Все деньги положены в банк");
-            }
+    function ansJob(yes) {
+        document.getElementById('job-modal').style.display = 'none';
+        if(yes) {
+            showToast("Везем!");
+            newJobPhase(2);
         } else {
-            if(st.bank > 0) {
-                st.bal += st.bank; st.bank = 0;
-                showToast("Деньги сняты");
-            }
+            showToast("Отказ -2 PLN");
+            st.bal -= 2; render();
+            newJobPhase(1);
         }
-        save(); renderTop(); tab('bank');
+    }
+    
+    function finish(ok) {
+        clearInterval(loops.timer);
+        target.active = false;
+        document.getElementById('target').style.display = 'none';
+        document.getElementById('timer').style.display = 'none';
+        
+        if(ok) {
+            let add = target.offer.pay;
+            st.bal += add;
+            showToast(`+${add} PLN`);
+        } else {
+            showToast("Время вышло! -5 PLN");
+            st.bal -= 5;
+        }
+        render(); save();
+        setTimeout(() => { if(isShift) newJobPhase(1); }, 1500);
     }
 
+    function startTimer(sec) {
+        clearInterval(loops.timer);
+        let t = sec;
+        document.getElementById('timer').style.display = 'block';
+        loops.timer = setInterval(()=>{
+            t--;
+            document.getElementById('timer').innerText = t + " сек";
+            if(t<=0) finish(false);
+        }, 1000);
+    }
+
+    // --- UTILS ---
+    function mkEnt(cls, ico, x, y) {
+        let d = document.createElement('div');
+        d.className = 'entity '+cls; d.innerText = ico;
+        d.style.left=x+'px'; d.style.top=y+'px';
+        document.getElementById('game-area').appendChild(d);
+        return d;
+    }
+
+    function getPos(c, r) {
+        let x, y, ok=false;
+        while(!ok) {
+            x = Math.floor(Math.random()*(c-1))*STEP;
+            y = Math.floor(Math.random()*(r-1))*STEP;
+            ok = (Math.abs(x-st.x)>60);
+        }
+        return {x,y};
+    }
+
+    function render() {
+        document.getElementById('cash').innerText = st.bal.toFixed(2);
+        document.getElementById('bank').innerText = st.bank.toFixed(2);
+        document.getElementById('lvl').innerText = st.lvl;
+        document.getElementById('inf').innerText = Math.round((getInflation()-1)*100);
+        
+        document.getElementById('b-en').style.width = st.en + '%';
+        document.getElementById('b-wat').style.width = st.wat + '%';
+        document.getElementById('b-hp').style.width = st.hp + '%';
+        
+        renderPlayer();
+        updateShop();
+    }
+    
     function renderPlayer() {
         const p = document.getElementById('player');
         p.style.left = st.x + 'px'; p.style.top = st.y + 'px';
     }
 
-    function renderTop() {
-        document.getElementById('cash-disp').innerText = st.bal.toFixed(2);
-        document.getElementById('bank-disp').innerText = st.bank.toFixed(2);
-        document.getElementById('lvl-disp').innerText = st.lvl;
-        
-        document.getElementById('bar-en').style.width = Math.max(0, st.en)+'%';
-        document.getElementById('bar-wat').style.width = Math.max(0, st.wat)+'%';
-        document.getElementById('bar-hp').style.width = Math.max(0, st.hp)+'%';
+    // --- SHOP & MENU ---
+    function toggleMenu() {
+        const s = document.getElementById('sidebar');
+        const o = document.getElementById('side-overlay');
+        if(s.classList.contains('open')) {
+            s.classList.remove('open'); o.style.display='none';
+        } else {
+            s.classList.add('open'); o.style.display='block';
+            updateShop();
+        }
     }
 
-    function showToast(msg) {
+    function updateShop() {
+        const c = document.getElementById('shop-list');
+        c.innerHTML = `
+            <div class="shop-row"><div>🌭 Хот-дог</div> <button class="buy-btn" onclick="buy('en', 20, ${price(8)})">${price(8)}</button></div>
+            <div class="shop-row"><div>🥤 Вода</div> <button class="buy-btn" onclick="buy('wat', 30, ${price(5)})">${price(5)}</button></div>
+            <div class="shop-row"><div>⚡ Red Bull</div> <button class="buy-btn" onclick="buy('bull', 50, ${price(15)})">${price(15)}</button></div>
+        `;
+    }
+
+    function buy(t, v, c) {
+        if(st.bal >= c) {
+            st.bal -= c;
+            if(t==='en' || t==='bull') st.en = Math.min(100, st.en+v);
+            if(t==='wat') st.wat = Math.min(100, st.wat+v);
+            showToast("Куплено"); render(); save();
+        } else showToast("Нет денег");
+    }
+
+    function repairBike() {
+        let c = price(20);
+        if(st.bal >= c) {
+            st.bal -= c; st.hp = 100; st.lvl++;
+            showToast("Починил! LVL UP!"); render(); save();
+        } else showToast("Нет денег");
+    }
+
+    function bankAll() {
+        if(st.bal > 0) { st.bank += st.bal; st.bal = 0; showToast("Вклад сделан"); render(); save(); }
+    }
+    function withdrawAll() {
+        if(st.bank > 0) { st.bal += st.bank; st.bank = 0; showToast("Деньги сняты"); render(); save(); }
+    }
+
+    function showToast(m) {
         const t = document.getElementById('toast');
-        t.innerText = msg; t.style.display = 'block';
-        setTimeout(()=>t.style.display='none', 2000);
+        t.innerText = m; t.style.display = 'block';
+        setTimeout(()=>t.style.display='none', 1500);
     }
-
-    // Init
+    
     init();
-
 </script>
 </body>
 </html>
