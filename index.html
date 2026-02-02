@@ -3,179 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier: Syndicate</title>
+    <title>Warszawa Courier: Night City</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <style>
         :root {
-            --bg: #f0f2f5; --grid: #d1d9e6; --lime: #32CD32; --dark: #121212; --danger: #ff3b3b; --blue: #007bff;
+            /* Premium Dark Palette */
+            --bg: #0f1115; 
+            --panel: rgba(30, 34, 45, 0.85);
+            --grid-line: rgba(255, 255, 255, 0.05);
+            --accent: #00ff88; /* Cyber Green */
+            --warn: #ff3355;   /* Cyber Red */
+            --gold: #ffb700;
+            --text-main: #e0e0e0;
+            --text-muted: #8b9bb4;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; font-family: 'Courier New', monospace; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; font-family: 'Segoe UI', Roboto, Helvetica, monospace; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text-main); }
 
         /* ИГРОВОЕ ПОЛЕ */
         #game-area {
-            position: absolute; top: 140px; left: 0; right: 0; bottom: 260px;
-            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            position: absolute; top: 110px; left: 0; right: 0; bottom: 220px;
+            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 30px 30px; 
             z-index: 1; overflow: hidden; 
-            border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         
-        /* СИРЕНА (Визуальный эффект близости полиции) */
-        @keyframes siren-flash { 0% {box-shadow: inset 0 0 0 0 transparent;} 50% {box-shadow: inset 0 0 30px 10px rgba(255,0,0,0.5);} 100% {box-shadow: inset 0 0 30px 10px rgba(0,0,255,0.5);} }
-        .siren-active { animation: siren-flash 0.8s infinite; border: 2px solid red !important; }
+        /* СИРЕНА */
+        @keyframes siren-flash { 0% {box-shadow: inset 0 0 0 0 transparent;} 50% {box-shadow: inset 0 0 50px 20px rgba(255, 51, 85, 0.4);} 100% {box-shadow: inset 0 0 0 0 transparent;} }
+        .siren-active { animation: siren-flash 1s infinite; }
 
         /* СУЩНОСТИ */
         .entity { 
             position: absolute; width: 30px; height: 30px; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 20px; transition: all 0.2s linear; /* Плавнее движение */
+            font-size: 18px; transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
         #player { 
-            z-index: 100; font-size: 24px; 
-            background: rgba(50, 205, 50, 0.4); 
-            border-radius: 50%; border: 2px solid var(--dark);
+            z-index: 100; font-size: 20px; 
+            background: var(--accent); color: #000;
+            border-radius: 50%; box-shadow: 0 0 15px var(--accent);
         }
-        .police { z-index: 50; transition: top 1s linear, left 1s linear; }
-        .obs { z-index: 10; opacity: 0.7; }
+        .police { 
+            z-index: 50; transition: top 0.8s linear, left 0.8s linear; 
+            font-size: 22px;
+        }
+        .obs { 
+            z-index: 10; opacity: 0.8; 
+            background: #2a2e38; border-radius: 4px; border: 1px solid #444;
+            color: transparent; /* Скрываем эмодзи, оставляем блок */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .obs::after { content: ''; width: 6px; height: 6px; background: #555; border-radius: 50%; }
 
-        /* UI */
+        /* UI HEADER */
         #top-ui {
-            position: absolute; top: 0; left: 0; width: 100%; height: 140px;
-            background: white; z-index: 200; padding: 10px; display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: absolute; top: 0; left: 0; width: 100%; height: 110px;
+            background: var(--panel); backdrop-filter: blur(10px);
+            z-index: 200; padding: 15px; display: flex; flex-direction: column; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .wallet-row { display: flex; width: 100%; justify-content: space-around; border-bottom: 2px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px; }
-        .stat-t { font-size: 14px; font-weight: bold; color: #555; }
-        .stat-v { font-size: 18px; font-weight: 900; color: var(--dark); }
+        .wallet-row { display: flex; width: 100%; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .balance-group { display: flex; flex-direction: column; }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 22px; font-weight: 700; color: var(--text-main); font-family: monospace; letter-spacing: -1px; }
+        .stat-value.gold { color: var(--gold); }
         
-        .bars { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; }
-        .bar-row { display: flex; align-items: center; justify-content: space-between; }
-        .bar-track { flex-grow: 1; height: 8px; background: #eee; margin-left: 5px; border: 1px solid #999; border-radius: 4px; overflow: hidden; }
-        .bar-val { height: 100%; transition: width 0.3s; }
+        .bars-container { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .bar-col { display: flex; flex-direction: column; gap: 4px; }
+        .bar-track { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.3s; border-radius: 2px; }
 
+        /* UI BOTTOM */
         #bot-ui {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 260px;
-            background: white; z-index: 200; border-top: 2px solid var(--dark);
-            display: flex; flex-direction: column; align-items: center; padding-top: 10px;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 220px;
+            background: var(--panel); backdrop-filter: blur(10px);
+            z-index: 200; border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; flex-direction: column; align-items: center; padding-top: 15px;
         }
 
-        .joy-pad { display: grid; grid-template-columns: 70px 70px 70px; grid-template-rows: 60px 60px; gap: 8px; margin-top: 10px;}
-        .j-btn { background: #f0f0f0; border: 1px solid #bbb; border-radius: 12px; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 0 #ccc; }
-        .j-btn:active { background: #e0e0e0; box-shadow: 0 2px 0 #ccc; transform: translateY(2px); }
+        /* CONTROLS */
+        .joy-pad { display: grid; grid-template-columns: 65px 65px 65px; grid-template-rows: 55px 55px; gap: 6px; margin-top: 5px;}
+        .j-btn { 
+            background: linear-gradient(145deg, #2a2e38, #22252e); 
+            border: 1px solid rgba(255,255,255,0.05); 
+            border-radius: 12px; font-size: 20px; color: var(--text-muted);
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+            box-shadow: 0 4px 0 #15171c; transition: transform 0.1s;
+        }
+        .j-btn:active { background: #1e2129; box-shadow: 0 1px 0 #15171c; transform: translateY(3px); color: var(--accent); }
         .u { grid-column: 2; grid-row: 1; } .l { grid-column: 1; grid-row: 2; } 
         .d { grid-column: 2; grid-row: 2; } .r { grid-column: 3; grid-row: 2; }
 
-        .btn-main { background: var(--lime); color: black; border: 2px solid black; padding: 15px 40px; font-weight: bold; border-radius: 8px; margin-top: 40px; cursor: pointer; }
-
-        /* SCENES */
-        #arrest-screen {
-            position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9000;
-            background: rgba(0,0,50,0.9); display: none; flex-direction: column;
-            align-items: center; justify-content: center; color: white;
+        .btn-main { 
+            background: linear-gradient(90deg, var(--accent), #00cc6a); 
+            color: #000; border: none; padding: 16px 60px; 
+            font-weight: 800; border-radius: 30px; margin-top: 30px; 
+            box-shadow: 0 10px 20px rgba(0, 255, 136, 0.2);
+            text-transform: uppercase; letter-spacing: 1px;
         }
-        
-        /* MENU & MODALS */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
-        .popup { background: white; padding: 20px; border-radius: 10px; text-align: center; width: 85%; max-width: 320px; border: 3px solid var(--lime); }
-        
-        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: black; color: white; padding: 10px 20px; border-radius: 20px; z-index: 5000; display: none; text-align: center;}
 
-        #menu-btn { position: absolute; top: 10px; left: 10px; width: 40px; height: 40px; background: #333; z-index: 201; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap:4px; border-radius:6px; }
-        .ml { width: 24px; height: 2px; background: white; }
+        /* MODALS & MENUS */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .popup { background: #1e222d; padding: 25px; border-radius: 16px; width: 85%; max-width: 320px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center; }
         
-        #sidebar { position: fixed; top:0; left:-300px; width:290px; height:100%; background:white; z-index:2001; transition:0.3s; border-right:2px solid black; padding:20px; overflow-y:auto; }
+        #menu-btn { position: absolute; top: 15px; left: 15px; width: 40px; height: 40px; background: rgba(255,255,255,0.1); z-index: 201; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap:5px; backdrop-filter: blur(4px); }
+        .ml { width: 20px; height: 2px; background: var(--text-main); border-radius: 2px; }
+        
+        #sidebar { 
+            position: fixed; top:0; left:-320px; width:300px; height:100%; 
+            background: #15171c; z-index:2001; transition:0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            border-right: 1px solid rgba(255,255,255,0.1); padding:25px; overflow-y:auto; 
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+        }
         #sidebar.open { left:0; }
         
-        .bank-card { background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .debt-text { color: var(--danger); font-weight: bold; margin-top: 5px; font-size: 12px;}
+        .bank-card { 
+            background: linear-gradient(135deg, #1a2980, #26d0ce); 
+            color: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; 
+            box-shadow: 0 10px 20px rgba(38, 208, 206, 0.2); 
+            position: relative; overflow: hidden;
+        }
+        .bank-card::after { content:'PKO'; position:absolute; right:-10px; bottom:-10px; font-size:60px; opacity:0.1; font-weight:900; font-style:italic;}
+
+        .buy-btn {
+            background: rgba(255,255,255,0.1); border:none; color:white;
+            padding: 8px 16px; border-radius: 8px; font-weight:600; font-size:12px;
+        }
+        .buy-btn.action { background: var(--accent); color: black; }
+        .buy-btn.danger { background: var(--warn); color: white; }
+
+        #arrest-screen {
+            position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9000;
+            background: #000; display: none; flex-direction: column;
+            align-items: center; justify-content: center; color: var(--warn);
+        }
+        
+        #toast { 
+            position: fixed; top: 130px; left: 50%; transform: translateX(-50%); 
+            background: rgba(20, 20, 20, 0.9); color: white; 
+            padding: 10px 20px; border-radius: 30px; z-index: 5000; 
+            display: none; font-size: 12px; font-weight: bold; border: 1px solid #333;
+        }
+
+        h3, h4 { color: var(--text-main); margin: 0 0 10px 0; }
+        hr { border: 0; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 15px 0; }
     </style>
 </head>
 <body>
 
 <div id="top-ui">
     <div class="wallet-row">
-        <div><div class="stat-t">Наличка</div><div class="stat-v" id="cash">0.00</div></div>
-        <div><div class="stat-t">Банк</div><div class="stat-v" id="bank">0.00</div></div>
+        <div class="balance-group">
+            <div class="stat-label">Наличные</div>
+            <div class="stat-value" id="cash">0.00</div>
+        </div>
+        <div class="balance-group" style="align-items: flex-end;">
+            <div class="stat-label">Банк PKO</div>
+            <div class="stat-value gold" id="bank">0.00</div>
+        </div>
     </div>
-    <div style="font-size: 10px; margin-bottom: 5px;">LVL: <span id="lvl">1</span> | Долг: <span id="debt" style="color:red">0</span></div>
     
-    <div class="bars">
-        <div class="bar-row">⚡ <div class="bar-track"><div id="b-en" class="bar-val" style="width:100%; background:orange"></div></div></div>
-        <div class="bar-row">💧 <div class="bar-track"><div id="b-wat" class="bar-val" style="width:100%; background:#00aaff"></div></div></div>
-        <div class="bar-row">🚲 <div class="bar-track"><div id="b-hp" class="bar-val" style="width:100%; background:#555"></div></div></div>
+    <div class="bars-container">
+        <div class="bar-col">
+            <div style="display:flex; justify-content:space-between; font-size:9px; color:orange"><span>ЭНЕРГИЯ</span><span id="txt-en">100</span></div>
+            <div class="bar-track"><div id="b-en" class="bar-fill" style="width:100%; background:orange"></div></div>
+        </div>
+        <div class="bar-col">
+            <div style="display:flex; justify-content:space-between; font-size:9px; color:#00aaff"><span>ВОДА</span><span id="txt-wat">100</span></div>
+            <div class="bar-track"><div id="b-wat" class="bar-fill" style="width:100%; background:#00aaff"></div></div>
+        </div>
+        <div class="bar-col">
+            <div style="display:flex; justify-content:space-between; font-size:9px; color:#ff3355"><span>БАЙК</span><span id="txt-hp">100</span></div>
+            <div class="bar-track"><div id="b-hp" class="bar-fill" style="width:100%; background:#ff3355"></div></div>
+        </div>
     </div>
 </div>
 
 <div id="menu-btn" onclick="toggleMenu()"><div class="ml"></div><div class="ml"></div><div class="ml"></div></div>
 
 <div id="arrest-screen">
-    <div style="font-size:50px; margin-bottom:20px">🚔</div>
-    <h1 style="color:red; font-weight:900; letter-spacing:2px">ВЫ АРЕСТОВАНЫ</h1>
-    <p>Попытка скрыться не удалась.</p>
-    <h2 style="color: yellow; margin-top:10px">-50 PLN Штраф</h2>
-    <div style="margin-top:20px; font-size:12px; color:#ccc">Перевозка в участок...</div>
+    <div style="font-size:60px; margin-bottom:20px; animation: pulse 0.5s infinite">🚔</div>
+    <h1 style="font-weight:900; letter-spacing:4px; text-transform:uppercase">АРЕСТОВАН</h1>
+    <p style="color:#888; margin-top:-10px">Твой байк конфискован на штрафстоянку</p>
+    <h2 style="color: white; margin-top:20px">-150 PLN ШТРАФ</h2>
 </div>
 
 <div id="game-area">
     <div id="player" class="entity">🚲</div>
-    <div id="target" class="entity" style="display:none">🍕</div>
-    </div>
+    <div id="target" class="entity" style="display:none; filter: drop-shadow(0 0 8px gold);">📦</div>
+</div>
 
 <div id="bot-ui">
-    <div id="status" style="font-weight:bold; margin-bottom:5px; height:20px; color:#555">Смена не начата</div>
-    <div id="timer" style="color:red; font-weight:900; display:none; margin-bottom:5px">00:00</div>
-    
-    <button id="btn-start" class="btn-main" onclick="startShift()">НАЧАТЬ РАБОТУ</button>
-    <button id="btn-stop" style="display:none; color:red; background:none; border:none; font-weight:bold; margin-top:5px;" onclick="endShift()">Закончить смену</button>
+    <div style="display:flex; justify-content:space-between; width:100%; padding: 0 20px; font-size:12px; color:var(--text-muted)">
+        <span id="status">Нет заказов</span>
+        <span id="timer" style="color:var(--warn); font-weight:bold; display:none">00:00</span>
+    </div>
+
+    <button id="btn-start" class="btn-main" onclick="startShift()">НАЧАТЬ СМЕНУ</button>
+    <div id="btn-stop" style="display:none; color:var(--warn); font-size:12px; margin-top:10px; cursor:pointer; text-decoration:underline" onclick="endShift()">ЗАКОНЧИТЬ РАБОТУ</div>
 
     <div id="joy" class="joy-pad" style="display:none">
-        <div class="j-btn u" onclick="move(0, -1)">↑</div>
-        <div class="j-btn l" onclick="move(-1, 0)">←</div>
-        <div class="j-btn d" onclick="move(0, 1)">↓</div>
-        <div class="j-btn r" onclick="move(1, 0)">→</div>
+        <div class="j-btn u" onclick="move(0, -1)">▲</div>
+        <div class="j-btn l" onclick="move(-1, 0)">◀</div>
+        <div class="j-btn d" onclick="move(0, 1)">▼</div>
+        <div class="j-btn r" onclick="move(1, 0)">▶</div>
     </div>
 </div>
 
 <div id="sidebar">
-    <h3>МЕНЮ ИГРОКА</h3>
-    <hr>
-    <h4>Магазин 24/7</h4>
+    <div style="font-size:10px; color:gray; text-transform:uppercase; margin-bottom:20px">Warszawa Courier v7.0 Night City</div>
+    
+    <h3>МАГАЗИН</h3>
     <div id="shop-list"></div>
+    
     <hr>
-    <h4>PKO Bank Polski</h4>
+    <h3>БАНКИНГ</h3>
     <div id="bank-ui"></div>
+    
     <hr>
-    <h4>Гараж</h4>
-    <div style="display:flex; justify-content:space-between; align-items:center">
-        <span>Ремонт байка</span>
-        <button class="buy-btn" onclick="repairBike()">FIX</button>
+    <h3>ГАРАЖ</h3>
+    <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center">
+        <div>
+            <div style="font-weight:bold">Ремонт байка</div>
+            <div style="font-size:10px; color:gray">Восстановить 100% HP</div>
+        </div>
+        <button class="buy-btn action" onclick="repairBike()">FIX</button>
     </div>
-    <div style="font-size:10px; color:gray; margin-top:20px">ID: <span id="uid">...</span> v6.0</div>
+    
+    <div style="margin-top:30px; font-size:10px; color:gray; word-break:break-all">ID: <span id="uid">...</span></div>
 </div>
-<div id="side-overlay" onclick="toggleMenu()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; display:none"></div>
+<div id="side-overlay" onclick="toggleMenu()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; display:none; backdrop-filter: blur(2px);"></div>
 
 <div id="job-modal" class="modal">
     <div class="popup">
-        <h2 id="j-name">Заказ</h2>
-        <div style="background:#eee; padding:10px; border-radius:5px; margin:10px 0; text-align:left">
-            <div>📏 Дистанция: <b id="j-dist">0</b> км</div>
-            <div>💰 Оплата: <b id="j-pay" style="color:green">0.00</b> PLN</div>
+        <h2 style="color:var(--accent)">НОВЫЙ ЗАКАЗ</h2>
+        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:8px; margin:15px 0; text-align:left">
+            <div style="margin-bottom:5px">📍 Дистанция: <b id="j-dist" style="color:white">0</b> км</div>
+            <div>💰 Оплата: <b id="j-pay" style="color:var(--gold); font-size:18px">0.00</b> PLN</div>
         </div>
         <div style="display:flex; gap:10px; justify-content:center;">
-            <button style="flex:1; padding:10px; border-radius:5px; border:1px solid #999" onclick="ansJob(false)">Отмена</button>
-            <button style="flex:1; padding:10px; border-radius:5px; background:var(--lime); border:2px solid black; font-weight:bold" onclick="ansJob(true)">ПРИНЯТЬ</button>
+            <button class="buy-btn" style="flex:1; padding:12px; font-size:14px" onclick="ansJob(false)">Отклонить</button>
+            <button class="buy-btn action" style="flex:1; padding:12px; font-size:14px" onclick="ansJob(true)">ПРИНЯТЬ</button>
         </div>
     </div>
 </div>
 
-<div id="toast">Msg</div>
+<div id="toast">Message</div>
 
 <script>
-    // --- FIREBASE SETUP ---
+    // --- КОНФИГУРАЦИЯ FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
         authDomain: "warszawa-courier.firebaseapp.com",
@@ -185,15 +269,30 @@
         messagingSenderId: "295860613508",
         appId: "1:295860613508:web:86fe8364377d6875612dd1"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
     
+    // Инициализация с защитой от сбоев
+    try {
+        firebase.initializeApp(firebaseConfig);
+    } catch(e) { console.log("Firebase already init"); }
+    const db = firebase.database();
+
+    // --- СИСТЕМА ИДЕНТИФИКАЦИИ ---
     const tg = window.Telegram.WebApp; tg.expand();
-    const userId = tg.initDataUnsafe?.user?.id || 'browser_patch_v6';
+    
+    // Приоритет ID: Telegram -> LocalStorage -> Генерация нового
+    let userId = tg.initDataUnsafe?.user?.id;
+    if(!userId) {
+        userId = localStorage.getItem('warszawa_uid');
+        if(!userId) {
+            userId = 'anon_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('warszawa_uid', userId);
+        }
+    }
     document.getElementById('uid').innerText = userId;
 
-    // --- STATE & CONFIG ---
-    const DB_VER = 6; 
+    // --- СОСТОЯНИЕ ИГРЫ (State) ---
+    // Ключ сохранения: WARSZAWA_FOREVER (логически в структуре БД)
+    const DB_VER = 7; 
     const STEP = 30;
     
     let st = {
@@ -209,59 +308,80 @@
     let loops = {};
     let target = { active: false, x:0, y:0, type:0, offer:null };
 
-    // --- CORE ---
+    // --- ЯДРО (Init & Save) ---
     function init() {
+        // Загрузка данных. Если кеш очищен, данные подтянутся из Cloud по ID
         db.ref('users/' + userId).once('value', s => {
             const d = s.val();
-            if(d && d.ver === DB_VER) {
-                st = {...st, ...d};
+            if(d) {
+                // Мягкая миграция: сохраняем баланс, обновляем структуру если надо
+                st.bal = Number(d.bal) || 0;
+                st.bank = Number(d.bank) || 0;
+                st.debt = Number(d.debt) || 0;
+                st.lvl = d.lvl || 1;
+                // Ресурсы не всегда нужно восстанавливать до 100, но для надежности после паузы:
+                st.en = d.en || 100; st.wat = d.wat || 100; st.hp = d.hp || 100;
             } else {
-                if(d) { // Migration
-                    st.bal = d.bal||0; st.bank = d.bank||0; st.lvl = d.lvl||1; st.debt = d.debt||0;
-                }
-                forceRescue();
+                save(); // Новый юзер
             }
             render();
+            // Проверка границ на случай изменения размера экрана
             setInterval(ensureBounds, 2000);
         });
     }
 
     function save() {
-        db.ref('users/' + userId).set({ver: DB_VER, ...st, last: Date.now()});
+        // Сохранение "Намертво"
+        db.ref('users/' + userId).update({
+            ver: DB_VER,
+            bal: st.bal, bank: st.bank, debt: st.debt, lvl: st.lvl,
+            en: st.en, wat: st.wat, hp: st.hp,
+            last_login: Date.now()
+        });
     }
 
     function ensureBounds() {
-        if(isPaused) return;
+        if(isPaused || !isShift) return;
         const box = document.getElementById('game-area');
+        if(!box) return;
+        
         const maxX = box.offsetWidth - 30;
         const maxY = box.offsetHeight - 30;
         let fix = false;
-        if(st.x < 0){st.x=0; fix=true;} if(st.y < 0){st.y=0; fix=true;}
-        if(st.x > maxX){st.x=maxX-(maxX%STEP); fix=true;} if(st.y > maxY){st.y=maxY-(maxY%STEP); fix=true;}
+
+        // Телепортация, если застрял за экраном
+        if(st.x < 0){st.x=0; fix=true;} 
+        if(st.y < 0){st.y=0; fix=true;}
+        if(st.x > maxX){st.x=maxX-(maxX%STEP); fix=true;} 
+        if(st.y > maxY){st.y=maxY-(maxY%STEP); fix=true;}
+        
         if(fix) { renderPlayer(); save(); }
     }
 
     function forceRescue() {
-        st.x = 30; st.y = 30; st.en = 100;
+        // Аварийный сброс позиции на базу
+        st.x = 30; st.y = 30; 
         renderPlayer(); save();
     }
 
-    // --- GAMEPLAY ---
+    // --- ГЕЙМПЛЕЙ ---
     function startShift() {
-        if(st.en < 5) return showToast("Нужна еда!");
-        if(st.hp <= 0) return showToast("Байк сломан!");
+        if(st.en < 10) return showToast("Нужно поесть! (Магазин)");
+        if(st.hp <= 10) return showToast("Байк разбит! (Гараж)");
         
         isShift = true; isPaused = false;
+        
+        // UI переключение
         document.getElementById('btn-start').style.display = 'none';
         document.getElementById('joy').style.display = 'grid';
         document.getElementById('btn-stop').style.display = 'block';
         document.getElementById('status').innerText = "Поиск заказов...";
         
-        spawnWorld();
-        newJobPhase(1);
+        spawnWorld(); // Генерация города
+        newJobPhase(1); // Первый заказ
         
         if(loops.pol) clearInterval(loops.pol);
-        loops.pol = setInterval(policeAI, 1000); // 1 сек тик
+        loops.pol = setInterval(policeAI, 800); // 0.8 сек тик (быстрее чем раньше)
     }
 
     function endShift() {
@@ -272,9 +392,10 @@
         document.getElementById('btn-stop').style.display = 'none';
         document.getElementById('target').style.display = 'none';
         document.getElementById('timer').style.display = 'none';
-        document.getElementById('status').innerText = "Смена окончена";
-        document.getElementById('game-area').classList.remove('siren-active'); // Off siren
+        document.getElementById('status').innerText = "Смена завершена";
+        document.getElementById('game-area').classList.remove('siren-active');
         
+        // Очистка карты
         obs.forEach(o=>o.el.remove()); obs=[];
         police.forEach(p=>p.el.remove()); police=[];
     }
@@ -286,47 +407,108 @@
         let nx = st.x + (dx * STEP);
         let ny = st.y + (dy * STEP);
         
-        if(nx < 0 || ny < 0 || nx > box.offsetWidth-30 || ny > box.offsetHeight-30) return showToast("Край карты!");
-        if(obs.some(o => dist(o.x, o.y, nx, ny) < 10)) return showToast("Стена!");
+        // Проверка границ
+        if(nx < 0 || ny < 0 || nx > box.offsetWidth-30 || ny > box.offsetHeight-30) return showToast("Граница зоны!");
+        
+        // Проверка препятствий (СТЕНЫ)
+        if(obs.some(o => dist(o.x, o.y, nx, ny) < 10)) return showToast("🚧 Препятствие!");
         
         st.x = nx; st.y = ny;
-        st.en -= 0.5; st.wat -= 0.2; st.hp -= 0.1;
+        
+        // Расход ресурсов
+        st.en -= 0.4; st.wat -= 0.2; st.hp -= 0.05;
+        if(st.en<=0 || st.wat<=0) endShift();
         
         renderPlayer();
-        checkPoliceProx(); // Check proximity instantly
+        checkPoliceProx(); // Мгновенная проверка
         checkJob();
         save();
     }
 
-    // --- POLICE 2.0 (SMART) ---
+    // --- ЛОГИКА МИРА (БЕЗ БАГОВ) ---
     function spawnWorld() {
+        // Очистка старого
+        obs.forEach(o=>o.el.remove()); obs=[];
+        police.forEach(p=>p.el.remove()); police=[];
+
         const box = document.getElementById('game-area');
         const cols = Math.floor(box.offsetWidth/STEP);
         const rows = Math.floor(box.offsetHeight/STEP);
         
-        for(let i=0; i<8; i++) {
-            let p = getPos(cols, rows);
-            let el = mkEnt('obs', '🚧', p.x, p.y);
-            obs.push({...p, el});
+        // 1. Спавн препятствий (не рядом с игроком)
+        for(let i=0; i<12; i++) { // Больше препятствий для интереса
+            let p = getRandomValidPos(cols, rows, false); // false = не нужно проверять obs, их еще нет, но проверим игрока
+            if(p) {
+                let el = mkEnt('obs', '', p.x, p.y); // Пустой текст, стили решают
+                obs.push({...p, el});
+            }
         }
-        for(let i=0; i<5; i++) { // 5 Cops
-            let p = getPos(cols, rows);
-            let el = mkEnt('police', '🚓', p.x, p.y);
-            police.push({...p, el});
+        
+        // 2. Спавн полиции (вдали от игрока)
+        for(let i=0; i<4; i++) { 
+            let p = getRandomValidPos(cols, rows, true);
+            if(p) {
+                let el = mkEnt('police', '🚓', p.x, p.y);
+                police.push({...p, el});
+            }
         }
     }
 
+    // Умный поиск свободной клетки (решает проблему спавна в стенах)
+    function getRandomValidPos(cols, rows, checkObs) {
+        let attempts = 0;
+        let p = {x:0, y:0};
+        do {
+            p.x = Math.floor(Math.random() * (cols-1)) * STEP;
+            p.y = Math.floor(Math.random() * (rows-1)) * STEP;
+            
+            // Не спавнить на игроке (радиус 60px)
+            if(dist(p.x, p.y, st.x, st.y) < 60) continue;
+            
+            // Если нужно, проверить не попали ли в стену
+            let collision = false;
+            if(checkObs) {
+                if(obs.some(o => dist(o.x, o.y, p.x, p.y) < 10)) collision = true;
+            }
+            if(!collision) return p;
+            
+            attempts++;
+        } while(attempts < 50);
+        return null; // Не нашли место (редко)
+    }
+
+    // --- ПОЛИЦИЯ 2.0 (УМНАЯ) ---
     function policeAI() {
         if(!isShift || isPaused) return;
         const box = document.getElementById('game-area');
 
         police.forEach(p => {
-            // Simple random patrol
-            let dirs = [{x:0,y:-STEP}, {x:0,y:STEP}, {x:-STEP,y:0}, {x:STEP,y:0}];
-            let m = dirs[Math.floor(Math.random()*4)];
-            let nx = p.x + m.x; let ny = p.y + m.y;
+            let dx = 0, dy = 0;
+            let dToPlayer = dist(st.x, st.y, p.x, p.y);
             
-            if(nx >= 0 && ny >= 0 && nx <= box.offsetWidth-30 && ny <= box.offsetHeight-30) {
+            // АГРЕССИЯ: Если игрок ближе 150px (5 клеток), коп идет к нему
+            if(dToPlayer < 150) {
+                if(st.x > p.x) dx = STEP; else if(st.x < p.x) dx = -STEP;
+                // Приоритет оси с большим расстоянием
+                if(Math.abs(st.y - p.y) > Math.abs(st.x - p.x)) {
+                   dx = 0;
+                   if(st.y > p.y) dy = STEP; else if(st.y < p.y) dy = -STEP;
+                }
+            } else {
+                // ПАТРУЛЬ: Случайное движение
+                let dirs = [{x:0,y:-STEP}, {x:0,y:STEP}, {x:-STEP,y:0}, {x:STEP,y:0}];
+                let m = dirs[Math.floor(Math.random()*4)];
+                dx = m.x; dy = m.y;
+            }
+
+            let nx = p.x + dx; 
+            let ny = p.y + dy;
+            
+            // Проверка границ и стен для копа
+            let wall = obs.some(o => dist(o.x, o.y, nx, ny) < 10);
+            let bounds = (nx >= 0 && ny >= 0 && nx <= box.offsetWidth-30 && ny <= box.offsetHeight-30);
+            
+            if(bounds && !wall) {
                 p.x = nx; p.y = ny;
                 p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
             }
@@ -341,17 +523,17 @@
 
         police.forEach(p => {
             let d = dist(st.x, st.y, p.x, p.y);
-            if(d < 10) caught = true; // Touch
-            if(d < 70) near = true;   // Proximity (2 cells)
+            if(d < 15) caught = true; // Поймал
+            if(d < 90) near = true;   // Сирена (3 клетки)
         });
 
-        // Visual Siren
         const area = document.getElementById('game-area');
         if(near && !caught) {
             area.classList.add('siren-active');
-            showToast("🚨 КОПЫ РЯДОМ! БЕГИ! 🚨");
+            if(!area.dataset.warn) { showToast("🚨 КОПЫ НА ХВОСТЕ!"); area.dataset.warn="1"; }
         } else {
             area.classList.remove('siren-active');
+            area.dataset.warn="";
         }
 
         if(caught) arrestSequence();
@@ -359,7 +541,10 @@
 
     function arrestSequence() {
         isPaused = true;
-        st.bal -= 50; 
+        st.bal -= 150; // Высокий штраф
+        // Конфискация ресурсов
+        st.en = Math.max(0, st.en - 20);
+        
         document.getElementById('game-area').classList.remove('siren-active');
         document.getElementById('arrest-screen').style.display = 'flex';
         save(); render();
@@ -367,19 +552,21 @@
         setTimeout(() => {
             document.getElementById('arrest-screen').style.display = 'none';
             isPaused = false;
-            forceRescue();
-            showToast("Впредь будь осторожнее");
+            forceRescue(); // Респавн на базе
+            endShift();
         }, 3000);
     }
 
-    // --- JOBS & ECONOMY ---
+    // --- ЗАКАЗЫ ---
     function newJobPhase(ph) {
         target.type = ph;
-        let p = getPos(10,10); // Randomish
         const box = document.getElementById('game-area');
-        // Better random pos
-        p.x = Math.floor(Math.random() * (Math.floor(box.offsetWidth/STEP)-1)) * STEP;
-        p.y = Math.floor(Math.random() * (Math.floor(box.offsetHeight/STEP)-1)) * STEP;
+        const cols = Math.floor(box.offsetWidth/STEP);
+        const rows = Math.floor(box.offsetHeight/STEP);
+        
+        // Используем умный спавн, чтобы пицца не была в стене
+        let p = getRandomValidPos(cols, rows, true);
+        if(!p) p = {x:0, y:0}; // Фолбэк
 
         target.x = p.x; target.y = p.y; target.active = true;
         
@@ -387,11 +574,13 @@
         el.style.display = 'flex'; el.style.left = p.x+'px'; el.style.top = p.y+'px';
         
         if(ph===1) {
-            el.innerText = '🍕'; document.getElementById('status').innerText = "Забери заказ";
-            startTimer(45);
+            el.innerText = '🍕'; 
+            document.getElementById('status').innerText = "Забери заказ в пиццерии";
+            startTimer(60);
         } else {
-            el.innerText = '👤'; document.getElementById('status').innerText = "К клиенту!";
-            startTimer(25);
+            el.innerText = '👤'; 
+            document.getElementById('status').innerText = "Доставь клиенту!";
+            startTimer(30);
         }
     }
 
@@ -399,12 +588,16 @@
         if(target.active && dist(st.x, st.y, target.x, target.y) < 15) {
             if(target.type === 1) {
                 clearInterval(loops.timer); target.active = false;
-                let inf = 1 + (st.lvl-1)*0.1;
-                let distK = Math.floor(Math.random()*10)+2;
-                let pay = (distK * 2.0 * inf).toFixed(2); // Higher pay formula
                 
-                target.offer = {dist: distK, pay: parseFloat(pay)};
-                document.getElementById('j-dist').innerText = distK;
+                // Формула оплаты от уровня
+                let base = 5;
+                let multiplier = 1 + (st.lvl * 0.15); // +15% за уровень
+                let pay = (base * multiplier).toFixed(2);
+                let km = (Math.random()*3 + 1).toFixed(1);
+                
+                target.offer = {dist: km, pay: parseFloat(pay)};
+                
+                document.getElementById('j-dist').innerText = km;
                 document.getElementById('j-pay').innerText = pay;
                 document.getElementById('job-modal').style.display = 'flex';
             } else {
@@ -416,60 +609,79 @@
     function ansJob(y) {
         document.getElementById('job-modal').style.display='none';
         if(y) { newJobPhase(2); } 
-        else { st.bal-=2; render(); newJobPhase(1); }
+        else { 
+            st.bal = Math.max(0, st.bal - 2); // Штраф за отказ небольшой
+            render(); newJobPhase(1); 
+        }
     }
 
     function finish(ok) {
         clearInterval(loops.timer); target.active = false;
         document.getElementById('target').style.display = 'none';
         document.getElementById('timer').style.display = 'none';
-        if(ok) { st.bal += target.offer.pay; showToast(`+${target.offer.pay}`); }
-        else { st.bal -= 5; showToast("Штраф времени -5"); }
+        
+        if(ok) { 
+            st.bal += target.offer.pay; 
+            showToast(`✅ Заработано: +${target.offer.pay} PLN`); 
+            st.lvl += 0.05; // Прокачка уровня медленно
+        }
+        else { 
+            st.bal -= 10; 
+            showToast("❌ Опоздание! Штраф -10 PLN"); 
+        }
+        
         save(); render();
-        setTimeout(()=>{ if(isShift) newJobPhase(1); }, 1500);
+        // Пауза перед следующим заказом
+        setTimeout(()=>{ if(isShift) newJobPhase(1); }, 2000);
     }
 
     function startTimer(s) {
         clearInterval(loops.timer);
-        document.getElementById('timer').style.display='block';
+        const tEl = document.getElementById('timer');
+        tEl.style.display='block';
+        tEl.innerText = formatTime(s);
+        
         loops.timer = setInterval(()=>{
-            s--; document.getElementById('timer').innerText = s;
+            s--; 
+            tEl.innerText = formatTime(s);
             if(s<=0) finish(false);
         }, 1000);
     }
+    function formatTime(s){ return (s<10?'0':'')+s; }
 
-    // --- BANKING SYSTEM ---
+    // --- БАНК И МАГАЗИН ---
     function renderBank() {
         const div = document.getElementById('bank-ui');
         div.innerHTML = `
             <div class="bank-card">
-                <div style="font-size:12px; opacity:0.8">Баланс счета</div>
-                <div style="font-size:24px; font-weight:bold">${st.bank.toFixed(2)} PLN</div>
+                <div style="font-size:10px; opacity:0.7; letter-spacing:1px">БАЛАНС СЧЕТА</div>
+                <div style="font-size:28px; font-weight:bold; text-shadow:0 2px 0 rgba(0,0,0,0.2)">${st.bank.toFixed(2)} PLN</div>
             </div>
             
-            <div style="background:#fff; border:1px solid #eee; padding:10px; border-radius:8px; text-align:center">
-                <div style="font-weight:bold; margin-bottom:5px">КРЕДИТНЫЙ ОТДЕЛ</div>
+            <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); padding:15px; border-radius:12px; margin-top:10px">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                    <span style="font-weight:bold; font-size:12px; color:var(--text-muted)">КРЕДИТНАЯ ЛИНИЯ</span>
+                    <span style="font-weight:bold; color:${st.debt>0 ? 'var(--warn)' : 'var(--accent)'}">${st.debt.toFixed(2)} PLN</span>
+                </div>
                 ${st.debt > 0 
-                    ? `<div class="debt-text">ДОЛГ: ${st.debt.toFixed(2)} PLN</div>
-                       <button class="buy-btn" style="width:100%; margin-top:5px; background:var(--blue)" onclick="repayLoan()">Погасить (Все)</button>`
-                    : `<div style="font-size:11px; color:green; margin-bottom:5px">Кредит доступен</div>
-                       <button class="buy-btn" style="width:100%; background:orange; color:black" onclick="takeLoan()">Взять 200 PLN</button>
-                       <div style="font-size:9px; color:#777; margin-top:2px">Вернуть нужно 250 PLN</div>`
+                    ? `<button class="buy-btn action" style="width:100%; background:var(--warn)" onclick="repayLoan()">ПОГАСИТЬ ДОЛГ</button>`
+                    : `<button class="buy-btn" style="width:100%; border:1px solid var(--gold); color:var(--gold)" onclick="takeLoan()">Взять 500 PLN</button>
+                       <div style="font-size:9px; color:gray; text-align:center; margin-top:5px">Вернуть нужно 600 PLN (+20%)</div>`
                 }
             </div>
 
-            <div style="display:flex; gap:5px; margin-top:10px">
-                <button class="buy-btn" style="flex:1" onclick="bankOp(1)">Вклад</button>
-                <button class="buy-btn" style="flex:1; background:red" onclick="bankOp(-1)">Снять</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px">
+                <button class="buy-btn action" onclick="bankOp(1)">ВКЛАД (Всё)</button>
+                <button class="buy-btn danger" onclick="bankOp(-1)">СНЯТЬ (Всё)</button>
             </div>
         `;
     }
 
     function takeLoan() {
-        if(st.debt > 0) return showToast("Сначала погаси старый!");
-        st.bal += 200;
-        st.debt = 250; // Interest
-        showToast("Кредит взят. Не забудь вернуть.");
+        if(st.debt > 0) return showToast("Уже есть активный кредит!");
+        st.bal += 500;
+        st.debt = 600; 
+        showToast("Кредит одобрен банком.");
         save(); render();
     }
 
@@ -477,43 +689,53 @@
         if(st.bal >= st.debt) {
             st.bal -= st.debt;
             st.debt = 0;
-            showToast("Долг погашен! Свобода!");
+            showToast("Кредит полностью закрыт!");
             save(); render();
         } else {
-            showToast("Не хватает налички!");
+            showToast("Недостаточно средств!");
         }
     }
 
     function bankOp(dir) {
-        if(dir===1 && st.bal>0) { st.bank+=st.bal; st.bal=0; }
-        if(dir===-1 && st.bank>0) { st.bal+=st.bank; st.bank=0; }
+        if(dir===1 && st.bal>0) { st.bank+=st.bal; st.bal=0; showToast("Деньги в безопасности"); }
+        if(dir===-1 && st.bank>0) { st.bal+=st.bank; st.bank=0; showToast("Наличные получены"); }
         save(); render();
     }
 
-    // --- UTILS ---
+    // --- РЕНДЕР И УТИЛИТЫ ---
     function mkEnt(c,i,x,y){
         let d=document.createElement('div'); d.className='entity '+c; d.innerText=i;
         d.style.left=x+'px'; d.style.top=y+'px';
         document.getElementById('game-area').appendChild(d); return d;
     }
-    function getPos(c,r){ return {x:Math.floor(Math.random()*(c-1))*STEP, y:Math.floor(Math.random()*(r-1))*STEP}; }
     function dist(x1,y1,x2,y2){ return Math.abs(x1-x2)+Math.abs(y1-y2); }
     
     function render() {
         document.getElementById('cash').innerText = st.bal.toFixed(2);
         document.getElementById('bank').innerText = st.bank.toFixed(2);
-        document.getElementById('debt').innerText = st.debt.toFixed(2);
-        document.getElementById('lvl').innerText = st.lvl;
         
+        // Бары ресурсов
         document.getElementById('b-en').style.width = st.en+'%';
         document.getElementById('b-wat').style.width = st.wat+'%';
         document.getElementById('b-hp').style.width = st.hp+'%';
         
-        // Shop render
-        let inf = 1+(st.lvl-1)*0.1; const p=(v)=>Math.ceil(v*inf);
+        document.getElementById('txt-en').innerText = Math.floor(st.en)+'%';
+        document.getElementById('txt-wat').innerText = Math.floor(st.wat)+'%';
+        document.getElementById('txt-hp').innerText = Math.floor(st.hp)+'%';
+
+        // Магазин (Цены динамические от уровня инфляции)
+        let inflation = 1 + (st.lvl * 0.05);
+        const price = (base) => Math.ceil(base * inflation);
+        
         document.getElementById('shop-list').innerHTML = `
-            <div style="display:flex; justify-content:space-between; padding:5px 0"><span>🌭 Еда</span> <button class="buy-btn" onclick="buy('en',20,${p(8)})">${p(8)}</button></div>
-            <div style="display:flex; justify-content:space-between; padding:5px 0"><span>🥤 Вода</span> <button class="buy-btn" onclick="buy('wat',30,${p(5)})">${p(5)}</button></div>
+            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333">
+                <span style="font-size:14px">🌭 Хот-дог <span style="font-size:10px; color:gray">+20 EN</span></span> 
+                <button class="buy-btn" onclick="buy('en',20,${price(15)})">${price(15)} PLN</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333">
+                <span style="font-size:14px">🥤 Энергетик <span style="font-size:10px; color:gray">+30 WT</span></span> 
+                <button class="buy-btn" onclick="buy('wat',30,${price(10)})">${price(10)} PLN</button>
+            </div>
         `;
         renderBank();
     }
@@ -523,13 +745,38 @@
         p.style.left = st.x+'px'; p.style.top = st.y+'px';
     }
 
-    function buy(t,v,c){ if(st.bal>=c){st.bal-=c; if(t=='en')st.en+=v; if(t=='wat')st.wat+=v; render(); save();} }
-    function repairBike(){ 
-        let c=Math.ceil(20*(1+(st.lvl-1)*0.1)); 
-        if(st.bal>=c){st.bal-=c; st.hp=100; st.lvl++; showToast("LVL UP!"); render(); save();} 
+    function buy(t,v,c){ 
+        if(st.bal>=c){
+            st.bal-=c; 
+            if(t=='en') st.en = Math.min(100, st.en+v); 
+            if(t=='wat') st.wat = Math.min(100, st.wat+v); 
+            render(); save();
+        } else showToast("Нет денег!");
     }
-    function showToast(m){const t=document.getElementById('toast'); t.innerText=m; t.style.display='block'; setTimeout(()=>t.style.display='none',1500);}
-    function toggleMenu(){const s=document.getElementById('sidebar'); const o=document.getElementById('side-overlay'); if(s.classList.contains('open')){s.classList.remove('open');o.style.display='none';}else{s.classList.add('open');o.style.display='block';render();}}
+    
+    function repairBike(){ 
+        let cost = 50; 
+        if(st.bal>=cost){
+            st.bal-=cost; st.hp=100; 
+            showToast("Байк как новенький!"); render(); save();
+        } else showToast("Ремонт стоит 50 PLN");
+    }
+    
+    function showToast(m){
+        const t=document.getElementById('toast'); 
+        t.innerText=m; t.style.display='block'; 
+        setTimeout(()=>t.style.display='none',2000);
+    }
+    
+    function toggleMenu(){
+        const s=document.getElementById('sidebar'); 
+        const o=document.getElementById('side-overlay'); 
+        if(s.classList.contains('open')){
+            s.classList.remove('open');o.style.display='none';
+        }else{
+            s.classList.add('open');o.style.display='block';render();
+        }
+    }
 
     init();
 </script>
