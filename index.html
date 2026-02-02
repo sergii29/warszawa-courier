@@ -7,39 +7,23 @@
     <style>
         :root { --yellow: #ffcc00; --bg: #0f0f0f; --card: #1e1e1e; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; text-align: center; margin: 0; user-select: none; }
-        
-        /* Сетка интерфейса */
         #ui { padding: 15px; display: flex; flex-direction: column; height: 100vh; justify-content: space-between; box-sizing: border-box; }
-        
         .header { background: var(--card); border-radius: 20px; padding: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); border: 1px solid #333; }
         .money-text { font-size: 28px; font-weight: 800; color: var(--yellow); margin-bottom: 5px; }
         .district-text { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-
-        .bars { margin: 15px 0; }
         .bar-container { background: #333; height: 12px; border-radius: 6px; margin: 8px 0; overflow: hidden; position: relative; }
-        .bar-fill { height: 100%; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bar-fill { height: 100%; transition: width 0.3s; }
         #energy-bar { background: linear-gradient(90deg, #4caf50, #8bc34a); }
         #water-bar { background: linear-gradient(90deg, #2196f3, #00bcd4); }
-        .bar-label { position: absolute; width: 100%; font-size: 9px; font-weight: bold; top: 0; left: 0; line-height: 12px; color: white; text-shadow: 1px 1px 1px black; }
-
-        /* Игровая зона */
+        #event-log { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; font-size: 13px; height: 40px; color: #00ff00; display: flex; align-items: center; justify-content: center; margin: 10px 0; border-left: 3px solid var(--yellow); }
         #game-core { position: relative; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        #courier-btn { width: 180px; height: 180px; background: radial-gradient(circle, #333, #222); border-radius: 50%; border: 6px solid var(--yellow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.1s; position: relative; box-shadow: 0 0 30px rgba(255, 204, 0, 0.2); }
-        #courier-btn:active { transform: scale(0.92); box-shadow: 0 0 10px rgba(255, 204, 0, 0.5); }
+        #courier-btn { width: 180px; height: 180px; background: radial-gradient(circle, #333, #222); border-radius: 50%; border: 6px solid var(--yellow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.1s; }
+        #courier-btn:active { transform: scale(0.92); }
         #emoji { font-size: 80px; }
-
-        /* Лог событий */
-        #event-log { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; font-size: 13px; height: 40px; overflow: hidden; color: #00ff00; display: flex; align-items: center; justify-content: center; margin: 10px 0; border-left: 3px solid var(--yellow); }
-
-        /* Магазин */
         .shop { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .btn { background: var(--card); border: 1px solid #444; color: white; padding: 12px 5px; border-radius: 12px; font-size: 12px; cursor: pointer; transition: 0.2s; }
-        .btn:active { background: #333; }
-        .btn b { color: var(--yellow); display: block; margin-bottom: 3px; }
-
-        /* Анти-кликер бонус */
-        #bonus-box { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); background: var(--yellow); color: black; padding: 10px 20px; border-radius: 20px; font-weight: bold; display: none; z-index: 100; animation: bounce 0.5s infinite alternate; cursor: pointer; }
-        @keyframes bounce { from { top: 18%; } to { top: 22%; } }
+        .btn { background: var(--card); border: 1px solid #444; color: white; padding: 12px 5px; border-radius: 12px; font-size: 12px; cursor: pointer; }
+        .btn b { color: var(--yellow); display: block; }
+        #bonus-box { position: absolute; top: 20%; background: var(--yellow); color: black; padding: 10px 20px; border-radius: 20px; font-weight: bold; display: none; z-index: 100; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -47,219 +31,101 @@
 <div id="ui">
     <div class="header">
         <div class="money-text" id="money">0.00 $</div>
-        <div class="district-text" id="district">Район: Praga Południe</div>
-        
-        <div class="bars">
-            <div class="bar-container">
-                <div id="energy-bar" class="bar-fill" style="width: 100%"></div>
-                <div class="bar-label">ЭНЕРГИЯ</div>
-            </div>
-            <div class="bar-container">
-                <div id="water-bar" class="bar-fill" style="width: 100%"></div>
-                <div class="bar-label">ВОДА</div>
-            </div>
-        </div>
+        <div id="district" class="district-text">Район: Praga Południe</div>
+        <div class="bar-container"><div id="energy-bar" class="bar-fill"></div></div>
+        <div class="bar-container"><div id="water-bar" class="bar-fill"></div></div>
     </div>
 
-    <div id="event-log">Варшава ждет заказов. Начинай путь!</div>
+    <div id="event-log">Варшава ждет заказов!</div>
 
     <div id="game-core">
         <div id="bonus-box" onclick="claimBonus()">📦 ЗАБРАТЬ БОНУС!</div>
-        <div id="courier-btn" onclick="handleMainClick()">
-            <div id="emoji">🚶‍♂️</div>
-        </div>
+        <div id="courier-btn" onclick="handleMainClick()"><div id="emoji">🚶‍♂️</div></div>
     </div>
 
     <div class="shop">
-        <button class="btn" onclick="buyItem('energy')"><b>Энергетик</b><span id="price-energy">30</span>$</button>
-        <button class="btn" onclick="buyItem('water')"><b>Вода</b><span id="price-water">10</span>$</button>
-        <button class="btn" onclick="upgradeTransport()"><b>Транспорт</b><span id="price-transport">150</span>$</button>
-        <button class="btn" onclick="changeDistrict()"><b>Новый Район</b><span id="price-district">500</span>$</button>
+        <button class="btn" onclick="buyItem('energy')"><b>Энергетик</b><span id="p-e">30</span>$</button>
+        <button class="btn" onclick="buyItem('water')"><b>Вода</b><span id="p-w">10</span>$</button>
+        <button class="btn" onclick="upgradeTransport()"><b>Транспорт</b><span id="p-t">150</span>$</button>
+        <button class="btn" onclick="changeDistrict()"><b>Район</b><span id="p-d">500</span>$</button>
     </div>
-    
-    <button class="btn" style="width: 100%;" onclick="saveGame()">💾 СОХРАНИТЬ ПРОГРЕСС</button>
+    <button class="btn" style="width:100%" onclick="saveGame()">💾 СОХРАНИТЬ (WARSZAWA_FOREVER)</button>
 </div>
 
 <script>
-    // Изначальные настройки
-    let state = {
-        money: 0,
-        lvl: 1.0,
-        energy: 100,
-        water: 100,
-        districtIdx: 0,
-        inflation: 1.0,
-        boostActive: false,
-        lastSave: Date.now()
-    };
-
-    const districts = [
+    let state = { money: 0, lvl: 1.0, energy: 100, water: 100, districtIdx: 0, inflation: 1.0, boost: false, key: "WARSZAWA_FOREVER" };
+    const dists = [
         { name: "Praga Południe", mult: 1.0, color: "#aaa" },
-        { name: "Wola", mult: 1.8, color: "#fff" },
-        { name: "Mokotów", mult: 3.5, color: "#00ff00" },
-        { name: "Śródmieście", mult: 7.0, color: "#ffcc00" }
+        { name: "Wola", mult: 2.0, color: "#fff" },
+        { name: "Mokotów", mult: 4.0, color: "#00ff00" },
+        { name: "Śródmieście", mult: 8.0, color: "#ffcc00" }
     ];
 
-    const SAVE_KEY = "WARSZAWA_FOREVER";
-    let bonusActive = false;
-    let clickCountSinceBonus = 0;
-
-    // Инициализация
-    function init() {
-        const saved = localStorage.getItem(SAVE_KEY);
-        if (saved) state = JSON.parse(saved);
-        updateUI();
-        setInterval(gameTick, 1000); // Регенерация
-        setInterval(economyTick, 60000); // Инфляция раз в минуту
-        spawnBonusLoop();
-    }
-
     function handleMainClick() {
-        if (state.energy <= 0 || state.water <= 0) {
-            pushLog("Нет сил или воды! Купи припасы.");
-            return;
-        }
-
-        // Штраф за игнор бонуса
-        if (bonusActive) {
-            clickCountSinceBonus++;
-            if (clickCountSinceBonus > 10) {
-                state.money = Math.max(0, state.money - 5);
-                pushLog("Штраф -5$! Ты пропустил бонусный заказ.");
-                hideBonus();
-            }
-        }
-
-        // Расход
-        if (!state.boostActive) state.energy -= 0.8;
+        if (state.energy <= 0 || state.water <= 0) { pushLog("Нужен отдых или вода!"); return; }
+        if (!state.boost) state.energy -= 0.8;
         state.water -= 0.4;
-
-        // Доход
-        let baseIncome = state.lvl * districts[state.districtIdx].mult;
-        let luck = Math.random();
-        if (luck > 0.95) {
-            baseIncome *= 2;
-            pushLog("Чаевые! +100% к заказу.");
-        }
-        
-        state.money += baseIncome;
+        state.money += state.lvl * dists[state.districtIdx].mult;
         updateUI();
     }
 
-    function buyItem(type) {
-        if (type === 'energy') {
-            let cost = 30 * state.inflation;
-            if (state.money >= cost) {
-                state.money -= cost;
-                state.boostActive = true;
-                pushLog("Энергетик! Энергия заморожена на 20 сек. Вода всё ещё тратится!");
-                setTimeout(() => { state.boostActive = false; pushLog("Действие энергетика прошло."); }, 20000);
-            }
-        } else if (type === 'water') {
-            let cost = 10 * state.inflation;
-            if (state.money >= cost) {
-                state.money -= cost;
-                state.water = 100;
-                pushLog("Вода восполнена.");
-            }
+    function buyItem(t) {
+        let costs = { energy: 30, water: 10 };
+        let c = costs[t] * state.inflation;
+        if (state.money >= c) {
+            state.money -= c;
+            if (t === 'energy') { 
+                state.boost = true; pushLog("Энергетик! (20с)"); 
+                setTimeout(() => { state.boost = false; pushLog("Буст кончился"); }, 20000);
+            } else { state.water = 100; pushLog("Жажда утолена"); }
         }
         updateUI();
     }
 
     function upgradeTransport() {
-        let cost = 150 * state.lvl * state.inflation;
-        if (state.money >= cost) {
-            state.money -= cost;
-            state.lvl += 0.5;
-            updateEmoji();
+        let c = 150 * state.lvl * state.inflation;
+        if (state.money >= c) {
+            state.money -= c; state.lvl += 0.5;
+            if (state.lvl >= 5) document.getElementById('emoji').innerText = "🚗";
+            else if (state.lvl >= 3) document.getElementById('emoji').innerText = "🛵";
+            else if (state.lvl >= 2) document.getElementById('emoji').innerText = "🚴‍♂️";
             pushLog("Транспорт улучшен!");
         }
         updateUI();
     }
 
     function changeDistrict() {
-        if (state.districtIdx >= districts.length - 1) return;
-        let cost = 500 * (state.districtIdx + 1) * state.inflation;
-        if (state.money >= cost) {
-            state.money -= cost;
-            state.districtIdx++;
-            pushLog(`Переезд в район ${districts[state.districtIdx].name}!`);
+        if (state.districtIdx >= dists.length - 1) return;
+        let c = 500 * (state.districtIdx + 1) * state.inflation;
+        if (state.money >= c) {
+            state.money -= c; state.districtIdx++;
+            pushLog("Переезд в " + dists[state.districtIdx].name);
         }
         updateUI();
     }
 
-    function updateEmoji() {
-        let e = document.getElementById('emoji');
-        if (state.lvl >= 5) e.innerText = "🚗";
-        else if (state.lvl >= 3) e.innerText = "🛵";
-        else if (state.lvl >= 2) e.innerText = "🚴‍♂️";
-    }
-
-    function pushLog(msg) {
-        document.getElementById('event-log').innerText = msg;
-    }
+    function pushLog(m) { document.getElementById('event-log').innerText = m; }
 
     function updateUI() {
         document.getElementById('money').innerText = state.money.toFixed(2) + " $";
-        document.getElementById('district').innerText = "Район: " + districts[state.districtIdx].name;
-        document.getElementById('district').style.color = districts[state.districtIdx].color;
+        document.getElementById('district').innerText = "Район: " + dists[state.districtIdx].name;
+        document.getElementById('district').style.color = dists[state.districtIdx].color;
         document.getElementById('energy-bar').style.width = state.energy + "%";
         document.getElementById('water-bar').style.width = state.water + "%";
-        
-        // Цены в кнопках
-        document.getElementById('price-energy').innerText = Math.floor(30 * state.inflation);
-        document.getElementById('price-water').innerText = Math.floor(10 * state.inflation);
-        document.getElementById('price-transport').innerText = Math.floor(150 * state.lvl * state.inflation);
-        document.getElementById('price-district').innerText = Math.floor(500 * (state.districtIdx + 1) * state.inflation);
+        document.getElementById('p-e').innerText = Math.floor(30 * state.inflation);
+        document.getElementById('p-w').innerText = Math.floor(10 * state.inflation);
+        document.getElementById('p-t').innerText = Math.floor(150 * state.lvl * state.inflation);
+        document.getElementById('p-d').innerText = Math.floor(500 * (state.districtIdx + 1) * state.inflation);
     }
 
-    function gameTick() {
-        if (state.energy < 100) state.energy = Math.min(100, state.energy + 0.2);
-        updateUI();
-    }
+    function saveGame() { localStorage.setItem(state.key, JSON.stringify(state)); pushLog("Сохранено!"); }
 
-    function economyTick() {
-        state.inflation += (Math.random() * 0.05); // Инфляция до 5% в минуту
-        pushLog("Инфляция! Цены в магазинах выросли.");
-        updateUI();
-    }
-
-    // Логика бонуса
-    function spawnBonusLoop() {
-        let time = Math.random() * (600000 - 300000) + 300000; // 5-10 минут
-        setTimeout(() => {
-            showBonus();
-            spawnBonusLoop();
-        }, time);
-    }
-
-    function showBonus() {
-        bonusActive = true;
-        clickCountSinceBonus = 0;
-        document.getElementById('bonus-box').style.display = 'block';
-    }
-
-    function hideBonus() {
-        bonusActive = false;
-        document.getElementById('bonus-box').style.display = 'none';
-    }
-
-    function claimBonus() {
-        let reward = 50 * state.lvl;
-        state.money += reward;
-        pushLog(`Премия за скорость: +${reward.toFixed(2)}$ !`);
-        hideBonus();
-        updateUI();
-    }
-
-    function saveGame() {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-        pushLog("Прогресс WARSZAWA_FOREVER сохранен!");
-    }
-
-    window.onload = init;
+    window.onload = () => {
+        const s = localStorage.getItem(state.key);
+        if (s) { state = JSON.parse(s); updateUI(); }
+        setInterval(() => { if (state.energy < 100) state.energy += 0.2; updateUI(); }, 1000);
+        setInterval(() => { state.inflation += 0.02; pushLog("Инфляция выросла!"); }, 60000);
+    };
 </script>
-
 </body>
 </html>
-
