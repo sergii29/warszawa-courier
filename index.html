@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier: Police State</title>
+    <title>Warsaw Courier: Syndicate</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <style>
         :root {
-            --bg: #f4f4dc; --grid: #dcdcc0; --lime: #ccff00; --dark: #121212; --danger: #ff3b3b;
+            --bg: #f0f2f5; --grid: #d1d9e6; --lime: #32CD32; --dark: #121212; --danger: #ff3b3b; --blue: #007bff;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; font-family: 'Courier New', monospace; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
@@ -20,27 +20,26 @@
             position: absolute; top: 140px; left: 0; right: 0; bottom: 260px;
             background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
             background-size: 30px 30px; 
-            z-index: 1;
-            overflow: hidden; 
+            z-index: 1; overflow: hidden; 
             border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;
         }
+        
+        /* СИРЕНА (Визуальный эффект близости полиции) */
+        @keyframes siren-flash { 0% {box-shadow: inset 0 0 0 0 transparent;} 50% {box-shadow: inset 0 0 30px 10px rgba(255,0,0,0.5);} 100% {box-shadow: inset 0 0 30px 10px rgba(0,0,255,0.5);} }
+        .siren-active { animation: siren-flash 0.8s infinite; border: 2px solid red !important; }
 
         /* СУЩНОСТИ */
         .entity { 
             position: absolute; width: 30px; height: 30px; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 20px; transition: all 0.15s linear; 
+            font-size: 20px; transition: all 0.2s linear; /* Плавнее движение */
         }
         #player { 
             z-index: 100; font-size: 24px; 
-            background: rgba(200, 255, 0, 0.4); 
+            background: rgba(50, 205, 50, 0.4); 
             border-radius: 50%; border: 2px solid var(--dark);
         }
-        /* Мигание при неуязвимости */
-        .immune { animation: blink 0.5s infinite; opacity: 0.5; border-color: blue !important; background: rgba(0,0,255,0.2) !important; }
-        @keyframes blink { 0% {opacity:0.3;} 50% {opacity:1;} 100% {opacity:0.3;} }
-
-        .police { z-index: 50; transition: top 0.8s linear, left 0.8s linear; }
+        .police { z-index: 50; transition: top 1s linear, left 1s linear; }
         .obs { z-index: 10; opacity: 0.7; }
 
         /* UI */
@@ -49,7 +48,9 @@
             background: white; z-index: 200; padding: 10px; display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .wallet { font-size: 22px; font-weight: 900; color: var(--dark); border-bottom: 2px dashed #ccc; width: 100%; text-align: center; padding-bottom: 5px; margin-bottom: 5px;}
+        .wallet-row { display: flex; width: 100%; justify-content: space-around; border-bottom: 2px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px; }
+        .stat-t { font-size: 14px; font-weight: bold; color: #555; }
+        .stat-v { font-size: 18px; font-weight: 900; color: var(--dark); }
         
         .bars { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; }
         .bar-row { display: flex; align-items: center; justify-content: space-between; }
@@ -70,36 +71,37 @@
 
         .btn-main { background: var(--lime); color: black; border: 2px solid black; padding: 15px 40px; font-weight: bold; border-radius: 8px; margin-top: 40px; cursor: pointer; }
 
-        /* ARREST SCREEN */
-        #arrest-overlay {
+        /* SCENES */
+        #arrest-screen {
             position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9000;
-            background: rgba(0,0,50,0.8); display: none; flex-direction: column;
+            background: rgba(0,0,50,0.9); display: none; flex-direction: column;
             align-items: center; justify-content: center; color: white;
-            animation: police-flash 0.5s infinite;
         }
-        @keyframes police-flash { 0% {background:rgba(255,0,0,0.6);} 50% {background:rgba(0,0,255,0.6);} 100% {background:rgba(255,0,0,0.6);} }
-
-        /* MODALS */
+        
+        /* MENU & MODALS */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
-        .popup { background: white; padding: 20px; border-radius: 10px; text-align: center; width: 80%; max-width: 320px; border: 3px solid var(--lime); }
+        .popup { background: white; padding: 20px; border-radius: 10px; text-align: center; width: 85%; max-width: 320px; border: 3px solid var(--lime); }
         
         #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: black; color: white; padding: 10px 20px; border-radius: 20px; z-index: 5000; display: none; text-align: center;}
 
-        /* Side Menu */
         #menu-btn { position: absolute; top: 10px; left: 10px; width: 40px; height: 40px; background: #333; z-index: 201; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap:4px; border-radius:6px; }
         .ml { width: 24px; height: 2px; background: white; }
         
-        #sidebar { position: fixed; top:0; left:-300px; width:280px; height:100%; background:white; z-index:2001; transition:0.3s; border-right:2px solid black; padding:20px; overflow-y:auto; }
+        #sidebar { position: fixed; top:0; left:-300px; width:290px; height:100%; background:white; z-index:2001; transition:0.3s; border-right:2px solid black; padding:20px; overflow-y:auto; }
         #sidebar.open { left:0; }
-        .shop-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee; align-items: center; font-size: 12px;}
-        .buy-btn { background:var(--dark); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;}
+        
+        .bank-card { background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .debt-text { color: var(--danger); font-weight: bold; margin-top: 5px; font-size: 12px;}
     </style>
 </head>
 <body>
 
 <div id="top-ui">
-    <div class="wallet">💵 <span id="cash">0.00</span> | 🏦 <span id="bank">0.00</span></div>
-    <div style="font-size: 10px; margin-bottom: 5px;">LVL: <span id="lvl">1</span></div>
+    <div class="wallet-row">
+        <div><div class="stat-t">Наличка</div><div class="stat-v" id="cash">0.00</div></div>
+        <div><div class="stat-t">Банк</div><div class="stat-v" id="bank">0.00</div></div>
+    </div>
+    <div style="font-size: 10px; margin-bottom: 5px;">LVL: <span id="lvl">1</span> | Долг: <span id="debt" style="color:red">0</span></div>
     
     <div class="bars">
         <div class="bar-row">⚡ <div class="bar-track"><div id="b-en" class="bar-val" style="width:100%; background:orange"></div></div></div>
@@ -110,17 +112,18 @@
 
 <div id="menu-btn" onclick="toggleMenu()"><div class="ml"></div><div class="ml"></div><div class="ml"></div></div>
 
-<div id="arrest-overlay">
-    <div style="font-size:40px;">🚓</div>
-    <h1 style="text-shadow: 2px 2px 0 #000;">ВАС ПОЙМАЛИ</h1>
-    <h2 style="color: yellow; text-shadow: 1px 1px 0 #000;">ШТРАФ -50 PLN</h2>
-    <p>Велосипед конфискован на базу...</p>
+<div id="arrest-screen">
+    <div style="font-size:50px; margin-bottom:20px">🚔</div>
+    <h1 style="color:red; font-weight:900; letter-spacing:2px">ВЫ АРЕСТОВАНЫ</h1>
+    <p>Попытка скрыться не удалась.</p>
+    <h2 style="color: yellow; margin-top:10px">-50 PLN Штраф</h2>
+    <div style="margin-top:20px; font-size:12px; color:#ccc">Перевозка в участок...</div>
 </div>
 
 <div id="game-area">
     <div id="player" class="entity">🚲</div>
     <div id="target" class="entity" style="display:none">🍕</div>
-</div>
+    </div>
 
 <div id="bot-ui">
     <div id="status" style="font-weight:bold; margin-bottom:5px; height:20px; color:#555">Смена не начата</div>
@@ -138,35 +141,33 @@
 </div>
 
 <div id="sidebar">
-    <h3>МЕНЮ</h3>
+    <h3>МЕНЮ ИГРОКА</h3>
     <hr>
-    <h4>Магазин</h4>
+    <h4>Магазин 24/7</h4>
     <div id="shop-list"></div>
     <hr>
-    <h4>Банк</h4>
-    <div style="text-align:center">
-        <h1>🏦</h1>
-        <button class="buy-btn" onclick="bankAll()">Положить всё</button>
-        <button class="buy-btn" style="background:red" onclick="withdrawAll()">Снять всё</button>
-    </div>
+    <h4>PKO Bank Polski</h4>
+    <div id="bank-ui"></div>
     <hr>
     <h4>Гараж</h4>
-    <div class="shop-row">
-        <span>Починить байк</span>
-        <button class="buy-btn" onclick="repairBike()">REPAIR</button>
+    <div style="display:flex; justify-content:space-between; align-items:center">
+        <span>Ремонт байка</span>
+        <button class="buy-btn" onclick="repairBike()">FIX</button>
     </div>
-    <div style="font-size:10px; color:gray; margin-top:10px">ID: <span id="uid">...</span></div>
+    <div style="font-size:10px; color:gray; margin-top:20px">ID: <span id="uid">...</span> v6.0</div>
 </div>
 <div id="side-overlay" onclick="toggleMenu()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; display:none"></div>
 
 <div id="job-modal" class="modal">
     <div class="popup">
-        <h2 id="j-name">Pizzeria</h2>
-        <p>Расстояние: <span id="j-dist">0</span> км</p>
-        <p style="font-size:18px; color:green; font-weight:bold">Оплата: <span id="j-pay">0.00</span> PLN</p>
-        <div style="display:flex; gap:10px; justify-content:center; margin-top:15px">
-            <button class="buy-btn" style="background:#ccc; color:black" onclick="ansJob(false)">Отказ</button>
-            <button class="buy-btn" style="background:var(--lime); color:black; font-weight:bold" onclick="ansJob(true)">ВЗЯТЬ</button>
+        <h2 id="j-name">Заказ</h2>
+        <div style="background:#eee; padding:10px; border-radius:5px; margin:10px 0; text-align:left">
+            <div>📏 Дистанция: <b id="j-dist">0</b> км</div>
+            <div>💰 Оплата: <b id="j-pay" style="color:green">0.00</b> PLN</div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button style="flex:1; padding:10px; border-radius:5px; border:1px solid #999" onclick="ansJob(false)">Отмена</button>
+            <button style="flex:1; padding:10px; border-radius:5px; background:var(--lime); border:2px solid black; font-weight:bold" onclick="ansJob(true)">ПРИНЯТЬ</button>
         </div>
     </div>
 </div>
@@ -174,6 +175,7 @@
 <div id="toast">Msg</div>
 
 <script>
+    // --- FIREBASE SETUP ---
     const firebaseConfig = {
         apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
         authDomain: "warszawa-courier.firebaseapp.com",
@@ -187,41 +189,39 @@
     const db = firebase.database();
     
     const tg = window.Telegram.WebApp; tg.expand();
-    const userId = tg.initDataUnsafe?.user?.id || 'browser_test_V5';
+    const userId = tg.initDataUnsafe?.user?.id || 'browser_patch_v6';
     document.getElementById('uid').innerText = userId;
 
-    const DB_VER = 5; 
+    // --- STATE & CONFIG ---
+    const DB_VER = 6; 
     const STEP = 30;
     
     let st = {
-        bal: 0.00, bank: 0.00, lvl: 1,
+        bal: 0.00, bank: 0.00, debt: 0.00, lvl: 1,
         en: 100, wat: 100, hp: 100,
         x: 30, y: 30
     };
 
     let isShift = false;
-    let isPaused = false; // Блокировка движения при поимке
-    let isImmune = false; // Неуязвимость
+    let isPaused = false;
     let police = [];
     let obs = [];
     let loops = {};
     let target = { active: false, x:0, y:0, type:0, offer:null };
 
+    // --- CORE ---
     function init() {
         db.ref('users/' + userId).once('value', s => {
             const d = s.val();
             if(d && d.ver === DB_VER) {
                 st = {...st, ...d};
             } else {
-                if(d) { // Миграция денег
-                    st.bal = d.bal || 0; st.bank = d.bank || 0; st.lvl = d.lvl || 1;
+                if(d) { // Migration
+                    st.bal = d.bal||0; st.bank = d.bank||0; st.lvl = d.lvl||1; st.debt = d.debt||0;
                 }
-                forceRescue(); 
-                save();
+                forceRescue();
             }
             render();
-            // Сразу даем защиту при входе, чтобы не убило на старте
-            activateImmunity(3000);
             setInterval(ensureBounds, 2000);
         });
     }
@@ -231,208 +231,180 @@
     }
 
     function ensureBounds() {
-        if(isPaused) return; // Не трогать если идет арест
+        if(isPaused) return;
         const box = document.getElementById('game-area');
         const maxX = box.offsetWidth - 30;
         const maxY = box.offsetHeight - 30;
-
-        let fixed = false;
-        if(st.x < 0) { st.x = 0; fixed = true; }
-        if(st.y < 0) { st.y = 0; fixed = true; }
-        if(st.x > maxX) { st.x = maxX - (maxX%STEP); fixed = true; }
-        if(st.y > maxY) { st.y = maxY - (maxY%STEP); fixed = true; }
-        
-        if(fixed) { renderPlayer(); save(); }
+        let fix = false;
+        if(st.x < 0){st.x=0; fix=true;} if(st.y < 0){st.y=0; fix=true;}
+        if(st.x > maxX){st.x=maxX-(maxX%STEP); fix=true;} if(st.y > maxY){st.y=maxY-(maxY%STEP); fix=true;}
+        if(fix) { renderPlayer(); save(); }
     }
 
     function forceRescue() {
-        st.x = 30; st.y = 30;
-        st.en = 100;
-        renderPlayer();
-        save();
-        activateImmunity(5000); // 5 секунд защиты после сброса
+        st.x = 30; st.y = 30; st.en = 100;
+        renderPlayer(); save();
     }
 
-    function activateImmunity(time) {
-        isImmune = true;
-        document.getElementById('player').classList.add('immune');
-        setTimeout(() => {
-            isImmune = false;
-            document.getElementById('player').classList.remove('immune');
-        }, time);
-    }
-
-    // --- GAME LOOP ---
+    // --- GAMEPLAY ---
     function startShift() {
-        if(st.en < 5) return showToast("Голоден!");
-        if(st.hp <= 0) return showToast("Велик сломан!");
+        if(st.en < 5) return showToast("Нужна еда!");
+        if(st.hp <= 0) return showToast("Байк сломан!");
         
         isShift = true; isPaused = false;
         document.getElementById('btn-start').style.display = 'none';
         document.getElementById('joy').style.display = 'grid';
         document.getElementById('btn-stop').style.display = 'block';
-        document.getElementById('status').innerText = "Поиск...";
+        document.getElementById('status').innerText = "Поиск заказов...";
         
         spawnWorld();
         newJobPhase(1);
         
         if(loops.pol) clearInterval(loops.pol);
-        loops.pol = setInterval(movePolice, 900);
+        loops.pol = setInterval(policeAI, 1000); // 1 сек тик
     }
 
     function endShift() {
         isShift = false;
-        clearInterval(loops.timer);
-        clearInterval(loops.pol);
+        clearInterval(loops.timer); clearInterval(loops.pol);
         document.getElementById('btn-start').style.display = 'block';
         document.getElementById('joy').style.display = 'none';
         document.getElementById('btn-stop').style.display = 'none';
         document.getElementById('target').style.display = 'none';
-        document.getElementById('status').innerText = "Отдых";
-        
-        obs.forEach(o => o.el.remove()); obs = [];
-        police.forEach(p => p.el.remove()); police = [];
         document.getElementById('timer').style.display = 'none';
+        document.getElementById('status').innerText = "Смена окончена";
+        document.getElementById('game-area').classList.remove('siren-active'); // Off siren
+        
+        obs.forEach(o=>o.el.remove()); obs=[];
+        police.forEach(p=>p.el.remove()); police=[];
     }
 
     function move(dx, dy) {
         if(!isShift || isPaused) return;
         
         const box = document.getElementById('game-area');
-        const maxW = box.offsetWidth;
-        const maxH = box.offsetHeight;
-        
         let nx = st.x + (dx * STEP);
         let ny = st.y + (dy * STEP);
         
-        if(nx < 0 || ny < 0 || nx > maxW - 30 || ny > maxH - 30) {
-            showToast("Граница!"); return;
-        }
-        if(obs.some(o => Math.abs(o.x - nx) < 10 && Math.abs(o.y - ny) < 10)) {
-            showToast("Стена!"); return;
-        }
+        if(nx < 0 || ny < 0 || nx > box.offsetWidth-30 || ny > box.offsetHeight-30) return showToast("Край карты!");
+        if(obs.some(o => dist(o.x, o.y, nx, ny) < 10)) return showToast("Стена!");
         
-        // Проверка столкновения с полицией
-        if(checkPoliceCollision(nx, ny)) {
-            gotCaught(); return;
-        }
-
         st.x = nx; st.y = ny;
         st.en -= 0.5; st.wat -= 0.2; st.hp -= 0.1;
         
         renderPlayer();
+        checkPoliceProx(); // Check proximity instantly
         checkJob();
         save();
     }
 
-    // --- POLICE AI ---
+    // --- POLICE 2.0 (SMART) ---
     function spawnWorld() {
         const box = document.getElementById('game-area');
         const cols = Math.floor(box.offsetWidth/STEP);
         const rows = Math.floor(box.offsetHeight/STEP);
         
-        for(let i=0; i<10; i++) {
+        for(let i=0; i<8; i++) {
             let p = getPos(cols, rows);
             let el = mkEnt('obs', '🚧', p.x, p.y);
-            obs.push({x:p.x, y:p.y, el:el});
+            obs.push({...p, el});
         }
-        // Полиция
-        for(let i=0; i<6; i++) {
+        for(let i=0; i<5; i++) { // 5 Cops
             let p = getPos(cols, rows);
             let el = mkEnt('police', '🚓', p.x, p.y);
-            police.push({x:p.x, y:p.y, el:el});
+            police.push({...p, el});
         }
     }
-    
-    function movePolice() {
+
+    function policeAI() {
         if(!isShift || isPaused) return;
         const box = document.getElementById('game-area');
-        const maxW = box.offsetWidth;
-        const maxH = box.offsetHeight;
 
         police.forEach(p => {
+            // Simple random patrol
             let dirs = [{x:0,y:-STEP}, {x:0,y:STEP}, {x:-STEP,y:0}, {x:STEP,y:0}];
             let m = dirs[Math.floor(Math.random()*4)];
             let nx = p.x + m.x; let ny = p.y + m.y;
             
-            if(nx >= 0 && ny >= 0 && nx <= maxW - 30 && ny <= maxH - 30) {
+            if(nx >= 0 && ny >= 0 && nx <= box.offsetWidth-30 && ny <= box.offsetHeight-30) {
                 p.x = nx; p.y = ny;
                 p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
             }
         });
+        checkPoliceProx();
+    }
 
-        // Проверяем столкновение ПОСЛЕ движения полиции
-        if(checkPoliceCollision(st.x, st.y)) {
-            gotCaught();
+    function checkPoliceProx() {
+        if(!isShift || isPaused) return;
+        let caught = false;
+        let near = false;
+
+        police.forEach(p => {
+            let d = dist(st.x, st.y, p.x, p.y);
+            if(d < 10) caught = true; // Touch
+            if(d < 70) near = true;   // Proximity (2 cells)
+        });
+
+        // Visual Siren
+        const area = document.getElementById('game-area');
+        if(near && !caught) {
+            area.classList.add('siren-active');
+            showToast("🚨 КОПЫ РЯДОМ! БЕГИ! 🚨");
+        } else {
+            area.classList.remove('siren-active');
         }
+
+        if(caught) arrestSequence();
     }
 
-    function checkPoliceCollision(px, py) {
-        if(isImmune) return false;
-        return police.some(p => Math.abs(p.x - px) < 20 && Math.abs(p.y - py) < 20);
-    }
+    function arrestSequence() {
+        isPaused = true;
+        st.bal -= 50; 
+        document.getElementById('game-area').classList.remove('siren-active');
+        document.getElementById('arrest-screen').style.display = 'flex';
+        save(); render();
 
-    function gotCaught() {
-        if(isPaused || isImmune) return;
-        isPaused = true; // Блокируем игру
-        
-        // Списываем деньги сразу
-        st.bal -= 50;
-        render();
-        save();
-
-        // Показываем экран ареста
-        const overlay = document.getElementById('arrest-overlay');
-        overlay.style.display = 'flex';
-
-        // Через 2 секунды сбрасываем
         setTimeout(() => {
-            overlay.style.display = 'none';
-            forceRescue(); // Сброс на базу и активация защиты
-            isPaused = false; // Разблок
-            showToast("Вы отпущены. 5 сек защиты.");
-        }, 2000);
+            document.getElementById('arrest-screen').style.display = 'none';
+            isPaused = false;
+            forceRescue();
+            showToast("Впредь будь осторожнее");
+        }, 3000);
     }
 
-    // --- JOBS ---
+    // --- JOBS & ECONOMY ---
     function newJobPhase(ph) {
-        const box = document.getElementById('game-area');
-        const cols = Math.floor(box.offsetWidth/STEP);
-        const rows = Math.floor(box.offsetHeight/STEP);
-        
         target.type = ph;
-        let p = getPos(cols, rows);
+        let p = getPos(10,10); // Randomish
+        const box = document.getElementById('game-area');
+        // Better random pos
+        p.x = Math.floor(Math.random() * (Math.floor(box.offsetWidth/STEP)-1)) * STEP;
+        p.y = Math.floor(Math.random() * (Math.floor(box.offsetHeight/STEP)-1)) * STEP;
+
         target.x = p.x; target.y = p.y; target.active = true;
         
         const el = document.getElementById('target');
-        el.style.display = 'flex';
-        el.style.left = p.x+'px'; el.style.top = p.y+'px';
+        el.style.display = 'flex'; el.style.left = p.x+'px'; el.style.top = p.y+'px';
         
         if(ph===1) {
-            el.innerText = '🍕';
-            document.getElementById('status').innerText = "Забери пиццу";
-            startTimer(40);
+            el.innerText = '🍕'; document.getElementById('status').innerText = "Забери заказ";
+            startTimer(45);
         } else {
-            el.innerText = '👤';
-            document.getElementById('status').innerText = "Вези клиенту!";
-            startTimer(20);
+            el.innerText = '👤'; document.getElementById('status').innerText = "К клиенту!";
+            startTimer(25);
         }
     }
-    
+
     function checkJob() {
-        if(!target.active) return;
-        if(Math.abs(st.x - target.x) < 15 && Math.abs(st.y - target.y) < 15) {
+        if(target.active && dist(st.x, st.y, target.x, target.y) < 15) {
             if(target.type === 1) {
-                clearInterval(loops.timer);
-                target.active = false;
-                let inf = 1 + (st.lvl - 1) * 0.1;
-                let dist = Math.floor(Math.random()*15)+5;
-                let pay = (dist * 1.5 * inf).toFixed(2);
+                clearInterval(loops.timer); target.active = false;
+                let inf = 1 + (st.lvl-1)*0.1;
+                let distK = Math.floor(Math.random()*10)+2;
+                let pay = (distK * 2.0 * inf).toFixed(2); // Higher pay formula
                 
-                target.offer = {dist, pay: parseFloat(pay)};
-                
-                document.getElementById('j-name').innerText = "Order #" + Math.floor(Math.random()*999);
-                document.getElementById('j-dist').innerText = dist;
+                target.offer = {dist: distK, pay: parseFloat(pay)};
+                document.getElementById('j-dist').innerText = distK;
                 document.getElementById('j-pay').innerText = pay;
                 document.getElementById('job-modal').style.display = 'flex';
             } else {
@@ -440,119 +412,125 @@
             }
         }
     }
-    
-    function ansJob(yes) {
-        document.getElementById('job-modal').style.display = 'none';
-        if(yes) {
-            showToast("Везем!");
-            newJobPhase(2);
-        } else {
-            showToast("Отказ -2 PLN");
-            st.bal -= 2; render();
-            newJobPhase(1);
-        }
-    }
-    
-    function finish(ok) {
-        clearInterval(loops.timer);
-        target.active = false;
-        document.getElementById('target').style.display = 'none';
-        document.getElementById('timer').style.display = 'none';
-        
-        if(ok) {
-            let add = target.offer.pay;
-            st.bal += add;
-            showToast(`+${add} PLN`);
-        } else {
-            showToast("Время вышло! -5 PLN");
-            st.bal -= 5;
-        }
-        render(); save();
-        setTimeout(() => { if(isShift) newJobPhase(1); }, 1500);
+
+    function ansJob(y) {
+        document.getElementById('job-modal').style.display='none';
+        if(y) { newJobPhase(2); } 
+        else { st.bal-=2; render(); newJobPhase(1); }
     }
 
-    function startTimer(sec) {
+    function finish(ok) {
+        clearInterval(loops.timer); target.active = false;
+        document.getElementById('target').style.display = 'none';
+        document.getElementById('timer').style.display = 'none';
+        if(ok) { st.bal += target.offer.pay; showToast(`+${target.offer.pay}`); }
+        else { st.bal -= 5; showToast("Штраф времени -5"); }
+        save(); render();
+        setTimeout(()=>{ if(isShift) newJobPhase(1); }, 1500);
+    }
+
+    function startTimer(s) {
         clearInterval(loops.timer);
-        let t = sec;
-        document.getElementById('timer').style.display = 'block';
+        document.getElementById('timer').style.display='block';
         loops.timer = setInterval(()=>{
-            t--;
-            document.getElementById('timer').innerText = t + " сек";
-            if(t<=0) finish(false);
+            s--; document.getElementById('timer').innerText = s;
+            if(s<=0) finish(false);
         }, 1000);
     }
 
-    // --- UTILS & MENU ---
-    function mkEnt(cls, ico, x, y) {
-        let d = document.createElement('div');
-        d.className = 'entity '+cls; d.innerText = ico;
-        d.style.left=x+'px'; d.style.top=y+'px';
-        document.getElementById('game-area').appendChild(d);
-        return d;
+    // --- BANKING SYSTEM ---
+    function renderBank() {
+        const div = document.getElementById('bank-ui');
+        div.innerHTML = `
+            <div class="bank-card">
+                <div style="font-size:12px; opacity:0.8">Баланс счета</div>
+                <div style="font-size:24px; font-weight:bold">${st.bank.toFixed(2)} PLN</div>
+            </div>
+            
+            <div style="background:#fff; border:1px solid #eee; padding:10px; border-radius:8px; text-align:center">
+                <div style="font-weight:bold; margin-bottom:5px">КРЕДИТНЫЙ ОТДЕЛ</div>
+                ${st.debt > 0 
+                    ? `<div class="debt-text">ДОЛГ: ${st.debt.toFixed(2)} PLN</div>
+                       <button class="buy-btn" style="width:100%; margin-top:5px; background:var(--blue)" onclick="repayLoan()">Погасить (Все)</button>`
+                    : `<div style="font-size:11px; color:green; margin-bottom:5px">Кредит доступен</div>
+                       <button class="buy-btn" style="width:100%; background:orange; color:black" onclick="takeLoan()">Взять 200 PLN</button>
+                       <div style="font-size:9px; color:#777; margin-top:2px">Вернуть нужно 250 PLN</div>`
+                }
+            </div>
+
+            <div style="display:flex; gap:5px; margin-top:10px">
+                <button class="buy-btn" style="flex:1" onclick="bankOp(1)">Вклад</button>
+                <button class="buy-btn" style="flex:1; background:red" onclick="bankOp(-1)">Снять</button>
+            </div>
+        `;
     }
-    function getPos(c, r) {
-        let x, y, ok=false;
-        while(!ok) {
-            x = Math.floor(Math.random()*(c-1))*STEP;
-            y = Math.floor(Math.random()*(r-1))*STEP;
-            ok = (Math.abs(x-st.x)>60);
+
+    function takeLoan() {
+        if(st.debt > 0) return showToast("Сначала погаси старый!");
+        st.bal += 200;
+        st.debt = 250; // Interest
+        showToast("Кредит взят. Не забудь вернуть.");
+        save(); render();
+    }
+
+    function repayLoan() {
+        if(st.bal >= st.debt) {
+            st.bal -= st.debt;
+            st.debt = 0;
+            showToast("Долг погашен! Свобода!");
+            save(); render();
+        } else {
+            showToast("Не хватает налички!");
         }
-        return {x,y};
     }
-    function renderPlayer() {
-        const p = document.getElementById('player');
-        p.style.left = st.x + 'px'; p.style.top = st.y + 'px';
+
+    function bankOp(dir) {
+        if(dir===1 && st.bal>0) { st.bank+=st.bal; st.bal=0; }
+        if(dir===-1 && st.bank>0) { st.bal+=st.bank; st.bank=0; }
+        save(); render();
     }
+
+    // --- UTILS ---
+    function mkEnt(c,i,x,y){
+        let d=document.createElement('div'); d.className='entity '+c; d.innerText=i;
+        d.style.left=x+'px'; d.style.top=y+'px';
+        document.getElementById('game-area').appendChild(d); return d;
+    }
+    function getPos(c,r){ return {x:Math.floor(Math.random()*(c-1))*STEP, y:Math.floor(Math.random()*(r-1))*STEP}; }
+    function dist(x1,y1,x2,y2){ return Math.abs(x1-x2)+Math.abs(y1-y2); }
+    
     function render() {
         document.getElementById('cash').innerText = st.bal.toFixed(2);
         document.getElementById('bank').innerText = st.bank.toFixed(2);
+        document.getElementById('debt').innerText = st.debt.toFixed(2);
         document.getElementById('lvl').innerText = st.lvl;
-        document.getElementById('b-en').style.width = st.en + '%';
-        document.getElementById('b-wat').style.width = st.wat + '%';
-        document.getElementById('b-hp').style.width = st.hp + '%';
-        updateShop();
+        
+        document.getElementById('b-en').style.width = st.en+'%';
+        document.getElementById('b-wat').style.width = st.wat+'%';
+        document.getElementById('b-hp').style.width = st.hp+'%';
+        
+        // Shop render
+        let inf = 1+(st.lvl-1)*0.1; const p=(v)=>Math.ceil(v*inf);
+        document.getElementById('shop-list').innerHTML = `
+            <div style="display:flex; justify-content:space-between; padding:5px 0"><span>🌭 Еда</span> <button class="buy-btn" onclick="buy('en',20,${p(8)})">${p(8)}</button></div>
+            <div style="display:flex; justify-content:space-between; padding:5px 0"><span>🥤 Вода</span> <button class="buy-btn" onclick="buy('wat',30,${p(5)})">${p(5)}</button></div>
+        `;
+        renderBank();
     }
 
-    function toggleMenu() {
-        const s = document.getElementById('sidebar');
-        const o = document.getElementById('side-overlay');
-        if(s.classList.contains('open')) { s.classList.remove('open'); o.style.display='none'; }
-        else { s.classList.add('open'); o.style.display='block'; updateShop(); }
+    function renderPlayer() {
+        const p = document.getElementById('player');
+        p.style.left = st.x+'px'; p.style.top = st.y+'px';
     }
-    function updateShop() {
-        let inf = 1 + (st.lvl - 1) * 0.1;
-        const p = (v) => Math.ceil(v * inf);
-        const c = document.getElementById('shop-list');
-        c.innerHTML = `
-            <div class="shop-row"><div>🌭 Хот-дог</div> <button class="buy-btn" onclick="buy('en', 20, ${p(8)})">${p(8)}</button></div>
-            <div class="shop-row"><div>🥤 Вода</div> <button class="buy-btn" onclick="buy('wat', 30, ${p(5)})">${p(5)}</button></div>
-            <div class="shop-row"><div>⚡ Red Bull</div> <button class="buy-btn" onclick="buy('bull', 50, ${p(15)})">${p(15)}</button></div>
-        `;
+
+    function buy(t,v,c){ if(st.bal>=c){st.bal-=c; if(t=='en')st.en+=v; if(t=='wat')st.wat+=v; render(); save();} }
+    function repairBike(){ 
+        let c=Math.ceil(20*(1+(st.lvl-1)*0.1)); 
+        if(st.bal>=c){st.bal-=c; st.hp=100; st.lvl++; showToast("LVL UP!"); render(); save();} 
     }
-    function buy(t, v, c) {
-        if(st.bal >= c) {
-            st.bal -= c;
-            if(t==='en' || t==='bull') st.en = Math.min(100, st.en+v);
-            if(t==='wat') st.wat = Math.min(100, st.wat+v);
-            showToast("Куплено"); render(); save();
-        } else showToast("Нет денег");
-    }
-    function repairBike() {
-        let inf = 1 + (st.lvl - 1) * 0.1;
-        let c = Math.ceil(20 * inf);
-        if(st.bal >= c) {
-            st.bal -= c; st.hp = 100; st.lvl++;
-            showToast("LVL UP!"); render(); save();
-        } else showToast("Нет денег");
-    }
-    function bankAll() { if(st.bal > 0) { st.bank += st.bal; st.bal = 0; showToast("Вклад!"); render(); save(); } }
-    function withdrawAll() { if(st.bank > 0) { st.bal += st.bank; st.bank = 0; showToast("Снято!"); render(); save(); } }
-    function showToast(m) {
-        const t = document.getElementById('toast');
-        t.innerText = m; t.style.display = 'block';
-        setTimeout(()=>t.style.display='none', 1500);
-    }
-    
+    function showToast(m){const t=document.getElementById('toast'); t.innerText=m; t.style.display='block'; setTimeout(()=>t.style.display='none',1500);}
+    function toggleMenu(){const s=document.getElementById('sidebar'); const o=document.getElementById('side-overlay'); if(s.classList.contains('open')){s.classList.remove('open');o.style.display='none';}else{s.classList.add('open');o.style.display='block';render();}}
+
     init();
 </script>
 </body>
