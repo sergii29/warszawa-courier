@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier: Stable</title>
+    <title>Warsaw Courier: Police State</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -15,13 +15,13 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; font-family: 'Courier New', monospace; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
 
-        /* ИГРОВОЕ ПОЛЕ (Строгая позиция) */
+        /* ИГРОВОЕ ПОЛЕ */
         #game-area {
             position: absolute; top: 140px; left: 0; right: 0; bottom: 260px;
             background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
             background-size: 30px 30px; 
             z-index: 1;
-            overflow: hidden; /* Обрезаем все что вылетает */
+            overflow: hidden; 
             border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;
         }
 
@@ -32,16 +32,18 @@
             font-size: 20px; transition: all 0.15s linear; 
         }
         #player { 
-            z-index: 100; /* Игрок всегда выше всех */
-            font-size: 24px; 
-            background: rgba(200, 255, 0, 0.3); /* Подсветка чтобы видеть */
-            border-radius: 50%;
-            border: 2px solid var(--dark);
+            z-index: 100; font-size: 24px; 
+            background: rgba(200, 255, 0, 0.4); 
+            border-radius: 50%; border: 2px solid var(--dark);
         }
+        /* Мигание при неуязвимости */
+        .immune { animation: blink 0.5s infinite; opacity: 0.5; border-color: blue !important; background: rgba(0,0,255,0.2) !important; }
+        @keyframes blink { 0% {opacity:0.3;} 50% {opacity:1;} 100% {opacity:0.3;} }
+
         .police { z-index: 50; transition: top 0.8s linear, left 0.8s linear; }
         .obs { z-index: 10; opacity: 0.7; }
 
-        /* ВЕРХНИЙ UI */
+        /* UI */
         #top-ui {
             position: absolute; top: 0; left: 0; width: 100%; height: 140px;
             background: white; z-index: 200; padding: 10px; display: flex; flex-direction: column; align-items: center;
@@ -54,14 +56,12 @@
         .bar-track { flex-grow: 1; height: 8px; background: #eee; margin-left: 5px; border: 1px solid #999; border-radius: 4px; overflow: hidden; }
         .bar-val { height: 100%; transition: width 0.3s; }
 
-        /* НИЖНИЙ UI */
         #bot-ui {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 260px;
             background: white; z-index: 200; border-top: 2px solid var(--dark);
             display: flex; flex-direction: column; align-items: center; padding-top: 10px;
         }
 
-        /* УПРАВЛЕНИЕ */
         .joy-pad { display: grid; grid-template-columns: 70px 70px 70px; grid-template-rows: 60px 60px; gap: 8px; margin-top: 10px;}
         .j-btn { background: #f0f0f0; border: 1px solid #bbb; border-radius: 12px; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 0 #ccc; }
         .j-btn:active { background: #e0e0e0; box-shadow: 0 2px 0 #ccc; transform: translateY(2px); }
@@ -70,11 +70,20 @@
 
         .btn-main { background: var(--lime); color: black; border: 2px solid black; padding: 15px 40px; font-weight: bold; border-radius: 8px; margin-top: 40px; cursor: pointer; }
 
+        /* ARREST SCREEN */
+        #arrest-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9000;
+            background: rgba(0,0,50,0.8); display: none; flex-direction: column;
+            align-items: center; justify-content: center; color: white;
+            animation: police-flash 0.5s infinite;
+        }
+        @keyframes police-flash { 0% {background:rgba(255,0,0,0.6);} 50% {background:rgba(0,0,255,0.6);} 100% {background:rgba(255,0,0,0.6);} }
+
         /* MODALS */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
         .popup { background: white; padding: 20px; border-radius: 10px; text-align: center; width: 80%; max-width: 320px; border: 3px solid var(--lime); }
         
-        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: black; color: white; padding: 10px 20px; border-radius: 20px; z-index: 5000; display: none; }
+        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: black; color: white; padding: 10px 20px; border-radius: 20px; z-index: 5000; display: none; text-align: center;}
 
         /* Side Menu */
         #menu-btn { position: absolute; top: 10px; left: 10px; width: 40px; height: 40px; background: #333; z-index: 201; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap:4px; border-radius:6px; }
@@ -84,16 +93,13 @@
         #sidebar.open { left:0; }
         .shop-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee; align-items: center; font-size: 12px;}
         .buy-btn { background:var(--dark); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;}
-
-        /* Debug button */
-        .rescue-btn { position: absolute; top: 50px; right: 10px; font-size: 10px; background: red; color: white; padding: 5px; border-radius: 5px; z-index: 5000; opacity: 0.7; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="top-ui">
     <div class="wallet">💵 <span id="cash">0.00</span> | 🏦 <span id="bank">0.00</span></div>
-    <div style="font-size: 10px; margin-bottom: 5px;">LVL: <span id="lvl">1</span> (Инфляция: <span id="inf">0</span>%)</div>
+    <div style="font-size: 10px; margin-bottom: 5px;">LVL: <span id="lvl">1</span></div>
     
     <div class="bars">
         <div class="bar-row">⚡ <div class="bar-track"><div id="b-en" class="bar-val" style="width:100%; background:orange"></div></div></div>
@@ -104,7 +110,12 @@
 
 <div id="menu-btn" onclick="toggleMenu()"><div class="ml"></div><div class="ml"></div><div class="ml"></div></div>
 
-<div class="rescue-btn" onclick="forceRescue()">🆘 ЗАСТРЯЛ? ЖМИ</div>
+<div id="arrest-overlay">
+    <div style="font-size:40px;">🚓</div>
+    <h1 style="text-shadow: 2px 2px 0 #000;">ВАС ПОЙМАЛИ</h1>
+    <h2 style="color: yellow; text-shadow: 1px 1px 0 #000;">ШТРАФ -50 PLN</h2>
+    <p>Велосипед конфискован на базу...</p>
+</div>
 
 <div id="game-area">
     <div id="player" class="entity">🚲</div>
@@ -128,7 +139,6 @@
 
 <div id="sidebar">
     <h3>МЕНЮ</h3>
-    <p>Нажми сбоку чтобы закрыть</p>
     <hr>
     <h4>Магазин</h4>
     <div id="shop-list"></div>
@@ -177,11 +187,10 @@
     const db = firebase.database();
     
     const tg = window.Telegram.WebApp; tg.expand();
-    const userId = tg.initDataUnsafe?.user?.id || 'browser_test_user_v4';
+    const userId = tg.initDataUnsafe?.user?.id || 'browser_test_V5';
     document.getElementById('uid').innerText = userId;
 
-    // --- CONFIG ---
-    const DB_VER = 4; // Новая версия для сброса координат
+    const DB_VER = 5; 
     const STEP = 30;
     
     let st = {
@@ -191,29 +200,28 @@
     };
 
     let isShift = false;
+    let isPaused = false; // Блокировка движения при поимке
+    let isImmune = false; // Неуязвимость
     let police = [];
     let obs = [];
     let loops = {};
     let target = { active: false, x:0, y:0, type:0, offer:null };
 
-    // --- INIT ---
     function init() {
         db.ref('users/' + userId).once('value', s => {
             const d = s.val();
             if(d && d.ver === DB_VER) {
                 st = {...st, ...d};
             } else {
-                // Если версия старая - сохраняем деньги, но сбрасываем позицию
-                if(d) {
-                    st.bal = d.bal || 0;
-                    st.bank = d.bank || 0;
-                    st.lvl = d.lvl || 1;
+                if(d) { // Миграция денег
+                    st.bal = d.bal || 0; st.bank = d.bank || 0; st.lvl = d.lvl || 1;
                 }
-                forceRescue(); // Принудительный сброс на старт
+                forceRescue(); 
                 save();
             }
             render();
-            // Запуск "защитника границ"
+            // Сразу даем защиту при входе, чтобы не убило на старте
+            activateImmunity(3000);
             setInterval(ensureBounds, 2000);
         });
     }
@@ -222,12 +230,8 @@
         db.ref('users/' + userId).set({ver: DB_VER, ...st, last: Date.now()});
     }
 
-    // --- CORE MECHANICS ---
-    function getInflation() { return 1 + (st.lvl - 1) * 0.1; }
-    function price(base) { return Math.ceil(base * getInflation()); }
-
     function ensureBounds() {
-        // Эта функция проверяет, не улетел ли игрок
+        if(isPaused) return; // Не трогать если идет арест
         const box = document.getElementById('game-area');
         const maxX = box.offsetWidth - 30;
         const maxY = box.offsetHeight - 30;
@@ -238,11 +242,7 @@
         if(st.x > maxX) { st.x = maxX - (maxX%STEP); fixed = true; }
         if(st.y > maxY) { st.y = maxY - (maxY%STEP); fixed = true; }
         
-        if(fixed) {
-            console.log("Player rescued from void");
-            renderPlayer();
-            save();
-        }
+        if(fixed) { renderPlayer(); save(); }
     }
 
     function forceRescue() {
@@ -250,7 +250,16 @@
         st.en = 100;
         renderPlayer();
         save();
-        showToast("Координаты сброшены!");
+        activateImmunity(5000); // 5 секунд защиты после сброса
+    }
+
+    function activateImmunity(time) {
+        isImmune = true;
+        document.getElementById('player').classList.add('immune');
+        setTimeout(() => {
+            isImmune = false;
+            document.getElementById('player').classList.remove('immune');
+        }, time);
     }
 
     // --- GAME LOOP ---
@@ -258,7 +267,7 @@
         if(st.en < 5) return showToast("Голоден!");
         if(st.hp <= 0) return showToast("Велик сломан!");
         
-        isShift = true;
+        isShift = true; isPaused = false;
         document.getElementById('btn-start').style.display = 'none';
         document.getElementById('joy').style.display = 'grid';
         document.getElementById('btn-stop').style.display = 'block';
@@ -268,7 +277,7 @@
         newJobPhase(1);
         
         if(loops.pol) clearInterval(loops.pol);
-        loops.pol = setInterval(movePolice, 800);
+        loops.pol = setInterval(movePolice, 900);
     }
 
     function endShift() {
@@ -287,7 +296,7 @@
     }
 
     function move(dx, dy) {
-        if(!isShift) return;
+        if(!isShift || isPaused) return;
         
         const box = document.getElementById('game-area');
         const maxW = box.offsetWidth;
@@ -296,16 +305,15 @@
         let nx = st.x + (dx * STEP);
         let ny = st.y + (dy * STEP);
         
-        // СТРОГАЯ ПРОВЕРКА ГРАНИЦ
         if(nx < 0 || ny < 0 || nx > maxW - 30 || ny > maxH - 30) {
             showToast("Граница!"); return;
         }
-        
         if(obs.some(o => Math.abs(o.x - nx) < 10 && Math.abs(o.y - ny) < 10)) {
             showToast("Стена!"); return;
         }
         
-        if(police.some(p => Math.abs(p.x - nx) < 10 && Math.abs(p.y - ny) < 10)) {
+        // Проверка столкновения с полицией
+        if(checkPoliceCollision(nx, ny)) {
             gotCaught(); return;
         }
 
@@ -323,13 +331,12 @@
         const cols = Math.floor(box.offsetWidth/STEP);
         const rows = Math.floor(box.offsetHeight/STEP);
         
-        // Walls
         for(let i=0; i<10; i++) {
             let p = getPos(cols, rows);
             let el = mkEnt('obs', '🚧', p.x, p.y);
             obs.push({x:p.x, y:p.y, el:el});
         }
-        // Police
+        // Полиция
         for(let i=0; i<6; i++) {
             let p = getPos(cols, rows);
             let el = mkEnt('police', '🚓', p.x, p.y);
@@ -338,7 +345,7 @@
     }
     
     function movePolice() {
-        if(!isShift) return;
+        if(!isShift || isPaused) return;
         const box = document.getElementById('game-area');
         const maxW = box.offsetWidth;
         const maxH = box.offsetHeight;
@@ -348,22 +355,43 @@
             let m = dirs[Math.floor(Math.random()*4)];
             let nx = p.x + m.x; let ny = p.y + m.y;
             
-            // AI Bounds Check
             if(nx >= 0 && ny >= 0 && nx <= maxW - 30 && ny <= maxH - 30) {
                 p.x = nx; p.y = ny;
                 p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
             }
-            
-            if(Math.abs(p.x - st.x) < 15 && Math.abs(p.y - st.y) < 15) {
-                gotCaught();
-            }
         });
+
+        // Проверяем столкновение ПОСЛЕ движения полиции
+        if(checkPoliceCollision(st.x, st.y)) {
+            gotCaught();
+        }
+    }
+
+    function checkPoliceCollision(px, py) {
+        if(isImmune) return false;
+        return police.some(p => Math.abs(p.x - px) < 20 && Math.abs(p.y - py) < 20);
     }
 
     function gotCaught() {
-        showToast("ПОЛИЦИЯ! -50 PLN");
+        if(isPaused || isImmune) return;
+        isPaused = true; // Блокируем игру
+        
+        // Списываем деньги сразу
         st.bal -= 50;
-        forceRescue();
+        render();
+        save();
+
+        // Показываем экран ареста
+        const overlay = document.getElementById('arrest-overlay');
+        overlay.style.display = 'flex';
+
+        // Через 2 секунды сбрасываем
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            forceRescue(); // Сброс на базу и активация защиты
+            isPaused = false; // Разблок
+            showToast("Вы отпущены. 5 сек защиты.");
+        }, 2000);
     }
 
     // --- JOBS ---
@@ -395,20 +423,19 @@
         if(!target.active) return;
         if(Math.abs(st.x - target.x) < 15 && Math.abs(st.y - target.y) < 15) {
             if(target.type === 1) {
-                // Предложение
                 clearInterval(loops.timer);
                 target.active = false;
+                let inf = 1 + (st.lvl - 1) * 0.1;
                 let dist = Math.floor(Math.random()*15)+5;
-                let pay = (dist * 1.5 * getInflation()).toFixed(2);
+                let pay = (dist * 1.5 * inf).toFixed(2);
                 
                 target.offer = {dist, pay: parseFloat(pay)};
                 
-                document.getElementById('j-name').innerText = "Pizza " + Math.floor(Math.random()*100);
+                document.getElementById('j-name').innerText = "Order #" + Math.floor(Math.random()*999);
                 document.getElementById('j-dist').innerText = dist;
                 document.getElementById('j-pay').innerText = pay;
                 document.getElementById('job-modal').style.display = 'flex';
             } else {
-                // Финиш
                 finish(true);
             }
         }
@@ -455,7 +482,7 @@
         }, 1000);
     }
 
-    // --- UTILS ---
+    // --- UTILS & MENU ---
     function mkEnt(cls, ico, x, y) {
         let d = document.createElement('div');
         d.className = 'entity '+cls; d.innerText = ico;
@@ -463,7 +490,6 @@
         document.getElementById('game-area').appendChild(d);
         return d;
     }
-
     function getPos(c, r) {
         let x, y, ok=false;
         while(!ok) {
@@ -473,47 +499,36 @@
         }
         return {x,y};
     }
-
-    function render() {
-        document.getElementById('cash').innerText = st.bal.toFixed(2);
-        document.getElementById('bank').innerText = st.bank.toFixed(2);
-        document.getElementById('lvl').innerText = st.lvl;
-        document.getElementById('inf').innerText = Math.round((getInflation()-1)*100);
-        
-        document.getElementById('b-en').style.width = st.en + '%';
-        document.getElementById('b-wat').style.width = st.wat + '%';
-        document.getElementById('b-hp').style.width = st.hp + '%';
-        
-        renderPlayer();
-        updateShop();
-    }
-    
     function renderPlayer() {
         const p = document.getElementById('player');
         p.style.left = st.x + 'px'; p.style.top = st.y + 'px';
     }
+    function render() {
+        document.getElementById('cash').innerText = st.bal.toFixed(2);
+        document.getElementById('bank').innerText = st.bank.toFixed(2);
+        document.getElementById('lvl').innerText = st.lvl;
+        document.getElementById('b-en').style.width = st.en + '%';
+        document.getElementById('b-wat').style.width = st.wat + '%';
+        document.getElementById('b-hp').style.width = st.hp + '%';
+        updateShop();
+    }
 
-    // --- SHOP & MENU ---
     function toggleMenu() {
         const s = document.getElementById('sidebar');
         const o = document.getElementById('side-overlay');
-        if(s.classList.contains('open')) {
-            s.classList.remove('open'); o.style.display='none';
-        } else {
-            s.classList.add('open'); o.style.display='block';
-            updateShop();
-        }
+        if(s.classList.contains('open')) { s.classList.remove('open'); o.style.display='none'; }
+        else { s.classList.add('open'); o.style.display='block'; updateShop(); }
     }
-
     function updateShop() {
+        let inf = 1 + (st.lvl - 1) * 0.1;
+        const p = (v) => Math.ceil(v * inf);
         const c = document.getElementById('shop-list');
         c.innerHTML = `
-            <div class="shop-row"><div>🌭 Хот-дог</div> <button class="buy-btn" onclick="buy('en', 20, ${price(8)})">${price(8)}</button></div>
-            <div class="shop-row"><div>🥤 Вода</div> <button class="buy-btn" onclick="buy('wat', 30, ${price(5)})">${price(5)}</button></div>
-            <div class="shop-row"><div>⚡ Red Bull</div> <button class="buy-btn" onclick="buy('bull', 50, ${price(15)})">${price(15)}</button></div>
+            <div class="shop-row"><div>🌭 Хот-дог</div> <button class="buy-btn" onclick="buy('en', 20, ${p(8)})">${p(8)}</button></div>
+            <div class="shop-row"><div>🥤 Вода</div> <button class="buy-btn" onclick="buy('wat', 30, ${p(5)})">${p(5)}</button></div>
+            <div class="shop-row"><div>⚡ Red Bull</div> <button class="buy-btn" onclick="buy('bull', 50, ${p(15)})">${p(15)}</button></div>
         `;
     }
-
     function buy(t, v, c) {
         if(st.bal >= c) {
             st.bal -= c;
@@ -522,22 +537,16 @@
             showToast("Куплено"); render(); save();
         } else showToast("Нет денег");
     }
-
     function repairBike() {
-        let c = price(20);
+        let inf = 1 + (st.lvl - 1) * 0.1;
+        let c = Math.ceil(20 * inf);
         if(st.bal >= c) {
             st.bal -= c; st.hp = 100; st.lvl++;
-            showToast("Починил! LVL UP!"); render(); save();
+            showToast("LVL UP!"); render(); save();
         } else showToast("Нет денег");
     }
-
-    function bankAll() {
-        if(st.bal > 0) { st.bank += st.bal; st.bal = 0; showToast("Вклад сделан"); render(); save(); }
-    }
-    function withdrawAll() {
-        if(st.bank > 0) { st.bal += st.bank; st.bank = 0; showToast("Деньги сняты"); render(); save(); }
-    }
-
+    function bankAll() { if(st.bal > 0) { st.bank += st.bal; st.bal = 0; showToast("Вклад!"); render(); save(); } }
+    function withdrawAll() { if(st.bank > 0) { st.bal += st.bank; st.bank = 0; showToast("Снято!"); render(); save(); } }
     function showToast(m) {
         const t = document.getElementById('toast');
         t.innerText = m; t.style.display = 'block';
