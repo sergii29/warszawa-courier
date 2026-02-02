@@ -2,160 +2,214 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Express: Underground</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warsaw Courier Tycoon</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --yellow: #ffcc00; --bg: #0f0f0f; --card: #1e1e1e; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; text-align: center; margin: 0; user-select: none; overflow: hidden; }
-        #ui { padding: 15px; display: flex; flex-direction: column; height: 100vh; justify-content: space-between; box-sizing: border-box; }
-        .header { background: var(--card); border-radius: 20px; padding: 15px; border: 1px solid #333; }
-        .money-text { font-size: 32px; font-weight: 800; color: var(--yellow); }
-        .bar-container { background: #333; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 0.2s; }
-        #energy-bar { background: #4caf50; }
-        #water-bar { background: #2196f3; }
-        #event-log { font-size: 14px; height: 40px; color: #00ff00; display: flex; align-items: center; justify-content: center; }
-        #game-core { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        #courier-btn { width: 200px; height: 200px; background: radial-gradient(circle, #333, #111); border-radius: 50%; border: 8px solid var(--yellow); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        #courier-btn:active { transform: scale(0.95); }
-        #emoji { font-size: 80px; }
-        .shop { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 10px; }
-        .btn { background: var(--card); border: 1px solid #444; color: white; padding: 12px 5px; border-radius: 12px; font-size: 12px; }
-        .btn b { color: var(--yellow); display: block; font-size: 14px; }
-        .energy-note { font-size: 10px; color: #888; display: block; margin-top: 4px; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; overflow: hidden; }
+        #map { height: 60vh; width: 100%; }
+        #ui-panel { height: 40vh; padding: 15px; background: #222; display: flex; gap: 20px; overflow-y: auto; border-top: 3px solid #ff004c; }
+        .stat-card { background: #333; padding: 10px; border-radius: 8px; min-width: 150px; text-align: center; }
+        .menu-section { flex: 1; border-right: 1px solid #444; padding-right: 15px; }
+        button { background: #ff004c; border: none; color: white; padding: 8px 12px; cursor: pointer; border-radius: 4px; margin-top: 5px; width: 100%; }
+        button:disabled { background: #555; }
+        .log { font-size: 12px; color: #aaa; height: 100px; overflow-y: scroll; background: #000; padding: 5px; margin-top: 10px; }
+        .highlight { color: #00ff88; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <div class="header">
-        <div class="money-text" id="money">0.00 $</div>
-        <div id="district" style="color: #aaa; font-weight: bold;">Praga Południe</div>
-        <div class="bar-container"><div id="energy-bar" class="bar-fill" style="width: 100%"></div></div>
-        <div class="bar-container"><div id="water-bar" class="bar-fill" style="width: 100%"></div></div>
+<div id="map"></div>
+<div id="ui-panel">
+    <div class="menu-section">
+        <h3>Управление</h3>
+        <div class="stat-card">Баланс: <span id="balance" class="highlight">5000</span> PLN</div>
+        <div class="stat-card">Курьеры: <span id="courier-count">0</span></div>
+        <div id="office-status" style="margin-top:10px; color: #ffbc00;">Выберите место для офиса на карте!</div>
+        <div class="log" id="game-log">Добро пожаловать в Варшаву!</div>
     </div>
 
-    <div id="event-log">Начни работу, курьер!</div>
-
-    <div id="game-core">
-        <div id="courier-btn" onclick="handleMainClick()">
-            <div id="emoji">🚶‍♂️</div>
+    <div class="menu-section">
+        <h3>Магазин (Опт)</h3>
+        <div>
+            Велосипед 250W (1500 PLN)
+            <button onclick="buyItem('bike250', 1500)">Купить</button>
+        </div>
+        <div>
+            Велосипед 350W (3700 PLN)
+            <button onclick="buyItem('bike350', 3700)">Купить</button>
+        </div>
+        <div style="margin-top:10px;">
+            Сумка + Куртка (500 PLN)
+            <button onclick="buyItem('gear', 500)">Купить набор</button>
         </div>
     </div>
 
-    <div class="shop">
-        <button class="btn" onclick="buyItem('energy')">
-            <b>Энергетик</b> <span id="p-e">30</span>$
-            <span class="energy-note">Остановка расхода энергии (Вода тратится!)</span>
-        </button>
-        <button class="btn" onclick="buyItem('water')"><b>Вода</b> <span id="p-w">10</span>$</button>
-        <button class="btn" onclick="upgradeTransport()"><b>Транспорт</b> <span id="p-t">150</span>$</button>
-        <button class="btn" onclick="changeDistrict()"><b>Район</b> <span id="p-d">500</span>$</button>
+    <div class="menu-section">
+        <h3>Склад</h3>
+        <p>Велосипеды: <span id="inv-bikes">0</span></p>
+        <p>Экипировка: <span id="inv-gear">0</span></p>
+        <small>* 1 вел + 1 сумка = 1 курьер</small>
     </div>
 </div>
 
 <script>
-    const KEY = "WARSZAWA_FOREVER";
-    let state = { money: 0, lvl: 1.0, energy: 100, water: 100, districtIdx: 0, inflation: 1.0, boostActive: false };
-    
-    const dists = [
-        { name: "Praga Południe", mult: 1.0, color: "#aaa" },
-        { name: "Wola", mult: 2.5, color: "#fff" },
-        { name: "Mokotów", mult: 6.0, color: "#00ff00" },
-        { name: "Śródmieście", mult: 15.0, color: "#ffcc00" }
-    ];
+    // --- КОНФИГ ИНИЦИАЛИЗАЦИЯ ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
+        authDomain: "warszawa-courier.firebaseapp.com",
+        databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "warszawa-courier",
+        storageBucket: "warszawa-courier.firebasestorage.app",
+        messagingSenderId: "295860613508",
+        appId: "1:295860613508:web:86fe8364377d6875612dd1"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    function handleMainClick() {
-        if (state.energy <= 1 || state.water <= 1) { pushLog("Нет сил или воды!"); return; }
-        
-        if (!state.boostActive) state.energy -= 0.5;
-        state.water -= 0.7; // Вода тратится всегда
-        
-        state.money += state.lvl * dists[state.districtIdx].mult;
-        updateUI();
-        save();
+    // --- СОСТОЯНИЕ ИГРЫ ---
+    let state = {
+        balance: 5000,
+        bikes: 0,
+        gear: 0,
+        couriers: [],
+        office: null, // {lat, lng}
+        rentPrice: 200,
+        lastRentPay: Date.now()
+    };
+
+    // --- КАРТА ---
+    const map = L.map('map').setView([52.2297, 21.0122], 13); // Центр Варшавы
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+    let officeMarker = null;
+
+    map.on('click', function(e) {
+        if (!state.office) {
+            state.office = e.latlng;
+            officeMarker = L.marker(e.latlng, {icon: L.divIcon({className: 'office-icon', html: '🏢', iconSize: [30, 30]})}).addTo(map);
+            addLog("Офис открыт! Аренда 200 PLN / 5 мин.");
+            document.getElementById('office-status').innerText = "Офис активен";
+            saveGame();
+        }
+    });
+
+    // --- ЛОГИКА ИГРЫ ---
+    function buyItem(type, price) {
+        if (state.balance >= price) {
+            state.balance -= price;
+            if (type.includes('bike')) state.bikes++;
+            if (type === 'gear') state.gear++;
+            updateUI();
+            checkNewCouriers();
+            addLog(`Куплено: ${type} за ${price} PLN`);
+        } else {
+            addLog("Недостаточно денег!");
+        }
     }
 
-    function buyItem(type) {
-        let price = (type === 'energy' ? 30 : 10) * state.inflation;
-        if (state.money >= price) {
-            state.money -= price;
-            if (type === 'energy') {
-                state.boostActive = true;
-                pushLog("Энергетик активирован!");
-                setTimeout(() => { state.boostActive = false; pushLog("Действие энергетика вышло"); }, 30000);
-            } else {
-                state.water = 100;
+    function checkNewCouriers() {
+        const potential = Math.min(state.bikes, state.gear);
+        while (state.couriers.length < potential && state.office) {
+            spawnCourier();
+        }
+    }
+
+    function spawnCourier() {
+        const id = Date.now() + Math.random();
+        const marker = L.marker([state.office.lat, state.office.lng], {
+            icon: L.divIcon({html: '🚴', className: 'courier-icon'})
+        }).addTo(map);
+
+        const courier = { id, marker, status: 'idle', target: null };
+        state.couriers.push(courier);
+        startCourierLife(courier);
+        updateUI();
+    }
+
+    async function startCourierLife(courier) {
+        while (true) {
+            // 1. Едем в ресторан (случайная точка рядом)
+            const restaurant = [state.office.lat + (Math.random()-0.5)*0.02, state.office.lng + (Math.random()-0.5)*0.02];
+            await moveTo(courier, restaurant, "Забирает заказ...");
+            
+            // 2. Едем к клиенту
+            const client = [restaurant[0] + (Math.random()-0.5)*0.01, restaurant[1] + (Math.random()-0.5)*0.01];
+            await moveTo(courier, client, "Доставка клиенту...");
+
+            // 3. Получаем прибыль
+            const profit = Math.floor(Math.random() * 20) + 15;
+            const salary = 10;
+            state.balance += (profit - salary);
+            addLog(`Курс завершен: +${profit - salary} PLN (Чистая прибыль)`);
+            updateUI();
+
+            // 4. Возврат в офис
+            await moveTo(courier, [state.office.lat, state.office.lng], "Возврат в офис...");
+        }
+    }
+
+    function moveTo(courier, target, taskName) {
+        return new Promise(resolve => {
+            const start = courier.marker.getLatLng();
+            let steps = 100;
+            let currentStep = 0;
+
+            const interval = setInterval(() => {
+                currentStep++;
+                const lat = start.lat + (target[0] - start.lat) * (currentStep / steps);
+                const lng = start.lng + (target[1] - start.lng) * (currentStep / steps);
+                courier.marker.setLatLng([lat, lng]);
+
+                if (currentStep >= steps) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 50); // Скорость движения
+        });
+    }
+
+    // --- СИСТЕМА АРЕНДЫ ---
+    setInterval(() => {
+        if (state.office) {
+            state.balance -= state.rentPrice;
+            addLog(`<span style="color:red">Списана аренда: -${state.rentPrice} PLN</span>`);
+            if (state.balance < 0) {
+                addLog("ВНИМАНИЕ: Баланс отрицательный! Вы банкрот!");
             }
             updateUI();
-            save();
+            saveGame();
         }
-    }
+    }, 300000); // 5 минут = 300000 мс
 
-    function upgradeTransport() {
-        let price = 150 * state.lvl * state.inflation;
-        if (state.money >= price) {
-            state.money -= price;
-            state.lvl += 0.8;
-            updateEmoji();
-            updateUI();
-            save();
-        }
-    }
-
-    function changeDistrict() {
-        if (state.districtIdx >= dists.length - 1) return;
-        let price = 500 * (state.districtIdx + 1) * state.inflation;
-        if (state.money >= price) {
-            state.money -= price;
-            state.districtIdx++;
-            pushLog("Новый район: " + dists[state.districtIdx].name);
-            updateUI();
-            save();
-        }
-    }
-
-    function updateEmoji() {
-        const e = document.getElementById('emoji');
-        if (state.lvl >= 5) e.innerText = "🚗";
-        else if (state.lvl >= 3) e.innerText = "🛵";
-        else if (state.lvl >= 2) e.innerText = "🚴‍♂️";
-    }
-
-    function pushLog(m) { document.getElementById('event-log').innerText = m; }
-
+    // --- ВСПОМОГАТЕЛЬНЫЕ ---
     function updateUI() {
-        document.getElementById('money').innerText = state.money.toFixed(2) + " $";
-        document.getElementById('district').innerText = dists[state.districtIdx].name;
-        document.getElementById('district').style.color = dists[state.districtIdx].color;
-        document.getElementById('energy-bar').style.width = state.energy + "%";
-        document.getElementById('water-bar').style.width = state.water + "%";
-        
-        document.getElementById('p-e').innerText = Math.floor(30 * state.inflation);
-        document.getElementById('p-w').innerText = Math.floor(10 * state.inflation);
-        document.getElementById('p-t').innerText = Math.floor(150 * state.lvl * state.inflation);
-        document.getElementById('p-d').innerText = Math.floor(500 * (state.districtIdx + 1) * state.inflation);
+        document.getElementById('balance').innerText = state.balance.toFixed(2);
+        document.getElementById('inv-bikes').innerText = state.bikes;
+        document.getElementById('inv-gear').innerText = state.gear;
+        document.getElementById('courier-count').innerText = state.couriers.length;
     }
 
-    function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+    function addLog(msg) {
+        const log = document.getElementById('game-log');
+        log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + log.innerHTML;
+    }
 
-    window.onload = () => {
-        const saved = localStorage.getItem(KEY);
-        if (saved) { state = JSON.parse(saved); updateUI(); updateEmoji(); }
-        
-        // Регенерация энергии
-        setInterval(() => {
-            if (state.energy < 100) { state.energy += 0.3; updateUI(); }
-        }, 1500);
+    function saveGame() {
+        db.ref('saves/WARSZAWA_FOREVER').set({
+            balance: state.balance,
+            bikes: state.bikes,
+            gear: state.gear,
+            office: state.office
+        });
+    }
 
-        // Инфляция раз в минуту
-        setInterval(() => {
-            state.inflation += 0.05;
-            pushLog("Инфляция выросла на 5%!");
-            save();
-        }, 60000);
-    };
+    // Авто-сохранение каждые 30 сек
+    setInterval(saveGame, 30000);
+
 </script>
 </body>
 </html>
-
