@@ -3,495 +3,524 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warszawa Courier: DIAMOND</title>
+    <title>Warszawa 2077: Canvas Engine</title>
     
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
         :root {
-            --bg: #000000;
-            --glass: rgba(20, 20, 20, 0.85);
-            --border: rgba(255, 255, 255, 0.1);
-            --gold: #FFD700;
-            --neon: #00FF9D;
-            --danger: #FF0055;
-            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-gold: #ffd700;
+            --bg-color: #050510;
         }
 
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; outline: none; font-family: var(--font); }
-        body { margin: 0; padding: 0; background: var(--bg); color: white; overflow: hidden; height: 100vh; width: 100vw; }
-
-        /* ЭКРАН ЗАГРУЗКИ / ОШИБОК */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s;
-        }
-        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #debug-log { font-size: 10px; color: #555; margin-top: 20px; font-family: monospace; max-width: 90%; text-align: center; }
-
-        /* ИНТЕРФЕЙС */
-        #ui-top {
-            position: absolute; top: 0; left: 0; width: 100%; height: 140px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-            z-index: 100; padding: 15px;
-            display: flex; flex-direction: column; gap: 10px;
+        body { 
+            margin: 0; overflow: hidden; background: var(--bg-color); 
+            font-family: 'Orbitron', sans-serif; color: white;
+            touch-action: none; /* Отключает зум и скролл */
         }
 
-        .stat-row { display: flex; justify-content: space-between; align-items: flex-end; }
-        .stat-box { display: flex; flex-direction: column; }
-        .label { font-size: 10px; color: #777; letter-spacing: 1px; text-transform: uppercase; }
-        .value { font-size: 28px; font-weight: 800; }
-        .gold-text { color: var(--gold); text-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
+        /* ХОЛСТ (ГРАФИКА) */
+        canvas { display: block; width: 100%; height: 100%; }
 
-        .bars { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 5px; }
-        .bar-bg { background: #222; height: 4px; border-radius: 2px; width: 100%; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 0.3s; }
-
-        /* ИГРОВОЙ МИР */
-        #game-world {
+        /* ИНТЕРФЕЙС (ПОВЕРХ ХОЛСТА) */
+        #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: 1;
+            pointer-events: none; /* Чтобы клики проходили сквозь UI на канвас (если нужно) */
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.8) 100%);
         }
 
-        .ent { 
-            position: absolute; width: 40px; height: 40px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 24px; transition: top 0.2s, left 0.2s; 
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        /* CRT ЭФФЕКТ (ПОЛОСКИ) */
+        #scanlines {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none; z-index: 999;
+            opacity: 0.6;
         }
-        .obs { 
-            background: #111; border: 1px solid #333; border-radius: 8px; 
-            box-shadow: inset 0 0 10px #000;
-            width: 38px; height: 38px;
-        }
-        .police { z-index: 10; font-size: 26px; transition: top 0.8s linear, left 0.8s linear; }
+
+        /* ЭЛЕМЕНТЫ UI */
+        .hud-top { display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
+        .hud-stat { text-align: right; }
+        .val { font-size: 24px; font-weight: 900; text-shadow: 0 0 10px var(--neon-blue); }
+        .lbl { font-size: 10px; color: #aaa; letter-spacing: 2px; }
+
+        .bars-container { width: 120px; }
+        .bar-row { display: flex; align-items: center; margin-bottom: 4px; }
+        .bar-label { font-size: 8px; width: 25px; }
+        .bar-track { flex-grow: 1; height: 4px; background: #333; position: relative; }
+        .bar-fill { height: 100%; width: 100%; box-shadow: 0 0 5px currentColor; transition: width 0.2s; }
+
+        .hud-bot { pointer-events: auto; text-align: center; padding-bottom: 20px; }
         
-        #player { 
-            z-index: 20; background: var(--gold); color: black; border-radius: 50%;
-            font-size: 22px; box-shadow: 0 0 20px var(--gold);
+        .btn {
+            background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue);
+            color: var(--neon-blue); padding: 15px 40px; font-family: 'Orbitron';
+            font-size: 16px; text-transform: uppercase; cursor: pointer;
+            backdrop-filter: blur(5px); clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            transition: 0.2s; pointer-events: auto;
         }
+        .btn:active { background: var(--neon-blue); color: black; transform: scale(0.95); }
 
-        /* УПРАВЛЕНИЕ И МЕНЮ */
-        #ui-bot {
-            position: absolute; bottom: 0; left: 0; width: 100%; 
-            background: rgba(10, 10, 12, 0.95);
-            border-top: 1px solid var(--border); backdrop-filter: blur(10px);
-            z-index: 100; padding: 20px; border-radius: 24px 24px 0 0;
-            display: flex; flex-direction: column; align-items: center;
+        /* ДЖОЙСТИК */
+        #controls { display: none; gap: 10px; justify-content: center; pointer-events: auto; }
+        .d-btn {
+            width: 60px; height: 60px; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05); font-size: 24px; backdrop-filter: blur(4px);
         }
+        .d-btn:active { background: var(--neon-blue); color: black; border-color: var(--neon-blue); }
 
-        .btn-main {
-            background: var(--gold); color: black; font-weight: 900;
-            padding: 18px 0; width: 100%; border-radius: 16px; border: none;
-            font-size: 16px; text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
-            margin-bottom: 10px;
+        /* МЕНЮ */
+        #menu {
+            position: fixed; top: 0; left: -100%; width: 80%; height: 100%;
+            background: rgba(5, 5, 16, 0.95); z-index: 1000;
+            border-right: 1px solid var(--neon-pink);
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 30px; box-shadow: 50px 0 100px rgba(0,0,0,0.8);
+            pointer-events: auto;
         }
-
-        .d-pad { display: grid; grid-template-columns: 70px 70px 70px; gap: 5px; display: none; }
-        .pad-btn {
-            background: #1a1a1a; border: 1px solid #333; border-radius: 12px;
-            height: 60px; display: flex; align-items: center; justify-content: center;
-            font-size: 24px; color: #666; 
-        }
-        .pad-btn:active { background: #333; color: white; transform: scale(0.95); }
-
-        #sidebar {
-            position: fixed; top: 0; left: -100%; width: 85%; height: 100%;
-            background: #050505; z-index: 1000; padding: 30px;
-            transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            border-right: 1px solid #222; box-shadow: 100px 0 100px rgba(0,0,0,0.8);
-        }
-        #sidebar.open { left: 0; }
-
-        .shop-row {
-            background: #111; padding: 15px; border-radius: 12px; margin-bottom: 10px;
+        #menu.open { left: 0; }
+        
+        .menu-item {
+            padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid #222;
+        }
+        .menu-btn-s {
+            border: 1px solid var(--neon-gold); color: var(--neon-gold);
+            background: transparent; padding: 5px 10px; font-family: 'Orbitron'; cursor: pointer;
         }
 
-        #menu-toggle { position: absolute; top: 130px; left: 20px; z-index: 90; opacity: 0.5; font-size: 24px; }
-        #toast { position: fixed; top: 150px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; border-radius: 20px; z-index: 5000; border: 1px solid #444; display: none; font-size: 12px;}
-
-        /* СИРЕНА */
-        @keyframes flash { 0%, 100% { box-shadow: inset 0 0 0 transparent; } 50% { box-shadow: inset 0 0 100px rgba(255,0,50,0.3); } }
-        .alarm { animation: flash 1s infinite; }
+        #toast {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: var(--neon-gold); font-size: 20px; font-weight: bold;
+            text-shadow: 0 0 20px var(--neon-gold); pointer-events: none;
+            opacity: 0; transition: opacity 0.5s;
+        }
     </style>
 </head>
 <body>
 
-<div id="loader">
-    <div class="spinner"></div>
-    <div style="margin-top: 20px; font-weight: bold; letter-spacing: 2px;">ЗАГРУЗКА</div>
-    <div id="debug-log">Init...</div>
-</div>
+<div id="scanlines"></div>
 
-<div id="ui-top">
-    <div class="stat-row">
-        <div class="stat-box">
-            <span class="label">Наличные</span>
-            <span class="value" id="d-cash">0.00</span>
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui-layer">
+    <div class="hud-top">
+        <div class="bars-container" onclick="toggleMenu()">
+            <div style="font-size:20px; margin-bottom:10px">☰ MENU</div>
+            <div class="bar-row"><div class="bar-label" style="color:orange">EN</div><div class="bar-track"><div id="b-en" class="bar-fill" style="background:orange; width:100%"></div></div></div>
+            <div class="bar-row"><div class="bar-label" style="color:cyan">H2O</div><div class="bar-track"><div id="b-wat" class="bar-fill" style="background:cyan; width:100%"></div></div></div>
+            <div class="bar-row"><div class="bar-label" style="color:red">HP</div><div class="bar-track"><div id="b-hp" class="bar-fill" style="background:red; width:100%"></div></div></div>
         </div>
-        <div class="stat-box" style="align-items: flex-end;">
-            <span class="label">Банк</span>
-            <span class="value gold-text" id="d-bank">0.00</span>
+        <div class="hud-stat">
+            <div class="lbl">CREDITS</div>
+            <div class="val" id="ui-cash">0.00</div>
+            <div class="lbl" style="margin-top:5px">BANK</div>
+            <div class="val" style="color:var(--neon-gold); text-shadow:0 0 10px var(--neon-gold)" id="ui-bank">0.00</div>
         </div>
     </div>
-    <div class="bars">
-        <div><div class="label" style="color:#FFAA00">EDA</div><div class="bar-bg"><div id="b-en" class="bar-fill" style="background:#FFAA00; width:100%"></div></div></div>
-        <div><div class="label" style="color:#00AAFF">H2O</div><div class="bar-bg"><div id="b-wat" class="bar-fill" style="background:#00AAFF; width:100%"></div></div></div>
-        <div><div class="label" style="color:#FF0055">HP</div><div class="bar-bg"><div id="b-hp" class="bar-fill" style="background:#FF0055; width:100%"></div></div></div>
+
+    <div id="toast">MISSION COMPLETE</div>
+
+    <div class="hud-bot">
+        <div id="status-msg" style="margin-bottom:15px; color:#888; font-size:12px; letter-spacing:1px">SYSTEM READY</div>
+        <button id="btn-start" class="btn" onclick="startGame()">INITIATE SEQUENCE</button>
+        
+        <div id="controls">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
+                <div class="d-btn" onclick="input(0, -1)">▲</div>
+                <div style="display:flex; gap:60px">
+                    <div class="d-btn" onclick="input(-1, 0)">◀</div>
+                    <div class="d-btn" onclick="input(1, 0)">▶</div>
+                </div>
+                <div class="d-btn" onclick="input(0, 1)">▼</div>
+            </div>
+        </div>
+        
+        <div id="btn-stop" style="display:none; margin-top:20px; color:red; text-decoration:underline; cursor:pointer; pointer-events:auto" onclick="stopGame()">ABORT MISSION</div>
     </div>
 </div>
 
-<div id="game-world">
-    <div id="player" class="ent">🚲</div>
-</div>
-
-<div id="menu-toggle" onclick="toggleMenu()">☰</div>
-
-<div id="sidebar">
-    <h2 style="margin: 0 0 30px 0; color: white;">COURIER <span style="color:var(--gold)">OS</span></h2>
-    <div class="label">ID: <span id="uid-disp">...</span></div>
-    <br>
-    <div class="label">МАГАЗИН</div>
-    <div id="shop-list"></div>
-    <br>
-    <div class="shop-row" onclick="bankAll()" style="border-color: var(--gold)">
-        <span>Положить в банк</span>
-        <span style="color:var(--gold)">SAFE</span>
+<div id="menu">
+    <h2 style="color:var(--neon-blue)">CYBER SHOP</h2>
+    <div style="font-size:10px; color:gray; margin-bottom:20px">ID: <span id="uid-disp">...</span></div>
+    
+    <div class="menu-item">
+        <span>Synthetic Meat (+30 EN)</span>
+        <button class="menu-btn-s" onclick="buy('en', 30, 25)">25 CR</button>
     </div>
-    <div class="shop-row" onclick="repair()" style="border-color: var(--danger)">
-        <span>Ремонт</span>
-        <span style="color:var(--danger)">50 PLN</span>
+    <div class="menu-item">
+        <span>Pure Water (+40 H2O)</span>
+        <button class="menu-btn-s" onclick="buy('wat', 40, 20)">20 CR</button>
     </div>
-</div>
-<div id="overlay" onclick="toggleMenu()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:900; display:none;"></div>
-
-<div id="toast">Msg</div>
-
-<div id="ui-bot">
-    <div id="msg" style="color:#666; margin-bottom:15px; font-size:12px">Ожидание...</div>
-    <button id="btn-go" class="btn-main" onclick="startShift()">НАЧАТЬ РАБОТУ</button>
-    <div id="btn-end" style="color: var(--danger); font-size: 12px; margin-top: 15px; display:none; text-decoration: underline;" onclick="endShift()">ЗАКОНЧИТЬ СМЕНУ</div>
-
-    <div id="joy" class="d-pad">
-        <div class="pad-btn" style="grid-column:2" onclick="mv(0,-1)">▲</div>
-        <div class="pad-btn" style="grid-column:1; grid-row:2" onclick="mv(-1,0)">◀</div>
-        <div class="pad-btn" style="grid-column:2; grid-row:2" onclick="mv(0,1)">▼</div>
-        <div class="pad-btn" style="grid-column:3; grid-row:2" onclick="mv(1,0)">▶</div>
+    <div class="menu-item" style="border-top:1px solid #333; margin-top:20px">
+        <span>Repair Drone (100 HP)</span>
+        <button class="menu-btn-s" style="border-color:red; color:red" onclick="repair()">50 CR</button>
     </div>
+    <div class="menu-item">
+        <span>Deposit ALL</span>
+        <button class="menu-btn-s" style="border-color:var(--neon-gold); color:var(--neon-gold)" onclick="bankAll()">BANK</button>
+    </div>
+    <div style="margin-top:20px; font-size:10px; color:#444; text-align:center" onclick="toggleMenu()">CLOSE [X]</div>
 </div>
 
 <script>
-    // --- ГЛОБАЛЬНАЯ ОБРАБОТКА ОШИБОК ---
-    function log(m) { 
-        console.log(m);
-        document.getElementById('debug-log').innerText += "\n> " + m.toString().slice(0,50);
-    }
-    window.onerror = function(msg, url, line) {
-        log("ERR: " + msg);
-        return false;
-    };
-
-    // --- CONFIG ---
-    const STEP = 40;
-    const SAVE_KEY = "WARSZAWA_LOCAL_V2"; 
+    // === CONFIG ===
+    const TILE_SIZE = 40; // Размер клетки в пикселях
+    const GRID_W = 10;    // Ширина сетки (в клетках)
+    const GRID_H = 12;    // Высота сетки
     
-    // Переменные состояния
-    let st = { cash: 0, bank: 0, lvl: 1, en: 100, wat: 100, hp: 100, x: 40, y: 120 };
-    let sys = { active: false, obs: [], pol: [], job: null, w: 0, h: 0, offlineMode: false };
-    let loops = {};
-    let dbRef = null;
-    let uid = "user_default";
+    // === STATE ===
+    let st = { cash: 0, bank: 0, lvl: 1, en: 100, wat: 100, hp: 100 };
+    let game = {
+        active: false,
+        p: {x: 4, y: 10}, // Позиция игрока (в клетках)
+        target: null,     // Цель (пицца)
+        obs: [],          // Стены
+        pol: [],          // Полиция
+        particles: [],    // Эффекты
+        animId: null,
+        lastTime: 0
+    };
+    
+    let dbRef, uid;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-    // --- INIT ---
-    window.onload = async function() {
+    // === SYSTEM INIT ===
+    async function init() {
+        // Настройка Firebase
+        const fbConfig = {
+            apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
+            authDomain: "warszawa-courier.firebaseapp.com",
+            databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "warszawa-courier",
+            appId: "1:295860613508:web:86fe8364377d6875612dd1"
+        };
         try {
-            // 1. Инициализация Firebase
-            const fbConfig = {
-                apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
-                authDomain: "warszawa-courier.firebaseapp.com",
-                databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
-                projectId: "warszawa-courier",
-                appId: "1:295860613508:web:86fe8364377d6875612dd1"
-            };
-            
-            if (typeof firebase !== 'undefined') {
-                firebase.initializeApp(fbConfig);
-                log("Firebase Linked");
-            } else {
-                throw new Error("No Firebase Lib");
-            }
-
-            // 2. Идентификация (Telegram или LocalStorage)
+            firebase.initializeApp(fbConfig);
+            // ID игрока
             const tg = window.Telegram?.WebApp;
-            if(tg) tg.expand();
-            
-            if(tg?.initDataUnsafe?.user?.id) {
-                uid = "tg_" + tg.initDataUnsafe.user.id;
-                log("ID: Telegram");
-            } else {
-                let savedId = localStorage.getItem('w_uid');
-                if(!savedId) {
-                    savedId = "dev_" + Math.random().toString(36).substr(2,6);
-                    localStorage.setItem('w_uid', savedId);
-                }
-                uid = savedId;
-                log("ID: Local");
-            }
+            if (tg) tg.expand();
+            uid = tg?.initDataUnsafe?.user?.id ? "tg_"+tg.initDataUnsafe.user.id : (localStorage.getItem('w_uid') || "dev_"+Date.now());
+            if(!localStorage.getItem('w_uid')) localStorage.setItem('w_uid', uid);
             document.getElementById('uid-disp').innerText = uid;
 
-            // 3. Загрузка данных
-            dbRef = firebase.database().ref('users/' + uid);
-            
-            // Попытка загрузки с таймаутом (если нет интернета)
-            const snap = await Promise.race([
-                dbRef.once('value'),
-                new Promise((_, rej) => setTimeout(() => rej("Timeout"), 3000))
-            ]).catch(e => {
-                log("Offline Mode Active");
-                sys.offlineMode = true;
-                return null;
+            // Загрузка
+            dbRef = firebase.database().ref('users/'+uid);
+            dbRef.on('value', snap => {
+                if(snap.exists()) { st = snap.val(); updateUI(); }
+                else save(); 
             });
+        } catch(e) { console.log("Offline mode"); st = JSON.parse(localStorage.getItem('w_loc_save')) || st; }
 
-            if(snap && snap.exists()) {
-                st = snap.val();
-                log("Data Loaded (Cloud)");
-            } else if (sys.offlineMode) {
-                // Если оффлайн, грузим из LocalStorage
-                const localData = localStorage.getItem(SAVE_KEY);
-                if(localData) {
-                    st = JSON.parse(localData);
-                    log("Data Loaded (Local)");
-                }
-            } else {
-                save(); // Создаем нового в облаке
-                log("New User Created");
-            }
-
-            // Завершение загрузки
-            render();
-            updateDims();
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = 0;
-                setTimeout(()=>document.getElementById('loader').style.display='none', 500);
-            }, 1000);
-
-        } catch (e) {
-            log("CRITICAL: " + e.message);
-            // Даже при критической ошибке пытаемся запустить игру
-            document.getElementById('debug-log').style.color = 'red';
-            setTimeout(() => {
-                document.getElementById('loader').style.display = 'none'; // Все равно пускаем
-            }, 3000);
-        }
-    };
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // Запуск рендер-лупа (даже если игра не идет, рисуем фон)
+        requestAnimationFrame(renderLoop);
+    }
 
     function save() {
-        // Двойное сохранение: LocalStorage + Cloud
-        localStorage.setItem(SAVE_KEY, JSON.stringify(st));
-        if(!sys.offlineMode && dbRef) {
-            dbRef.update(st).catch(() => {
-                sys.offlineMode = true; // Если ошибка записи, переходим в оффлайн
-                log("Write Err -> Offline");
-            });
-        }
+        if(dbRef) dbRef.update(st);
+        localStorage.setItem('w_loc_save', JSON.stringify(st));
+        updateUI();
     }
 
-    // --- GAMEPLAY ---
-    function startShift() {
-        if(st.en < 10 || st.hp < 10) return msg("Нужен ремонт или еда!", true);
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    // === GAME LOGIC ===
+    function startGame() {
+        if(st.en<5 || st.hp<5) return showToast("LOW ENERGY/HP");
+        game.active = true;
         
-        sys.active = true;
-        document.getElementById('btn-go').style.display = 'none';
-        document.getElementById('joy').style.display = 'grid';
-        document.getElementById('btn-end').style.display = 'block';
+        // Генерация уровня
+        game.obs = [];
+        for(let i=0; i<8; i++) game.obs.push(getFreePos());
         
-        spawnWorld();
-        newJob();
+        game.pol = [];
+        for(let i=0; i<3; i++) game.pol.push({...getFreePos(), dir:1});
         
-        if(loops.pol) clearInterval(loops.pol);
-        loops.pol = setInterval(policeAI, 800);
-    }
+        spawnTarget();
 
-    function endShift() {
-        sys.active = false;
-        clearInterval(loops.pol);
-        document.getElementById('game-world').innerHTML = '<div id="player" class="ent">🚲</div>'; // Очистка
-        sys.obs = []; sys.pol = []; sys.job = null;
-        renderPlayer();
+        // UI
+        document.getElementById('btn-start').style.display='none';
+        document.getElementById('controls').style.display='flex';
+        document.getElementById('btn-stop').style.display='block';
+        document.getElementById('status-msg').innerText = "DELIVERY IN PROGRESS";
         
-        document.getElementById('btn-go').style.display = 'block';
-        document.getElementById('joy').style.display = 'none';
-        document.getElementById('btn-end').style.display = 'none';
-        document.getElementById('msg').innerText = "Смена завершена";
-        document.body.classList.remove('alarm');
+        // AI Timer
+        if(game.aiInt) clearInterval(game.aiInt);
+        game.aiInt = setInterval(updateAI, 800);
     }
 
-    // --- ENGINE ---
-    function updateDims() {
-        const el = document.getElementById('game-world');
-        sys.w = el.offsetWidth; sys.h = el.offsetHeight;
+    function stopGame() {
+        game.active = false;
+        clearInterval(game.aiInt);
+        document.getElementById('btn-start').style.display='block';
+        document.getElementById('controls').style.display='none';
+        document.getElementById('btn-stop').style.display='none';
+        document.getElementById('status-msg').innerText = "SYSTEM IDLE";
     }
 
-    function spawnWorld() {
-        // Спавн стен
-        for(let i=0; i<12; i++) {
-            let p = getPos(false);
-            if(p) {
-                mkDiv('div', 'ent obs', p.x, p.y, '');
-                sys.obs.push(p);
-            }
-        }
-        // Спавн полиции
-        for(let i=0; i<3; i++) {
-            let p = getPos(true);
-            if(p) {
-                let el = mkDiv('div', 'ent police', p.x, p.y, '🚓');
-                sys.pol.push({x:p.x, y:p.y, el:el});
-            }
-        }
-        renderPlayer();
+    function getFreePos() {
+        let p;
+        do {
+            p = {x: Math.floor(Math.random()*GRID_W), y: Math.floor(Math.random()*GRID_H)};
+        } while ((p.x==game.p.x && p.y==game.p.y) || game.obs.some(o=>o.x==p.x && o.y==p.y));
+        return p;
     }
 
-    function getPos(checkObs) {
-        let cols = Math.floor(sys.w/STEP), rows = Math.floor(sys.h/STEP);
-        for(let k=0; k<50; k++) {
-            let x = Math.floor(Math.random()*(cols-1))*STEP;
-            let y = Math.floor(Math.random()*(rows-1))*STEP;
-            if(Math.abs(x-st.x)+Math.abs(y-st.y) < 100) continue; // Не на игроке
-            
-            let wall = false;
-            if(checkObs && sys.obs.some(o => Math.abs(o.x-x)+Math.abs(o.y-y)<10)) wall=true;
-            if(!wall) return {x,y};
-        }
-        return null;
+    function spawnTarget() {
+        game.target = getFreePos();
+        // Эффект спавна
+        for(let i=0; i<10; i++) addParticle(game.target.x, game.target.y, 'gold');
     }
 
-    function mv(dx, dy) {
-        if(!sys.active) return;
-        let nx = st.x + dx*STEP;
-        let ny = st.y + dy*STEP;
+    function input(dx, dy) {
+        if(!game.active) return;
+        let nx = game.p.x + dx;
+        let ny = game.p.y + dy;
 
-        // Границы
-        if(nx<0 || ny<0 || nx>sys.w-30 || ny>sys.h-30) return;
-        // Стены
-        if(sys.obs.some(o => Math.abs(o.x-nx)+Math.abs(o.y-ny)<10)) return;
+        if(nx<0 || ny<0 || nx>=GRID_W || ny>=GRID_H) return; // Границы
+        if(game.obs.some(o=>o.x==nx && o.y==ny)) return; // Стены
 
-        st.x = nx; st.y = ny;
+        game.p.x = nx; game.p.y = ny;
+        
+        // Ресурсы
         st.en -= 0.5; st.wat -= 0.3; st.hp -= 0.1;
+        if(st.en<=0) stopGame();
+
+        // Проверка цели
+        if(game.target && nx==game.target.x && ny==game.target.y) {
+            let pay = Math.floor(10 + st.lvl*2);
+            st.cash += pay;
+            st.lvl += 0.1;
+            showToast(`+${pay} CR`);
+            spawnTarget();
+        }
+
+        // Проверка полиции
+        checkPol();
         
-        if(st.en<=0 || st.wat<=0) endShift();
+        // Частицы движения
+        addParticle(game.p.x, game.p.y, 'cyan');
         
-        renderPlayer();
-        checkJob();
-        save(); // Автосейв шага
+        save();
     }
 
-    function policeAI() {
-        let alertMode = false;
-        sys.pol.forEach(p => {
-            let dist = Math.abs(st.x - p.x) + Math.abs(st.y - p.y);
-            let mx = 0, my = 0;
-
-            if(dist < 150) { // Агрессия
-                alertMode = true;
-                if(p.x < st.x) mx = STEP; else if(p.x > st.x) mx = -STEP;
-                if(Math.abs(st.y - p.y) > Math.abs(st.x - p.x)) {
-                    mx = 0;
-                    if(p.y < st.y) my = STEP; else if(p.y > st.y) my = -STEP;
-                }
-            } else { // Патруль
-                let r = Math.floor(Math.random()*4);
-                if(r==0) mx=STEP; if(r==1) mx=-STEP; if(r==2) my=STEP; if(r==3) my=-STEP;
-            }
-
-            let nx = p.x + mx, ny = p.y + my;
-            // Проверка коллизий копа
-            if(nx>=0 && ny>=0 && nx<sys.w && ny<sys.h && !sys.obs.some(o=>Math.abs(o.x-nx)+Math.abs(o.y-ny)<10)) {
-                p.x = nx; p.y = ny;
-                p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
-            }
+    function updateAI() {
+        if(!game.active) return;
+        game.pol.forEach(p => {
+            // Простейший AI: Если игрок близко, идем к нему
+            let dx = game.p.x - p.x;
+            let dy = game.p.y - p.y;
+            let dist = Math.abs(dx) + Math.abs(dy);
             
-            // Поимка
-            if(Math.abs(st.x-p.x)+Math.abs(st.y-p.y) < 20) {
-                arrest();
+            let mx=0, my=0;
+            if(dist < 4) { // Агро
+                if(Math.abs(dx) > Math.abs(dy)) mx = dx>0?1:-1;
+                else my = dy>0?1:-1;
+            } else { // Патруль
+                if(Math.random()>0.5) mx = Math.random()>0.5?1:-1;
+                else my = Math.random()>0.5?1:-1;
+            }
+
+            let nx = p.x+mx, ny = p.y+my;
+            if(nx>=0 && ny>=0 && nx<GRID_W && ny<GRID_H && !game.obs.some(o=>o.x==nx && o.y==ny)) {
+                p.x = nx; p.y = ny;
             }
         });
-        
-        if(alertMode) document.body.classList.add('alarm');
-        else document.body.classList.remove('alarm');
-    }
-    
-    function arrest() {
-        st.cash -= 100;
-        msg("АРЕСТ! -100 PLN", true);
-        st.x=40; st.y=120;
-        endShift();
-        save(); render();
+        checkPol();
     }
 
-    // --- JOBS ---
-    function newJob() {
-        if(!sys.active) return;
-        let p = getPos(true);
-        if(!p) p={x:100,y:100};
-        
-        let el = mkDiv('div', 'ent', p.x, p.y, '📦');
-        el.style.color = '#00FF9D'; el.style.animation = 'spin 2s infinite';
-        sys.job = {x:p.x, y:p.y, el:el, pay: 15 + (st.lvl*2)};
-        document.getElementById('msg').innerText = "Доставь посылку!";
+    function checkPol() {
+        game.pol.forEach(p => {
+            if(p.x == game.p.x && p.y == game.p.y) {
+                st.cash = Math.max(0, st.cash - 50);
+                showToast("ARRESTED! -50 CR");
+                game.p = {x:4, y:10}; // Респавн
+                stopGame();
+                save();
+            }
+        });
     }
 
-    function checkJob() {
-        if(!sys.job) return;
-        if(Math.abs(st.x - sys.job.x) + Math.abs(st.y - sys.job.y) < 20) {
-            sys.job.el.remove();
-            st.cash += sys.job.pay;
-            st.lvl += 0.2;
-            msg(`+${sys.job.pay.toFixed(0)} PLN`, false);
-            sys.job = null;
-            render(); save();
-            setTimeout(newJob, 1000);
+    // === GRAPHICS ENGINE (CANVAS) ===
+    function renderLoop(time) {
+        // Очистка
+        ctx.fillStyle = '#050510';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. Рисуем "3D" Сетку на фоне (эффект полета)
+        drawRetroGrid(time);
+
+        // Центрируем игровое поле
+        let boardW = GRID_W * TILE_SIZE;
+        let boardH = GRID_H * TILE_SIZE;
+        let offX = (canvas.width - boardW) / 2;
+        let offY = (canvas.height - boardH) / 2 + 50; // Чуть ниже центра
+
+        // Рисуем рамку поля
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(offX, offY, boardW, boardH);
+
+        // 2. Рисуем игру
+        if(game.active) {
+            // Стены
+            ctx.fillStyle = '#222';
+            ctx.shadowBlur = 0;
+            game.obs.forEach(o => {
+                ctx.fillRect(offX + o.x*TILE_SIZE + 2, offY + o.y*TILE_SIZE + 2, TILE_SIZE-4, TILE_SIZE-4);
+                // Детали стен
+                ctx.fillStyle = '#444';
+                ctx.fillRect(offX + o.x*TILE_SIZE + 5, offY + o.y*TILE_SIZE + 5, 5, 5);
+                ctx.fillStyle = '#222';
+            });
+
+            // Цель (Пицца) - Пульсация
+            if(game.target) {
+                let pulse = 1 + Math.sin(time/200)*0.2;
+                let tx = offX + game.target.x*TILE_SIZE + TILE_SIZE/2;
+                let ty = offY + game.target.y*TILE_SIZE + TILE_SIZE/2;
+                
+                ctx.fillStyle = '#ffd700';
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(tx, ty, 8*pulse, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Полиция
+            ctx.fillStyle = '#ff0055';
+            game.pol.forEach(p => {
+                let px = offX + p.x*TILE_SIZE + 5;
+                let py = offY + p.y*TILE_SIZE + 5;
+                ctx.fillRect(px, py, TILE_SIZE-10, TILE_SIZE-10);
+                // Мигалка
+                if(Math.floor(time/200)%2==0) {
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(px, py, 10, 5);
+                    ctx.fillStyle = '#ff0055';
+                }
+            });
+
+            // Игрок (Курьер)
+            let px = offX + game.p.x*TILE_SIZE + TILE_SIZE/2;
+            let py = offY + game.p.y*TILE_SIZE + TILE_SIZE/2;
+            
+            // Тень/Свечение игрока
+            ctx.shadowColor = '#00f3ff';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = '#00f3ff';
+            
+            // Футуристичный треугольник
+            ctx.beginPath();
+            ctx.moveTo(px, py - 10);
+            ctx.lineTo(px + 10, py + 10);
+            ctx.lineTo(px - 10, py + 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // 3. Частицы (Particles System)
+        updateAndDrawParticles(offX, offY);
+
+        requestAnimationFrame(renderLoop);
+    }
+
+    function drawRetroGrid(time) {
+        ctx.strokeStyle = 'rgba(255, 0, 255, 0.2)'; // Neon pink
+        ctx.lineWidth = 1;
+        
+        let speed = (time * 0.05) % 40;
+        
+        // Горизонтальные линии (движутся вниз)
+        for(let i=0; i<canvas.height; i+=40) {
+            let y = i + speed;
+            if(y > canvas.height) y -= canvas.height;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+        
+        // Вертикальные линии (перспектива)
+        let cx = canvas.width / 2;
+        for(let i=-canvas.width; i<canvas.width*2; i+=60) {
+            ctx.beginPath();
+            // Слегка наклоняем линии к центру, создавая перспективу
+            ctx.moveTo(i + (i-cx)*0.5, 0); 
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
         }
     }
 
-    // --- UI & HELPERS ---
-    function render() {
-        document.getElementById('d-cash').innerText = st.cash.toFixed(2);
-        document.getElementById('d-bank').innerText = st.bank.toFixed(2);
-        document.getElementById('b-en').style.width = st.en + '%';
-        document.getElementById('b-wat').style.width = st.wat + '%';
-        document.getElementById('b-hp').style.width = st.hp + '%';
-
-        let p1 = Math.ceil(20 * (1+st.lvl*0.1));
-        let p2 = Math.ceil(15 * (1+st.lvl*0.1));
-        
-        document.getElementById('shop-list').innerHTML = `
-            <div class="shop-row" onclick="buy('en',30,${p1})"><span>Еда (+30)</span><span class="gold-text">${p1} PLN</span></div>
-            <div class="shop-row" onclick="buy('wat',40,${p2})"><span>Вода (+40)</span><span class="gold-text">${p2} PLN</span></div>
-        `;
+    function addParticle(gx, gy, color) {
+        game.particles.push({
+            x: gx, y: gy, 
+            life: 1.0, 
+            color: color, 
+            dx: (Math.random()-0.5)*0.1, 
+            dy: (Math.random()-0.5)*0.1
+        });
     }
 
-    function renderPlayer() {
-        let p = document.getElementById('player');
-        p.style.left = st.x + 'px'; p.style.top = st.y + 'px';
+    function updateAndDrawParticles(offX, offY) {
+        for(let i=game.particles.length-1; i>=0; i--) {
+            let p = game.particles[i];
+            p.life -= 0.05;
+            p.x += p.dx; p.y += p.dy;
+            
+            if(p.life <= 0) {
+                game.particles.splice(i, 1);
+                continue;
+            }
+            
+            let px = offX + p.x*TILE_SIZE + TILE_SIZE/2;
+            let py = offY + p.y*TILE_SIZE + TILE_SIZE/2;
+            
+            ctx.fillStyle = p.color == 'gold' ? `rgba(255, 215, 0, ${p.life})` : `rgba(0, 243, 255, ${p.life})`;
+            ctx.beginPath();
+            ctx.arc(px, py, 5*p.life, 0, Math.PI*2);
+            ctx.fill();
+        }
     }
 
-    function mkDiv(tag, cls, x, y, txt) {
-        let d = document.createElement(tag); d.className = cls;
-        d.style.left=x+'px'; d.style.top=y+'px'; d.innerText=txt;
-        document.getElementById('game-world').appendChild(d); return d;
+    // === UI HELPERS ===
+    function updateUI() {
+        document.getElementById('ui-cash').innerText = st.cash.toFixed(2);
+        document.getElementById('ui-bank').innerText = st.bank.toFixed(2);
+        document.getElementById('b-en').style.width = st.en+'%';
+        document.getElementById('b-wat').style.width = st.wat+'%';
+        document.getElementById('b-hp').style.width = st.hp+'%';
+    }
+
+    function showToast(m) {
+        let t = document.getElementById('toast');
+        t.innerText = m;
+        t.style.opacity = 1;
+        t.style.top = "40%";
+        setTimeout(() => {
+            t.style.opacity = 0;
+            t.style.top = "50%";
+        }, 1500);
     }
 
     function buy(type, val, cost) {
@@ -499,30 +528,26 @@
             st.cash -= cost;
             if(type=='en') st.en = Math.min(100, st.en+val);
             if(type=='wat') st.wat = Math.min(100, st.wat+val);
-            render(); save();
-        } else msg("Нет денег!", true);
-    }
-    
-    function bankAll() {
-        if(st.cash>0) { st.bank+=st.cash; st.cash=0; render(); save(); }
-    }
-    
-    function repair() {
-        if(st.cash>=50) { st.cash-=50; st.hp=100; render(); save(); }
+            updateUI(); save();
+        } else showToast("NO CREDITS");
     }
 
-    function msg(txt, isErr) {
-        let t = document.getElementById('toast');
-        t.innerText = txt; t.style.color = isErr ? 'red' : 'white';
-        t.style.display = 'block';
-        setTimeout(()=>t.style.display='none', 2000);
+    function bankAll() {
+        if(st.cash>0) { st.bank+=st.cash; st.cash=0; updateUI(); save(); }
     }
-    
+
+    function repair() {
+        if(st.cash>=50) { st.cash-=50; st.hp=100; updateUI(); save(); }
+        else showToast("NO CREDITS");
+    }
+
     function toggleMenu() {
-        document.getElementById('sidebar').classList.toggle('open');
-        let ov = document.getElementById('overlay');
-        ov.style.display = ov.style.display=='block'?'none':'block';
+        document.getElementById('menu').classList.toggle('open');
     }
+
+    // Start
+    init();
+
 </script>
 </body>
 </html>
