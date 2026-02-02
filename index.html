@@ -15,7 +15,7 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Arial', sans-serif; }
 
-        /* МЕНЮ (БУРГЕР) */
+        /* МЕНЮ */
         #hamburger-btn {
             position: fixed; top: 15px; left: 15px;
             width: 50px; height: 50px; background: white; border: 2px solid var(--dark); border-radius: 12px;
@@ -24,7 +24,6 @@
         }
         .line { width: 26px; height: 3px; background: var(--dark); border-radius: 2px; }
 
-        /* БОКОВАЯ ПАНЕЛЬ */
         #sidebar-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 9998; display: none;
@@ -56,19 +55,18 @@
         .balance-pill { 
             background: white; padding: 8px 30px; border-radius: 50px; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); font-size: 24px; font-weight: 800; color: var(--dark);
-            border: 1px solid #eee; margin-bottom: 10px;
+            border: 1px solid #eee; margin-bottom: 5px;
+        }
+        /* Таймер */
+        #timer-pill {
+            font-size: 14px; font-weight: 900; color: var(--danger); 
+            background: #ffe6e6; padding: 4px 12px; border-radius: 10px; margin-bottom: 5px; display: none;
         }
         .stats-row { width: 90%; display: flex; justify-content: space-between; margin-bottom: 5px; }
         .stat-box { width: 48%; display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: bold; }
         .bar-bg { flex-grow: 1; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; }
         .bar-fill { height: 100%; transition: width 0.3s; }
         
-        /* ТАЙМЕР */
-        #timer-pill {
-            font-size: 14px; font-weight: 900; color: var(--danger); 
-            background: #ffe6e6; padding: 4px 12px; border-radius: 10px; margin-bottom: 5px; display: none;
-        }
-
         #game-container {
             position: relative; width: 100%; height: calc(100vh - 410px);
             background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 20px 20px;
@@ -119,9 +117,8 @@
 <div id="top-info">
     <div style="font-size:10px; font-weight:900; color:#999; letter-spacing:2px; margin-bottom:5px;">WARSZAWA COURIER</div>
     <div class="balance-pill"><span id="cash">0.00</span> PLN</div>
-    
     <div id="timer-pill">⏰ <span id="timer-val">00:00</span></div>
-
+    
     <div class="stats-row">
         <div class="stat-box">⚡ <div class="bar-bg"><div id="en-bar" class="bar-fill" style="width:100%; background:orange"></div></div></div>
         <div class="stat-box">💧 <div class="bar-bg"><div id="wat-bar" class="bar-fill" style="width:100%; background:#00aaff"></div></div></div>
@@ -150,7 +147,6 @@
 </div>
 
 <script>
-    // 1. FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
         authDomain: "warszawa-courier.firebaseapp.com",
@@ -164,38 +160,34 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. СТРОГО TELEGRAM ID
     const tg = window.Telegram.WebApp;
     tg.expand();
     
-    let userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) {
-        userId = 'browser_static_user'; 
-        console.log("Внимание: Запущено не в Telegram. Используется browser_static_user");
-    }
+    let userId = tg.initDataUnsafe?.user?.id || 'browser_static_user';
     document.getElementById('uid-disp').innerText = userId;
 
-    // 3. GAME VARIABLES
+    // ВЕРСИЯ ДАННЫХ ДЛЯ СБРОСА
+    const DB_VERSION = 2; 
+
     let state = {
         bal: 0.00, en: 100, wat: 100, hp: 100,
         x: 30, y: 30,
-        bike: 'default',
-        bikes: ['default']
+        bike: 'default', bikes: ['default']
     };
     
     let isOnline = false;
     let policeUnits = [];
     let occupied = [];
     let policeTimer = null;
-    let jobTimer = null; 
+    let jobTimer = null;
     let currentJobPrice = 0;
-    let target = {x:0, y:0, active:false, type:0}; // type 1=rest, 2=client
+    let target = {x:0, y:0, active:false, type:0};
 
-    // 4. LOAD DATA
     function loadData() {
         db.ref('users/' + userId).once('value', (s) => {
             const d = s.val();
-            if (d) {
+            // Если версии нет или она старая - СБРАСЫВАЕМ
+            if (d && d.version === DB_VERSION) {
                 state.bal = parseFloat(d.balance) || 0;
                 state.en = d.energy ?? 100;
                 state.wat = d.water ?? 100;
@@ -203,8 +195,13 @@
                 state.bikes = d.bikes || ['default'];
                 state.bike = d.bike || 'default';
             } else {
-                state.bal = 0.00; // Явный старт с 0
-                saveData(); 
+                // ПОЛНЫЙ СБРОС
+                state.bal = 0.00; 
+                state.en = 100; state.wat = 100; state.hp = 100;
+                state.bikes = ['default']; state.bike = 'default';
+                state.x = 30; state.y = 30;
+                saveData(); // Сохраняем уже с новой версией
+                showToast("Профиль обновлен до v2");
             }
             updateUI();
         });
@@ -213,12 +210,12 @@
 
     function saveData() {
         db.ref('users/' + userId).update({
+            version: DB_VERSION,
             balance: state.bal, energy: state.en, water: state.wat, hp: state.hp,
             bikes: state.bikes, bike: state.bike, lastLogin: Date.now()
         });
     }
 
-    // 5. MENU SYSTEM
     function toggleMenu() {
         const sb = document.getElementById('sidebar');
         const ov = document.getElementById('sidebar-overlay');
@@ -270,7 +267,7 @@
     }
     function equip(id) { state.bike = id; showToast("Выбран: " + id); saveData(); renderGarage(); }
 
-    // 6. GAME LOGIC
+    // --- GAME LOGIC ---
     const STEP = 30;
 
     function goOnline() {
@@ -287,9 +284,8 @@
         spawnPolice();
         startJob();
         
-        // Полиция стала бдительнее - интервал 1000мс вместо 1500мс
         if (policeTimer) clearInterval(policeTimer);
-        policeTimer = setInterval(movePolice, 1000);
+        policeTimer = setInterval(movePolice, 1000); // Быстрая полиция (1 сек)
     }
 
     function goOffline() {
@@ -305,20 +301,16 @@
         stopTimer();
     }
 
-    // ТАЙМЕР ЛОГИКА
     function startTimer(seconds) {
         stopTimer();
         let timeLeft = seconds;
-        const timerDisplay = document.getElementById('timer-val');
         const timerPill = document.getElementById('timer-pill');
         timerPill.style.display = 'block';
-        
         updateTimerDisplay(timeLeft);
 
         jobTimer = setInterval(() => {
             timeLeft--;
             updateTimerDisplay(timeLeft);
-            
             if (timeLeft <= 0) {
                 stopTimer();
                 failJob();
@@ -334,16 +326,14 @@
     function updateTimerDisplay(sec) {
         let m = Math.floor(sec / 60);
         let s = sec % 60;
-        document.getElementById('timer-val').innerText = 
-            `${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+        document.getElementById('timer-val').innerText = `${m}:${s < 10 ? '0'+s : s}`;
     }
 
     function failJob() {
-        showToast("ВРЕМЯ ВЫШЛО! ШТРАФ -5 PLN");
-        state.bal -= 5;
-        saveData();
-        updateUI();
-        startJob(); // Начинаем новый поиск
+        showToast("ВРЕМЯ ВЫШЛО! -5 PLN");
+        state.bal = state.bal - 5; // Уходим в минус если надо
+        saveData(); updateUI();
+        startJob(); // Ищем новый
     }
 
     function spawnObstacles() {
@@ -373,7 +363,7 @@
         const cols = Math.floor(box.offsetWidth/STEP);
         const rows = Math.floor(box.offsetHeight/STEP);
         
-        // УВЕЛИЧЕНО КОЛИЧЕСТВО ПОЛИЦИИ ДО 6
+        // 6 ПОЛИЦЕЙСКИХ
         for(let i=0; i<6; i++) {
             let px = Math.floor(Math.random()*cols)*STEP;
             let py = Math.floor(Math.random()*rows)*STEP;
@@ -403,9 +393,9 @@
                 p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
             }
             if(Math.abs(p.x-state.x)<10 && Math.abs(p.y-state.y)<10) {
-                showToast("ШТРАФ 50 PLN!");
-                state.bal = Math.max(0, state.bal - 50);
-                state.x = 30; state.y = 30; // Respawn
+                showToast("ПОЛИЦИЯ! ШТРАФ 50 PLN!");
+                state.bal = state.bal - 50;
+                state.x = 30; state.y = 30;
                 saveData(); updateUI();
             }
         });
@@ -421,16 +411,14 @@
         const cols = Math.floor(box.offsetWidth/STEP);
         const rows = Math.floor(box.offsetHeight/STEP);
 
-        // Границы и препятствия
         if(nx<0 || ny<0 || nx>=cols*STEP || ny>=rows*STEP) return;
         if(occupied.some(o=>o.x===nx && o.y===ny)) { showToast("Тупик"); return; }
         if(policeUnits.some(p=>p.x===nx && p.y===ny)) { 
-            showToast("ШТРАФ!"); state.bal=Math.max(0, state.bal-50); 
+            showToast("ШТРАФ 50 PLN!"); state.bal= state.bal-50; 
             state.x=30; state.y=30; updateUI(); return; 
         }
 
         state.x = nx; state.y = ny;
-        
         let drain = (state.bike === 'ebike') ? 0.3 : 1.0;
         state.en -= drain; state.wat -= 0.5; state.hp -= 0.2;
         
@@ -440,13 +428,10 @@
 
     function startJob() {
         target.type = 1; 
-        // Спавним ресторан и сразу рассчитываем время до него
-        let jobData = spawnTarget('🍕'); 
-        
-        // Время добраться до ресторана (чуть больше, чтобы успеть)
-        let timeToRest = Math.ceil(jobData.steps * 1.0) + 10; 
-        startTimer(timeToRest);
-
+        let jd = spawnTarget('🍕'); 
+        // Время: дистанция + запас 10с
+        let time = Math.ceil(jd.steps * 1.0) + 10;
+        startTimer(time);
         document.getElementById('status-text').innerText = "Заказ: Забери пиццу";
     }
 
@@ -455,53 +440,41 @@
         const cols = Math.floor(box.offsetWidth/STEP);
         const rows = Math.floor(box.offsetHeight/STEP);
         
-        let tx, ty, ok=false;
-        let distSteps = 0;
-
+        let tx, ty, ok=false, dist=0;
         while(!ok) {
             tx = Math.floor(Math.random()*cols)*STEP;
             ty = Math.floor(Math.random()*rows)*STEP;
             ok = !occupied.some(o=>o.x===tx && o.y===ty) && Math.abs(tx-state.x)>60;
-            
-            // Расчет дистанции в шагах (манхэттенское расстояние)
-            if(ok) {
-                distSteps = (Math.abs(tx - state.x) + Math.abs(ty - state.y)) / STEP;
-            }
+            if(ok) dist = (Math.abs(tx-state.x)+Math.abs(ty-state.y))/STEP;
         }
-        
         target.x = tx; target.y = ty; target.active = true;
         const el = document.getElementById('target');
         el.style.display = 'flex'; el.innerText = icon;
         el.style.left = tx+'px'; el.style.top = ty+'px';
-
-        return { steps: distSteps };
+        return {steps: dist};
     }
 
     function checkJob() {
         if(target.active && state.x === target.x && state.y === target.y) {
-            stopTimer(); // Остановим таймер текущего этапа
+            stopTimer();
 
             if(target.type === 1) {
-                // ЭТАП 2: Везем клиенту
                 target.type = 2; 
-                showToast("Пицца забрана!");
+                showToast("Пицца у тебя!");
+                let jd = spawnTarget('📍');
                 
-                // Спавним клиента и считаем оплату
-                let jobData = spawnTarget('📍');
+                // ОПЛАТА = ШАГИ * 1.5
+                currentJobPrice = Math.ceil(jd.steps * 1.5);
                 
-                // РЫНОЧНАЯ ЦЕНА: 1.5 PLN за клетку
-                currentJobPrice = Math.ceil(jobData.steps * 1.5);
-                
-                // Время доставки: 1.2 сек на клетку (Стресс!) + 5 сек база
-                let timeToDeliver = Math.ceil(jobData.steps * 1.2) + 5;
-                startTimer(timeToDeliver);
+                // ВРЕМЯ = ШАГИ * 1.2с + 5с (жестче)
+                let time = Math.ceil(jd.steps * 1.2) + 5;
+                startTimer(time);
 
-                document.getElementById('status-text').innerText = `Доставь за ${currentJobPrice} PLN`;
+                document.getElementById('status-text').innerText = `Вези клиенту! Награда: ${currentJobPrice} PLN`;
             } else if(target.type === 2) {
-                // ФИНИШ
                 state.bal += currentJobPrice; 
                 showToast(`+${currentJobPrice} PLN`);
-                startJob(); // Новый заказ
+                startJob();
             }
         }
     }
@@ -511,7 +484,6 @@
         document.getElementById('en-bar').style.width = Math.max(0, state.en) + '%';
         document.getElementById('wat-bar').style.width = Math.max(0, state.wat) + '%';
         document.getElementById('hp-bar').style.width = Math.max(0, state.hp) + '%';
-        
         const p = document.getElementById('player');
         p.style.left = state.x + 'px'; p.style.top = state.y + 'px';
     }
