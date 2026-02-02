@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warsawa Express: Underground</title>
+    <style>
+        :root { --yellow: #ffcc00; --bg: #0f0f0f; --card: #1e1e1e; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; text-align: center; margin: 0; user-select: none; }
+        #ui { padding: 15px; display: flex; flex-direction: column; height: 100vh; justify-content: space-between; box-sizing: border-box; }
+        .header { background: var(--card); border-radius: 20px; padding: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); border: 1px solid #333; }
+        .money-text { font-size: 28px; font-weight: 800; color: var(--yellow); margin-bottom: 5px; }
+        .district-text { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .bar-container { background: #333; height: 12px; border-radius: 6px; margin: 8px 0; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; transition: width 0.3s; }
+        #energy-bar { background: linear-gradient(90deg, #4caf50, #8bc34a); }
+        #water-bar { background: linear-gradient(90deg, #2196f3, #00bcd4); }
+        #event-log { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; font-size: 13px; height: 40px; color: #00ff00; display: flex; align-items: center; justify-content: center; margin: 10px 0; border-left: 3px solid var(--yellow); }
+        #game-core { position: relative; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        #courier-btn { width: 180px; height: 180px; background: radial-gradient(circle, #333, #222); border-radius: 50%; border: 6px solid var(--yellow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.1s; }
+        #courier-btn:active { transform: scale(0.92); }
+        #emoji { font-size: 80px; }
+        .shop { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .btn { background: var(--card); border: 1px solid #444; color: white; padding: 12px 5px; border-radius: 12px; font-size: 12px; cursor: pointer; }
+        .btn b { color: var(--yellow); display: block; }
+        #bonus-box { position: absolute; top: 20%; background: var(--yellow); color: black; padding: 10px 20px; border-radius: 20px; font-weight: bold; display: none; z-index: 100; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="header">
+        <div class="money-text" id="money">0.00 $</div>
+        <div id="district" class="district-text">Район: Praga Południe</div>
+        <div class="bar-container"><div id="energy-bar" class="bar-fill"></div></div>
+        <div class="bar-container"><div id="water-bar" class="bar-fill"></div></div>
+    </div>
+
+    <div id="event-log">Варшава ждет заказов!</div>
+
+    <div id="game-core">
+        <div id="bonus-box" onclick="claimBonus()">📦 ЗАБРАТЬ БОНУС!</div>
+        <div id="courier-btn" onclick="handleMainClick()"><div id="emoji">🚶‍♂️</div></div>
+    </div>
+
+    <div class="shop">
+        <button class="btn" onclick="buyItem('energy')"><b>Энергетик</b><span id="p-e">30</span>$</button>
+        <button class="btn" onclick="buyItem('water')"><b>Вода</b><span id="p-w">10</span>$</button>
+        <button class="btn" onclick="upgradeTransport()"><b>Транспорт</b><span id="p-t">150</span>$</button>
+        <button class="btn" onclick="changeDistrict()"><b>Район</b><span id="p-d">500</span>$</button>
+    </div>
+    <button class="btn" style="width:100%" onclick="saveGame()">💾 СОХРАНИТЬ (WARSZAWA_FOREVER)</button>
+</div>
+
+<script>
+    let state = { money: 0, lvl: 1.0, energy: 100, water: 100, districtIdx: 0, inflation: 1.0, boost: false, key: "WARSZAWA_FOREVER" };
+    const dists = [
+        { name: "Praga Południe", mult: 1.0, color: "#aaa" },
+        { name: "Wola", mult: 2.0, color: "#fff" },
+        { name: "Mokotów", mult: 4.0, color: "#00ff00" },
+        { name: "Śródmieście", mult: 8.0, color: "#ffcc00" }
+    ];
+
+    function handleMainClick() {
+        if (state.energy <= 0 || state.water <= 0) { pushLog("Нужен отдых или вода!"); return; }
+        if (!state.boost) state.energy -= 0.8;
+        state.water -= 0.4;
+        state.money += state.lvl * dists[state.districtIdx].mult;
+        updateUI();
+    }
+
+    function buyItem(t) {
+        let costs = { energy: 30, water: 10 };
+        let c = costs[t] * state.inflation;
+        if (state.money >= c) {
+            state.money -= c;
+            if (t === 'energy') { 
+                state.boost = true; pushLog("Энергетик! (20с)"); 
+                setTimeout(() => { state.boost = false; pushLog("Буст кончился"); }, 20000);
+            } else { state.water = 100; pushLog("Жажда утолена"); }
+        }
+        updateUI();
+    }
+
+    function upgradeTransport() {
+        let c = 150 * state.lvl * state.inflation;
+        if (state.money >= c) {
+            state.money -= c; state.lvl += 0.5;
+            if (state.lvl >= 5) document.getElementById('emoji').innerText = "🚗";
+            else if (state.lvl >= 3) document.getElementById('emoji').innerText = "🛵";
+            else if (state.lvl >= 2) document.getElementById('emoji').innerText = "🚴‍♂️";
+            pushLog("Транспорт улучшен!");
+        }
+        updateUI();
+    }
+
+    function changeDistrict() {
+        if (state.districtIdx >= dists.length - 1) return;
+        let c = 500 * (state.districtIdx + 1) * state.inflation;
+        if (state.money >= c) {
+            state.money -= c; state.districtIdx++;
+            pushLog("Переезд в " + dists[state.districtIdx].name);
+        }
+        updateUI();
+    }
+
+    function pushLog(m) { document.getElementById('event-log').innerText = m; }
+
+    function updateUI() {
+        document.getElementById('money').innerText = state.money.toFixed(2) + " $";
+        document.getElementById('district').innerText = "Район: " + dists[state.districtIdx].name;
+        document.getElementById('district').style.color = dists[state.districtIdx].color;
+        document.getElementById('energy-bar').style.width = state.energy + "%";
+        document.getElementById('water-bar').style.width = state.water + "%";
+        document.getElementById('p-e').innerText = Math.floor(30 * state.inflation);
+        document.getElementById('p-w').innerText = Math.floor(10 * state.inflation);
+        document.getElementById('p-t').innerText = Math.floor(150 * state.lvl * state.inflation);
+        document.getElementById('p-d').innerText = Math.floor(500 * (state.districtIdx + 1) * state.inflation);
+    }
+
+    function saveGame() { localStorage.setItem(state.key, JSON.stringify(state)); pushLog("Сохранено!"); }
+
+    window.onload = () => {
+        const s = localStorage.getItem(state.key);
+        if (s) { state = JSON.parse(s); updateUI(); }
+        setInterval(() => { if (state.energy < 100) state.energy += 0.2; updateUI(); }, 1000);
+        setInterval(() => { state.inflation += 0.02; pushLog("Инфляция выросла!"); }, 60000);
+    };
+</script>
+</body>
+</html>
