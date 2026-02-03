@@ -1,8 +1,16 @@
-// --- ПАТЧ V2: БАНК, НАЛОГИ, ФРАНШИЗЫ, СТАТИСТИКА ---
-console.log("[Patch v2] Загрузка продвинутой экономики...");
+// --- SUPER PATCH V2: ПОЛНАЯ ПЕРЕЗАГРУЗКА ЭКОНОМИКИ ---
+console.log("[Patch v2] Загрузка единой системы (Банк, Налоги, Филиалы)...");
 
-// 1. ДАННЫЕ: БРЕНДЫ И ФИЛИАЛЫ
-// Теперь у нас есть Бренды (покупаем право) и Локации (покупаем точки)
+// 1. НАСТРОЙКИ И ДАННЫЕ
+const CONFIG = {
+    taxRate: 0.10,        // Налог 10%
+    taxInterval: 300000,  // 5 минут
+    rentCost: 50,         // Аренда 50 монет
+    rentInterval: 300000, // 5 минут
+    bankDepoRate: 0.01,   // 1% в минуту
+    bankLoanRate: 0.05    // 5% в минуту
+};
+
 const BRANDS = {
     'kebab': { name: 'Kebab King', price: 3000, icon: '🌯' },
     'mcd':   { name: 'McDonalds',  price: 5000, icon: '🍔' },
@@ -10,67 +18,59 @@ const BRANDS = {
     'sushi': { name: 'Sushi Master', price: 7000, icon: '🍣' }
 };
 
-// Список всех возможных точек в Варшаве
 const LOCATIONS = [
     { id: 'kb_center', brand: 'kebab', name: 'Kebab Centrum', lat: 52.230, lng: 21.015, price: 1000 },
     { id: 'kb_wola',   brand: 'kebab', name: 'Kebab Wola',    lat: 52.235, lng: 20.990, price: 1200 },
-    { id: 'kb_praga',  brand: 'kebab', name: 'Kebab Praga',   lat: 52.250, lng: 21.030, price: 900 },
-    
     { id: 'mc_zloty',  brand: 'mcd',   name: 'McD Zlote T.',  lat: 52.231, lng: 21.003, price: 2500 },
-    { id: 'mc_wist',   brand: 'mcd',   name: 'McD Wisla',     lat: 52.220, lng: 21.040, price: 2000 },
-    
     { id: 'st_nowy',   brand: 'star',  name: 'Starbucks N.S', lat: 52.233, lng: 21.018, price: 3000 },
-    { id: 'st_old',    brand: 'star',  name: 'Starbucks Old', lat: 52.248, lng: 21.012, price: 3200 },
-
     { id: 'su_mok',    brand: 'sushi', name: 'Sushi Mokotow', lat: 52.200, lng: 21.025, price: 4000 }
 ];
 
-// 2. ИНИЦИАЛИЗАЦИЯ НОВЫХ ДАННЫХ
-if (!window.state.bank) {
-    window.state.bank = { deposit: 0, loan: 0 }; // Депозит и Кредит
-}
-if (!window.state.branches) {
-    window.state.branches = []; // Купленные филиалы (ID)
-}
+// Инициализация переменных сохранения
+if (!window.state.bank) window.state.bank = { deposit: 0, loan: 0 };
+if (!window.state.branches) window.state.branches = [];
+if (typeof window.state.wage === 'undefined') window.state.wage = 10;
 
-// 3. ПЕРЕПИСЫВАЕМ ИНТЕРФЕЙС
-// Заменяем кнопку "Аренда" на "Банк" в нижней панели
+// 2. ИНТЕРФЕЙС (КНОПКИ И МОДАЛКИ)
+// Очищаем нижнюю панель и создаем заново, чтобы не дублировать
 setTimeout(() => {
     const btmBar = document.querySelector('.btm-bar');
-    // Удаляем старую кнопку аренды/зарплаты если они мешают, или просто меняем текст последней кнопки
-    // По дефолту у нас: Магазин, Флот, Аренда (или Зарплата из v1)
-    // Давайте найдем кнопку с "Аренда" или добавим новую
+    btmBar.innerHTML = ''; // Чистим старые кнопки
     
-    // Добавим кнопку БАНК
-    const bankBtn = document.createElement('button');
-    bankBtn.className = 'btn';
-    bankBtn.style.borderColor = '#ffd700';
-    bankBtn.style.color = '#ffd700';
-    bankBtn.innerText = '🏦 Банк';
-    bankBtn.onclick = () => window.openModal('bank');
-    btmBar.appendChild(bankBtn);
-}, 500);
+    // Создаем новые кнопки
+    const btns = [
+        { text: '🛒 Магазин', onclick: "openModal('shop')" },
+        { text: '👥 Флот', onclick: "openModal('fleet')" },
+        { text: '💸 Зарплата', onclick: "openModal('salary')" },
+        { text: '🏦 Банк', onclick: "openModal('bank')", color: '#ffd700' }
+    ];
 
-// Добавляем HTML для модалки Банка и Статистики
-document.body.insertAdjacentHTML('beforeend', `
+    btns.forEach(b => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.innerText = b.text;
+        btn.onclick = () => eval(b.onclick); // Простой биндинг
+        if(b.color) { btn.style.borderColor = b.color; btn.style.color = b.color; }
+        btmBar.appendChild(btn);
+    });
+}, 200);
+
+// Добавляем HTML модалок
+const modalsHTML = `
 <div id="modal-bank" class="modal">
     <div class="modal-box">
         <span class="close" onclick="closeModals()">&times;</span>
         <h3 style="color:#ffd700">Варшава Банк</h3>
-        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
-            <div>💰 Ваш баланс: <span id="bank-cash" style="color:#fff">0</span></div>
-        </div>
-        
-        <div style="margin-bottom:15px; border:1px solid #444; padding:10px;">
-            <h4>Депозит (1% / мин)</h4>
-            <div style="font-size:1.2em; color:#00e676; margin-bottom:5px;">На счету: <span id="bank-depo">0</span> PLN</div>
+        <p>Баланс: <span id="bank-cash" style="color:#fff">0</span> PLN</p>
+        <div style="border:1px solid #444; padding:10px; margin-bottom:10px;">
+            <h4>Вклад (1%/мин)</h4>
+            <div style="color:#00e676">В банке: <span id="bank-depo">0</span></div>
             <button class="btn" onclick="bankAction('depo_in', 1000)">Положить 1k</button>
             <button class="btn" onclick="bankAction('depo_out', 1000)">Снять 1k</button>
         </div>
-
-        <div style="margin-bottom:15px; border:1px solid #444; padding:10px;">
-            <h4>Кредит (5% / мин)</h4>
-            <div style="font-size:1.2em; color:#ff5252; margin-bottom:5px;">Долг: <span id="bank-loan">0</span> PLN</div>
+        <div style="border:1px solid #444; padding:10px;">
+            <h4>Кредит (5%/мин)</h4>
+            <div style="color:#ff5252">Долг: <span id="bank-loan">0</span></div>
             <button class="btn" onclick="bankAction('loan_get', 5000)">Взять 5k</button>
             <button class="btn" onclick="bankAction('loan_pay', 5000)">Вернуть 5k</button>
         </div>
@@ -80,364 +80,285 @@ document.body.insertAdjacentHTML('beforeend', `
 <div id="modal-stats" class="modal">
     <div class="modal-box">
         <span class="close" onclick="closeModals()">&times;</span>
-        <h3>📊 Статистика Бизнеса</h3>
+        <h3>📊 Статистика</h3>
+        <p>💰 Деньги: <span id="st-bal"></span></p>
+        <p>🏦 Депозит: <span id="st-depo"></span></p>
+        <p>📉 Долг: <span id="st-loan" style="color:red"></span></p>
         <hr>
-        <p>Наличные: <span id="st-bal"></span></p>
-        <p>В банке: <span id="st-depo"></span></p>
-        <p>Долг: <span id="st-loan" style="color:red"></span></p>
-        <hr>
-        <p>Курьеры: <span id="st-couriers"></span></p>
-        <p>Зарплата: <span id="st-wage"></span> PLN/заказ</p>
-        <p>Точки: <span id="st-branches"></span> шт.</p>
-        <hr>
-        <p style="font-size:0.8em; color:#aaa">Налог 10% от всей суммы снимается каждые 5 минут.</p>
+        <p>🚴 Курьеры: <span id="st-couriers"></span></p>
+        <p>🏪 Точки: <span id="st-branches"></span></p>
+        <p>💸 Зарплата: <span id="st-wage"></span></p>
     </div>
 </div>
-`);
 
-// 4. ЛОГИКА БАНКА
-window.bankAction = function(type, amount) {
-    const s = window.state;
-    
-    if (type === 'depo_in') {
-        if (s.balance >= amount) { s.balance -= amount; s.bank.deposit += amount; log(`Депозит: +${amount}`); }
-    }
-    else if (type === 'depo_out') {
-        if (s.bank.deposit >= amount) { s.bank.deposit -= amount; s.balance += amount; log(`Снято: ${amount}`); }
-    }
-    else if (type === 'loan_get') {
-        s.balance += amount; s.bank.loan += amount; log(`Кредит взят: ${amount}`);
-    }
-    else if (type === 'loan_pay') {
-        if (s.balance >= amount && s.bank.loan >= amount) { 
-            s.balance -= amount; s.bank.loan -= amount; log(`Кредит погашен: ${amount}`); 
-        } else if (s.bank.loan < amount && s.balance >= s.bank.loan) {
-            // Погасить остаток
-            s.balance -= s.bank.loan; s.bank.loan = 0; log(`Кредит полностью погашен!`);
-        }
-    }
-    
-    saveGame();
-    updateBankUI();
-    updateUI();
-}
+<div id="modal-salary" class="modal">
+    <div class="modal-box">
+        </div>
+</div>
+`;
+document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
-function updateBankUI() {
-    document.getElementById('bank-cash').innerText = window.state.balance;
-    document.getElementById('bank-depo').innerText = window.state.bank.deposit;
-    document.getElementById('bank-loan').innerText = window.state.bank.loan;
-}
+// 3. ПЕРЕХВАТ ОТКРЫТИЯ ОКОН (ГЛАВНЫЙ ФИКС)
+const coreOpenModal = window.openModal; // Сохраняем оригинал из core.js
 
-// Перехватываем открытие модалки
-const oldOpen2 = window.openModal;
 window.openModal = function(id) {
+    // Сначала обновляем данные внутри окна
+    if (id === 'shop') renderShopV2();
     if (id === 'bank') updateBankUI();
     if (id === 'stats') updateStatsUI();
-    if (id === 'shop') renderShopV2(); // Используем новый рендер магазина
-    if (typeof oldOpen2 === 'function') oldOpen2(id);
+    if (id === 'salary') renderSalaryUI();
+
+    // Показываем само окно
+    document.getElementById('modal-' + id).style.display = 'flex';
 }
 
-// 5. НОВЫЙ МАГАЗИН (СНАРЯЖЕНИЕ, ЛИЦЕНЗИИ, ФИЛИАЛЫ)
+// 4. ЛОГИКА МАГАЗИНА (ВКЛАДКИ)
 window.renderShopV2 = function() {
-    const shopContent = `
+    const box = document.querySelector('#modal-shop .modal-box');
+    box.innerHTML = `
         <span class="close" onclick="closeModals()">&times;</span>
         <h3>Магазин</h3>
         <div style="display:flex; gap:5px; margin-bottom:15px;">
-             <button class="btn" style="padding:5px; font-size:0.8em;" onclick="showShopTab('items')">Снаряжение</button>
-             <button class="btn" style="padding:5px; font-size:0.8em;" onclick="showShopTab('licenses')">Лицензии</button>
-             <button class="btn" style="padding:5px; font-size:0.8em;" onclick="showShopTab('branches')">Филиалы</button>
+             <button class="btn" style="padding:5px; font-size:0.8em;" onclick="switchTab('items')">Снаряжение</button>
+             <button class="btn" style="padding:5px; font-size:0.8em;" onclick="switchTab('licenses')">Лицензии</button>
+             <button class="btn" style="padding:5px; font-size:0.8em;" onclick="switchTab('branches')">Филиалы</button>
         </div>
         
-        <div id="shop-tab-items">
+        <div id="tab-items">
              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div style="background:#2a2a2a; padding:5px; border-radius:5px; text-align:center;">
-                    <div>Велосипед</div><div style="color:#00e676">1500</div>
-                    <button class="btn btn-green" style="width:100%;" onclick="buy('bike', 1500)">Купить</button>
+                <div style="background:#222; padding:5px; border-radius:5px; text-align:center;">
+                    <div>Велик</div><div style="color:#00e676">1500</div>
+                    <button class="btn btn-green" onclick="buy('bike', 1500)">Купить</button>
                 </div>
-                <div style="background:#2a2a2a; padding:5px; border-radius:5px; text-align:center;">
+                <div style="background:#222; padding:5px; border-radius:5px; text-align:center;">
                     <div>Сумка</div><div style="color:#00e676">150</div>
-                    <button class="btn btn-green" style="width:100%;" onclick="buy('bag', 150)">Купить</button>
+                    <button class="btn btn-green" onclick="buy('bag', 150)">Купить</button>
                 </div>
-                <div style="background:#2a2a2a; padding:5px; border-radius:5px; text-align:center;">
+                <div style="background:#222; padding:5px; border-radius:5px; text-align:center;">
                     <div>Куртка</div><div style="color:#00e676">200</div>
-                    <button class="btn btn-green" style="width:100%;" onclick="buy('jacket', 200)">Купить</button>
+                    <button class="btn btn-green" onclick="buy('jacket', 200)">Купить</button>
                 </div>
             </div>
         </div>
 
-        <div id="shop-tab-licenses" style="display:none;">
-            ${Object.keys(BRANDS).map(key => {
-                const b = BRANDS[key];
-                const bought = window.state.licenses[key];
-                return `
-                <div style="background:#2a2a2a; padding:10px; margin-bottom:5px; border-radius:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>${b.icon} ${b.name}</div>
-                    ${bought ? '<span style="color:#aaa">✅ Есть</span>' : 
-                      `<button class="btn" style="background:#ffa726; color:#000; padding:2px 10px;" onclick="buyLicense('${key}', ${b.price})">${b.price}</button>`}
+        <div id="tab-licenses" style="display:none;">
+            ${Object.keys(BRANDS).map(k => {
+                const b = BRANDS[k];
+                const has = window.state.licenses[k];
+                return `<div style="background:#222; padding:10px; margin-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>${b.icon} ${b.name}</span>
+                    ${has ? '<span style="color:#aaa">Куплено</span>' : `<button class="btn" style="padding:2px 10px;" onclick="buyLic('${k}', ${b.price})">${b.price}</button>`}
                 </div>`;
             }).join('')}
         </div>
 
-        <div id="shop-tab-branches" style="display:none; overflow-y:auto; max-height:300px;">
-            <p style="font-size:0.8em; color:#aaa">Сначала купите лицензию бренда!</p>
+        <div id="tab-branches" style="display:none; max-height:300px; overflow-y:auto;">
             ${LOCATIONS.map(loc => {
-                const hasLicense = window.state.licenses[loc.brand];
+                const hasLic = window.state.licenses[loc.brand];
+                if (!hasLic) return '';
                 const hasBranch = window.state.branches.includes(loc.id);
-                const brandInfo = BRANDS[loc.brand];
-                
-                if (!hasLicense) return ''; // Скрываем, если нет лицензии
-
-                return `
-                <div style="background:#222; border-left: 3px solid #00e676; padding:10px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div>${brandInfo.icon} ${loc.name}</div>
-                        <div style="font-size:0.8em; color:#aaa">Прибыль +++</div>
-                    </div>
-                    ${hasBranch ? '<span style="color:#aaa">Куплено</span>' : 
-                      `<button class="btn btn-green" style="padding:2px 10px;" onclick="buyBranch('${loc.id}', ${loc.price})">${loc.price}</button>`}
+                return `<div style="background:#222; padding:10px; margin-bottom:5px; display:flex; justify-content:space-between; border-left:3px solid #00e676;">
+                    <span>${loc.name}</span>
+                    ${hasBranch ? '<span style="color:#aaa">✅</span>' : `<button class="btn btn-green" style="padding:2px 10px;" onclick="buyBranch('${loc.id}', ${loc.price})">${loc.price}</button>`}
                 </div>`;
             }).join('')}
         </div>
     `;
-    document.querySelector('#modal-shop .modal-box').innerHTML = shopContent;
-};
+}
+
+window.switchTab = function(t) {
+    ['items','licenses','branches'].forEach(x => document.getElementById('tab-'+x).style.display = 'none');
+    document.getElementById('tab-'+t).style.display = 'block';
+}
+
+// 5. ДЕЙСТВИЯ (ПОКУПКИ, БАНК)
+window.buyLic = function(id, price) {
+    if (window.state.balance >= price) {
+        window.state.balance -= price;
+        window.state.licenses[id] = true;
+        saveGame();
+        renderShopV2();
+        log(`Лицензия куплена! Теперь доступны филиалы.`);
+    } else log("Мало денег!", true);
+}
 
 window.buyBranch = function(id, price) {
     if (window.state.balance >= price) {
         window.state.balance -= price;
         window.state.branches.push(id);
-        saveGame();
         
         // Рисуем на карте
         const loc = LOCATIONS.find(l => l.id === id);
         const b = BRANDS[loc.brand];
-        const rIcon = L.divIcon({ html: `<div style="font-size:25px;">${b.icon}</div>`, className:'' });
-        L.marker([loc.lat, loc.lng], {icon: rIcon}).addTo(window.map);
+        const icon = L.divIcon({ html: `<div style="font-size:25px;">${b.icon}</div>`, className:'' });
+        L.marker([loc.lat, loc.lng], {icon: icon}).addTo(window.map);
 
+        saveGame();
         renderShopV2();
-        log(`Открыт филиал: ${loc.name}`);
-    } else {
-        log("Мало денег!", true);
-    }
+        log(`Открыта точка: ${loc.name}`);
+    } else log("Мало денег!", true);
 }
 
-// 6. ПЕРЕОПРЕДЕЛЯЕМ ЗАРПЛАТУ (СЛАЙДЕР)
-// Нужно обновить HTML модалки зарплаты.
-// Мы делаем это "на лету" при открытии, или заменяем контент один раз.
-window.updateWageUI = function() {
-    const wage = window.state.wage || 10;
-    const modal = document.querySelector('#modal-salary .modal-box');
-    if (modal) {
-        modal.innerHTML = `
-            <span class="close" onclick="closeModals()">&times;</span>
-            <h3>Зарплата Курьеров</h3>
-            <div style="text-align:center; margin:20px 0;">
-                <div style="font-size:2em; font-weight:bold; color:#00e676;">${wage} PLN</div>
-                <div style="font-size:0.8em; color:#aaa;">за доставку</div>
-            </div>
-            
-            <input type="range" min="0" max="50" value="${wage}" style="width:100%; accent-color: #00e676;" oninput="onWageSlide(this.value)">
-            
-            <div style="margin-top:10px; text-align:center;">
-                Настроение: <span id="ui-mood">${getMoodEmoji(wage)}</span>
-            </div>
-        `;
-    }
+window.bankAction = function(type, amount) {
+    const s = window.state;
+    if (type === 'depo_in' && s.balance >= amount) { s.balance-=amount; s.bank.deposit+=amount; }
+    if (type === 'depo_out' && s.bank.deposit >= amount) { s.bank.deposit-=amount; s.balance+=amount; }
+    if (type === 'loan_get') { s.balance+=amount; s.bank.loan+=amount; }
+    if (type === 'loan_pay' && s.balance >= amount && s.bank.loan >= amount) { s.balance-=amount; s.bank.loan-=amount; }
+    saveGame();
+    updateBankUI();
+    updateUI();
 }
 
-window.onWageSlide = function(val) {
+// 6. ЗАРПЛАТА UI
+window.renderSalaryUI = function() {
+    const w = window.state.wage;
+    const mood = w < 5 ? '🤬' : (w < 15 ? '😐' : '🤩');
+    document.querySelector('#modal-salary .modal-box').innerHTML = `
+        <span class="close" onclick="closeModals()">&times;</span>
+        <h3>Зарплата</h3>
+        <h1 style="color:#00e676; text-align:center;">${w} PLN</h1>
+        <input type="range" min="0" max="50" value="${w}" style="width:100%" oninput="setWage(this.value)">
+        <p style="text-align:center">Настроение: ${mood}</p>
+    `;
+}
+window.setWage = function(val) {
     window.state.wage = parseInt(val);
-    document.querySelector('#modal-salary h3').nextElementSibling.firstElementChild.innerText = val + " PLN";
-    document.getElementById('ui-mood').innerText = getMoodEmoji(val);
+    renderSalaryUI();
     saveGame();
 }
 
-function getMoodEmoji(val) {
-    if(val < 5) return "🤬 Бунт";
-    if(val < 10) return "😡 Злость";
-    if(val < 15) return "😐 Норм";
-    if(val < 25) return "🙂 Радость";
-    return "🤩 Экстаз (Турбо)";
+// 7. ОБНОВЛЕНИЕ UI
+window.updateBankUI = function() {
+    document.getElementById('bank-cash').innerText = window.state.balance;
+    document.getElementById('bank-depo').innerText = window.state.bank.deposit;
+    document.getElementById('bank-loan').innerText = window.state.bank.loan;
 }
 
-// 7. СТАТИСТИКА ОФИСА (КЛИК)
-function updateStatsUI() {
-    const s = window.state;
-    document.getElementById('st-bal').innerText = s.balance;
-    document.getElementById('st-depo').innerText = s.bank.deposit;
-    document.getElementById('st-loan').innerText = s.bank.loan;
+window.updateStatsUI = function() {
+    document.getElementById('st-bal').innerText = window.state.balance;
+    document.getElementById('st-depo').innerText = window.state.bank.deposit;
+    document.getElementById('st-loan').innerText = window.state.bank.loan;
     document.getElementById('st-couriers').innerText = document.getElementById('inv-active').innerText;
-    document.getElementById('st-wage').innerText = s.wage || 10;
-    document.getElementById('st-branches').innerText = s.branches.length;
+    document.getElementById('st-branches').innerText = window.state.branches.length;
+    document.getElementById('st-wage').innerText = window.state.wage;
 }
 
-// Привязываем клик к офису заново
+// 8. СТАРТ ИГРЫ (Отрисовка точек)
 const _origResume = window.resumeGame;
 window.resumeGame = function() {
-    _origResume(); // Запускаем стандартную загрузку
+    _origResume();
     
-    // Перерисовываем ТОЛЬКО купленные филиалы
-    // Удаляем старые маркеры ресторанов (из core или v1), чтобы не дублировать?
-    // В leaflet сложнее удалить, но мы просто добавим поверх.
-    // Лучше очистить карту, но это опасно. Оставим как есть, просто добавим новые точки.
-    
+    // Рисуем купленные филиалы
     LOCATIONS.forEach(loc => {
         if (window.state.branches.includes(loc.id)) {
             const b = BRANDS[loc.brand];
-            const rIcon = L.divIcon({ html: `<div style="font-size:25px;">${b.icon}</div>`, className:'' });
-            L.marker([loc.lat, loc.lng], {icon: rIcon}).addTo(window.map);
+            const icon = L.divIcon({ html: `<div style="font-size:25px;">${b.icon}</div>`, className:'' });
+            L.marker([loc.lat, loc.lng], {icon: icon}).addTo(window.map);
         }
     });
 
     // Клик по офису
     if (window.officeMarker) {
-        window.officeMarker.off('click'); // Снимаем старые
-        window.officeMarker.on('click', () => {
-             window.openModal('stats');
-        });
-        // Добавляем подсказку
-        window.officeMarker.bindTooltip("Мой Офис (Клик)", {permanent: false, direction: 'top'});
+        window.officeMarker.on('click', () => window.openModal('stats'));
+        window.officeMarker.bindTooltip("Статистика", {direction:'top'});
     }
 }
 
-// 8. ОБНОВЛЕННЫЙ ЦИКЛ (НАЛОГИ И БАНК)
-const _origLoop = window.gameLoop;
-let lastBankTick = Date.now();
+// 9. ГЛАВНЫЙ ЦИКЛ (Налоги, Банк, Аренда)
+let lastMinute = Date.now();
+let lastRent = Date.now();
 
+// Полностью заменяем gameLoop, чтобы не зависеть от core.js таймеров
 window.gameLoop = function() {
-    _origLoop(); // Выполняем движение и аренду
-
     const now = Date.now();
+
+    // 1. АРЕНДА + НАЛОГ (5 минут)
+    if (now - lastRent > CONFIG.rentInterval) {
+        lastRent = now;
+        const tax = Math.floor(window.state.balance * CONFIG.taxRate);
+        const total = CONFIG.rentCost + tax;
+        
+        window.state.balance -= total;
+        saveGame();
+        log(`💸 Аренда (${CONFIG.rentCost}) + Налог (${tax}) = -${total}`, true);
+        updateUI();
+    }
     
-    // Каждую минуту (60000 мс) - Банковский процент
-    if (now - lastBankTick > 60000) {
-        lastBankTick = now;
-        
-        // Депозит +1%
-        if (window.state.bank.deposit > 0) {
-            const profit = Math.floor(window.state.bank.deposit * 0.01);
+    // Таймер аренды визуальный
+    const left = CONFIG.rentInterval - (now - lastRent);
+    const m = Math.floor(left/60000);
+    const s = Math.floor((left%60000)/1000);
+    const timerEl = document.getElementById('ui-timer');
+    if(timerEl) timerEl.innerText = `${m}:${s<10?'0':''}${s}`;
+
+    // 2. БАНК (1 минута)
+    if (now - lastMinute > 60000) {
+        lastMinute = now;
+        if(window.state.bank.deposit > 0) {
+            const profit = Math.floor(window.state.bank.deposit * CONFIG.bankDepoRate);
             window.state.bank.deposit += profit;
-            if (document.getElementById('modal-bank').style.display !== 'none') updateBankUI();
-            log(`Банк: % по вкладу +${profit}`);
+            log(`🏦 % по вкладу: +${profit}`);
         }
-        
-        // Кредит +5% (растет долг)
-        if (window.state.bank.loan > 0) {
-            const debt = Math.ceil(window.state.bank.loan * 0.05);
+        if(window.state.bank.loan > 0) {
+            const debt = Math.ceil(window.state.bank.loan * CONFIG.bankLoanRate);
             window.state.bank.loan += debt;
-            if (document.getElementById('modal-bank').style.display !== 'none') updateBankUI();
-            log(`Банк: % по кредиту -${debt}`, true);
+            log(`🏦 % по кредиту: -${debt}`, true);
         }
+        updateBankUI();
     }
 
-    // НАЛОГ (Встроен в таймер аренды, проверяем когда таймер обновляется)
-    // Проще сделать отдельный таймер, но чтобы не нагружать, проверим:
-    // Если таймер аренды сбросился (значит прошло 5 минут), спишем налог.
-    // Сложно поймать момент сброса. 
-    // Давайте просто проверять время.
+    // 3. ДВИЖЕНИЕ
+    moveCouriersAdvanced();
 }
 
-// Переопределяем логику списания аренды, чтобы добавить налог
-// Придется скопировать кусок из V1, но добавить Tax.
-// Чтобы не конфликтовать, сделаем "Hook" на списание.
+// 10. УМНОЕ ДВИЖЕНИЕ КУРЬЕРОВ
+window.moveCouriersAdvanced = function() {
+    const wage = window.state.wage;
+    let speed = 0.0003 * (0.5 + (wage/20));
+    if (speed > 0.0008) speed = 0.0008; // Limit
 
-// Самый надежный способ - свой интервал для налогов.
-setInterval(() => {
-    if (!window.state.office) return;
+    // Курьеры идут к купленным филиалам
+    const targets = LOCATIONS.filter(l => window.state.branches.includes(l.id));
     
-    // Налог 10% от баланса
-    if (window.state.balance > 0) {
-        const tax = Math.floor(window.state.balance * 0.10);
-        if (tax > 0) {
-            window.state.balance -= tax;
-            saveGame();
-            log(`🏛 Налог на бизнес: -${tax} PLN`, true);
-            updateUI();
-        }
-    }
-}, 300000); // 5 минут (300 000 мс)
-
-// 9. КУРЬЕРЫ ХОДЯТ ТОЛЬКО ПО ФИЛИАЛАМ
-// Нам нужно обновить moveCouriersNew, чтобы он видел НОВЫЕ точки (LOCATIONS)
-// Если мы оставим старый, они будут ходить только в Kebab King и McD (дефолтные).
-// Мы хотим, чтобы они ходили в: Дефолтные рестораны (если куплены) + Филиалы.
-
-window.moveCouriersNew = function() {
-    // Копия логики из V1, но с расширенным списком целей
-    let baseSpeed = 0.0003;
-    let wage = window.state.wage || 10;
-    let speedMult = 0.5 + (wage / 20); 
-    if (speedMult > 2.5) speedMult = 2.5; // Чуть быстрее макс скорость
-
-    let currentSpeed = baseSpeed * speedMult;
-
-    // Собираем все доступные цели
-    let targets = [];
-    
-    // Добавляем филиалы
-    LOCATIONS.forEach(loc => {
-        if (window.state.branches.includes(loc.id)) {
-            targets.push({ lat: loc.lat, lng: loc.lng });
-        }
-    });
-
-    // Если нет филиалов, пусть хоть куда-то ходят (в базовые, если есть лицензия)
-    // Но по новой логике нужны филиалы. Если targets пуст - стоят.
-
     window.couriers.forEach(c => {
         if (c.state === 'IDLE') {
             if (targets.length > 0) {
-                const r = targets[Math.floor(Math.random() * targets.length)];
-                c.target = { lat: r.lat, lng: r.lng, type: 'REST' };
+                const t = targets[Math.floor(Math.random() * targets.length)];
+                c.target = { lat: t.lat, lng: t.lng, type: 'REST' };
                 c.state = 'MOVING';
             }
         }
-
-        if (c.state === 'MOVING' && c.target) {
+        else if (c.state === 'MOVING') {
             const dLat = c.target.lat - c.pos.lat;
             const dLng = c.target.lng - c.pos.lng;
             const dist = Math.sqrt(dLat*dLat + dLng*dLng);
-
-            if (dist < currentSpeed) {
+            
+            if (dist < speed) {
                 c.pos = c.target;
                 if (c.target.type === 'REST') {
                     c.state = 'WAITING';
-                    c.wait = 4; 
-                    // Визуализация рюкзака
-                    let color = (wage > 20) ? '#00e676' : 'orange';
-                    updateMarkerIcon(c.marker, `<div style="background:${color}; width:12px; height:12px; border:1px solid #fff; box-shadow:0 0 5px ${color}; border-radius:50%;"></div>`);
+                    c.wait = 4;
+                    updateMarkerIcon(c.marker, '🥡');
                 } else {
-                    const revenue = Math.floor(Math.random() * 25) + 20; // Чуть больше доход с филиалов
-                    const finalProfit = revenue - wage;
-                    
-                    window.state.balance += finalProfit;
+                    const rev = Math.floor(Math.random()*30)+20;
+                    window.state.balance += (rev - wage);
                     saveGame();
-                    
-                    // Реже спамим в лог, если много курьеров
-                    if (Math.random() > 0.7) log(`Доставка: +${revenue} (-${wage})`);
-                    
+                    updateUI();
                     c.state = 'IDLE';
                     updateMarkerIcon(c.marker, '🚴');
                 }
             } else {
-                const ratio = currentSpeed / dist;
-                c.pos.lat += dLat * ratio;
-                c.pos.lng += dLng * ratio;
+                c.pos.lat += dLat * (speed/dist);
+                c.pos.lng += dLng * (speed/dist);
+                c.marker.setLatLng([c.pos.lat, c.pos.lng]);
             }
-            c.marker.setLatLng([c.pos.lat, c.pos.lng]);
         }
-        
-        if (c.state === 'WAITING') {
+        else if (c.state === 'WAITING') {
             c.wait--;
-            if (c.wait <= 0) {
-                const offset = 0.015;
-                c.target = { 
-                    lat: c.pos.lat + (Math.random()*offset*2 - offset),
-                    lng: c.pos.lng + (Math.random()*offset*2 - offset),
-                    type: 'CLIENT' 
-                };
+            if(c.wait<=0) {
+                c.target = { lat: c.pos.lat+(Math.random()*0.02-0.01), lng: c.pos.lng+(Math.random()*0.02-0.01), type:'CLIENT' };
                 c.state = 'MOVING';
-                updateMarkerIcon(c.marker, '🎒');
             }
         }
     });
