@@ -3,134 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier Tycoon: Final</title>
+    <title>Warsaw Courier Tycoon</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        /* UI LAYERS */
-        .ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; display: flex; flex-direction: column; justify-content: space-between; }
-        .pointer-auto { pointer-events: auto; }
-
-        /* TOP BAR */
-        .top-bar { background: rgba(0,0,0,0.85); padding: 10px; display: flex; justify-content: space-between; border-bottom: 2px solid #00e676; }
-        .stat-val { font-weight: bold; color: #00e676; font-size: 1.1em; }
-        .stat-warn { color: #ff5252; font-family: monospace; }
-
-        /* BOTTOM BAR */
-        .btm-bar { background: rgba(0,0,0,0.9); padding: 15px; border-top: 1px solid #333; display: flex; gap: 10px; }
-        .btn { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-weight: bold; cursor: pointer; text-align: center; }
+        /* ИНТЕРФЕЙС */
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2000; display: flex; flex-direction: column; justify-content: space-between; }
+        .pointer { pointer-events: auto; }
+        
+        .top-bar { background: rgba(0,0,0,0.85); padding: 10px; border-bottom: 2px solid #00e676; display: flex; justify-content: space-between; }
+        .btm-bar { background: rgba(0,0,0,0.9); padding: 10px; border-top: 1px solid #333; display: flex; gap: 5px; }
+        .btn { flex: 1; padding: 12px; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn:active { background: #444; }
-        .btn-green { background: #00e676; color: #000; border: none; }
 
-        /* START SCREEN */
-        #start-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #111; z-index: 5000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-        }
+        /* ОКНА */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: none; align-items: center; justify-content: center; pointer-events: auto; }
+        .modal-box { background: #1e1e1e; width: 90%; max-width: 400px; padding: 20px; border-radius: 12px; border: 1px solid #444; max-height: 80vh; overflow-y: auto; }
+        .close { float: right; font-size: 24px; cursor: pointer; color: #aaa; }
         
-        /* MODALS */
-        .modal { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); z-index: 2000; display: none; 
-            align-items: center; justify-content: center; pointer-events: auto;
-        }
-        .modal-box { background: #1e1e1e; padding: 20px; border-radius: 10px; width: 85%; max-width: 400px; border: 1px solid #444; }
-        .close { float: right; font-size: 24px; cursor: pointer; }
-        
-        /* LOGS */
-        #logs { 
-            position: absolute; top: 70px; right: 10px; width: 250px; 
-            pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; 
-        }
-        .log-msg { 
-            background: rgba(0,0,0,0.7); padding: 5px 10px; margin-bottom: 5px; 
-            border-right: 3px solid #00e676; font-size: 0.8em; 
-        }
+        /* ЛОГИ */
+        #logs { position: absolute; top: 60px; right: 10px; width: 200px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; }
+        .log-msg { background: rgba(0,0,0,0.7); padding: 4px 8px; margin-bottom: 4px; border-right: 3px solid #00e676; font-size: 12px; color: #eee; }
 
-        /* ICONS */
-        .office-marker { font-size: 40px; text-shadow: 0 0 10px #00e676; }
-        .courier-marker { font-size: 25px; transition: all 0.5s linear; }
+        /* КАРТА */
+        .courier-icon { font-size: 20px; line-height: 20px; text-align: center; }
+        .brand-icon { font-size: 24px; text-shadow: 0 0 5px #000; }
     </style>
 </head>
 <body>
 
-    <div id="start-overlay" class="pointer-auto">
-        <h1 style="color:#00e676">Warsaw Tycoon</h1>
-        <p id="start-msg" style="color:#aaa">Загрузка системы...</p>
-        <button id="btn-start-action" class="btn btn-green pointer-auto" style="width: 200px; display:none;" onclick="window.handleStart()">Начать</button>
-    </div>
-
-    <div class="ui-container" id="main-ui" style="display:none;">
-        <div class="top-bar pointer-auto">
-            <div>Баланс: <span id="ui-bal" class="stat-val">0</span> PLN</div>
-            <div>Аренда: <span id="ui-timer" class="stat-warn">5:00</span></div>
-        </div>
-
-        <div id="logs"></div>
-
-        <div class="btm-bar pointer-auto">
-            <button class="btn" onclick="openModal('shop')">🛒 Магазин</button>
-            <button class="btn" onclick="openModal('fleet')">👥 Флот (<span id="ui-couriers">0</span>)</button>
-            <button class="btn" onclick="payRent()" style="border-color:#d32f2f; color:#ff8a80;">🏠 Аренда</button>
-        </div>
-    </div>
-
-    <div id="modal-shop" class="modal">
-        <div class="modal-box">
-            <span class="close" onclick="closeModals()">&times;</span>
-            <h3>Снабжение</h3>
-            <p style="font-size:0.8em; color:#aaa;">Для найма 1 курьера нужен комплект: Велик + Сумка + Куртка.</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
-                    <div>Велосипед</div>
-                    <div style="color:#00e676">1500 PLN</div>
-                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px;" onclick="buy('bike', 1500)">Купить</button>
-                </div>
-                <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
-                    <div>Сумка</div>
-                    <div style="color:#00e676">150 PLN</div>
-                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px;" onclick="buy('bag', 150)">Купить</button>
-                </div>
-                <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
-                    <div>Куртка</div>
-                    <div style="color:#00e676">200 PLN</div>
-                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px;" onclick="buy('jacket', 200)">Купить</button>
-                </div>
-                 <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
-                    <div>Лицензия Кебаб</div>
-                    <div style="color:#ffa726">3000 PLN</div>
-                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px; background:#ffa726;" onclick="buyLicense('kebab')">Купить</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-fleet" class="modal">
-        <div class="modal-box">
-            <span class="close" onclick="closeModals()">&times;</span>
-            <h3>Склад и Персонал</h3>
-            <div>🚲 Велосипеды: <span id="inv-bike">0</span></div>
-            <div>🎒 Сумки: <span id="inv-bag">0</span></div>
-            <div>🧥 Куртки: <span id="inv-jacket">0</span></div>
-            <hr style="border-color:#444">
-            <div style="color:#00e676; font-weight:bold;">Активные курьеры: <span id="inv-active">0</span></div>
-            <br>
-            <button class="btn" style="width:100%; background:#d32f2f; border:none;" onclick="hardReset()">🛑 Сброс прогресса</button>
-        </div>
-    </div>
-
     <div id="map"></div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div class="ui-layer">
+        <div class="top-bar pointer">
+            <div style="font-size: 18px;">💰 <span id="ui-bal" style="color:#00e676">0</span> PLN</div>
+            <div style="font-size: 12px; color:#aaa">VER: MONOLITH 1.0</div>
+        </div>
+        
+        <div id="logs"></div>
 
-    <script src="database.js"></script>
-    <script src="js/core.js"></script>
+        <div class="btm-bar pointer">
+            <button class="btn" onclick="openModal('shop')">🛒 Магазин</button>
+            <button class="btn" onclick="openModal('fleet')">👥 Флот</button>
+            <button class="btn" onclick="openModal('salary')">💸 Доход</button>
+            <button class="btn" onclick="openModal('bank')" style="color:#ffd700; border-color:#ffd700">🏦 Банк</button>
+        </div>
+    </div>
 
-    <script src="patches/manifest.js"></script>
+    <div id="modal-shop" class="modal"><div class="modal-box" id="con-shop"></div></div>
+    <div id="modal-fleet" class="modal"><div class="modal-box" id="con-fleet"></div></div>
+    <div id="modal-salary" class="modal"><div class="modal-box" id="con-salary"></div></div>
+    <div id="modal-bank" class="modal"><div class="modal-box" id="con-bank"></div></div>
+
+    <script>
+        // === 1. ГЛОБАЛЬНЫЕ НАСТРОЙКИ ===
+        const CONFIG = {
+            restShare: 0.35, // 35% от чека - наша доля
+            minOrder: 25,
+            maxOrder: 150
+        };
+
+        const BRANDS = {
+            'kebab': { name: 'Kebab King', cost: 3000, icon: '🌯' },
+            'mcd':   { name: 'McDonalds',  cost: 5000, icon: '🍔' },
+            'star':  { name: 'Starbucks',  cost: 6000, icon: '☕' }
+        };
+
+        const LOCATIONS = [
+            { id: 'kb_center', type:'kebab', name:'Kebab Center', lat:52.230, lng:21.015, price:1000 },
+            { id: 'kb_wola',   type:'kebab', name:'Kebab Wola',   lat:52.235, lng:20.990, price:1200 },
+            { id: 'mc_zlota',  type:'mcd',   name:'McD Zlote',    lat:52.231, lng:21.003, price:2500 },
+            { id: 'st_old',    type:'star',  name:'Starbucks Old',lat:52.248, lng:21.012, price:3000 },
+            { id: 'kb_praga',  type:'kebab', name:'Kebab Praga',  lat:52.250, lng:21.030, price:1100 }
+        ];
+
+        // === 2. СИСТЕМА СОХРАНЕНИЙ ===
+        let state = {
+            balance: 5000,
+            inventory: { bike:0, bag:0, jacket:0 },
+            licenses: {},
+            branches: [],
+            wage: 15,
+            bank: { credit:0 }
+        };
+        let couriers = [];
+        let map = null;
+
+        function loadGame() {
+            try {
+                const save = localStorage.getItem('WAW_GAME_FINAL');
+                if(save) state = JSON.parse(save);
+                // Защита от старых сохранений
+                if(!state.inventory) state.inventory = { bike:0, bag:0, jacket:0 };
+                if(!state.bank) state.bank = { credit:0 };
+            } catch(e) { console.error("Save error", e); }
+            updateUI();
+        }
+
+        function saveGame() {
+            localStorage.setItem('WAW_GAME_FINAL', JSON.stringify(state));
+            updateUI();
+        }
+
+        // === 3. ИНИЦИАЛИЗАЦИЯ ===
+        window.onload = function() {
+            // Проверка библиотеки
+            if(typeof L === 'undefined') {
+                alert("ОШИБКА: Карты не загрузились. Проверьте интернет.");
+                return;
+            }
+
+            // Карта
+            map = L.map('map', { zoomControl: false }).setView([52.230, 21.012], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+            // Офис
+            const officeIcon = L.divIcon({html:'🏢', className:'brand-icon', iconSize:[30,30]});
+            L.marker([52.2297, 21.0122], {icon:officeIcon}).addTo(map).bindTooltip("ОФИС");
+
+            loadGame();
+            drawMapPoints();
+            checkFleet();
+            
+            // Запуск цикла
+            setInterval(gameLoop, 1000); // 1 раз в секунду
+            log("Система запущена!");
+        };
+
+        // === 4. ИГРОВАЯ ЛОГИКА ===
+        function gameLoop() {
+            // Движение курьеров
+            const targets = LOCATIONS.filter(l => state.branches.includes(l.id));
+
+            couriers.forEach(c => {
+                // Если нет работы - стоим
+                if(c.state === 'IDLE') {
+                    if(targets.length > 0) {
+                        const t = targets[Math.floor(Math.random() * targets.length)];
+                        c.target = { lat: t.lat, lng: t.lng, type: 'REST' };
+                        c.state = 'MOVING';
+                    }
+                }
+                
+                // Двигаемся
+                if(c.state === 'MOVING') {
+                    const dLat = c.target.lat - c.pos.lat;
+                    const dLng = c.target.lng - c.pos.lng;
+                    const dist = Math.sqrt(dLat*dLat + dLng*dLng);
+                    const speed = 0.001; // Скорость для теста
+
+                    if(dist < speed) {
+                        c.pos = c.target;
+                        if(c.target.type === 'REST') {
+                            c.state = 'WAITING';
+                            c.wait = 3; // Ждем 3 сек
+                            updateMarker(c.marker, '🥡');
+                        } else {
+                            // Прибыль
+                            const order = Math.floor(Math.random() * (CONFIG.maxOrder - CONFIG.minOrder)) + CONFIG.minOrder;
+                            const profit = Math.floor(order * CONFIG.restShare) - state.wage;
+                            state.balance += profit;
+                            saveGame();
+                            log(`Заказ: ${order}PLN. Чистыми: +${profit}`);
+                            
+                            c.state = 'IDLE';
+                            updateMarker(c.marker, '🚴');
+                        }
+                    } else {
+                        // Интерполяция
+                        const ratio = speed / dist;
+                        c.pos.lat += dLat * ratio;
+                        c.pos.lng += dLng * ratio;
+                        c.marker.setLatLng([c.pos.lat, c.pos.lng]);
+                    }
+                }
+
+                // Ждем
+                if(c.state === 'WAITING') {
+                    c.wait--;
+                    if(c.wait <= 0) {
+                        const off = 0.01;
+                        c.target = { 
+                            lat: c.pos.lat + (Math.random()*off*2 - off), 
+                            lng: c.pos.lng + (Math.random()*off*2 - off), 
+                            type: 'CLIENT' 
+                        };
+                        c.state = 'MOVING';
+                        updateMarker(c.marker, '🎒');
+                    }
+                }
+            });
+        }
+
+        function checkFleet() {
+            const max = Math.min(state.inventory.bike, state.inventory.bag, state.inventory.jacket);
+            while(couriers.length < max) {
+                const mk = L.marker([52.2297, 21.0122], {icon: L.divIcon({html:'🚴', className:'courier-icon'})}).addTo(map);
+                couriers.push({ marker: mk, pos: {lat:52.2297, lng:21.0122}, state: 'IDLE', target: null, wait: 0 });
+                log("Курьер вышел на смену!");
+            }
+        }
+
+        function drawMapPoints() {
+            LOCATIONS.forEach(loc => {
+                if(state.branches.includes(loc.id)) {
+                    const b = BRANDS[loc.type];
+                    const ic = L.divIcon({html: b.icon, className:'brand-icon'});
+                    L.marker([loc.lat, loc.lng], {icon:ic}).addTo(map);
+                }
+            });
+        }
+
+        // === 5. UI ФУНКЦИИ ===
+        function updateUI() {
+            document.getElementById('ui-bal').innerText = state.balance;
+        }
+
+        function log(msg) {
+            const box = document.getElementById('logs');
+            box.innerHTML = `<div class="log-msg">${msg}</div>` + box.innerHTML;
+            if(box.children.length > 5) box.lastChild.remove();
+        }
+        
+        function updateMarker(m, h) { if(m.getElement()) m.getElement().innerHTML = h; }
+
+        // === 6. ОКНА И ПОКУПКИ ===
+        window.openModal = function(id) {
+            document.querySelectorAll('.modal').forEach(m => m.style.display='none');
+            document.getElementById('modal-'+id).style.display='flex';
+            if(id==='shop') renderShop();
+            if(id==='fleet') renderFleet();
+            if(id==='salary') renderSalary();
+            if(id==='bank') renderBank();
+        }
+        
+        window.closeModals = function() { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); }
+
+        // --- МАГАЗИН ---
+        function renderShop(tab='eq') {
+            let h = `<span class="close" onclick="closeModals()">&times;</span><h3>Магазин</h3>`;
+            h += `<div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn" onclick="renderShop('eq')">Снаряжение</button>
+                <button class="btn" onclick="renderShop('lic')">Лицензии</button>
+                <button class="btn" onclick="renderShop('loc')">Точки</button>
+            </div>`;
+            
+            if(tab==='eq') {
+                h += `<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
+                    <div style="background:#222; padding:5px; text-align:center;">🚲 1500<br><button class="btn" style="background:#00e676; color:#000" onclick="buyItem('bike',1500)">Купить</button></div>
+                    <div style="background:#222; padding:5px; text-align:center;">🎒 150<br><button class="btn" style="background:#00e676; color:#000" onclick="buyItem('bag',150)">Купить</button></div>
+                    <div style="background:#222; padding:5px; text-align:center;">🧥 200<br><button class="btn" style="background:#00e676; color:#000" onclick="buyItem('jacket',200)">Купить</button></div>
+                </div>`;
+            }
+            if(tab==='lic') {
+                for(let k in BRANDS) {
+                    let b = BRANDS[k];
+                    let has = state.licenses[k] ? '✅' : `<button class="btn" onclick="buyLic('${k}',${b.cost})">${b.cost}</button>`;
+                    h += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${b.name}</span>${has}</div>`;
+                }
+            }
+            if(tab==='loc') {
+                LOCATIONS.forEach(l => {
+                    if(!state.licenses[l.type]) return;
+                    let has = state.branches.includes(l.id) ? '✅' : `<button class="btn" onclick="buyBranch('${l.id}',${l.price})">${l.price}</button>`;
+                    h += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-left:2px solid green; padding-left:5px;"><span>${l.name}</span>${has}</div>`;
+                });
+            }
+            document.getElementById('con-shop').innerHTML = h;
+        }
+
+        // --- ДЕЙСТВИЯ ---
+        window.buyItem = (i,p) => { 
+            if(state.balance>=p) { state.balance-=p; state.inventory[i]++; saveGame(); checkFleet(); renderShop('eq'); log("Куплено!"); } 
+        }
+        window.buyLic = (k,p) => { 
+            if(state.balance>=p) { state.balance-=p; state.licenses[k]=true; saveGame(); renderShop('lic'); log("Лицензия куплена!"); } 
+        }
+        window.buyBranch = (id,p) => { 
+            if(state.balance>=p) { state.balance-=p; state.branches.push(id); saveGame(); drawMapPoints(); renderShop('loc'); log("Точка открыта!"); } 
+        }
+
+        // --- ОСТАЛЬНЫЕ ОКНА ---
+        function renderFleet() {
+            document.getElementById('con-fleet').innerHTML = `<span class="close" onclick="closeModals()">&times;</span><h3>Флот</h3>
+            <p>Активные: <b style="color:#00e676">${couriers.length}</b></p>
+            <p>Склад: 🚲${state.inventory.bike} 🎒${state.inventory.bag} 🧥${state.inventory.jacket}</p>
+            <button class="btn" style="background:red" onclick="if(confirm('Сброс?')){localStorage.clear();location.reload();}">СБРОС</button>`;
+        }
+        function renderSalary() {
+            document.getElementById('con-salary').innerHTML = `<span class="close" onclick="closeModals()">&times;</span><h3>Доход</h3>
+            <h1>${state.wage} PLN</h1>
+            <input type="range" min="0" max="50" value="${state.wage}" style="width:100%" oninput="state.wage=parseInt(this.value); renderSalary(); saveGame();">
+            <p>Ваша выплата курьеру.</p>`;
+        }
+        function renderBank() {
+            document.getElementById('con-bank').innerHTML = `<span class="close" onclick="closeModals()">&times;</span><h3>Банк</h3>
+            <h1>${state.balance}</h1>
+            <p>Кредит: <b style="color:red">${state.bank.credit}</b></p>
+            <button class="btn" onclick="bankOp(5000)">Взять 5к</button> <button class="btn" onclick="bankOp(-5000)">Вернуть 5к</button>`;
+        }
+        window.bankOp = (v) => {
+            if(v>0) { state.balance+=v; state.bank.credit+=v; }
+            if(v<0 && state.balance>=-v) { state.balance+=v; state.bank.credit+=v; }
+            saveGame(); renderBank();
+        }
+
+    </script>
 </body>
 </html>
