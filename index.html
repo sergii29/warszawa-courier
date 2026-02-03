@@ -2,132 +2,132 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier Tycoon</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warsaw Courier Tycoon v2</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #121212; color: #fff; overflow: hidden; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #121212; color: #fff; overflow: hidden; user-select: none; }
         
-        /* КАРТА НА ВЕСЬ ЭКРАН */
         #map { height: 100vh; width: 100vw; z-index: 1; }
 
-        /* UI ИНТЕРФЕЙС */
+        /* UI Layers */
         .ui-layer {
-            position: absolute;
-            z-index: 1000;
-            pointer-events: none; /* Чтобы клики проходили сквозь пустые места */
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1000; display: flex; flex-direction: column; justify-content: space-between;
         }
 
+        /* Top Bar */
         .top-bar {
-            background: rgba(20, 20, 20, 0.9);
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-            pointer-events: auto;
-            border-bottom: 2px solid #00e676;
-            backdrop-filter: blur(5px);
+            background: rgba(18, 18, 18, 0.95);
+            padding: 10px; display: flex; justify-content: space-around;
+            pointer-events: auto; border-bottom: 2px solid #00e676; backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
+        .stat-box { text-align: center; font-size: 0.8rem; color: #aaa; }
+        .stat-val { font-weight: bold; color: #fff; font-size: 1rem; display: block; }
+        .stat-green { color: #00e676; }
+        .stat-blue { color: #2979ff; }
 
-        .stat-box { text-align: center; font-size: 0.9rem; }
-        .stat-val { font-weight: bold; color: #00e676; font-size: 1.1rem; }
-        .stat-warn { color: #ff5252; }
+        /* Log Area */
+        .log-container {
+            position: absolute; top: 80px; right: 10px; width: 220px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
+            padding: 10px; border-radius: 8px; pointer-events: none;
+            font-size: 0.75rem; color: #ddd; max-height: 150px; overflow: hidden;
+            text-shadow: 1px 1px 2px black;
+        }
+        .log-entry { margin-bottom: 4px; opacity: 0.9; }
 
+        /* Bottom Controls */
         .bottom-bar {
-            background: rgba(20, 20, 20, 0.95);
-            padding: 15px;
-            pointer-events: auto;
-            border-top: 1px solid #333;
-            max-height: 40vh;
-            overflow-y: auto;
+            background: rgba(18, 18, 18, 0.98); padding: 15px; pointer-events: auto;
+            border-top: 1px solid #333; display: flex; gap: 10px; overflow-x: auto;
         }
 
-        .btn-main {
-            width: 100%;
-            padding: 12px;
-            background: #00e676;
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            margin-bottom: 10px;
-            cursor: pointer;
+        .btn-menu {
+            flex: 1; padding: 12px; border: 1px solid #444; background: #222; color: #fff;
+            border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;
         }
-        .btn-main:disabled { background: #555; color: #888; }
+        .btn-menu.active { background: #00e676; color: #000; border-color: #00e676; }
+        .btn-rent { background: #d32f2f; border-color: #b71c1c; }
 
-        .shop-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .shop-item {
-            background: #2c2c2c;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid #444;
-        }
-        .shop-item h4 { margin: 0 0 5px 0; font-size: 0.9rem; }
-        .shop-item p { margin: 0 0 5px 0; color: #aaa; font-size: 0.8rem; }
-        .btn-buy {
-            background: #333; color: white; border: 1px solid #555;
-            padding: 5px 10px; border-radius: 4px; width: 100%; cursor: pointer;
-        }
-        .btn-buy:active { transform: scale(0.95); }
-
-        /* Окно старта */
-        #setup-modal {
+        /* Modals */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 2000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            pointer-events: auto; text-align: center; padding: 20px; box-sizing: border-box;
+            background: rgba(0,0,0,0.85); z-index: 2000; display: none;
+            justify-content: center; align-items: flex-end; /* Mobile style */
+        }
+        .modal-content {
+            background: #1e1e1e; width: 100%; max-width: 500px;
+            border-radius: 20px 20px 0 0; padding: 20px; max-height: 80vh; overflow-y: auto;
+            border-top: 2px solid #444; position: relative;
+        }
+        .close-btn {
+            position: absolute; top: 15px; right: 20px; font-size: 24px; color: #888; cursor: pointer;
         }
 
-        .log-area {
-            position: absolute; top: 70px; right: 10px; width: 200px;
-            background: rgba(0,0,0,0.7); padding: 5px; font-size: 10px;
-            pointer-events: none; border-radius: 5px; max-height: 100px; overflow: hidden;
-        }
-        .log-entry { margin-bottom: 2px; }
+        /* Shop Grid */
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .shop-item { background: #2a2a2a; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #333; }
+        .shop-item h4 { margin: 0 0 5px; font-size: 0.9rem; color: #fff; }
+        .shop-item p { margin: 0 0 10px; font-size: 0.8rem; color: #aaa; }
+        .btn-buy { width: 100%; padding: 8px; background: #00e676; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .btn-buy:disabled { background: #444; color: #777; cursor: not-allowed; }
 
+        /* Management Styles */
+        .mgmt-section { margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .slider-container { margin: 15px 0; }
+        input[type=range] { width: 100%; accent-color: #00e676; }
+        .rest-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #252525; padding: 10px; margin-bottom: 8px; border-radius: 8px;
+        }
+        .rest-status { font-size: 0.8rem; color: #aaa; }
+        .owned-tag { color: #00e676; font-weight: bold; font-size: 0.8rem; }
+
+        /* Setup Modal */
+        #setup-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 3000; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; padding: 20px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="setup-modal">
-        <h2 style="color: #00e676;">Warsaw Courier Tycoon</h2>
-        <p>Добро пожаловать, Босс.</p>
-        <p>Для начала выберите место для главного офиса на карте.</p>
-        <button id="start-btn" class="btn-main" style="max-width: 200px;" disabled>Загрузка...</button>
+    <div id="setup-screen">
+        <h1 style="color: #00e676;">Warsaw Delivery Boss</h1>
+        <p>Выберите место для Штаб-квартиры на карте.</p>
+        <button id="start-game-btn" class="btn-menu active" style="padding: 15px 40px; display:none;">Начать игру</button>
+        <p id="loading-txt" style="color: #888; font-size: 0.8rem;">Инициализация спутников...</p>
     </div>
 
     <div class="ui-layer" id="game-ui" style="display: none;">
         <div class="top-bar">
-            <div class="stat-box">Баланс<br><span id="balance" class="stat-val">0</span> PLN</div>
-            <div class="stat-box">Курьеры<br><span id="couriers" class="stat-val">0</span></div>
-            <div class="stat-box">Офис<br><span id="rent-timer" class="stat-val">5:00</span></div>
+            <div class="stat-box">Баланс<br><span id="balance" class="stat-val stat-green">0 PLN</span></div>
+            <div class="stat-box">Курьеры<br><span id="active-couriers" class="stat-val">0</span></div>
+            <div class="stat-box">Счастье<br><span id="happiness" class="stat-val stat-blue">100%</span></div>
+            <div class="stat-box">Офис<br><span id="rent-timer" class="stat-val" style="color: #ff5252">5:00</span></div>
         </div>
 
-        <div class="log-area" id="log-area"></div>
+        <div class="log-container" id="log-area"></div>
 
         <div class="bottom-bar">
-            <h3 style="margin: 0 0 10px 0;">Управление Флотом</h3>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 10px; font-size: 0.8rem; color: #ccc;">
-                <div>🚲 Велики: <span id="inv-bikes">0</span></div>
-                <div>🎒 Сумки: <span id="inv-bags">0</span></div>
-                <div>🧥 Куртки: <span id="inv-jackets">0</span></div>
-            </div>
+            <button class="btn-menu" onclick="openModal('shop-modal')">🚲 Магазин</button>
+            <button class="btn-menu" onclick="openModal('mgmt-modal')">💼 Бизнес</button>
+            <button class="btn-menu btn-rent" onclick="payRent()">🏠 Аренда</button>
+        </div>
+    </div>
 
+    <div id="shop-modal" class="modal-overlay" onclick="closeModal(event, 'shop-modal')">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('shop-modal').style.display='none'">&times;</span>
+            <h3>Магазин Снаряжения</h3>
+            <div class="stat-box" style="text-align: left; margin-bottom: 10px;">
+                Склад: <span id="inv-bikes">0</span> вел. | <span id="inv-bags">0</span> сумок | <span id="inv-jackets">0</span> курток
+            </div>
             <div class="shop-grid">
                 <div class="shop-item">
                     <h4>City Bike 250w</h4>
@@ -145,13 +145,37 @@
                     <button class="btn-buy" onclick="buyItem('bag', 150)">Купить</button>
                 </div>
                 <div class="shop-item">
-                    <h4>Куртка фирмы</h4>
+                    <h4>Куртка Фирмы</h4>
                     <p>200 PLN</p>
                     <button class="btn-buy" onclick="buyItem('jacket', 200)">Купить</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="mgmt-modal" class="modal-overlay" onclick="closeModal(event, 'mgmt-modal')">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('mgmt-modal').style.display='none'">&times;</span>
             
-            <button class="btn-main" style="margin-top: 15px; background: #ff5252; color: #fff;" onclick="payRentManual()">Оплатить Аренду (-500 PLN)</button>
+            <div class="mgmt-section">
+                <h3>Зарплата и Мотивация</h3>
+                <p style="font-size: 0.8rem; color: #aaa;">Какой % от заказа вы отдаете курьеру?</p>
+                <div class="slider-container">
+                    <input type="range" id="salary-slider" min="10" max="90" value="50" oninput="updateSalaryLabel(this.value)">
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Курьеру: <b id="lbl-courier" style="color: #2979ff">50%</b></span>
+                    <span>Боссу: <b id="lbl-boss" style="color: #00e676">50%</b></span>
+                </div>
+                <p style="font-size: 0.7rem; color: #888; margin-top: 5px;">*Низкая ЗП снижает Счастье курьеров. Они будут работать хуже.</p>
+            </div>
+
+            <div class="mgmt-section">
+                <h3>Лицензии Ресторанов</h3>
+                <p style="font-size: 0.8rem; color: #aaa;">Купите лицензию, чтобы курьеры видели заказы.</p>
+                <div id="restaurant-list">
+                    </div>
+            </div>
         </div>
     </div>
 
@@ -162,305 +186,423 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // --- 1. FIREBASE CONFIG ---
-        const firebaseConfig = {
+        // --- CONFIG ---
+        const FIREBASE_CONFIG = {
             apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
             authDomain: "warszawa-courier.firebaseapp.com",
             databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "warszawa-courier",
             storageBucket: "warszawa-courier.firebasestorage.app",
             messagingSenderId: "295860613508",
-            appId: "1:295860613508:web:86fe8364377d6875612dd1",
-            measurementId: "G-TGSCHBVLX2"
+            appId: "1:295860613508:web:86fe8364377d6875612dd1"
         };
 
-        // Initialize Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.database();
-        const userId = "boss_user_001"; // В реальной игре здесь будет ID из Телеграма
-        
-        // --- 2. GAME VARIABLES ---
-        let map;
-        let officeMarker;
-        let couriersMarkers = [];
-        let rentInterval;
-        
-        // Default State
-        let gameState = {
-            balance: 5000, // Стартовый капитал
-            inventory: {
-                bikes_250: 0,
-                bikes_350: 0,
-                bags: 0,
-                jackets: 0
-            },
-            office: {
-                lat: null,
-                lng: null,
-                rentCost: 500, // Цена аренды
-                lastRentPaid: Date.now()
-            },
-            activeCouriers: 0
+        // База реальных точек (примерная геолокация в центре)
+        const RESTAURANTS_DB = [
+            { id: 'mcd_swiet', name: 'McDonalds Świętokrzyska', lat: 52.235, lng: 21.008, cost: 2000, color: '#ffeb3b' },
+            { id: 'kebab_king', name: 'Kebab King Centrum', lat: 52.230, lng: 21.015, cost: 3500, color: '#ff5722' },
+            { id: 'zap_stare', name: 'Zapiecek Stare Miasto', lat: 52.249, lng: 21.013, cost: 5000, color: '#795548' },
+            { id: 'sushi_royal', name: 'Royal Sushi', lat: 52.225, lng: 21.020, cost: 8000, color: '#e91e63' },
+            { id: 'manekin', name: 'Manekin Marszałkowska', lat: 52.228, lng: 21.010, cost: 12000, color: '#9c27b0' }
+        ];
+
+        // --- GLOBAL VARS ---
+        let map, officeMarker;
+        let db;
+        let userId = "boss_prod_002"; // Новый ID для чистого старта
+        let courierMarkers = []; // Array of {marker, data}
+        let restMarkers = {}; // Map of id -> marker
+
+        let state = {
+            balance: 10000, // Стартовый капитал
+            inventory: { bikes_250: 0, bikes_350: 0, bags: 0, jackets: 0 },
+            office: { lat: null, lng: null, rentPaidAt: Date.now() },
+            licenses: [], // IDs of owned restaurants
+            settings: { salaryShare: 50 }, // 50% to courier
+            stats: { happiness: 100 }
         };
 
-        // --- 3. INIT MAP ---
+        // --- INIT ---
+        window.onload = function() {
+            firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.database();
+            
+            initMap();
+            loadUserData();
+        };
+
         function initMap() {
-            // Центр Варшавы
-            map = L.map('map').setView([52.2297, 21.0122], 13);
-
-            // Слой карты (OpenStreetMap CartoDB Dark для стиля)
+            map = L.map('map', {zoomControl: false}).setView([52.2297, 21.0122], 13);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap contributors'
+                attribution: '&copy; OpenStreetMap',
+                subdomains: 'abcd',
+                maxZoom: 19
             }).addTo(map);
 
-            // Обработчик клика для выбора офиса
+            // Клик для выбора офиса
             map.on('click', function(e) {
-                if (!gameState.office.lat) {
-                    setOfficeLocation(e.latlng.lat, e.latlng.lng);
+                if (!state.office.lat) {
+                    setOffice(e.latlng.lat, e.latlng.lng);
                 }
             });
         }
 
-        // --- 4. CORE LOGIC ---
-        
-        // Загрузка или создание профиля
-        function loadProfile() {
-            const ref = db.ref('players/' + userId);
-            ref.on('value', (snapshot) => {
-                const data = snapshot.val();
-                const btn = document.getElementById('start-btn');
-                
+        function loadUserData() {
+            db.ref('players/' + userId).on('value', snap => {
+                const data = snap.val();
                 if (data) {
-                    gameState = data;
-                    if (gameState.office.lat) {
-                        startGame();
-                    } else {
-                        btn.innerText = "Выберите точку на карте";
-                        btn.disabled = false;
-                        btn.onclick = () => { document.getElementById('setup-modal').style.display = 'none'; log("Кликните на карту чтобы открыть офис"); };
-                    }
-                } else {
-                    // Новый игрок
-                    btn.innerText = "Начать бизнес";
-                    btn.disabled = false;
-                    btn.onclick = () => { 
-                        document.getElementById('setup-modal').style.display = 'none'; 
-                        log("Кликните на карту чтобы открыть офис");
-                    };
+                    state = { ...state, ...data };
+                    // Fix missing fields if updating from old save
+                    if (!state.licenses) state.licenses = [];
+                    if (!state.settings) state.settings = { salaryShare: 50 };
+                    if (!state.stats) state.stats = { happiness: 100 };
                 }
-                updateUI();
-            });
-        }
-
-        function setOfficeLocation(lat, lng) {
-            gameState.office.lat = lat;
-            gameState.office.lng = lng;
-            saveState();
-            startGame();
-        }
-
-        function startGame() {
-            document.getElementById('setup-modal').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex';
-            
-            // Ставим маркер офиса
-            const officeIcon = L.icon({
-                iconUrl: 'https://cdn-icons-png.flaticon.com/512/1086/1086665.png', // Иконка дома/офиса
-                iconSize: [40, 40],
-                iconAnchor: [20, 40]
-            });
-            
-            if (officeMarker) map.removeLayer(officeMarker);
-            officeMarker = L.marker([gameState.office.lat, gameState.office.lng], {icon: officeIcon}).addTo(map);
-            officeMarker.bindPopup("<b>Штаб-квартира</b><br>Аренда: 500 PLN/5мин").openPopup();
-
-            // Запускаем цикл игры
-            updateActiveCouriers();
-            startRentTimer();
-            simulateCouriers();
-        }
-
-        function saveState() {
-            db.ref('players/' + userId).set(gameState);
-        }
-
-        // --- 5. ECONOMY & INVENTORY ---
-
-        function buyItem(item, price) {
-            if (gameState.balance >= price) {
-                gameState.balance -= price;
                 
-                // Inventory Logic
-                if (item === 'bike_250') gameState.inventory.bikes_250++;
-                if (item === 'bike_350') gameState.inventory.bikes_350++;
-                if (item === 'bag') gameState.inventory.bags++;
-                if (item === 'jacket') gameState.inventory.jackets++;
+                checkGameStatus();
+                updateUI();
+                renderRestaurants();
+            });
+        }
 
-                log(`Куплено: ${item}. Баланс: ${gameState.balance}`);
-                saveState();
-                updateActiveCouriers(); // Пересчитать курьеров
+        function checkGameStatus() {
+            const loadTxt = document.getElementById('loading-txt');
+            const startBtn = document.getElementById('start-game-btn');
+            const setupScreen = document.getElementById('setup-screen');
+
+            if (state.office.lat) {
+                // Игра уже идет
+                setupScreen.style.display = 'none';
+                document.getElementById('game-ui').style.display = 'flex';
+                
+                if (!officeMarker) {
+                    const icon = L.icon({iconUrl: 'https://cdn-icons-png.flaticon.com/512/619/619153.png', iconSize: [40, 40]});
+                    officeMarker = L.marker([state.office.lat, state.office.lng], {icon: icon}).addTo(map);
+                }
+                
+                startSimulation();
             } else {
-                log("Недостаточно денег!", "red");
+                // Новая игра
+                loadTxt.style.display = 'none';
+                startBtn.style.display = 'none'; 
+                // Ждем клика по карте
+                logUI("Добро пожаловать. Кликните на карту, чтобы арендовать офис.");
+                setupScreen.style.display = 'none'; // Скрываем заглушку, показываем карту
             }
         }
+
+        function setOffice(lat, lng) {
+            state.office.lat = lat;
+            state.office.lng = lng;
+            state.office.rentPaidAt = Date.now();
+            saveState();
+            // Перезагрузка для чистого старта
+            location.reload();
+        }
+
+        // --- GAMEPLAY LOGIC ---
 
         function updateActiveCouriers() {
-            // Логика: 1 велик + 1 сумка + 1 куртка = 1 курьер
-            const totalBikes = gameState.inventory.bikes_250 + gameState.inventory.bikes_350;
-            const possibleCouriers = Math.min(totalBikes, gameState.inventory.bags, gameState.inventory.jackets);
+            const bikes = (state.inventory.bikes_250 || 0) + (state.inventory.bikes_350 || 0);
+            const kits = Math.min(state.inventory.bags || 0, state.inventory.jackets || 0);
+            const count = Math.min(bikes, kits);
             
-            gameState.activeCouriers = possibleCouriers;
-            document.getElementById('couriers').innerText = gameState.activeCouriers;
+            // Sync markers
+            while(courierMarkers.length < count) spawnCourier();
+            while(courierMarkers.length > count) removeCourier();
             
-            manageCourierMarkers();
-        }
-
-        // --- 6. COURIER SIMULATION (ON REAL MAP) ---
-
-        function manageCourierMarkers() {
-            // Удаляем лишних, добавляем новых
-            while (couriersMarkers.length > gameState.activeCouriers) {
-                const marker = couriersMarkers.pop();
-                map.removeLayer(marker);
-            }
-
-            while (couriersMarkers.length < gameState.activeCouriers) {
-                spawnCourier();
-            }
+            document.getElementById('active-couriers').innerText = count;
         }
 
         function spawnCourier() {
-            // Создаем курьера в офисе
-            const courierIcon = L.icon({
-                iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png', // Иконка курьера
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
+            const icon = L.divIcon({
+                className: 'courier-icon',
+                html: '<div style="background:#00e676; width:10px; height:10px; border-radius:50%; border:2px solid #fff;"></div>',
+                iconSize: [14, 14]
             });
-
-            const marker = L.marker([gameState.office.lat, gameState.office.lng], {icon: courierIcon}).addTo(map);
             
-            // Данные курьера (куда едет)
-            marker.courierData = {
-                state: 'IDLE', // IDLE, TO_REST, TO_CLIENT
-                target: null,
-                lat: gameState.office.lat,
-                lng: gameState.office.lng
-            };
-
-            couriersMarkers.push(marker);
-        }
-
-        function simulateCouriers() {
-            setInterval(() => {
-                couriersMarkers.forEach(marker => {
-                    const data = marker.courierData;
-                    const speed = 0.0005; // Скорость движения (градусы координат)
-
-                    if (data.state === 'IDLE') {
-                        // Найти заказ (рандомная точка в радиусе 2км от офиса)
-                        const r = 0.02; // ~2km
-                        const targetLat = gameState.office.lat + (Math.random() * r * 2 - r);
-                        const targetLng = gameState.office.lng + (Math.random() * r * 2 - r);
-                        data.target = { lat: targetLat, lng: targetLng };
-                        data.state = 'TO_CLIENT';
-                    }
-
-                    if (data.state === 'TO_CLIENT') {
-                        // Движение к цели
-                        const dLat = data.target.lat - data.lat;
-                        const dLng = data.target.lng - data.lng;
-                        const dist = Math.sqrt(dLat*dLat + dLng*dLng);
-
-                        if (dist < speed) {
-                            // Прибыл
-                            data.lat = data.target.lat;
-                            data.lng = data.target.lng;
-                            
-                            // Прибыль и зарплата
-                            const income = Math.floor(Math.random() * 15) + 10; // 10-25 PLN
-                            const wage = 8; // ЗП курьера
-                            const profit = income - wage;
-                            
-                            gameState.balance += profit;
-                            log(`Заказ доставлен! +${profit} PLN (прибыль)`);
-                            saveState(); // Важно сохранять деньги
-                            updateUI();
-
-                            // Ехать обратно или на новый заказ?
-                            data.state = 'IDLE'; 
-                        } else {
-                            // Интерполяция движения
-                            data.lat += (dLat / dist) * speed;
-                            data.lng += (dLng / dist) * speed;
-                            marker.setLatLng([data.lat, data.lng]);
-                        }
-                    }
-                });
-            }, 100); // Обновление каждые 100мс
-        }
-
-
-        // --- 7. RENT SYSTEM ---
-        function startRentTimer() {
-            clearInterval(rentInterval);
-            rentInterval = setInterval(() => {
-                const now = Date.now();
-                const diff = now - gameState.office.lastRentPaid;
-                const fiveMinutes = 5 * 60 * 1000;
-                
-                const timeLeft = Math.max(0, fiveMinutes - diff);
-                const minutes = Math.floor(timeLeft / 60000);
-                const seconds = Math.floor((timeLeft % 60000) / 1000);
-                document.getElementById('rent-timer').innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-                if (timeLeft <= 0) {
-                    payRent();
+            const marker = L.marker([state.office.lat, state.office.lng], {icon: icon}).addTo(map);
+            
+            courierMarkers.push({
+                marker: marker,
+                data: {
+                    status: 'IDLE', // IDLE -> TO_REST -> PICKUP -> TO_CLIENT -> DELIVER
+                    pos: { lat: state.office.lat, lng: state.office.lng },
+                    target: null,
+                    orderValue: 0,
+                    restName: '',
+                    timer: 0
                 }
-            }, 1000);
+            });
+        }
+
+        function removeCourier() {
+            const c = courierMarkers.pop();
+            map.removeLayer(c.marker);
+        }
+
+        function startSimulation() {
+            // Main Loop: 100ms (10 FPS)
+            setInterval(() => {
+                updateRentTimer();
+                updateActiveCouriers(); // Check if inventory changed
+                
+                courierMarkers.forEach(c => processCourier(c));
+                
+            }, 100);
+        }
+
+        function processCourier(c) {
+            const d = c.data;
+            const SPEED_BASE = 0.00004; // Очень маленькое значение, чтобы не летали! (примерно 4-5 метров за тик)
+            
+            // Speed Modifier based on Happiness
+            let actualSpeed = SPEED_BASE * (state.stats.happiness / 100);
+            if (state.inventory.bikes_350 > 0) actualSpeed *= 1.2; // Bonus for e-bike logic (simplified)
+
+            // 1. IDLE -> Find Job
+            if (d.status === 'IDLE') {
+                if (state.licenses.length === 0) return; // No contracts
+                
+                // Pick random owned restaurant
+                const randId = state.licenses[Math.floor(Math.random() * state.licenses.length)];
+                const rest = RESTAURANTS_DB.find(r => r.id === randId);
+                
+                d.target = { lat: rest.lat, lng: rest.lng };
+                d.restName = rest.name;
+                d.status = 'TO_REST';
+            }
+
+            // 2. MOVEMENT
+            if (d.status === 'TO_REST' || d.status === 'TO_CLIENT') {
+                const dist = getDistance(d.pos, d.target);
+                
+                if (dist < actualSpeed * 1.5) {
+                    // Arrived
+                    d.pos = d.target;
+                    
+                    if (d.status === 'TO_REST') {
+                        d.status = 'PICKUP';
+                        d.timer = 20; // 2 seconds wait (20 * 100ms)
+                    } else {
+                        d.status = 'DELIVER';
+                        d.timer = 15; // 1.5 seconds wait
+                    }
+                } else {
+                    // Move
+                    const angle = Math.atan2(d.target.lat - d.pos.lat, d.target.lng - d.pos.lng);
+                    d.pos.lat += Math.sin(angle) * actualSpeed;
+                    d.pos.lng += Math.cos(angle) * actualSpeed;
+                }
+                c.marker.setLatLng([d.pos.lat, d.pos.lng]);
+            }
+
+            // 3. WAITING (Pickup/Deliver)
+            if (d.status === 'PICKUP') {
+                d.timer--;
+                if (d.timer <= 0) {
+                    // Generate Client Location (Random radius 1.5km from rest)
+                    const r = 0.015;
+                    d.target = { 
+                        lat: d.pos.lat + (Math.random()*r*2 - r), 
+                        lng: d.pos.lng + (Math.random()*r*2 - r) 
+                    };
+                    d.status = 'TO_CLIENT';
+                    // Calculate Potential Value
+                    d.orderValue = Math.floor(Math.random() * 15) + 20; // 20-35 PLN order total
+                }
+            }
+
+            if (d.status === 'DELIVER') {
+                d.timer--;
+                if (d.timer <= 0) {
+                    finishOrder(d.orderValue, d.restName);
+                    d.status = 'IDLE';
+                    // Return to office? Or stay? Let's stay near client for realism or go to office.
+                    // For game loop simplicity, they look for new job from where they are.
+                }
+            }
+        }
+
+        function finishOrder(totalValue, restName) {
+            // Formula: Order 30 PLN. 
+            // Restaurant Profit Share to Company: Let's say we contract for flat fee or %
+            // User Prompt: "35% from avg order 25pln". 
+            // Implementation: Gross Profit = 35% of Total.
+            
+            const grossProfit = totalValue * 0.35; // Firm's revenue
+            
+            // Salary Split
+            const courierSharePct = state.settings.salaryShare / 100;
+            const courierWage = grossProfit * courierSharePct;
+            const companyNet = grossProfit - courierWage;
+
+            // Update State
+            state.balance += companyNet;
+            
+            // Happiness Logic
+            // If share < 40%, happiness drops. If > 60%, rises.
+            if (state.settings.salaryShare < 40) state.stats.happiness = Math.max(10, state.stats.happiness - 0.5);
+            else if (state.settings.salaryShare > 60) state.stats.happiness = Math.min(120, state.stats.happiness + 0.2);
+            else state.stats.happiness = Math.min(100, state.stats.happiness + 0.05);
+
+            logUI(`Доставка из ${restName}! Вы: +${companyNet.toFixed(1)} PLN (Курьер: ${courierWage.toFixed(1)})`);
+            
+            updateUI();
+            saveState();
+        }
+
+        // --- MANAGEMENT ---
+
+        function buyItem(type, cost) {
+            if (state.balance >= cost) {
+                state.balance -= cost;
+                if (type === 'bike_250') state.inventory.bikes_250++;
+                if (type === 'bike_350') state.inventory.bikes_350++;
+                if (type === 'bag') state.inventory.bags++;
+                if (type === 'jacket') state.inventory.jackets++;
+                
+                logUI(`Куплен предмет: ${type}`, "#00e676");
+                updateUI();
+                saveState();
+            } else {
+                logUI("Недостаточно средств!", "#ff5252");
+            }
+        }
+
+        function buyLicense(id) {
+            const rest = RESTAURANTS_DB.find(r => r.id === id);
+            if (state.balance >= rest.cost) {
+                state.balance -= rest.cost;
+                state.licenses.push(id);
+                logUI(`Лицензия ${rest.name} подписана!`, "#00e676");
+                renderRestaurants(); // Refresh list
+                renderMapRestaurants(); // Show on map
+                saveState();
+            } else {
+                logUI("Нет денег на лицензию.", "#ff5252");
+            }
         }
 
         function payRent() {
-            if (gameState.balance >= gameState.office.rentCost) {
-                gameState.balance -= gameState.office.rentCost;
-                gameState.office.lastRentPaid = Date.now();
-                log(`Списана аренда офиса: -${gameState.office.rentCost} PLN`);
+            const COST = 500;
+            if (state.balance >= COST) {
+                state.balance -= COST;
+                state.office.rentPaidAt = Date.now();
+                logUI("Аренда офиса оплачена на 5 минут.", "#2979ff");
+                updateUI();
                 saveState();
             } else {
-                log("ПРОСРОЧКА АРЕНДЫ! Офис заморожен.", "red");
-                // Можно добавить штрафы
-                gameState.office.lastRentPaid = Date.now(); // Сброс таймера, но долг растет (в полной версии)
+                logUI("Нет денег на аренду!", "#ff5252");
             }
         }
-        
-        function payRentManual() {
-            gameState.office.lastRentPaid = Date.now() - (5 * 60 * 1000) + 1000; // Trigger auto pay immediately
+
+        function updateSalaryLabel(val) {
+            state.settings.salaryShare = parseInt(val);
+            document.getElementById('lbl-courier').innerText = val + "%";
+            document.getElementById('lbl-boss').innerText = (100 - val) + "%";
+            // Save happens on next order or explicit save call? Let's save now
+            saveState();
         }
 
-        // --- UI UTILS ---
-        function updateUI() {
-            document.getElementById('balance').innerText = Math.floor(gameState.balance);
+        // --- RENDERERS ---
+
+        function renderRestaurants() {
+            const container = document.getElementById('restaurant-list');
+            container.innerHTML = '';
             
-            document.getElementById('inv-bikes').innerText = 
-                (gameState.inventory.bikes_250 || 0) + (gameState.inventory.bikes_350 || 0);
-            document.getElementById('inv-bags').innerText = gameState.inventory.bags || 0;
-            document.getElementById('inv-jackets').innerText = gameState.inventory.jackets || 0;
+            RESTAURANTS_DB.forEach(r => {
+                const owned = state.licenses.includes(r.id);
+                const div = document.createElement('div');
+                div.className = 'rest-item';
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold; color:${r.color}">${r.name}</div>
+                        <div class="rest-status">${owned ? 'Активен' : 'Цена: ' + r.cost + ' PLN'}</div>
+                    </div>
+                    ${owned ? '<span class="owned-tag">V</span>' : `<button class="btn-buy" style="width:auto; padding:5px 10px;" onclick="buyLicense('${r.id}')">Купить</button>`}
+                `;
+                container.appendChild(div);
+            });
+
+            renderMapRestaurants();
         }
 
-        function log(msg, color="white") {
-            const area = document.getElementById('log-area');
+        function renderMapRestaurants() {
+            // Add markers for owned restaurants
+            state.licenses.forEach(id => {
+                if (restMarkers[id]) return; // Already on map
+                const r = RESTAURANTS_DB.find(x => x.id === id);
+                if (!r) return;
+
+                const icon = L.divIcon({
+                    className: 'rest-icon',
+                    html: `<div style="background:${r.color}; width:16px; height:16px; border:2px solid #fff; border-radius:4px;"></div>`,
+                    iconSize: [20, 20]
+                });
+                
+                const m = L.marker([r.lat, r.lng], {icon: icon}).addTo(map).bindPopup(r.name);
+                restMarkers[id] = m;
+            });
+        }
+
+        function updateRentTimer() {
+            const now = Date.now();
+            const elapsed = now - state.office.rentPaidAt;
+            const limit = 5 * 60 * 1000;
+            const left = Math.max(0, limit - elapsed);
+            
+            const min = Math.floor(left / 60000);
+            const sec = Math.floor((left % 60000) / 1000);
+            
+            document.getElementById('rent-timer').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+            
+            if (left === 0) {
+                // Rent overdue logic could go here (freeze game)
+                document.getElementById('rent-timer').innerText = "ДОЛГ!";
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('balance').innerText = Math.floor(state.balance) + " PLN";
+            document.getElementById('happiness').innerText = Math.floor(state.stats.happiness) + "%";
+            
+            // Inventory
+            document.getElementById('inv-bikes').innerText = (state.inventory.bikes_250 + state.inventory.bikes_350);
+            document.getElementById('inv-bags').innerText = state.inventory.bags;
+            document.getElementById('inv-jackets').innerText = state.inventory.jackets;
+
+            // Slider
+            const val = state.settings.salaryShare;
+            document.getElementById('salary-slider').value = val;
+            document.getElementById('lbl-courier').innerText = val + "%";
+            document.getElementById('lbl-boss').innerText = (100 - val) + "%";
+        }
+
+        function logUI(msg, color="#fff") {
+            const box = document.getElementById('log-area');
             const div = document.createElement('div');
             div.className = 'log-entry';
             div.style.color = color;
-            div.innerText = `> ${msg}`;
-            area.prepend(div);
+            div.innerText = "> " + msg;
+            box.prepend(div);
+            if (box.children.length > 8) box.lastChild.remove();
         }
 
-        // --- BOOTSTRAP ---
-        initMap();
-        loadProfile();
+        // --- HELPERS ---
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.lat - p1.lat, 2) + Math.pow(p2.lng - p1.lng, 2));
+        }
 
+        function saveState() {
+            db.ref('players/' + userId).set(state);
+        }
+
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+        function closeModal(e, id) {
+            if(e.target.id === id) document.getElementById(id).style.display = 'none';
+        }
     </script>
 </body>
 </html>
