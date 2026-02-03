@@ -2,214 +2,465 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Warsaw Courier Tycoon</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <style>
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; overflow: hidden; }
-        #map { height: 60vh; width: 100%; }
-        #ui-panel { height: 40vh; padding: 15px; background: #222; display: flex; gap: 20px; overflow-y: auto; border-top: 3px solid #ff004c; }
-        .stat-card { background: #333; padding: 10px; border-radius: 8px; min-width: 150px; text-align: center; }
-        .menu-section { flex: 1; border-right: 1px solid #444; padding-right: 15px; }
-        button { background: #ff004c; border: none; color: white; padding: 8px 12px; cursor: pointer; border-radius: 4px; margin-top: 5px; width: 100%; }
-        button:disabled { background: #555; }
-        .log { font-size: 12px; color: #aaa; height: 100px; overflow-y: scroll; background: #000; padding: 5px; margin-top: 10px; }
-        .highlight { color: #00ff88; font-weight: bold; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #121212; color: #fff; overflow: hidden; }
+        
+        /* КАРТА НА ВЕСЬ ЭКРАН */
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+
+        /* UI ИНТЕРФЕЙС */
+        .ui-layer {
+            position: absolute;
+            z-index: 1000;
+            pointer-events: none; /* Чтобы клики проходили сквозь пустые места */
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .top-bar {
+            background: rgba(20, 20, 20, 0.9);
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: auto;
+            border-bottom: 2px solid #00e676;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat-box { text-align: center; font-size: 0.9rem; }
+        .stat-val { font-weight: bold; color: #00e676; font-size: 1.1rem; }
+        .stat-warn { color: #ff5252; }
+
+        .bottom-bar {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 15px;
+            pointer-events: auto;
+            border-top: 1px solid #333;
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 12px;
+            background: #00e676;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .btn-main:disabled { background: #555; color: #888; }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .shop-item {
+            background: #2c2c2c;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+        .shop-item h4 { margin: 0 0 5px 0; font-size: 0.9rem; }
+        .shop-item p { margin: 0 0 5px 0; color: #aaa; font-size: 0.8rem; }
+        .btn-buy {
+            background: #333; color: white; border: 1px solid #555;
+            padding: 5px 10px; border-radius: 4px; width: 100%; cursor: pointer;
+        }
+        .btn-buy:active { transform: scale(0.95); }
+
+        /* Окно старта */
+        #setup-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+
+        .log-area {
+            position: absolute; top: 70px; right: 10px; width: 200px;
+            background: rgba(0,0,0,0.7); padding: 5px; font-size: 10px;
+            pointer-events: none; border-radius: 5px; max-height: 100px; overflow: hidden;
+        }
+        .log-entry { margin-bottom: 2px; }
+
     </style>
 </head>
 <body>
 
-<div id="map"></div>
-<div id="ui-panel">
-    <div class="menu-section">
-        <h3>Управление</h3>
-        <div class="stat-card">Баланс: <span id="balance" class="highlight">5000</span> PLN</div>
-        <div class="stat-card">Курьеры: <span id="courier-count">0</span></div>
-        <div id="office-status" style="margin-top:10px; color: #ffbc00;">Выберите место для офиса на карте!</div>
-        <div class="log" id="game-log">Добро пожаловать в Варшаву!</div>
+    <div id="setup-modal">
+        <h2 style="color: #00e676;">Warsaw Courier Tycoon</h2>
+        <p>Добро пожаловать, Босс.</p>
+        <p>Для начала выберите место для главного офиса на карте.</p>
+        <button id="start-btn" class="btn-main" style="max-width: 200px;" disabled>Загрузка...</button>
     </div>
 
-    <div class="menu-section">
-        <h3>Магазин (Опт)</h3>
-        <div>
-            Велосипед 250W (1500 PLN)
-            <button onclick="buyItem('bike250', 1500)">Купить</button>
+    <div class="ui-layer" id="game-ui" style="display: none;">
+        <div class="top-bar">
+            <div class="stat-box">Баланс<br><span id="balance" class="stat-val">0</span> PLN</div>
+            <div class="stat-box">Курьеры<br><span id="couriers" class="stat-val">0</span></div>
+            <div class="stat-box">Офис<br><span id="rent-timer" class="stat-val">5:00</span></div>
         </div>
-        <div>
-            Велосипед 350W (3700 PLN)
-            <button onclick="buyItem('bike350', 3700)">Купить</button>
-        </div>
-        <div style="margin-top:10px;">
-            Сумка + Куртка (500 PLN)
-            <button onclick="buyItem('gear', 500)">Купить набор</button>
-        </div>
-    </div>
 
-    <div class="menu-section">
-        <h3>Склад</h3>
-        <p>Велосипеды: <span id="inv-bikes">0</span></p>
-        <p>Экипировка: <span id="inv-gear">0</span></p>
-        <small>* 1 вел + 1 сумка = 1 курьер</small>
-    </div>
-</div>
+        <div class="log-area" id="log-area"></div>
 
-<script>
-    // --- КОНФИГ ИНИЦИАЛИЗАЦИЯ ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
-        authDomain: "warszawa-courier.firebaseapp.com",
-        databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "warszawa-courier",
-        storageBucket: "warszawa-courier.firebasestorage.app",
-        messagingSenderId: "295860613508",
-        appId: "1:295860613508:web:86fe8364377d6875612dd1"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // --- СОСТОЯНИЕ ИГРЫ ---
-    let state = {
-        balance: 5000,
-        bikes: 0,
-        gear: 0,
-        couriers: [],
-        office: null, // {lat, lng}
-        rentPrice: 200,
-        lastRentPay: Date.now()
-    };
-
-    // --- КАРТА ---
-    const map = L.map('map').setView([52.2297, 21.0122], 13); // Центр Варшавы
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-    let officeMarker = null;
-
-    map.on('click', function(e) {
-        if (!state.office) {
-            state.office = e.latlng;
-            officeMarker = L.marker(e.latlng, {icon: L.divIcon({className: 'office-icon', html: '🏢', iconSize: [30, 30]})}).addTo(map);
-            addLog("Офис открыт! Аренда 200 PLN / 5 мин.");
-            document.getElementById('office-status').innerText = "Офис активен";
-            saveGame();
-        }
-    });
-
-    // --- ЛОГИКА ИГРЫ ---
-    function buyItem(type, price) {
-        if (state.balance >= price) {
-            state.balance -= price;
-            if (type.includes('bike')) state.bikes++;
-            if (type === 'gear') state.gear++;
-            updateUI();
-            checkNewCouriers();
-            addLog(`Куплено: ${type} за ${price} PLN`);
-        } else {
-            addLog("Недостаточно денег!");
-        }
-    }
-
-    function checkNewCouriers() {
-        const potential = Math.min(state.bikes, state.gear);
-        while (state.couriers.length < potential && state.office) {
-            spawnCourier();
-        }
-    }
-
-    function spawnCourier() {
-        const id = Date.now() + Math.random();
-        const marker = L.marker([state.office.lat, state.office.lng], {
-            icon: L.divIcon({html: '🚴', className: 'courier-icon'})
-        }).addTo(map);
-
-        const courier = { id, marker, status: 'idle', target: null };
-        state.couriers.push(courier);
-        startCourierLife(courier);
-        updateUI();
-    }
-
-    async function startCourierLife(courier) {
-        while (true) {
-            // 1. Едем в ресторан (случайная точка рядом)
-            const restaurant = [state.office.lat + (Math.random()-0.5)*0.02, state.office.lng + (Math.random()-0.5)*0.02];
-            await moveTo(courier, restaurant, "Забирает заказ...");
+        <div class="bottom-bar">
+            <h3 style="margin: 0 0 10px 0;">Управление Флотом</h3>
             
-            // 2. Едем к клиенту
-            const client = [restaurant[0] + (Math.random()-0.5)*0.01, restaurant[1] + (Math.random()-0.5)*0.01];
-            await moveTo(courier, client, "Доставка клиенту...");
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; font-size: 0.8rem; color: #ccc;">
+                <div>🚲 Велики: <span id="inv-bikes">0</span></div>
+                <div>🎒 Сумки: <span id="inv-bags">0</span></div>
+                <div>🧥 Куртки: <span id="inv-jackets">0</span></div>
+            </div>
 
-            // 3. Получаем прибыль
-            const profit = Math.floor(Math.random() * 20) + 15;
-            const salary = 10;
-            state.balance += (profit - salary);
-            addLog(`Курс завершен: +${profit - salary} PLN (Чистая прибыль)`);
-            updateUI();
+            <div class="shop-grid">
+                <div class="shop-item">
+                    <h4>City Bike 250w</h4>
+                    <p>1500 PLN</p>
+                    <button class="btn-buy" onclick="buyItem('bike_250', 1500)">Купить</button>
+                </div>
+                <div class="shop-item">
+                    <h4>E-Bike 350w</h4>
+                    <p>3700 PLN</p>
+                    <button class="btn-buy" onclick="buyItem('bike_350', 3700)">Купить</button>
+                </div>
+                <div class="shop-item">
+                    <h4>Термосумка</h4>
+                    <p>150 PLN</p>
+                    <button class="btn-buy" onclick="buyItem('bag', 150)">Купить</button>
+                </div>
+                <div class="shop-item">
+                    <h4>Куртка фирмы</h4>
+                    <p>200 PLN</p>
+                    <button class="btn-buy" onclick="buyItem('jacket', 200)">Купить</button>
+                </div>
+            </div>
+            
+            <button class="btn-main" style="margin-top: 15px; background: #ff5252; color: #fff;" onclick="payRentManual()">Оплатить Аренду (-500 PLN)</button>
+        </div>
+    </div>
 
-            // 4. Возврат в офис
-            await moveTo(courier, [state.office.lat, state.office.lng], "Возврат в офис...");
+    <div id="map"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // --- 1. FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
+            authDomain: "warszawa-courier.firebaseapp.com",
+            databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "warszawa-courier",
+            storageBucket: "warszawa-courier.firebasestorage.app",
+            messagingSenderId: "295860613508",
+            appId: "1:295860613508:web:86fe8364377d6875612dd1",
+            measurementId: "G-TGSCHBVLX2"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
         }
-    }
+        const db = firebase.database();
+        const userId = "boss_user_001"; // В реальной игре здесь будет ID из Телеграма
+        
+        // --- 2. GAME VARIABLES ---
+        let map;
+        let officeMarker;
+        let couriersMarkers = [];
+        let rentInterval;
+        
+        // Default State
+        let gameState = {
+            balance: 5000, // Стартовый капитал
+            inventory: {
+                bikes_250: 0,
+                bikes_350: 0,
+                bags: 0,
+                jackets: 0
+            },
+            office: {
+                lat: null,
+                lng: null,
+                rentCost: 500, // Цена аренды
+                lastRentPaid: Date.now()
+            },
+            activeCouriers: 0
+        };
 
-    function moveTo(courier, target, taskName) {
-        return new Promise(resolve => {
-            const start = courier.marker.getLatLng();
-            let steps = 100;
-            let currentStep = 0;
+        // --- 3. INIT MAP ---
+        function initMap() {
+            // Центр Варшавы
+            map = L.map('map').setView([52.2297, 21.0122], 13);
 
-            const interval = setInterval(() => {
-                currentStep++;
-                const lat = start.lat + (target[0] - start.lat) * (currentStep / steps);
-                const lng = start.lng + (target[1] - start.lng) * (currentStep / steps);
-                courier.marker.setLatLng([lat, lng]);
+            // Слой карты (OpenStreetMap CartoDB Dark для стиля)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
 
-                if (currentStep >= steps) {
-                    clearInterval(interval);
-                    resolve();
+            // Обработчик клика для выбора офиса
+            map.on('click', function(e) {
+                if (!gameState.office.lat) {
+                    setOfficeLocation(e.latlng.lat, e.latlng.lng);
                 }
-            }, 50); // Скорость движения
-        });
-    }
-
-    // --- СИСТЕМА АРЕНДЫ ---
-    setInterval(() => {
-        if (state.office) {
-            state.balance -= state.rentPrice;
-            addLog(`<span style="color:red">Списана аренда: -${state.rentPrice} PLN</span>`);
-            if (state.balance < 0) {
-                addLog("ВНИМАНИЕ: Баланс отрицательный! Вы банкрот!");
-            }
-            updateUI();
-            saveGame();
+            });
         }
-    }, 300000); // 5 минут = 300000 мс
 
-    // --- ВСПОМОГАТЕЛЬНЫЕ ---
-    function updateUI() {
-        document.getElementById('balance').innerText = state.balance.toFixed(2);
-        document.getElementById('inv-bikes').innerText = state.bikes;
-        document.getElementById('inv-gear').innerText = state.gear;
-        document.getElementById('courier-count').innerText = state.couriers.length;
-    }
+        // --- 4. CORE LOGIC ---
+        
+        // Загрузка или создание профиля
+        function loadProfile() {
+            const ref = db.ref('players/' + userId);
+            ref.on('value', (snapshot) => {
+                const data = snapshot.val();
+                const btn = document.getElementById('start-btn');
+                
+                if (data) {
+                    gameState = data;
+                    if (gameState.office.lat) {
+                        startGame();
+                    } else {
+                        btn.innerText = "Выберите точку на карте";
+                        btn.disabled = false;
+                        btn.onclick = () => { document.getElementById('setup-modal').style.display = 'none'; log("Кликните на карту чтобы открыть офис"); };
+                    }
+                } else {
+                    // Новый игрок
+                    btn.innerText = "Начать бизнес";
+                    btn.disabled = false;
+                    btn.onclick = () => { 
+                        document.getElementById('setup-modal').style.display = 'none'; 
+                        log("Кликните на карту чтобы открыть офис");
+                    };
+                }
+                updateUI();
+            });
+        }
 
-    function addLog(msg) {
-        const log = document.getElementById('game-log');
-        log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + log.innerHTML;
-    }
+        function setOfficeLocation(lat, lng) {
+            gameState.office.lat = lat;
+            gameState.office.lng = lng;
+            saveState();
+            startGame();
+        }
 
-    function saveGame() {
-        db.ref('saves/WARSZAWA_FOREVER').set({
-            balance: state.balance,
-            bikes: state.bikes,
-            gear: state.gear,
-            office: state.office
-        });
-    }
+        function startGame() {
+            document.getElementById('setup-modal').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'flex';
+            
+            // Ставим маркер офиса
+            const officeIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/1086/1086665.png', // Иконка дома/офиса
+                iconSize: [40, 40],
+                iconAnchor: [20, 40]
+            });
+            
+            if (officeMarker) map.removeLayer(officeMarker);
+            officeMarker = L.marker([gameState.office.lat, gameState.office.lng], {icon: officeIcon}).addTo(map);
+            officeMarker.bindPopup("<b>Штаб-квартира</b><br>Аренда: 500 PLN/5мин").openPopup();
 
-    // Авто-сохранение каждые 30 сек
-    setInterval(saveGame, 30000);
+            // Запускаем цикл игры
+            updateActiveCouriers();
+            startRentTimer();
+            simulateCouriers();
+        }
 
-</script>
+        function saveState() {
+            db.ref('players/' + userId).set(gameState);
+        }
+
+        // --- 5. ECONOMY & INVENTORY ---
+
+        function buyItem(item, price) {
+            if (gameState.balance >= price) {
+                gameState.balance -= price;
+                
+                // Inventory Logic
+                if (item === 'bike_250') gameState.inventory.bikes_250++;
+                if (item === 'bike_350') gameState.inventory.bikes_350++;
+                if (item === 'bag') gameState.inventory.bags++;
+                if (item === 'jacket') gameState.inventory.jackets++;
+
+                log(`Куплено: ${item}. Баланс: ${gameState.balance}`);
+                saveState();
+                updateActiveCouriers(); // Пересчитать курьеров
+            } else {
+                log("Недостаточно денег!", "red");
+            }
+        }
+
+        function updateActiveCouriers() {
+            // Логика: 1 велик + 1 сумка + 1 куртка = 1 курьер
+            const totalBikes = gameState.inventory.bikes_250 + gameState.inventory.bikes_350;
+            const possibleCouriers = Math.min(totalBikes, gameState.inventory.bags, gameState.inventory.jackets);
+            
+            gameState.activeCouriers = possibleCouriers;
+            document.getElementById('couriers').innerText = gameState.activeCouriers;
+            
+            manageCourierMarkers();
+        }
+
+        // --- 6. COURIER SIMULATION (ON REAL MAP) ---
+
+        function manageCourierMarkers() {
+            // Удаляем лишних, добавляем новых
+            while (couriersMarkers.length > gameState.activeCouriers) {
+                const marker = couriersMarkers.pop();
+                map.removeLayer(marker);
+            }
+
+            while (couriersMarkers.length < gameState.activeCouriers) {
+                spawnCourier();
+            }
+        }
+
+        function spawnCourier() {
+            // Создаем курьера в офисе
+            const courierIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png', // Иконка курьера
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            const marker = L.marker([gameState.office.lat, gameState.office.lng], {icon: courierIcon}).addTo(map);
+            
+            // Данные курьера (куда едет)
+            marker.courierData = {
+                state: 'IDLE', // IDLE, TO_REST, TO_CLIENT
+                target: null,
+                lat: gameState.office.lat,
+                lng: gameState.office.lng
+            };
+
+            couriersMarkers.push(marker);
+        }
+
+        function simulateCouriers() {
+            setInterval(() => {
+                couriersMarkers.forEach(marker => {
+                    const data = marker.courierData;
+                    const speed = 0.0005; // Скорость движения (градусы координат)
+
+                    if (data.state === 'IDLE') {
+                        // Найти заказ (рандомная точка в радиусе 2км от офиса)
+                        const r = 0.02; // ~2km
+                        const targetLat = gameState.office.lat + (Math.random() * r * 2 - r);
+                        const targetLng = gameState.office.lng + (Math.random() * r * 2 - r);
+                        data.target = { lat: targetLat, lng: targetLng };
+                        data.state = 'TO_CLIENT';
+                    }
+
+                    if (data.state === 'TO_CLIENT') {
+                        // Движение к цели
+                        const dLat = data.target.lat - data.lat;
+                        const dLng = data.target.lng - data.lng;
+                        const dist = Math.sqrt(dLat*dLat + dLng*dLng);
+
+                        if (dist < speed) {
+                            // Прибыл
+                            data.lat = data.target.lat;
+                            data.lng = data.target.lng;
+                            
+                            // Прибыль и зарплата
+                            const income = Math.floor(Math.random() * 15) + 10; // 10-25 PLN
+                            const wage = 8; // ЗП курьера
+                            const profit = income - wage;
+                            
+                            gameState.balance += profit;
+                            log(`Заказ доставлен! +${profit} PLN (прибыль)`);
+                            saveState(); // Важно сохранять деньги
+                            updateUI();
+
+                            // Ехать обратно или на новый заказ?
+                            data.state = 'IDLE'; 
+                        } else {
+                            // Интерполяция движения
+                            data.lat += (dLat / dist) * speed;
+                            data.lng += (dLng / dist) * speed;
+                            marker.setLatLng([data.lat, data.lng]);
+                        }
+                    }
+                });
+            }, 100); // Обновление каждые 100мс
+        }
+
+
+        // --- 7. RENT SYSTEM ---
+        function startRentTimer() {
+            clearInterval(rentInterval);
+            rentInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = now - gameState.office.lastRentPaid;
+                const fiveMinutes = 5 * 60 * 1000;
+                
+                const timeLeft = Math.max(0, fiveMinutes - diff);
+                const minutes = Math.floor(timeLeft / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                document.getElementById('rent-timer').innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (timeLeft <= 0) {
+                    payRent();
+                }
+            }, 1000);
+        }
+
+        function payRent() {
+            if (gameState.balance >= gameState.office.rentCost) {
+                gameState.balance -= gameState.office.rentCost;
+                gameState.office.lastRentPaid = Date.now();
+                log(`Списана аренда офиса: -${gameState.office.rentCost} PLN`);
+                saveState();
+            } else {
+                log("ПРОСРОЧКА АРЕНДЫ! Офис заморожен.", "red");
+                // Можно добавить штрафы
+                gameState.office.lastRentPaid = Date.now(); // Сброс таймера, но долг растет (в полной версии)
+            }
+        }
+        
+        function payRentManual() {
+            gameState.office.lastRentPaid = Date.now() - (5 * 60 * 1000) + 1000; // Trigger auto pay immediately
+        }
+
+        // --- UI UTILS ---
+        function updateUI() {
+            document.getElementById('balance').innerText = Math.floor(gameState.balance);
+            
+            document.getElementById('inv-bikes').innerText = 
+                (gameState.inventory.bikes_250 || 0) + (gameState.inventory.bikes_350 || 0);
+            document.getElementById('inv-bags').innerText = gameState.inventory.bags || 0;
+            document.getElementById('inv-jackets').innerText = gameState.inventory.jackets || 0;
+        }
+
+        function log(msg, color="white") {
+            const area = document.getElementById('log-area');
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.style.color = color;
+            div.innerText = `> ${msg}`;
+            area.prepend(div);
+        }
+
+        // --- BOOTSTRAP ---
+        initMap();
+        loadProfile();
+
+    </script>
 </body>
 </html>
