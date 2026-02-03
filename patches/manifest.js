@@ -1,16 +1,12 @@
-// Папка для патчей. Просто раскомментируйте или добавьте строку, чтобы включить патч.
-// Порядок важен! Патчи загружаются ПОСЛЕ основного ядра.
-
+// Папка для патчей
 const patches = [
-    // 'test-patch.js',       <-- пример
-    // 'new-cars.js',         <-- пример
+    'game-update-v1.js', // <-- Наш новый патч
 ];
 
-// Логика загрузчика (не меняйте это)
 patches.forEach(file => {
     const script = document.createElement('script');
     script.src = 'patches/' + file;
-    script.async = false; // Гарантирует выполнение по порядку
+    script.async = false;
     document.body.appendChild(script);
     console.log(`[Patch System] Loading: ${file}`);
 });
