@@ -3,457 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warsaw Courier Tycoon: Stable</title>
-    
+    <title>Warsaw Courier Tycoon: Final</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
-        /* --- ОСНОВНЫЕ СТИЛИ --- */
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; background: #000; color: #fff; overflow: hidden; user-select: none; -webkit-user-select: none; }
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        #map { height: 100vh; width: 100vw; z-index: 0; background: #1a1a1a; }
+        /* UI LAYERS */
+        .ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; display: flex; flex-direction: column; justify-content: space-between; }
+        .pointer-auto { pointer-events: auto; } /* Elements clickable */
 
-        /* ИКОНКИ */
-        .emoji-icon {
-            font-size: 26px; text-align: center; line-height: 26px;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8));
-            transition: transform 0.2s linear;
-        }
-        .office-icon { font-size: 35px; filter: drop-shadow(0 0 8px #00e676); z-index: 1000 !important; }
-        
-        /* ИНТЕРФЕЙС (ПОВЕРХ КАРТЫ) */
-        .ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; /* ВАЖНО: пропускает клики на карту */
-            z-index: 500;
-            display: flex; flex-direction: column; justify-content: space-between;
-        }
+        /* TOP BAR */
+        .top-bar { background: rgba(0,0,0,0.85); padding: 10px; display: flex; justify-content: space-between; border-bottom: 2px solid #00e676; }
+        .stat-val { font-weight: bold; color: #00e676; font-size: 1.1em; }
+        .stat-warn { color: #ff5252; font-family: monospace; }
 
-        /* ВЕРХНЯЯ ПАНЕЛЬ */
-        .top-bar {
-            background: rgba(18, 18, 18, 0.95);
-            padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;
-            pointer-events: auto; /* Включаем клики только здесь */
-            border-bottom: 2px solid #00e676;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-        }
-        .balance-box { font-size: 1.1rem; font-weight: bold; color: #00e676; text-shadow: 0 0 5px rgba(0,230,118,0.3); }
-        .timer-box { font-family: monospace; color: #ff5252; font-weight: bold; font-size: 0.9rem; }
+        /* BOTTOM BAR */
+        .btm-bar { background: rgba(0,0,0,0.9); padding: 15px; border-top: 1px solid #333; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-weight: bold; cursor: pointer; text-align: center; }
+        .btn:active { background: #444; }
+        .btn-green { background: #00e676; color: #000; border: none; }
 
-        /* ЛОГИ (УВЕДОМЛЕНИЯ) */
-        .log-container {
-            position: absolute; top: 80px; right: 10px; width: 60%; max-width: 250px;
-            display: flex; flex-direction: column; align-items: flex-end;
-            pointer-events: none;
-        }
-        .log-entry {
-            background: rgba(0, 0, 0, 0.8); color: #fff;
-            padding: 5px 10px; margin-bottom: 4px; border-radius: 4px;
-            font-size: 0.75rem; border-left: 3px solid #00e676;
-            animation: fadeIn 0.3s forwards;
-        }
-
-        /* НИЖНЕЕ МЕНЮ */
-        .bottom-bar {
-            background: rgba(18, 18, 18, 0.98); padding: 15px;
-            border-top: 1px solid #333; display: flex; gap: 8px;
-            pointer-events: auto; /* Включаем клики */
-            padding-bottom: 25px; /* iOS safe area */
-        }
-        .btn-menu {
-            flex: 1; padding: 12px; border: 1px solid #444; background: #2a2a2a; color: #fff;
-            border-radius: 8px; font-weight: 600; font-size: 0.9rem;
-            cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .btn-menu:active { background: #444; transform: scale(0.98); }
-        .btn-rent { background: #3c1515; border-color: #b71c1c; color: #ff8a80; }
-
-        /* МОДАЛЬНЫЕ ОКНА */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 2000; display: none;
-            justify-content: center; align-items: center;
-            pointer-events: auto;
-        }
-        .modal-content {
-            background: #1e1e1e; width: 90%; max-width: 450px;
-            border-radius: 12px; padding: 20px; max-height: 80vh; overflow-y: auto;
-            border: 1px solid #333; position: relative;
-        }
-        .close-btn {
-            position: absolute; top: 15px; right: 15px; font-size: 24px;
-            color: #888; cursor: pointer; padding: 5px;
+        /* START SCREEN */
+        #start-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #111; z-index: 5000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
         }
         
-        /* СЕТКА МАГАЗИНА */
-        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
-        .shop-item { background: #252525; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
-        .shop-item h4 { margin: 0 0 5px; font-size: 0.85rem; color: #eee; }
-        .shop-btn { width: 100%; padding: 8px; background: #00e676; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        /* MODALS */
+        .modal { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); z-index: 2000; display: none; 
+            align-items: center; justify-content: center; pointer-events: auto;
+        }
+        .modal-box { background: #1e1e1e; padding: 20px; border-radius: 10px; width: 85%; max-width: 400px; border: 1px solid #444; }
+        .close { float: right; font-size: 24px; cursor: pointer; }
         
-        /* ЭКРАН ПРИВЕТСТВИЯ */
-        #start-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 5000; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center; padding: 20px;
+        /* LOGS */
+        #logs { 
+            position: absolute; top: 70px; right: 10px; width: 250px; 
+            pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; 
         }
-        .big-btn {
-            background: #00e676; color: #000; border: none; padding: 15px 40px;
-            font-size: 1.2rem; font-weight: bold; border-radius: 50px; cursor: pointer;
-            margin-top: 20px; box-shadow: 0 0 20px rgba(0,230,118,0.4);
+        .log-msg { 
+            background: rgba(0,0,0,0.7); padding: 5px 10px; margin-bottom: 5px; 
+            border-right: 3px solid #00e676; font-size: 0.8em; 
         }
+
+        /* ICONS */
+        .office-marker { font-size: 40px; text-shadow: 0 0 10px #00e676; }
+        .courier-marker { font-size: 25px; transition: all 0.5s linear; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <h1 style="color: #00e676;">Warszawa Courier</h1>
-        <p id="status-text" style="color: #888;">Связь с базой данных...</p>
-        <button id="btn-start" class="big-btn" style="display:none;" onclick="enterGame()">Войти в систему</button>
-        <button id="btn-select-office" class="big-btn" style="display:none; background:#2979ff; color:#fff;" onclick="prepareMapForSelection()">Выбрать Офис</button>
+    <div id="start-overlay" class="pointer-auto">
+        <h1 style="color:#00e676">Warsaw Tycoon</h1>
+        <p id="start-msg" style="color:#aaa">Загрузка системы...</p>
+        <button id="btn-start-action" class="btn btn-green pointer-auto" style="width: 200px; display:none;" onclick="handleStart()">Начать</button>
     </div>
 
-    <div class="ui-layer" id="game-ui" style="display: none;">
-        <div class="top-bar">
-            <div>
-                <div style="font-size: 0.7rem; color: #aaa;">БАЛАНС</div>
-                <div class="balance-box" id="ui-balance">0 PLN</div>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 0.7rem; color: #aaa;">АРЕНДА</div>
-                <div class="timer-box" id="ui-timer">5:00</div>
-            </div>
+    <div class="ui-container" id="main-ui" style="display:none;">
+        <div class="top-bar pointer-auto">
+            <div>Баланс: <span id="ui-bal" class="stat-val">0</span> PLN</div>
+            <div>Аренда: <span id="ui-timer" class="stat-warn">5:00</span></div>
         </div>
 
-        <div class="log-container" id="log-area"></div>
+        <div id="logs"></div>
 
-        <div class="bottom-bar">
-            <button class="btn-menu" onclick="openModal('shop-modal')">
-                <span>🚲</span> Магазин
-            </button>
-            <button class="btn-menu" onclick="openModal('fleet-modal')">
-                <span>📊</span> Флот (<span id="active-couriers-count">0</span>)
-            </button>
-            <button class="btn-menu btn-rent" onclick="openModal('office-modal')">
-                <span>🏠</span> Офис
-            </button>
+        <div class="btm-bar pointer-auto">
+            <button class="btn" onclick="openModal('shop')">🛒 Магазин</button>
+            <button class="btn" onclick="openModal('fleet')">👥 Флот (<span id="ui-couriers">0</span>)</button>
+            <button class="btn" onclick="payRent()" style="border-color:#d32f2f; color:#ff8a80;">🏠 Аренда</button>
         </div>
     </div>
 
-    <div id="shop-modal" class="modal-overlay" onclick="closeModal(event, 'shop-modal')">
-        <div class="modal-content">
-            <span class="close-btn" onclick="document.getElementById('shop-modal').style.display='none'">&times;</span>
-            <h3 style="margin-top:0;">Снаряжение</h3>
-            <p style="font-size:0.8rem; color:#aaa;">Для найма 1 курьера нужен: Велик + Сумка + Куртка.</p>
-            
-            <div class="shop-grid">
-                <div class="shop-item">
-                    <h4>Велосипед</h4>
+    <div id="modal-shop" class="modal">
+        <div class="modal-box">
+            <span class="close" onclick="closeModals()">&times;</span>
+            <h3>Снабжение</h3>
+            <p style="font-size:0.8em; color:#aaa;">Для найма 1 курьера нужен комплект: Велик + Сумка + Куртка.</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
+                    <div>Велосипед</div>
                     <div style="color:#00e676">1500 PLN</div>
-                    <div style="font-size:0.7rem;">На складе: <span id="qty-bike">0</span></div>
-                    <button class="shop-btn" onclick="buy('bike_250', 1500)">Купить</button>
+                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px;" onclick="buy('bike', 1500)">Купить</button>
                 </div>
-                <div class="shop-item">
-                    <h4>Термосумка</h4>
+                <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
+                    <div>Сумка</div>
                     <div style="color:#00e676">150 PLN</div>
-                    <div style="font-size:0.7rem;">На складе: <span id="qty-bag">0</span></div>
-                    <button class="shop-btn" onclick="buy('bag', 150)">Купить</button>
+                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px;" onclick="buy('bag', 150)">Купить</button>
                 </div>
-                <div class="shop-item">
-                    <h4>Униформа</h4>
+                <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
+                    <div>Куртка</div>
                     <div style="color:#00e676">200 PLN</div>
-                    <div style="font-size:0.7rem;">На складе: <span id="qty-jacket">0</span></div>
-                    <button class="shop-btn" onclick="buy('jacket', 200)">Купить</button>
+                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px;" onclick="buy('jacket', 200)">Купить</button>
                 </div>
-                <div class="shop-item">
-                    <h4>Лицензия Kebab</h4>
-                    <div style="color:#ff9800">2500 PLN</div>
-                    <button class="shop-btn" style="background:#ff9800; color:#000;" onclick="buyLicense('kebab_king')">Купить</button>
+                 <div style="background:#2a2a2a; padding:10px; border-radius:5px; text-align:center;">
+                    <div>Лицензия Кебаб</div>
+                    <div style="color:#ffa726">3000 PLN</div>
+                    <button class="btn btn-green" style="width:100%; padding:5px; margin-top:5px; background:#ffa726;" onclick="buyLicense('kebab')">Купить</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="fleet-modal" class="modal-overlay" onclick="closeModal(event, 'fleet-modal')">
-        <div class="modal-content">
-            <span class="close-btn" onclick="document.getElementById('fleet-modal').style.display='none'">&times;</span>
-            <h3 style="margin-top:0;">Статистика Флота</h3>
-            <div style="background:#222; padding:15px; border-radius:8px; margin-bottom:10px;">
-                <div>🚴 Велики: <span id="f-bikes" style="color:#fff;">0</span></div>
-                <div>🎒 Сумки: <span id="f-bags" style="color:#fff;">0</span></div>
-                <div>🧥 Куртки: <span id="f-jackets" style="color:#fff;">0</span></div>
-                <hr style="border-color:#444;">
-                <div style="font-weight:bold; color:#00e676;">Активные курьеры: <span id="f-active">0</span></div>
-            </div>
-            <p style="font-size:0.8rem; color:#aaa;">Курьеры появляются автоматически, когда собран полный комплект снаряжения.</p>
-        </div>
-    </div>
-
-    <div id="office-modal" class="modal-overlay" onclick="closeModal(event, 'office-modal')">
-        <div class="modal-content">
-            <span class="close-btn" onclick="document.getElementById('office-modal').style.display='none'">&times;</span>
-            <h3 style="margin-top:0;">Управление Офисом</h3>
-            <button class="shop-btn" style="background:#d32f2f; color:#fff; margin-bottom:10px;" onclick="payRent()">
-                Оплатить Аренду (-500 PLN)
-            </button>
-            <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
-                <p style="color:#ff5252; font-size:0.8rem;">ОПАСНАЯ ЗОНА</p>
-                <button class="shop-btn" style="background:#333; color:#ff5252; border:1px solid #ff5252;" onclick="hardReset()">
-                    ⚠️ ПОЛНЫЙ СБРОС (WIPE)
-                </button>
-            </div>
+    <div id="modal-fleet" class="modal">
+        <div class="modal-box">
+            <span class="close" onclick="closeModals()">&times;</span>
+            <h3>Склад и Персонал</h3>
+            <div>🚲 Велосипеды: <span id="inv-bike">0</span></div>
+            <div>🎒 Сумки: <span id="inv-bag">0</span></div>
+            <div>🧥 Куртки: <span id="inv-jacket">0</span></div>
+            <hr style="border-color:#444">
+            <div style="color:#00e676; font-weight:bold;">Активные курьеры: <span id="inv-active">0</span></div>
+            <br>
+            <button class="btn" style="width:100%; background:#d32f2f; border:none;" onclick="hardReset()">🛑 Сброс прогресса</button>
         </div>
     </div>
 
     <div id="map"></div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script>
-        // --- 1. FIREBASE SETUP ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
-            authDomain: "warszawa-courier.firebaseapp.com",
-            databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "warszawa-courier",
-            storageBucket: "warszawa-courier.firebasestorage.app",
-            messagingSenderId: "295860613508",
-            appId: "1:295860613508:web:86fe8364377d6875612dd1"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const USER_ID = "boss_real_001"; // Постоянный ID для теста
-
-        // --- 2. GLOBAL DATA ---
-        let map;
-        let officeMarker;
-        let courierMarkers = []; 
-        let restaurantMarkers = [];
-        
-        // Default State
-        let state = {
-            balance: 5000,
-            office: { lat: null, lng: null, rentPaid: Date.now() },
-            inventory: { bike_250: 0, bag: 0, jacket: 0 },
-            licenses: {} // { 'kebab_king': true }
-        };
-
-        const RESTAURANTS = [
-            { id: 'kebab_king', name: 'Kebab King', lat: 52.230, lng: 21.015, emoji: '🌯' },
-            { id: 'mcd', name: 'McDonalds', lat: 52.235, lng: 21.008, emoji: '🍔' }
+        // --- CORE SYSTEM ---
+        const SAVE_KEY = 'WAW_COURIER_V3';
+        let map, officeMarker;
+        let couriers = [];
+        let restaurants = [
+            { id: 'kebab', name: 'Kebab King', lat: 52.230, lng: 21.015, icon: '🌯' },
+            { id: 'mcd', name: 'McDonalds', lat: 52.235, lng: 21.008, icon: '🍔' }
         ];
 
-        // --- 3. INITIALIZATION ---
+        let state = {
+            balance: 5000,
+            inventory: { bike: 0, bag: 0, jacket: 0 },
+            office: null, // {lat, lng}
+            rentTime: Date.now(),
+            licenses: {}
+        };
+
+        // --- INIT ---
         window.onload = () => {
             initMap();
-            loadData();
+            loadGame();
         };
 
         function initMap() {
-            // Инициализация карты
-            map = L.map('map', {
-                zoomControl: false, 
-                attributionControl: false
-            }).setView([52.2297, 21.0122], 13);
-            
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                maxZoom: 19
-            }).addTo(map);
+            map = L.map('map', { zoomControl: false }).setView([52.2297, 21.0122], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
 
-            // Обработка клика (только если выбираем офис)
+            // CLICK HANDLER FOR OFFICE SELECTION
             map.on('click', (e) => {
-                const screen = document.getElementById('start-screen');
-                if (screen.style.display === 'none') {
-                    // Игра идет, клики по карте игнорируем (или можно добавить инфо)
-                } else if (document.getElementById('btn-select-office').style.display === 'block') {
-                    // Режим выбора офиса
-                    registerOffice(e.latlng.lat, e.latlng.lng);
-                }
-            });
-        }
-
-        // --- 4. DATA SYNC ---
-        function loadData() {
-            db.ref('players/' + USER_ID).on('value', (snap) => {
-                const val = snap.val();
-                if (val) {
-                    state = { ...state, ...val };
-                    // Фикс структур
-                    if (!state.inventory) state.inventory = { bike_250: 0, bag: 0, jacket: 0 };
-                    if (!state.licenses) state.licenses = {};
-                    
-                    if (state.office.lat) {
-                        document.getElementById('status-text').innerText = "Данные загружены.";
-                        document.getElementById('btn-start').style.display = 'inline-block';
-                        document.getElementById('btn-select-office').style.display = 'none';
-                    } else {
-                        document.getElementById('status-text').innerText = "Нет офиса.";
-                        document.getElementById('btn-start').style.display = 'none';
-                        document.getElementById('btn-select-office').style.display = 'inline-block';
+                const btn = document.getElementById('btn-start-action');
+                // Only if we are in "Selection Mode" (button says "Подтвердить" or hidden logic)
+                if (document.getElementById('start-overlay').style.display !== 'none' && !state.office) {
+                    if (confirm("Открыть офис здесь?")) {
+                        setOffice(e.latlng.lat, e.latlng.lng);
                     }
-                } else {
-                    // Новый игрок
-                    document.getElementById('status-text').innerText = "Новый профиль.";
-                    document.getElementById('btn-select-office').style.display = 'inline-block';
                 }
-                updateUI();
-                manageCouriers(); // Проверка, нужно ли спавнить курьеров
             });
         }
 
-        function saveData() {
-            db.ref('players/' + USER_ID).set(state);
+        // --- GAME LOGIC ---
+        function loadGame() {
+            const saved = localStorage.getItem(SAVE_KEY);
+            if (saved) {
+                state = JSON.parse(saved);
+                if (state.office) {
+                    resumeGame();
+                } else {
+                    showStartScreen(true);
+                }
+            } else {
+                showStartScreen(false);
+            }
         }
 
-        // --- 5. GAME FLOW ---
-        function prepareMapForSelection() {
-            document.getElementById('start-screen').style.display = 'none';
-            log("📍 Кликните на карту, чтобы открыть офис!");
+        function saveGame() {
+            localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+            updateUI();
         }
 
-        function registerOffice(lat, lng) {
-            state.office.lat = lat;
-            state.office.lng = lng;
-            state.office.rentPaid = Date.now();
-            saveData();
+        function showStartScreen(hasSave) {
+            const msg = document.getElementById('start-msg');
+            const btn = document.getElementById('btn-start-action');
             
-            // Сразу запускаем
-            enterGame();
+            if (hasSave && !state.office) {
+                 // Corrupted state or just started
+                 msg.innerText = "Выберите место для офиса на карте (кликните)";
+                 document.getElementById('start-overlay').style.pointerEvents = 'none'; // Click through
+                 document.getElementById('start-overlay').style.background = 'rgba(0,0,0,0.4)'; // Transparent
+            } else if (!hasSave) {
+                 msg.innerText = "Добро пожаловать. Кликните на карту, чтобы выбрать офис.";
+                 document.getElementById('start-overlay').style.pointerEvents = 'none';
+                 document.getElementById('start-overlay').style.background = 'rgba(0,0,0,0.4)';
+            }
         }
 
-        function enterGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex';
+        function setOffice(lat, lng) {
+            state.office = { lat, lng };
+            state.rentTime = Date.now();
+            saveGame();
+            resumeGame();
+        }
+
+        function resumeGame() {
+            document.getElementById('start-overlay').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'flex';
             
-            // Ставим маркер офиса
-            if (officeMarker) map.removeLayer(officeMarker);
-            const icon = L.divIcon({ className: 'office-icon', html: '🏢', iconSize: [40,40], iconAnchor: [20,20] });
+            // Draw Office
+            const icon = L.divIcon({ className: 'office-marker', html: '🏢', iconSize:[40,40], iconAnchor:[20,40] });
             officeMarker = L.marker([state.office.lat, state.office.lng], {icon: icon}).addTo(map);
-            
             map.setView([state.office.lat, state.office.lng], 15);
-            
-            // Запускаем рестораны
-            spawnRestaurants();
 
-            // Запускаем игровой цикл
-            startGameLoop();
-        }
-
-        function spawnRestaurants() {
-            // Чистим старые
-            restaurantMarkers.forEach(m => map.removeLayer(m));
-            restaurantMarkers = [];
-
-            // Для теста добавим лицензию по умолчанию, если нет денег, чтобы проверить механику
-            // Но по логике игры нужно покупать.
-            RESTAURANTS.forEach(r => {
-                // Показываем ресторан на карте (даже если не куплен, но бледный)
-                // Или только если куплен. Пусть будет всегда виден.
-                const isBought = state.licenses[r.id];
-                const opacity = isBought ? 1 : 0.5;
-                const html = `<div style="font-size:24px; opacity:${opacity}">${r.emoji}</div>`;
-                const icon = L.divIcon({ className: '', html: html, iconSize: [24,24] });
-                const m = L.marker([r.lat, r.lng], {icon: icon}).addTo(map);
-                restaurantMarkers.push(m);
+            // Draw Restaurants
+            restaurants.forEach(r => {
+                // Show only if license bought OR just show them as ghost? Let's show all for clarity.
+                const opacity = state.licenses[r.id] ? 1 : 0.5;
+                const rIcon = L.divIcon({ html: `<div style="font-size:25px; opacity:${opacity}">${r.icon}</div>`, className:'' });
+                L.marker([r.lat, r.lng], {icon: rIcon}).addTo(map);
             });
+
+            // Start Loop
+            setInterval(gameLoop, 500); // 2 FPS is enough for logic
+            checkFleet(); // Initial spawn
+            updateUI();
         }
 
-        // --- 6. COURIER LOGIC (THE IMPORTANT PART) ---
-        function manageCouriers() {
-            // Логика: 1 курьер = 1 велик + 1 сумка + 1 куртка
-            const inv = state.inventory;
-            const maxCouriers = Math.min(inv.bike_250, inv.bag, inv.jacket);
+        function gameLoop() {
+            // Rent Logic
+            const now = Date.now();
+            const elapsed = now - state.rentTime;
+            const left = (5 * 60 * 1000) - elapsed;
             
-            document.getElementById('active-couriers-count').innerText = maxCouriers;
-            document.getElementById('f-active').innerText = maxCouriers;
+            if (left > 0) {
+                const m = Math.floor(left / 60000);
+                const s = Math.floor((left % 60000) / 1000);
+                document.getElementById('ui-timer').innerText = `${m}:${s<10?'0':''}${s}`;
+            } else {
+                document.getElementById('ui-timer').innerText = "ПЛАТИ!";
+            }
 
-            // Если курьеров на карте меньше чем положено -> добавляем
-            while (courierMarkers.length < maxCouriers) {
+            // Move Couriers
+            moveCouriers();
+        }
+
+        // --- COURIER SYSTEM ---
+        function checkFleet() {
+            // 1 Courier = 1 Bike + 1 Bag + 1 Jacket
+            const count = Math.min(state.inventory.bike, state.inventory.bag, state.inventory.jacket);
+            
+            // Add missing
+            while (couriers.length < count) {
                 spawnCourier();
             }
         }
 
         function spawnCourier() {
-            if (!state.office.lat) return;
-
-            const icon = L.divIcon({ className: 'emoji-icon', html: '🚴', iconSize: [26,26] });
+            const icon = L.divIcon({ html: '🚴', className: 'courier-marker', iconSize:[25,25] });
             const marker = L.marker([state.office.lat, state.office.lng], {icon: icon}).addTo(map);
             
-            // Данные курьера
-            const courierData = {
+            couriers.push({
                 marker: marker,
                 pos: { lat: state.office.lat, lng: state.office.lng },
                 target: null,
-                state: 'IDLE', // IDLE, TO_REST, TO_CLIENT, RETURN
+                state: 'IDLE', // IDLE, TO_REST, TO_CLIENT
                 wait: 0
-            };
-            
-            courierMarkers.push(courierData);
-            log("Курьер вышел на смену! 🚴");
-        }
-
-        function startGameLoop() {
-            setInterval(() => {
-                // Аренда
-                const now = Date.now();
-                const diff = now - state.office.rentPaid;
-                const timeLeft = (5 * 60 * 1000) - diff;
-                
-                if (timeLeft > 0) {
-                    const m = Math.floor(timeLeft/60000);
-                    const s = Math.floor((timeLeft%60000)/1000);
-                    document.getElementById('ui-timer').innerText = `${m}:${s<10?'0':''}${s}`;
-                } else {
-                    document.getElementById('ui-timer').innerText = "ДОЛГ";
-                }
-
-                // Движение курьеров
-                moveCouriers();
-
-            }, 200); // 5 раз в секунду обновление
+            });
+            log("Новый курьер на линии!");
         }
 
         function moveCouriers() {
-            const SPEED = 0.00015; // Скорость движения
+            const SPEED = 0.0003; // Movement per tick
 
-            courierMarkers.forEach(c => {
-                // 1. Поиск задачи
+            couriers.forEach(c => {
                 if (c.state === 'IDLE') {
-                    // Ищем любой ресторан (даже без лицензии для теста, но по правилам с лицензией)
-                    // Возьмем ближайший ресторан из списка
-                    const targetRest = RESTAURANTS[Math.floor(Math.random() * RESTAURANTS.length)];
-                    c.target = { lat: targetRest.lat, lng: targetRest.lng, type: 'REST' };
+                    // Find job (Random restaurant)
+                    const r = restaurants[Math.floor(Math.random() * restaurants.length)];
+                    c.target = { lat: r.lat, lng: r.lng, type: 'REST' };
                     c.state = 'MOVING';
                 }
 
-                // 2. Движение
                 if (c.state === 'MOVING' && c.target) {
                     const dLat = c.target.lat - c.pos.lat;
                     const dLng = c.target.lng - c.pos.lng;
                     const dist = Math.sqrt(dLat*dLat + dLng*dLng);
 
                     if (dist < SPEED) {
-                        // Прибыл
+                        // Arrived
                         c.pos = c.target;
-                        
                         if (c.target.type === 'REST') {
                             c.state = 'WAITING';
-                            c.wait = 10; // 2 секунды (10 * 200мс)
-                            updateCourierIcon(c.marker, '⏳');
-                        } else if (c.target.type === 'CLIENT') {
-                            // Прибыль
-                            const profit = Math.floor(Math.random() * 20) + 10;
+                            c.wait = 4; // 2 sec
+                            updateMarkerIcon(c.marker, '⏳');
+                        } else {
+                            // Delivered to client
+                            const profit = Math.floor(Math.random() * 20) + 15;
                             state.balance += profit;
-                            saveData();
-                            log(`Доставка! +${profit} PLN 💵`);
-                            
-                            c.state = 'IDLE'; // Обратно искать заказ
-                            updateCourierIcon(c.marker, '🚴');
+                            saveGame();
+                            log(`Доставка! +${profit} PLN`);
+                            c.state = 'IDLE';
+                            updateMarkerIcon(c.marker, '🚴');
                         }
                     } else {
-                        // Интерполяция
+                        // Move
                         const ratio = SPEED / dist;
                         c.pos.lat += dLat * ratio;
                         c.pos.lng += dLng * ratio;
@@ -461,99 +315,95 @@
                     c.marker.setLatLng([c.pos.lat, c.pos.lng]);
                 }
 
-                // 3. Ожидание (в ресторане)
                 if (c.state === 'WAITING') {
                     c.wait--;
                     if (c.wait <= 0) {
-                        // Взял заказ, едет к клиенту (случайная точка рядом)
-                        const offset = 0.01;
+                        // Got food, go to random client
+                        const offset = 0.015;
                         c.target = { 
                             lat: c.pos.lat + (Math.random()*offset*2 - offset),
                             lng: c.pos.lng + (Math.random()*offset*2 - offset),
-                            type: 'CLIENT'
+                            type: 'CLIENT' 
                         };
                         c.state = 'MOVING';
-                        updateCourierIcon(c.marker, '🎒');
+                        updateMarkerIcon(c.marker, '🎒');
                     }
                 }
             });
         }
 
-        function updateCourierIcon(marker, emoji) {
+        function updateMarkerIcon(marker, iconHtml) {
             const el = marker.getElement();
-            if (el) el.innerHTML = emoji;
+            if(el) el.innerHTML = iconHtml;
         }
 
-        // --- 7. ACTIONS ---
+        // --- ACTIONS ---
         function buy(item, cost) {
             if (state.balance >= cost) {
                 state.balance -= cost;
                 state.inventory[item]++;
-                saveData();
+                saveGame();
+                checkFleet(); // Check if we can spawn new courier
                 log(`Куплено: ${item}`);
             } else {
-                log("Не хватает денег!", "red");
+                log("Не хватает денег!", true);
             }
         }
         
         function buyLicense(id) {
-             if (state.balance >= 2500) {
-                state.balance -= 2500;
+            if (state.balance >= 3000) {
+                state.balance -= 3000;
                 state.licenses[id] = true;
-                saveData();
-                spawnRestaurants(); // Обновить вид
+                saveGame();
+                resumeGame(); // Refresh icons
                 log("Лицензия куплена!");
             } else {
-                log("Не хватает денег!", "red");
+                 log("Не хватает денег!", true);
             }
         }
 
         function payRent() {
             if (state.balance >= 500) {
                 state.balance -= 500;
-                state.office.rentPaid = Date.now();
-                saveData();
+                state.rentTime = Date.now();
+                saveGame();
                 log("Аренда продлена.");
+            } else {
+                log("Нет денег на аренду!", true);
             }
         }
 
         function hardReset() {
-            if(confirm("Вы уверены? Весь прогресс будет удален.")) {
-                state = null; // force clear local
-                db.ref('players/' + USER_ID).remove().then(() => {
-                    location.reload();
-                });
+            if(confirm("Удалить весь прогресс?")) {
+                localStorage.removeItem(SAVE_KEY);
+                location.reload();
             }
         }
 
-        // --- UI UTILS ---
+        // --- UI ---
         function updateUI() {
-            document.getElementById('ui-balance').innerText = state.balance + " PLN";
+            document.getElementById('ui-bal').innerText = state.balance;
+            document.getElementById('inv-bike').innerText = state.inventory.bike;
+            document.getElementById('inv-bag').innerText = state.inventory.bag;
+            document.getElementById('inv-jacket').innerText = state.inventory.jacket;
             
-            // Inventory counts
-            document.getElementById('qty-bike').innerText = state.inventory.bike_250;
-            document.getElementById('qty-bag').innerText = state.inventory.bag;
-            document.getElementById('qty-jacket').innerText = state.inventory.jacket;
-            
-            // Fleet modal counts
-            document.getElementById('f-bikes').innerText = state.inventory.bike_250;
-            document.getElementById('f-bags').innerText = state.inventory.bag;
-            document.getElementById('f-jackets').innerText = state.inventory.jacket;
+            const active = Math.min(state.inventory.bike, state.inventory.bag, state.inventory.jacket);
+            document.getElementById('inv-active').innerText = active;
+            document.getElementById('ui-couriers').innerText = active;
         }
 
-        function log(msg, color="#fff") {
-            const area = document.getElementById('log-area');
+        function log(text, isError) {
+            const box = document.getElementById('logs');
             const el = document.createElement('div');
-            el.className = 'log-entry';
-            el.innerText = msg;
-            if(color === 'red') el.style.borderLeftColor = '#ff5252';
-            area.appendChild(el);
-            // Удаляем старые
-            if (area.children.length > 5) area.removeChild(area.firstChild);
+            el.className = 'log-msg';
+            el.innerText = text;
+            if (isError) el.style.borderRightColor = '#ff5252';
+            box.prepend(el);
+            if (box.children.length > 5) box.lastChild.remove();
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(e, id) { if(e.target.id === id) document.getElementById(id).style.display = 'none'; }
+        function openModal(id) { document.getElementById('modal-'+id).style.display = 'flex'; }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
     </script>
 </body>
