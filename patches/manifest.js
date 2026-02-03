@@ -10,3 +10,9 @@ patches.forEach(file => {
     document.body.appendChild(script);
     console.log(`[Patch System] Loading: ${file}`);
 });
+
+
+const patches = [
+    'game-update-v1.js', 
+    'game-update-v2.js' // <-- Добавляем это
+];
