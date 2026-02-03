@@ -4,8 +4,8 @@ const patches = [
 
 patches.forEach(file => {
     const script = document.createElement('script');
-    // Меняем цифру времени в конце, чтобы 100% загрузить свежий файл
-    script.src = 'patches/' + file + '?v=' + Date.now();
+    // Добавляем случайное число "rand", чтобы кэш обновился
+    script.src = 'patches/' + file + '?rand=' + Math.random(); 
     script.async = false;
     document.body.appendChild(script);
 });
