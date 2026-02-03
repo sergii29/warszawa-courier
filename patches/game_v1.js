@@ -1,336 +1,136 @@
-// --- WARSAW COURIER: FINAL FIX ---
+// --- EMERGENCY BOOTLOADER v5 ---
 
-// 1. НАСТРОЙКИ
-const CONFIG = {
-    minOrder: 25,
-    maxOrder: 150,
-    restShare: 0.35, 
-    defaultWage: 15  
+// 1. ГЛОБАЛЬНЫЙ ПЕРЕХВАТ ОШИБОК (ЧТОБЫ ВИДЕТЬ ИХ НА ТЕЛЕФОНЕ)
+window.onerror = function(msg, url, line) {
+    const d = document.getElementById('debug-console');
+    if(d) d.innerHTML += `<div style="color:red; border-bottom:1px solid #333;">❌ ERR: ${msg} (Line: ${line})</div>`;
 };
 
-const BRANDS = {
-    'kebab': { name: 'Kebab King', cost: 3000, icon: '🌯' },
-    'mcd':   { name: 'McDonalds',  cost: 5000, icon: '🍔' },
-    'star':  { name: 'Starbucks',  cost: 6000, icon: '☕' }
-};
+// 2. СОЗДАЕМ КОНСОЛЬ НА ЭКРАНЕ
+(function createDebugScreen() {
+    // Чистим всё, кроме карты, если она есть
+    document.querySelectorAll('.ui-container, .modal, #start-overlay').forEach(e => e.remove());
+    
+    // Создаем блок для логов
+    const debug = document.createElement('div');
+    debug.id = 'debug-console';
+    debug.style = "position:absolute; top:0; left:0; width:100%; height:50%; background:rgba(0,0,0,0.8); color:#00e676; font-family:monospace; font-size:12px; z-index:99999; overflow-y:auto; padding:10px; pointer-events:none;";
+    debug.innerHTML = "<div>🚀 SYSTEM BOOTING...</div>";
+    document.body.appendChild(debug);
+})();
 
+function log(txt) {
+    const d = document.getElementById('debug-console');
+    if(d) d.innerHTML += `<div>> ${txt}</div>`;
+    console.log(txt);
+}
+
+// 3. НАСТРОЙКИ
+const CONFIG = { min: 25, max: 150, share: 0.35, wage: 15 };
 const LOCATIONS = [
-    { id: 'kb_center', type:'kebab', name:'Kebab Center', lat:52.230, lng:21.015, price:1000 },
-    { id: 'kb_wola',   type:'kebab', name:'Kebab Wola',   lat:52.235, lng:20.990, price:1200 },
-    { id: 'mc_zlota',  type:'mcd',   name:'McD Zlote',    lat:52.231, lng:21.003, price:2500 },
-    { id: 'st_old',    type:'star',  name:'Starbucks Old',lat:52.248, lng:21.012, price:3000 },
-    { id: 'kb_praga',  type:'kebab', name:'Kebab Praga',  lat:52.250, lng:21.030, price:1100 }
+    { id: 'kb_1', type:'kebab', name:'Kebab Center', lat:52.230, lng:21.015, price:1000 },
+    { id: 'kb_2', type:'kebab', name:'Kebab Wola',   lat:52.235, lng:20.990, price:1200 },
+    { id: 'mc_1', type:'mcd',   name:'McD Zlote',    lat:52.231, lng:21.003, price:2500 }
 ];
 
-// 2. СТАРТ ИГРЫ (ИСПРАВЛЕНО ЗАВИСАНИЕ)
-window.onload = function() {
-    console.log("ЗАПУСК ИГРЫ...");
-    
-    // !!! ГЛАВНОЕ ИСПРАВЛЕНИЕ: УДАЛЯЕМ ЗАСТАВКУ !!!
-    const overlay = document.getElementById('start-overlay');
-    if(overlay) overlay.style.display = 'none';
+// 4. ЗАПУСК (НЕ ЖДЕМ ONLOAD, ЗАПУСКАЕМ СРАЗУ)
+setTimeout(() => {
+    try {
+        log("Step 1: Init Data...");
+        if(!window.state) window.state = { balance:5000, inventory:{bike:0,bag:0,jacket:0}, licenses:{}, branches:[], wage:15, bank:{credit:0} };
 
-    // Запускаем системы
-    initMap(); 
-    loadGame(); 
-    initUI(); 
-    setInterval(gameLoop, 500);
-    
-    console.log("ИГРА ЗАПУЩЕНА");
-};
+        log("Step 2: Init Map...");
+        initMap();
 
-// 3. КАРТА
+        log("Step 3: Init UI...");
+        initUI();
+
+        log("Step 4: Start Loop...");
+        setInterval(gameLoop, 1000);
+
+        log("✅ SUCCESS. Hiding Debug in 5s...");
+        setTimeout(() => { document.getElementById('debug-console').style.display = 'none'; }, 5000);
+
+    } catch (e) {
+        log("FATAL ERROR: " + e.message);
+    }
+}, 500); // Небольшая задержка, чтобы HTML прогрузился
+
+// --- ФУНКЦИИ ---
+
 function initMap() {
+    // Проверка контейнера
+    let mapDiv = document.getElementById('map');
+    if(!mapDiv) {
+        log("⚠️ No #map div found! Creating one...");
+        mapDiv = document.createElement('div');
+        mapDiv.id = 'map';
+        mapDiv.style = "height:100vh; width:100vw; z-index:1;";
+        document.body.appendChild(mapDiv);
+    }
+
     if(window.map) window.map.remove();
+    
+    // Проверка Leaflet
+    if(typeof L === 'undefined') {
+        throw new Error("Leaflet Library (L) not loaded!");
+    }
+
     window.map = L.map('map', { zoomControl: false }).setView([52.230, 21.012], 13);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(window.map);
     
     // Офис
-    const icon = L.divIcon({className: 'office-marker', html: '🏢', iconSize:[30,30]});
-    window.officeMarker = L.marker([52.2297, 21.0122], {icon: icon}).addTo(window.map);
+    L.marker([52.2297, 21.0122]).addTo(window.map).bindTooltip("ОФИС").openTooltip();
 }
 
-// 4. СОХРАНЕНИЕ
-function loadGame() {
-    const save = localStorage.getItem('WAW_SAVE_FINAL');
-    if (save) {
-        window.state = JSON.parse(save);
-    } else {
-        window.state = {
-            balance: 5000,
-            inventory: { bike:0, bag:0, jacket:0 },
-            licenses: {},
-            branches: [],
-            wage: CONFIG.defaultWage,
-            bank: { credit:0 }
-        };
-    }
-    // Проверки на всякий случай
-    if(!window.state.bank) window.state.bank = { credit:0 };
-    if(!window.state.licenses) window.state.licenses = {};
-    if(!window.state.branches) window.state.branches = [];
-
-    drawLocations();
-    spawnFleet();
-}
-
-function saveGame() {
-    localStorage.setItem('WAW_SAVE_FINAL', JSON.stringify(window.state));
-    updateTopBar();
-}
-
-// 5. ИНТЕРФЕЙС
 function initUI() {
-    // Удаляем всё старое, чтобы не мешало
+    // Удаляем старые окна
     document.querySelectorAll('.ui-container, .modal').forEach(e => e.remove());
 
     const ui = document.createElement('div');
     ui.className = 'ui-container';
     ui.innerHTML = `
         <div class="top-bar">
-            <div>Баланс: <span id="ui-bal" class="stat-val">0</span> PLN</div>
+            <div>Баланс: <span id="ui-bal" style="color:#00e676; font-weight:bold;">${window.state.balance}</span></div>
         </div>
-        <div id="logs" style="position:absolute; top:50px; right:10px; width:200px; max-height:300px; overflow:hidden; pointer-events:none;"></div>
         <div class="btm-bar">
-            <button class="btn" onclick="openModal('shop')">🛒 Магазин</button>
-            <button class="btn" onclick="openModal('fleet')">👥 Флот</button>
-            <button class="btn" onclick="openModal('salary')">💸 Зарплата</button>
-            <button class="btn" onclick="openModal('bank')" style="color:#ffd700; border-color:#ffd700">🏦 Банк</button>
+            <button class="btn" onclick="openW('shop')">🛒 Маг</button>
+            <button class="btn" onclick="openW('fleet')">👥 Флот</button>
+            <button class="btn" onclick="openW('bank')" style="color:gold">🏦 Банк</button>
         </div>
     `;
     document.body.appendChild(ui);
-    updateTopBar();
 
-    ['shop', 'fleet', 'salary', 'bank'].forEach(id => {
-        const m = document.createElement('div');
-        m.id = 'modal-'+id;
-        m.className = 'modal';
-        m.style.display = 'none';
-        m.innerHTML = `<div class="modal-box" id="content-${id}"></div>`;
-        document.body.appendChild(m);
-    });
+    // Окна
+    const box = document.createElement('div');
+    box.id = 'modal-box';
+    box.className = 'modal';
+    box.style.display = 'none';
+    box.innerHTML = `<div class="modal-box" style="position:relative"><span onclick="closeW()" class="close" style="position:absolute; right:10px; top:5px;">&times;</span><div id="m-cont"></div></div>`;
+    document.body.appendChild(box);
 }
 
-function updateTopBar() {
-    const el = document.getElementById('ui-bal');
-    if(el) el.innerText = Math.floor(window.state.balance);
+// Простые функции для окон
+window.openW = function(id) {
+    const m = document.getElementById('modal-box');
+    const c = document.getElementById('m-cont');
+    m.style.display = 'flex';
+    if(id==='shop') c.innerHTML = `<h3>Магазин</h3><button class="btn" onclick="buy('bike',1500)">Велик (1500)</button><br><br><button class="btn" onclick="buy('lic_kb',3000)">Лиц. Кебаб (3000)</button>`;
+    if(id==='fleet') c.innerHTML = `<h3>Флот</h3>Курьеров: ${window.couriers ? window.couriers.length : 0}`;
+    if(id==='bank') c.innerHTML = `<h3>Банк</h3>Кредит: ${window.state.bank.credit}`;
 }
+window.closeW = () => document.getElementById('modal-box').style.display = 'none';
 
-// ОКНА
-window.openModal = function(id) {
-    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    const m = document.getElementById('modal-'+id);
-    if(m) {
-        m.style.display = 'flex';
-        if(id === 'shop') renderShop();
-        if(id === 'fleet') renderFleet();
-        if(id === 'salary') renderSalary();
-        if(id === 'bank') renderBank();
+window.buy = function(i,p) {
+    if(window.state.balance >= p) {
+        window.state.balance -= p;
+        if(i==='bike') window.state.inventory.bike++;
+        document.getElementById('ui-bal').innerText = window.state.balance;
     }
 }
 
-window.closeModals = function() {
-    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-}
-
-// --- ОТРИСОВКА ОКОН ---
-
-window.renderShop = function(tab = 'eq') {
-    let html = `<span class="close" onclick="closeModals()">&times;</span><h3>Магазин</h3>`;
-    html += `<div style="display:flex; gap:10px; margin-bottom:15px;">
-        <button class="btn" onclick="renderShop('eq')">Снаряжение</button>
-        <button class="btn" onclick="renderShop('lic')">Лицензии</button>
-        <button class="btn" onclick="renderShop('loc')">Франшиза</button>
-    </div>`;
-
-    if(tab === 'eq') {
-        html += `<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
-            <div style="background:#222; padding:5px; text-align:center;">
-                <div>🚲</div><div style="color:#00e676">1500</div>
-                <button class="btn btn-green" onclick="buy('bike',1500)">Куп</button>
-            </div>
-            <div style="background:#222; padding:5px; text-align:center;">
-                <div>🎒</div><div style="color:#00e676">150</div>
-                <button class="btn btn-green" onclick="buy('bag',150)">Куп</button>
-            </div>
-            <div style="background:#222; padding:5px; text-align:center;">
-                <div>🧥</div><div style="color:#00e676">200</div>
-                <button class="btn btn-green" onclick="buy('jacket',200)">Куп</button>
-            </div>
-        </div>`;
-    }
-
-    if(tab === 'lic') {
-        for(let k in BRANDS) {
-            let b = BRANDS[k];
-            let has = window.state.licenses[k];
-            html += `<div style="background:#222; padding:10px; margin-bottom:5px; display:flex; justify-content:space-between;">
-                <span>${b.icon} ${b.name}</span>
-                ${has ? '✅' : `<button class="btn" onclick="buyLic('${k}',${b.cost})">${b.cost}</button>`}
-            </div>`;
-        }
-    }
-
-    if(tab === 'loc') {
-        let count = 0;
-        LOCATIONS.forEach(loc => {
-            if(!window.state.licenses[loc.type]) return;
-            count++;
-            let has = window.state.branches.includes(loc.id);
-            html += `<div style="background:#222; padding:10px; margin-bottom:5px; border-left:3px solid #00e676; display:flex; justify-content:space-between;">
-                <span>${loc.name}</span>
-                ${has ? '✅' : `<button class="btn btn-green" onclick="buyBranch('${loc.id}',${loc.price})">${loc.price}</button>`}
-            </div>`;
-        });
-        if(count === 0) html += `<p style="color:red">Нет лицензий!</p>`;
-    }
-    document.getElementById('content-shop').innerHTML = html;
-}
-
-window.renderFleet = function() {
-    let active = window.couriers.length;
-    let inv = window.state.inventory;
-    document.getElementById('content-fleet').innerHTML = 
-    `<span class="close" onclick="closeModals()">&times;</span><h3>Флот</h3>
-    <div>Активные: <b style="color:#00e676">${active}</b></div>
-    <div>Склад: 🚲${inv.bike} 🎒${inv.bag} 🧥${inv.jacket}</div>
-    <hr><button class="btn" style="background:red; width:100%" onclick="hardReset()">СБРОС</button>`;
-}
-
-window.renderSalary = function() {
-    let w = window.state.wage;
-    document.getElementById('content-salary').innerHTML = 
-    `<span class="close" onclick="closeModals()">&times;</span><h3>Зарплата</h3>
-    <div style="text-align:center;">
-        <h1 style="color:#00e676">${w} PLN</h1>
-        <input type="range" min="0" max="50" value="${w}" style="width:100%" oninput="setWage(this.value)">
-        <p>Вы платите это с каждого заказа.</p>
-    </div>`;
-}
-
-window.renderBank = function() {
-    let s = window.state;
-    document.getElementById('content-bank').innerHTML = 
-    `<span class="close" onclick="closeModals()">&times;</span><h3>Банк</h3>
-    <h1 style="text-align:center">${s.balance} PLN</h1>
-    <div style="border:1px solid #444; padding:10px;">
-        <p>Долг: <b style="color:red">${s.bank.credit}</b></p>
-        <button class="btn" onclick="bankOp('get', 5000)">Взять 5к</button>
-        <button class="btn" onclick="bankOp('pay', 5000)">Вернуть 5к</button>
-    </div>`;
-}
-
-// --- ДЕЙСТВИЯ ---
-window.buy = function(item, cost) {
-    if(window.state.balance >= cost) {
-        window.state.balance -= cost;
-        window.state.inventory[item]++;
-        saveGame(); spawnFleet(); renderShop('eq');
-        log(`Куплено: ${item}`);
-    }
-}
-window.buyLic = function(id, cost) {
-    if(window.state.balance >= cost) {
-        window.state.balance -= cost;
-        window.state.licenses[id] = true;
-        saveGame(); renderShop('lic');
-    }
-}
-window.buyBranch = function(id, cost) {
-    if(window.state.balance >= cost) {
-        window.state.balance -= cost;
-        window.state.branches.push(id);
-        drawLocations(); saveGame(); renderShop('loc');
-    }
-}
-window.setWage = function(val) {
-    window.state.wage = parseInt(val);
-    renderSalary(); saveGame();
-}
-window.bankOp = function(act, val) {
-    if(act === 'get') { window.state.balance += val; window.state.bank.credit += val; }
-    if(act === 'pay' && window.state.balance >= val) { window.state.balance -= val; window.state.bank.credit -= val; }
-    saveGame(); renderBank();
-}
-window.hardReset = function() {
-    if(confirm("Сброс?")) { localStorage.removeItem('WAW_SAVE_FINAL'); location.reload(); }
-}
-
-// --- ЛОГИКА ---
-function drawLocations() {
-    LOCATIONS.forEach(loc => {
-        if(window.state.branches.includes(loc.id)) {
-            const b = BRANDS[loc.type];
-            const icon = L.divIcon({html:`<div style="font-size:25px;">${b.icon}</div>`, className:''});
-            L.marker([loc.lat, loc.lng], {icon:icon}).addTo(window.map);
-        }
-    });
-}
-
-function spawnFleet() {
-    if(!window.couriers) window.couriers = [];
-    const inv = window.state.inventory;
-    const max = Math.min(inv.bike, inv.bag, inv.jacket);
-    while(window.couriers.length < max) {
-        const c = {
-            marker: L.marker([52.2297, 21.0122], {icon: L.divIcon({html:'🚴', className:'courier-marker'})}).addTo(window.map),
-            pos: {lat: 52.2297, lng: 21.0122},
-            target: null, state: 'IDLE', wait: 0
-        };
-        window.couriers.push(c);
-    }
-}
-
+// Цикл
+window.couriers = [];
 function gameLoop() {
-    const targets = LOCATIONS.filter(l => window.state.branches.includes(l.id));
-    window.couriers.forEach(c => {
-        if(c.state === 'IDLE' && targets.length > 0) {
-            const t = targets[Math.floor(Math.random() * targets.length)];
-            c.target = { lat: t.lat, lng: t.lng, type: 'REST' };
-            c.state = 'MOVING';
-        }
-        if(c.state === 'MOVING') {
-            const dLat = c.target.lat - c.pos.lat;
-            const dLng = c.target.lng - c.pos.lng;
-            const dist = Math.sqrt(dLat*dLat + dLng*dLng);
-            if(dist < 0.0005) {
-                c.pos = c.target;
-                if(c.target.type === 'REST') {
-                    c.state = 'WAITING'; c.wait = 6;
-                    updateIcon(c.marker, '🥡');
-                } else {
-                    // ПРИБЫЛЬ
-                    const order = Math.floor(Math.random() * 125) + 25;
-                    const profit = Math.floor(order * CONFIG.restShare) - window.state.wage;
-                    window.state.balance += profit;
-                    saveGame();
-                    log(`Заказ: ${order}. Прибыль: ${profit}`);
-                    c.state = 'IDLE';
-                    updateIcon(c.marker, '🚴');
-                }
-            } else {
-                c.pos.lat += dLat * (0.0005 / dist);
-                c.pos.lng += dLng * (0.0005 / dist);
-                c.marker.setLatLng([c.pos.lat, c.pos.lng]);
-            }
-        }
-        if(c.state === 'WAITING') {
-            c.wait--;
-            if(c.wait <= 0) {
-                const off = 0.015;
-                c.target = { lat: c.pos.lat+(Math.random()*off*2-off), lng: c.pos.lng+(Math.random()*off*2-off), type:'CLIENT' };
-                c.state = 'MOVING';
-                updateIcon(c.marker, '🎒');
-            }
-        }
-    });
-}
-
-function updateIcon(m, h) { if(m.getElement()) m.getElement().innerHTML = h; }
-function log(t) {
-    const b = document.getElementById('logs');
-    if(b) {
-        b.innerHTML = `<div style="background:rgba(0,0,0,0.7); margin-bottom:2px; padding:2px 5px; border-left:3px solid #00e676;">${t}</div>` + b.innerHTML;
-        if(b.children.length > 5) b.lastChild.remove();
-    }
+    // Пока пустой, чтобы проверить запускается ли
 }
