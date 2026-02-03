@@ -1,8 +1,11 @@
-// Папка для патчей
+// Папка для патчей.
+// Мы грузим ТОЛЬКО ВТОРОЙ файл, потому что я собрал в него всё сразу (и банк, и магазин).
+
 const patches = [
-    'game-update-v1.js', // <-- Наш новый патч
+    'game-update-v2.js' 
 ];
 
+// Логика загрузчика
 patches.forEach(file => {
     const script = document.createElement('script');
     script.src = 'patches/' + file;
@@ -10,9 +13,3 @@ patches.forEach(file => {
     document.body.appendChild(script);
     console.log(`[Patch System] Loading: ${file}`);
 });
-
-
-const patches = [
-    'game-update-v1.js', 
-    'game-update-v2.js' // <-- Добавляем это
-];
