@@ -2754,3 +2754,81 @@
         // этот блок можно расширить для их замены.
     })();
 </script>
+
+
+
+<script>
+window.addEventListener('load', function() {
+    console.log("Applying WOLT Design Forcefully...");
+
+    // 1. Создаем стиль, который перебивает вообще всё
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* Фон всей страницы - белый */
+        body, html {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            color: #202125 !important;
+        }
+
+        /* Все панели, меню, модальные окна - белые с тенью */
+        .order-card, .stats-container, .nav-bar, .modal-content, 
+        .shop-menu, .career-menu, .settings-menu {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            color: #202125 !important;
+            border: 1px solid #e0e0e0 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        }
+
+        /* Текст внутри панелей - темный */
+        .stat-label, .order-title, .order-info, p, h1, h2, h3 {
+            color: #202125 !important;
+        }
+
+        /* Цифры статистики (деньги, рейт) - черные */
+        .stat-value {
+            color: #000000 !important;
+            text-shadow: none !important;
+            font-weight: 800 !important;
+        }
+
+        /* Кнопки действий - фирменный голубой Wolt */
+        .btn-main, .action-btn {
+            background: #009de0 !important;
+            color: white !important;
+            box-shadow: none !important;
+        }
+
+        /* Карта - убираем затемнение, делаем светлой */
+        #map {
+            filter: none !important;
+            opacity: 1 !important;
+            background: #e6e6e6 !important;
+        }
+        
+        /* Иконки меню */
+        .nav-item i {
+            color: #7a7a7a !important;
+        }
+        .nav-item.active i {
+            color: #009de0 !important;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 2. Дополнительно проходимся скриптом и срываем черные фоны вручную
+    document.body.style.backgroundColor = "#ffffff";
+    const allDivs = document.querySelectorAll('div');
+    allDivs.forEach(div => {
+        // Если у элемента был черный фон, делаем прозрачным или белым
+        const computed = window.getComputedStyle(div);
+        if (computed.backgroundColor === 'rgb(0, 0, 0)' || computed.backgroundColor === 'rgb(26, 26, 26)') {
+            div.style.backgroundColor = '#ffffff';
+            div.style.color = '#202125';
+        }
+    });
+
+    console.log("WOLT Design Applied.");
+});
+</script>
