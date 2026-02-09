@@ -2670,3 +2670,87 @@
 })();
 </script>
 
+
+
+<style>
+    :root {
+        /* Меняем темные тона на светлые и брендовые */
+        --bg-dark: #f3f4f5 !important; /* Светло-серый фон вместо черного */
+        --text-primary: #202125 !important; /* Почти черный текст для контраста */
+        --text-secondary: #5e6166 !important;
+        --accent-blue: #009de0 !important; /* Фирменный голубой Wolt */
+        --panel-bg: #ffffff !important; /* Белые панели */
+        --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    body {
+        background-color: var(--bg-dark);
+        color: var(--text-primary);
+    }
+
+    /* Обновляем верхнюю панель со статами */
+    .stats-container {
+        background: var(--panel-bg) !important;
+        border-bottom: 1px solid #e1e1e1 !important;
+        box-shadow: var(--card-shadow);
+    }
+
+    .stat-item {
+        background: #f8f9fa !important;
+        border: 1px solid #eee !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* Обновляем карточку заказа и свайп-зону */
+    .order-card {
+        background: var(--panel-bg) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 25px rgba(0,136,204,0.15) !important;
+        border: 1px solid #e1e1e1 !important;
+    }
+
+    .order-title {
+        color: var(--brand-blue) !important;
+    }
+
+    /* Кнопки и навигация */
+    .nav-bar {
+        background: var(--panel-bg) !important;
+        border-top: 1px solid #e1e1e1 !important;
+    }
+
+    .nav-item {
+        color: var(--text-secondary) !important;
+    }
+
+    .nav-item.active {
+        color: var(--accent-blue) !important;
+    }
+
+    /* Карта: добавим ей немного яркости */
+    #map {
+        filter: grayscale(0.2) brightness(1.05);
+    }
+
+    /* Кастомный стиль для прогресс-баров (энергия/вода) */
+    .stat-value {
+        text-shadow: none !important;
+        font-weight: bold;
+    }
+
+    /* Всплывающие окна (Магазин, Карьера) */
+    .modal-content, .career-menu, .shop-menu {
+        background: var(--panel-bg) !important;
+        color: var(--text-primary) !important;
+    }
+</style>
+
+<script>
+    // Небольшой скрипт, чтобы убедиться, что все элементы перекрасились
+    (function() {
+        console.log("Patch: Light Mode Redesign Applied. Key: WARSZAWA_FOREVER");
+        
+        // Если в JS были жестко прописаны цвета для графики или меток,
+        // этот блок можно расширить для их замены.
+    })();
+</script>
