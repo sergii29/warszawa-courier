@@ -2672,3 +2672,61 @@
 
 
 
+<style>
+    /* 1. Глобальный сброс фона и текста */
+    body, html {
+        background-color: #f7f7f7 !important; /* Светло-серый фон страницы */
+        color: #202125 !important; /* Черный текст */
+    }
+
+    /* 2. Делаем все панели белыми */
+    .stats-container, .nav-bar, .order-card, .modal-content, .menu-panel {
+        background-color: #ffffff !important;
+        border: 1px solid #e6e6e6 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+    }
+
+    /* 3. ЧИНИМ МЕНЮ (Иконки станут видимыми) */
+    .nav-item {
+        color: #7a7a7a !important; /* Темно-серый цвет для неактивных кнопок */
+    }
+    .nav-item i {
+        color: #7a7a7a !important;
+    }
+    
+    /* Активная кнопка - синяя */
+    .nav-item.active, .nav-item.active i {
+        color: #009de0 !important;
+    }
+
+    /* 4. ЧИНИМ ТЕКСТ (Чтобы не было белого на белом) */
+    .stat-label, .order-info, h1, h2, h3, p, span {
+        color: #202125 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Цифры статистики - жирные черные */
+    .stat-value {
+        color: #000000 !important;
+        text-shadow: none !important;
+        font-weight: 700 !important;
+    }
+
+    /* 5. КНОПКИ ДЕЙСТВИЯ (Синие с белым текстом) */
+    .action-btn, .btn-main, button {
+        background-color: #009de0 !important; /* Wolt Blue */
+        color: #ffffff !important; /* Белый текст */
+        border: none !important;
+    }
+    
+    /* Исключение: текст внутри кнопки должен остаться белым */
+    .action-btn span, button span {
+        color: #ffffff !important;
+    }
+
+    /* 6. Карта - убираем затемнение */
+    #map {
+        filter: none !important;
+        opacity: 1 !important;
+    }
+</style>
