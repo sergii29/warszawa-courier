@@ -1,5 +1,884 @@
-<!-- RedHelper -->
-<script id="rhlpscrtg" type="text/javascript" charset="utf-8" async="async" 
-	src="https://web.redhelper.ru/service/main.js?c=adamex12">
-</script> 
-<!--/Redhelper -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warsaw Courier Sim</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #00ccff;
+            --accent-green: #00e676;
+            --accent-orange: #ff9100;
+            --accent-red: #ff3d00;
+            --accent-purple: #d500f9;
+            --brand-blue: #0088cc; 
+            --taxi-yellow: #ffcc00;
+            --taxi-black: #222;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-dark); color: var(--text-primary); overflow: hidden; user-select: none; }
+        
+        /* ЦВЕТНАЯ КАРТА */
+        #map { height: 100%; width: 100%; z-index: 1; background: #e8e8e8; }
+        
+        /* ФИЛЬТР ДЛЯ КАРТЫ */
+        .leaflet-tile {
+            filter: saturate(1.4) contrast(1.15) brightness(0.92) !important;
+        }
+
+        .top-bar { position: absolute; top: 0; left: 0; right: 0; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); pointer-events: none; }
+        .menu-btn, .stats-btn { background: white; color: black; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); pointer-events: auto; cursor: pointer; border: none; }
+        .balance-display { background: rgba(0, 0, 0, 0.8); padding: 8px 16px; border-radius: 20px; text-align: center; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); }
+        .balance-amount { font-size: 18px; font-weight: 800; color: white; }
+        .balance-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; }
+        .debt-warning { color: var(--accent-red); font-size: 10px; font-weight: bold; display: none; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        .equip-bar { position: absolute; top: 70px; left: 15px; right: 15px; display: flex; gap: 4px; z-index: 999; pointer-events: none; }
+        .equip-item { flex: 1; background: rgba(0,0,0,0.8); border-radius: 6px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; backdrop-filter: blur(4px); position: relative; }
+        .equip-icon { font-size: 10px; margin-bottom: 2px; color: #ccc; }
+        .progress-mini { width: 80%; height: 3px; background: #444; border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+        .progress-mini-fill { height: 100%; background: var(--accent-green); transition: width 0.3s; }
+        .equip-label { font-size: 7px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 0.5px; display: block; margin-top: 5px; }
+        .tiny-stat { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10px; font-weight: 900; color: #fff; text-shadow: 0 0 3px #000; z-index: 50; pointer-events: none; }
+
+        .game-toast { position: absolute; top: 140px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(0, 0, 0, 0.9); color: white; padding: 10px 20px; border-radius: 25px; font-weight: bold; font-size: 14px; z-index: 1001; opacity: 0; transition: all 0.3s; pointer-events: none; display: flex; align-items: center; gap: 8px; white-space: nowrap; border: 1px solid #333; }
+        .game-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast-warn { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .toast-success { border-color: var(--accent-green); color: var(--accent-green); }
+
+        .bottom-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px; z-index: 1002; box-shadow: 0 -5px 30px rgba(0,0,0,0.3); color: #333; }
+
+        .slider-container { position: relative; width: 100%; height: 60px; background: #f0f0f0; border-radius: 30px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-top: 10px; transition: background 0.3s; }
+        .slider-text { color: #999; font-weight: 600; z-index: 1; letter-spacing: 0.5px; text-transform: uppercase; font-size: 14px; }
+        .slider-knob { position: absolute; left: 4px; top: 4px; bottom: 4px; width: 52px; background: var(--brand-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; cursor: grab; z-index: 2; transition: transform 0.1s; }
+        .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(0, 136, 204, 0.2); z-index: 0; }
+        
+        .slider-container.taxi-mode { background: #fff9c4; border: 1px solid #fbc02d; }
+        .slider-container.taxi-mode .slider-knob { background: var(--taxi-yellow); color: black; }
+        .slider-container.taxi-mode .slider-fill { background: rgba(255, 204, 0, 0.3); }
+        .slider-container.taxi-mode .slider-text { color: #f57f17; }
+        
+        .slider-container.scheduled { background: #ffebee; border: 1px solid #ffcdd2; }
+        .slider-container.scheduled .slider-knob { background: var(--accent-red); }
+        .slider-container.scheduled .slider-text { color: var(--accent-red); }
+
+        .controls-row { display: flex; gap: 10px; margin-top: 15px; }
+        .pedal-btn { flex: 1; background: var(--brand-blue); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; box-shadow: 0 4px 0 #006699; transition: all 0.1s; }
+        .pedal-btn:active { transform: translateY(4px); box-shadow: none; }
+        .pedal-btn:disabled { background: #ccc; box-shadow: none; transform: none; }
+        .pedal-btn.blocked { background: var(--accent-orange); box-shadow: 0 4px 0 #e65100; cursor: not-allowed; }
+        
+        .pedal-btn.taxi-pedal { background: var(--taxi-black); color: var(--taxi-yellow); box-shadow: 0 4px 0 #444; }
+
+        .bribe-btn { display:none; flex: 1; background: #222; color: #ff3d00; border: 1px solid #ff3d00; padding: 18px; border-radius: 16px; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; animation: pulse 1s infinite; }
+
+        .bag-btn { width: 60px; background: #f8f9fa; border: 2px solid #eee; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #333; cursor: pointer; position: relative; }
+        .bag-badge { position: absolute; top: -5px; right: -5px; background: var(--accent-red); color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+        .quick-inv { position: absolute; bottom: 90px; left: 20px; width: 220px; background: #252525; color: white; padding: 10px; border-radius: 16px; z-index: 1005; display: none; flex-direction: column; gap: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.6); border: 1px solid #444; }
+        .quick-inv.open { display: flex; animation: popUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; border: 1px solid transparent; transition: background 0.2s; }
+        .inv-item:active { background: rgba(255,255,255,0.2); }
+        .inv-item.link-btn { background: var(--brand-blue); justify-content: center; font-weight: bold; }
+        .inv-count { background: var(--brand-blue); padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+        @keyframes popUp { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        #side-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #side-menu-overlay.open { opacity: 1; pointer-events: auto; }
+        #side-menu { position: absolute; top: 0; left: -85%; width: 85%; max-width: 320px; height: 100%; background: #1e1e1e; transition: left 0.3s; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto; }
+        #side-menu.open { left: 0; }
+        .menu-item { padding: 15px 0; border-bottom: 1px solid #333; cursor: pointer; display: flex; gap: 15px; font-size: 16px; align-items: center; }
+        .menu-divider { height: 20px; border-bottom: 1px solid #333; margin-bottom: 20px; }
+        .menu-section-title { font-size: 12px; color: var(--taxi-yellow); text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; margin-top: 10px; }
+        .menu-item.locked { opacity: 0.5; cursor: not-allowed; color: #777; }
+        .menu-item.taxi-item { border-bottom: 1px solid #444; }
+        .menu-item.taxi-item i { width: 25px; text-align: center; }
+        
+        .taxi-toggle-btn { background: #333; color: #777; width: 100%; padding: 15px; border-radius: 10px; border: 2px solid #444; font-weight: bold; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .taxi-toggle-btn.active { background: var(--taxi-yellow); color: black; border-color: var(--taxi-yellow); box-shadow: 0 0 15px rgba(255, 204, 0, 0.4); }
+
+        .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f5f5f5; color: black; z-index: 3000; transform: translateY(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+        .full-modal.open { transform: translateY(0); }
+        .modal-header { padding: 15px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; font-weight: bold; }
+        .modal-content { flex: 1; overflow-y: auto; padding: 15px; }
+
+        .shop-section { margin-bottom: 25px; }
+        .shop-section h3 { margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+        .shop-card { background: white; padding: 15px; border-radius: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .shop-btn { padding: 8px 14px; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; border: 1px solid var(--brand-blue); color: var(--brand-blue); background: white; min-width: 80px; transition: all 0.2s; }
+        .shop-btn.buy { background: var(--brand-blue); color: white; }
+        .shop-btn.bought { background: var(--accent-green); border-color: var(--accent-green); color: white; transform: scale(1.05); }
+        .shop-btn:disabled { background: #eee; color: #aaa; border-color: #eee; cursor: not-allowed; }
+
+        .bank-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 24px; font-weight: bold; margin-bottom: 15px; box-sizing: border-box; }
+        .bank-actions { display: flex; gap: 10px; }
+        .bank-btn { flex: 1; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-loan { background: var(--accent-green); color: #004d40; }
+        .btn-repay { background: var(--accent-orange); color: #3e2723; }
+        .debt-alert-box { background: #ffebee; color: #c62828; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #ef9a9a; display: none; }
+        .govt-btn { background: #37474f; color: white; border-color: #37474f; }
+        
+        .accept-timer-bg { width: 100%; height: 6px; background: #eee; margin-top: 8px; border-radius: 3px; overflow: hidden; display: none; }
+        .accept-timer-fill { height: 100%; background: var(--accent-red); width: 100%; }
+        @keyframes shrinkTimer { from { width: 100%; } to { width: 0%; } }
+        .animate-timer { animation: shrinkTimer 15s linear forwards; }
+        .delivery-timer { font-size: 11px; color: #666; margin-top: 2px; font-weight: bold; }
+
+        /* AUTH STYLES */
+        .auth-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 4000; display: none; justify-content: center; align-items: center; }
+        .auth-box { background: #1e1e1e; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .auth-title { text-align: center; color: white; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; font-weight: bold; }
+        .auth-input { width: 100%; padding: 12px; background: #2c2c2c; border: 1px solid #444; border-radius: 8px; color: white; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
+        .auth-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; font-size: 14px; text-transform: uppercase; }
+        .btn-login { background: var(--brand-blue); color: white; }
+        .btn-register { background: transparent; border: 1px solid var(--accent-green); color: var(--accent-green); margin-top: 10px; }
+        .auth-footer { text-align: center; font-size: 10px; color: #666; margin-top: 15px; line-height: 1.4; }
+        .close-auth { position: absolute; top: 10px; right: 10px; color: #666; font-size: 20px; cursor: pointer; }
+
+        /* КАСТОМНЫЕ МАРКЕРЫ */
+        .custom-restaurant-icon {
+            background: white;
+            border: 3px solid var(--accent-orange);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        .custom-destination-icon {
+            background: var(--accent-red);
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 3px 10px rgba(255,61,0,0.4);
+            animation: pulseDest 2s infinite;
+        }
+        
+        @keyframes pulseDest {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .courier-marker-bike {
+            background: var(--brand-blue);
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,136,204,0.5);
+            animation: bounceCourier 0.5s ease infinite alternate;
+        }
+        
+        .courier-marker-taxi {
+            background: var(--taxi-yellow);
+            border: 3px solid black;
+            border-radius: 8px;
+            width: 44px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: black;
+            box-shadow: 0 4px 15px rgba(255,204,0,0.5);
+        }
+        
+        @keyframes bounceCourier {
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="top-bar">
+        <button class="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
+        <div class="balance-display">
+            <div class="balance-amount" id="balance-val">0.00 PLN</div>
+            <div class="balance-label">Баланс <span id="debt-warning" class="debt-warning">(ДОЛГ!)</span></div>
+        </div>
+        <button class="stats-btn" onclick="openModal('stats')"><i class="fa-solid fa-chart-simple"></i></button>
+    </div>
+
+    <div class="equip-bar">
+        <div class="equip-item"><i class="fa-solid fa-bicycle equip-icon" id="icon-vehicle"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-bike" style="width: 100%"></div></div><span class="equip-label" id="label-vehicle">ВЕЛ</span><div class="tiny-stat" id="stat-bike"></div></div>
+        <div class="equip-item"><i class="fa-solid fa-box-open equip-icon" id="icon-bag"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-bag" style="width: 100%"></div></div><span class="equip-label" id="label-bag">СУМКА</span><div class="tiny-stat" id="stat-bag"></div></div>
+        <div class="equip-item"><i class="fa-solid fa-mobile-screen equip-icon"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-phone" style="width: 100%"></div></div><span class="equip-label">СВЯЗЬ</span><div class="tiny-stat" id="stat-phone"></div></div>
+        <div class="equip-item"><i class="fa-solid fa-shirt equip-icon" id="icon-gear"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-gear" style="width: 100%"></div></div><span class="equip-label" id="label-gear">ОДЕЖДА</span><div class="tiny-stat" id="stat-gear"></div></div>
+        <div class="equip-item"><i class="fa-solid fa-bolt equip-icon" id="icon-energy" style="color:yellow"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-energy" style="background:yellow; width: 100%"></div></div><span class="equip-label" id="label-energy">СИЛЫ</span><div class="tiny-stat" id="stat-energy"></div></div>
+        <div class="equip-item"><i class="fa-solid fa-droplet equip-icon" style="color:cyan"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-water" style="background:cyan; width: 100%"></div></div><span class="equip-label">ВОДА</span><div class="tiny-stat" id="stat-water"></div></div>
+        <div class="equip-item"><i class="fa-solid fa-face-smile equip-icon" style="color:#d500f9"></i><div class="progress-mini"><div class="progress-mini-fill" id="bar-mood" style="background:#d500f9; width: 100%"></div></div><span class="equip-label">НАСТР</span><div class="tiny-stat" id="stat-mood"></div></div>
+    </div>
+
+    <div id="toast" class="game-toast"><i class="fa-solid fa-circle-info"></i> <span>Msg</span></div>
+
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-box">
+            <div style="text-align:right; margin-bottom:10px;"><i class="fa-solid fa-xmark" onclick="closeAuthModal()" style="color:#888; font-size:20px; cursor:pointer"></i></div>
+            <div class="auth-title"><i class="fa-solid fa-lock"></i> Вход / Регистрация</div>
+            <p style="font-size:11px; color:#aaa; margin-bottom:15px; text-align:center">Для сохранения прогресса на Android/Web.<br>Telegram входит автоматически.</p>
+            <input type="text" id="auth-login" class="auth-input" placeholder="Логин">
+            <input type="password" id="auth-pass" class="auth-input" placeholder="Пароль">
+            <button class="auth-btn btn-login" onclick="performLogin()">Войти</button>
+            <button class="auth-btn btn-register" onclick="performRegister()">Регистрация</button>
+        </div>
+    </div>
+
+    <div id="side-menu-overlay" onclick="toggleMenu()">
+        <div id="side-menu" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom: 5px">Профиль</h2>
+            <div id="player-name-display" style="font-size:18px; color:var(--brand-blue); font-weight:bold; margin-bottom:5px"></div>
+            <div id="player-id-display" style="font-size:10px; color:#666; display:block; margin-bottom:20px">Loading ID...</div>
+            
+            <div class="menu-item" onclick="openModal('shop')"><i class="fa-solid fa-store" style="color:var(--brand-blue)"></i> Магазин / Инвентарь</div>
+            <div class="menu-item" onclick="openModal('bank')"><i class="fa-solid fa-building-columns" style="color:var(--accent-green)"></i> Банк / Кредит</div>
+            <div class="menu-item" onclick="openModal('deflation')"><i class="fa-solid fa-scale-unbalanced-flip" style="color:#90a4ae"></i> Правительство / Инфляция</div>
+            <div class="menu-item" onclick="openModal('stats')"><i class="fa-solid fa-clock-rotate-left"></i> История</div>
+            
+            <div class="menu-divider"></div>
+            <div class="menu-section-title">🚖 Такси Департамент</div>
+            <div class="menu-item taxi-item locked" id="taxi-showroom-btn" onclick="openModal('taxi-shop')">
+                <i class="fa-solid fa-car" style="color:var(--taxi-yellow)"></i> Автосалон
+            </div>
+            <div class="menu-item taxi-item locked" id="taxi-licenses-btn" onclick="openModal('taxi-licenses')">
+                <i class="fa-solid fa-id-card" style="color:#aaa"></i> Лицензии / Права
+            </div>
+            
+            <button id="taxi-toggle-btn" class="taxi-toggle-btn" onclick="toggleTaxiMode()" style="display:none">
+                <i class="fa-solid fa-taxi"></i> <span>ВКЛЮЧИТЬ TAXI</span>
+            </button>
+
+            <div id="taxi-lock-msg" style="font-size:10px; color:#666; margin-left:15px; margin-top:5px; font-style:italic">
+                <i class="fa-solid fa-lock"></i> Требуется 50 доставок (У вас: <span id="career-count">0</span>)
+            </div>
+
+            <div style="margin-top:auto">
+                <div class="menu-item" id="auth-menu-item" onclick="openAuthModal()" style="display:none; color:var(--accent-green)">
+                    <i class="fa-solid fa-key"></i> 🔐 Вход / Регистрация
+                </div>
+
+                <div class="menu-item" onclick="resetGame()" style="color:var(--accent-red); display:flex; flex-direction:column; align-items:flex-start; gap:0">
+                    <div style="display:flex; gap:15px; align-items:center"><i class="fa-solid fa-trash"></i> Сброс прогресса</div>
+                    <div style="font-size:10px; opacity:0.7; margin-left:35px">Начать заново. Цена: 7000 PLN (Долг)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="full-modal" class="full-modal">
+        <div class="modal-header">
+            <i class="fa-solid fa-arrow-left" onclick="closeModal()" style="font-size:20px; padding:10px; cursor:pointer"></i>
+            <span id="modal-title" id="modal-title">Title</span>
+        </div>
+        <div class="modal-content" id="modal-body"></div>
+    </div>
+
+    <div class="bottom-sheet">
+        <div id="offline-view">
+            <h3 style="margin:0" id="city-label">Варшава</h3>
+            <div id="demo-mode-alert" style="color:#ff3d00; font-size:11px; margin:5px 0; display:none; border:1px solid #ff3d00; padding:5px; border-radius:5px; background:rgba(0,0,0,0.05); font-weight:bold; text-align:center;">
+                ⚠️ ДЕМО РЕЖИМ (Android/Web)<br>Войдите или Зарегистрируйтесь для сохранения!
+            </div>
+
+            <p style="color:#888; font-size:13px">Спрос: Высокий • Инфляция: Активна</p>
+            <div class="slider-container" id="offline-slider-box">
+                <div class="slider-fill" id="offline-slider-fill"></div>
+                <div class="slider-text">СВАЙП ДЛЯ ОНЛАЙНА</div>
+                <div class="slider-knob" id="offline-slider-knob"><i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div id="active-order-view" style="display:none; flex-direction:column; gap:10px">
+            <div style="display:flex; gap:15px; align-items:center">
+                <div style="font-size:24px; width:45px; height:45px; background:#f5f5f5; border-radius:10px; display:flex; align-items:center; justify-content:center" id="rest-icon">🍔</div>
+                <div style="flex:1">
+                    <h3 style="margin:0" id="rest-name">Поиск...</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px">
+                        <span style="font-size:12px; color:#666" id="order-dest">Ожидание</span>
+                        <span id="order-offer" style="font-weight:bold; color:var(--accent-green); font-size:15px">-- PLN</span>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; align-items:center">
+                        <span id="delivery-timer" class="delivery-timer"></span>
+                    </div>
+                    <div class="accept-timer-bg" id="accept-timer"><div class="accept-timer-fill" id="accept-timer-fill"></div></div>
+                </div>
+            </div>
+
+            <div style="position:relative; height:30px; margin:5px 0">
+                <div style="position:absolute; top:50%; left:0; right:0; height:4px; background:#eee; transform:translateY(-50%)"></div>
+                <div style="position:absolute; top:50%; left:0; height:4px; background:var(--brand-blue); transform:translateY(-50%); width:0%" id="track-fill"></div>
+                <div style="position:absolute; top:50%; left:0; transform:translate(-50%, -50%); width:28px; height:28px; background:white; border:2px solid var(--brand-blue); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--brand-blue); font-size:12px; transition:left 0.2s" id="track-icon"><i class="fa-solid fa-bicycle"></i></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#666">
+                <span>Состояние: <strong id="temp-val">100%</strong></span>
+                <span id="status-label">Поиск...</span>
+            </div>
+
+            <div class="slider-container" id="online-slider-box">
+                <div class="slider-fill" id="online-slider-fill"></div>
+                <div class="slider-text" id="online-slider-text">СВАЙП ДЛЯ ОФЛАЙНА</div>
+                <div class="slider-knob" id="online-slider-knob"><i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+
+            <div class="quick-inv" id="quick-inv"></div>
+
+            <div class="controls-row">
+                <div class="bag-btn" onclick="toggleQuickInv()">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <div class="bag-badge" id="bag-count">0</div>
+                </div>
+                <button class="pedal-btn" id="pedal-btn">ЖМИ ГАЗ (PEDAL)</button>
+                <button class="bribe-btn" id="bribe-btn" onclick="giveBribe()">ДАТЬ ВЗЯТКУ (-20)</button>
+            </div>
+            <div id="garnishment-info" style="font-size:11px; color:var(--accent-red); text-align:center; display:none">
+                </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script>
+        // CONFIG
+        const firebaseConfig = {
+          apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk", 
+          authDomain: "warszawa-courier.firebaseapp.com",
+          databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "warszawa-courier",
+          storageBucket: "warszawa-courier.firebasestorage.app",
+          messagingSenderId: "295860613508",
+          appId: "1:295860613508:web:86fe8364377d6875612dd1",
+          measurementId: "G-TGSCHBVLX2"
+        };
+
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            console.log("Firebase Connected");
+        } catch(e) { console.error("Firebase Error:", e); }
+
+        const SAVE_KEY = 'WARSZAWA_FOREVER';
+        const TAXI_UNLOCK_REQ = 50;
+        const WARSAW_CENTER = [52.2297, 21.0122];
+        
+        let gameConfig = {
+            basePickupPay: 4.0, perKmPay: 1.5, payVariance: 2.0, 
+            inflationRate: 0.1, trafficChance: 0.1, trafficDuration: 5000,
+            energyDrain: 0.15, waterDrain: 0.10, moodDrain: 0.05, 
+            deliveryTime: 60, coolingRate: 0.5, 
+            tipChance: 0.5, tipBonusChance: 0.3, tipMinTemp: 60, tipMinMood: 80,
+            itemPrices: {}
+        };
+
+        const ITEMS_DB = {
+            bike: { name: 'Велосипед', type: 'repair', baseCost: 5, icon: 'fa-bicycle', desc: 'Ремонт ходовой (+100%)' },
+            bag: { name: 'Сумка', type: 'repair', baseCost: 2, icon: 'fa-box-open', desc: 'Заплатка дыр (+100%)' },
+            phone: { name: 'Связь', type: 'repair', baseCost: 1, icon: 'fa-mobile-screen', desc: 'Оплата интернета (+100%)' },
+            gear: { name: 'Одежда', type: 'repair', baseCost: 3, icon: 'fa-shirt', desc: 'Химчистка (+100%)' },
+            car_main: { name: 'Автосервис', type: 'repair', baseCost: 100, icon: 'fa-wrench', desc: 'Ремонт подвески и ТО (+100%)' },
+            car_interior: { name: 'Химчистка салона', type: 'repair', baseCost: 40, icon: 'fa-sparkles', desc: 'Чистота для клиентов (+100%)' },
+            car_tires: { name: 'Шиномонтаж', type: 'repair', baseCost: 80, icon: 'fa-circle-notch', desc: 'Смена резины (+100%)' },
+            water: { name: 'Вода (0.5л)', type: 'buy', cost: 2.0, icon: 'fa-bottle-water', effect: { water: 35, energy: 5 }, desc: 'Спасает от жажды.', target: 'water' },
+            bar: { name: 'Сникерс', type: 'buy', cost: 4.5, icon: 'fa-cookie-bite', effect: { energy: 20, mood: 15 }, desc: 'Баланс энергии.', target: 'energy' },
+            energy_drink: { name: 'Red Bull', type: 'buy', cost: 7.0, icon: 'fa-bolt', effect: { energy: 50, mood: 5, water: -5 }, desc: 'Останавливает расход ЭНЕРГИИ, но не воды!', target: 'energy', special: 'no_drain' },
+            coffee: { name: 'Латте', type: 'buy', cost: 9.0, icon: 'fa-mug-hot', effect: { mood: 30, energy: 10 }, desc: 'Для Настроения!', target: 'mood' },
+            chocolate: { name: 'Шоколадка', type: 'buy', cost: 6.5, icon: 'fa-gift', effect: { mood: 20 }, desc: 'Съешь на заказе - клиент подобреет!', target: 'mood', special: 'gift' },
+            gas: { name: 'Бензин (10л)', type: 'buy', cost: 12.0, icon: 'fa-gas-pump', effect: { energy: 80 }, desc: 'Заправка авто.', target: 'energy' }
+        };
+
+        const DEFAULT_STATE = {
+            name: null, 
+            balance: 0, debt: 0, debtTimer: 0, debtOverdue: false,
+            loanStreak: 0, 
+            isOnline: false, isSearching: false, scheduledOffline: false,
+            items: { bike: 100, bag: 100, phone: 100, gear: 100 },
+            needs: { energy: 100, water: 100, mood: 100 },
+            inventory: { water: 0, bar: 0, energy_drink: 0, coffee: 0, gas: 0, chocolate: 0 },
+            repairs: { bike: 0, bag: 0, phone: 0, gear: 0 },
+            history: [],
+            energyBoostActive: false,
+            isAuth: false,
+            career: { totalOrders: 0 },
+            taxi: { unlocked: false, active: false, vehicle: null, licenses: { driver: false, insurance: false, taxi: false } }
+        };
+
+        let state = JSON.parse(JSON.stringify(DEFAULT_STATE)); 
+        state.id = 'u_' + Math.random().toString(36).substr(2, 9);
+
+        let map;
+        let mapVisuals = { courierMarker: null, destMarker: null, routeLine: null, startCoords: null, endCoords: null };
+
+        const restaurants = [
+            { name: "McDonald's", icon: "🍔" }, { name: "KFC", icon: "🍗" },
+            { name: "Pasibus", icon: "🍔" }, { name: "Kebab King", icon: "🌯" },
+            { name: "Sushi Master", icon: "🍣" }, { name: "Pizza Hut", icon: "🍕" }
+        ];
+
+        const taxiDestinations = [
+            { name: "Аэропорт Шопен", icon: "✈️" }, { name: "Центральный Вокзал", icon: "🚆" },
+            { name: "Бизнес Центр", icon: "🏢" }, { name: "Старый Город", icon: "🏛" },
+            { name: "Клуб 'Level 27'", icon: "🍸" }, { name: "ТЦ Zlote Tarasy", icon: "🛍" }
+        ];
+        
+        const clientNames = ["Анна", "Петр", "Кася", "Михал", "Ольга", "Томаш", "Юлия", "Якуб"];
+        const clientGreetings = ["Добрый день, спешу в аэропорт!", "Привет! На вокзал, пожалуйста.", "Здравствуйте, можно побыстрее?", "Эй, шеф! В центр, плачу щедро!","Доброе утро, на работу опаздываю."];
+
+        let currentOrder = null;
+        let acceptTimeout = null;
+        let orderInterval = null;
+        let lastSync = 0;
+        let penaltyInterval = null;
+
+        function init() {
+            // ЦВЕТНАЯ КАРТА ВАРШАВЫ
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(WARSAW_CENTER, 13);
+            
+            // OpenStreetMap с фильтром для насыщенности
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            
+            // Фикс размера карты
+            setTimeout(() => { map.invalidateSize(); }, 500);
+
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            
+            loadGame();
+
+            if(tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                state.id = tg.initDataUnsafe.user.id.toString();
+                state.name = tg.initDataUnsafe.user.first_name;
+                if(tg.initDataUnsafe.user.username) state.name += ` (@${tg.initDataUnsafe.user.username})`;
+                state.isAuth = true; 
+                saveGame();
+                setTimeout(() => {
+                    const authBtn = document.getElementById('auth-menu-item');
+                    if(authBtn) authBtn.style.display = 'none';
+                    document.getElementById('demo-mode-alert').style.display = 'none';
+                }, 500);
+                listenToCloud(); syncToCloud(true);
+            } else {
+                if (!state.name) state.name = "Guest Courier";
+                if (!state.isAuth) {
+                     document.getElementById('demo-mode-alert').style.display = 'block';
+                     document.getElementById('auth-menu-item').style.display = 'flex';
+                } else {
+                     document.getElementById('demo-mode-alert').style.display = 'none';
+                }
+            }
+            
+            document.getElementById('player-id-display').textContent = `ID: ${state.id}`;
+            document.getElementById('player-name-display').textContent = state.name;
+            document.getElementById('pedal-btn').addEventListener('click', pedal);
+            initSliders();
+            
+            setInterval(checkDebt, 1000); 
+            setInterval(checkSystemPenalties, 60000);
+            if(state.isAuth || true) { listenToCloud(); syncToCloud(true); }
+
+            updateMenuState(); updateAuthUI(); updateUI(); updateVisualStats();
+        }
+
+        // УЛУЧШЕННЫЕ МАРКЕРЫ
+        function getRandomPoint() {
+            const lat = WARSAW_CENTER[0] + (Math.random() - 0.5) * 0.06;
+            const lng = WARSAW_CENTER[1] + (Math.random() - 0.5) * 0.10;
+            return [lat, lng];
+        }
+
+        function drawRoute() {
+            if (!map || !currentOrder) return;
+            if (!mapVisuals.startCoords) {
+                mapVisuals.startCoords = getRandomPoint();
+                mapVisuals.endCoords = getRandomPoint();
+            }
+            const start = mapVisuals.startCoords;
+            const end = mapVisuals.endCoords;
+            clearMapVisuals();
+
+            // Цветная линия маршрута
+            mapVisuals.routeLine = L.polyline([start, end], { 
+                color: state.taxi.active ? '#ffcc00' : '#009de0', 
+                weight: 5, 
+                opacity: 0.8,
+                dashArray: state.taxi.active ? null : '10, 10'
+            }).addTo(map);
+            
+            // Кастомная иконка назначения с пульсацией
+            const destIcon = L.divIcon({ 
+                html: `<div class="custom-destination-icon">🏁</div>`, 
+                className: 'custom-div-icon', 
+                iconSize: [32, 32], 
+                iconAnchor: [16, 16] 
+            });
+            mapVisuals.destMarker = L.marker(end, {icon: destIcon}).addTo(map);
+
+            // Кастомная иконка курьера
+            const isTaxi = state.taxi.active;
+            const courierHtml = isTaxi 
+                ? `<div class="courier-marker-taxi">🚕</div>`
+                : `<div class="courier-marker-bike">🚲</div>`;
+            const courierIcon = L.divIcon({ 
+                html: courierHtml, 
+                className: 'custom-div-icon', 
+                iconSize: isTaxi ? [44, 32] : [40, 40], 
+                iconAnchor: isTaxi ? [22, 16] : [20, 20] 
+            });
+            mapVisuals.courierMarker = L.marker(start, {icon: courierIcon, zIndexOffset: 1000}).addTo(map);
+
+            map.fitBounds([start, end], {padding: [50, 50]});
+        }
+
+        function updateCourierPosition(progress) {
+            if (!mapVisuals.courierMarker || !mapVisuals.startCoords) return;
+            const pct = progress / 100;
+            const start = mapVisuals.startCoords;
+            const end = mapVisuals.endCoords;
+            const currentLat = start[0] + (end[0] - start[0]) * pct;
+            const currentLng = start[1] + (end[1] - start[1]) * pct;
+            mapVisuals.courierMarker.setLatLng([currentLat, currentLng]);
+        }
+
+        function clearMapVisuals() {
+            if (mapVisuals.routeLine) map.removeLayer(mapVisuals.routeLine);
+            if (mapVisuals.destMarker) map.removeLayer(mapVisuals.destMarker);
+            if (mapVisuals.courierMarker) map.removeLayer(mapVisuals.courierMarker);
+            mapVisuals.routeLine = null; mapVisuals.destMarker = null; mapVisuals.courierMarker = null;
+        }
+
+        function checkSystemPenalties() {
+            let penalize = false;
+            ['energy', 'water', 'mood'].forEach(k => { if(state.needs[k] < 0) penalize = true; });
+            ['bike', 'bag', 'phone', 'gear'].forEach(k => { if(state.items[k] < 0) penalize = true; });
+
+            if(penalize) {
+                state.balance -= 1.0;
+                showToast('⚠️ КРИТИЧЕСКОЕ СОСТОЯНИЕ! Штраф -1.00 PLN', 'warn');
+                saveGame(); updateUI();
+            }
+        }
+
+        // AUTH & SYSTEM
+        function openAuthModal() { toggleMenu(); document.getElementById('auth-modal').style.display = 'flex'; }
+        function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+        
+        function performRegister() {
+            const login = document.getElementById('auth-login').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            if(login.length < 3 || pass.length < 3) { showToast('Логин и пароль мин. 3 символа', 'warn'); return; }
+            db.ref('users_lookup/' + login).once('value', snap => {
+                if(snap.exists()) { showToast('Такой логин уже занят!', 'warn'); } else {
+                    const userData = { pass: pass, playerId: state.id, login: login };
+                    db.ref('users_lookup/' + login).set(userData).then(() => {
+                          state.name = login; state.isAuth = true; saveGame(); syncToCloud(true); updateUI(); updateAuthUI(); 
+                          closeAuthModal(); showToast('✅ Регистрация успешна!', 'success');
+                          document.getElementById('player-name-display').textContent = state.name;
+                          document.getElementById('demo-mode-alert').style.display = 'none';
+                    });
+                }
+            });
+        }
+
+        function performLogin() {
+            const login = document.getElementById('auth-login').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            db.ref('users_lookup/' + login).once('value', snap => {
+                if(!snap.exists()) { showToast('Пользователь не найден', 'warn'); return; }
+                const data = snap.val();
+                if(data.pass !== pass) { showToast('Неверный пароль', 'warn'); return; }
+                const targetId = data.playerId;
+                showToast('Вход выполняется...', 'success');
+                db.ref('players/' + targetId).once('value', playerSnap => {
+                    let playerData = playerSnap.val();
+                    if (!playerData) { playerData = JSON.parse(JSON.stringify(DEFAULT_STATE)); playerData.name = login; }
+                    state = { ...DEFAULT_STATE, ...playerData };
+                    state.id = targetId; state.isAuth = true;
+                    if(!state.items) state.items = { bike: 100, bag: 100, phone: 100, gear: 100 };
+                    if(!state.needs) state.needs = { energy: 100, water: 100, mood: 100 };
+                    if(!state.taxi) state.taxi = DEFAULT_STATE.taxi;
+                    if(!state.inventory) state.inventory = DEFAULT_STATE.inventory;
+                    saveGame(); updateUI(); updateMenuState(); updateAuthUI();
+                    document.getElementById('player-id-display').textContent = `ID: ${state.id}`;
+                    document.getElementById('player-name-display').textContent = state.name;
+                    document.getElementById('demo-mode-alert').style.display = 'none';
+                    listenToCloud(); closeAuthModal(); showToast(`Привет, ${state.name}!`, 'success');
+                });
+            });
+        }
+
+        function performLogout() {
+            if(confirm("Вы действительно хотите выйти? Прогресс останется в облаке, но на этом устройстве будет сброшен.")) {
+                localStorage.removeItem(SAVE_KEY); location.reload();
+            }
+        }
+
+        function updateAuthUI() {
+            const btn = document.getElementById('auth-menu-item'); if(!btn) return;
+            const tg = window.Telegram.WebApp;
+            if(tg.initDataUnsafe && tg.initDataUnsafe.user) { btn.style.display = 'none'; return; }
+            btn.style.display = 'flex';
+            if (state.isAuth) { btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> 🚪 Выход'; btn.style.color = 'var(--accent-red)'; btn.onclick = performLogout; } 
+            else { btn.innerHTML = '<i class="fa-solid fa-key"></i> 🔐 Вход / Регистрация'; btn.style.color = 'var(--accent-green)'; btn.onclick = openAuthModal; }
+        }
+
+        function sendLog(msg, type='INFO') {
+            if(!db) return;
+            const logEntry = { timestamp: firebase.database.ServerValue.TIMESTAMP, playerId: state.id, playerName: state.name || 'Anon', message: msg, type: type };
+            db.ref('logs').push(logEntry);
+        }
+
+        function syncToCloud(force = false) {
+            if (!db) return;
+            const now = Date.now();
+            if (force || now - lastSync > 3000) {
+                db.ref('players/' + state.id).update({
+                    name: state.name, balance: state.balance, isOnline: state.isOnline, lastSeen: now,
+                    stats: state.needs, inventory: state.inventory, debt: state.debt, items: state.items,
+                    career: state.career, taxi: state.taxi, isAuth: state.isAuth || false
+                });
+                lastSync = now;
+            }
+        }
+
+        function listenToCloud() {
+            if (!db) return;
+            db.ref('config').on('value', (snap) => {
+                const val = snap.val();
+                if (val) { gameConfig = { ...gameConfig, ...val }; if (val.itemPrices) { for(let k in val.itemPrices) { if(ITEMS_DB[k]) ITEMS_DB[k].cost = val.itemPrices[k]; } } }
+            });
+            db.ref('players/' + state.id).off(); 
+            db.ref('players/' + state.id).on('value', (snap) => {
+                const data = snap.val(); if (!data) return;
+                if (data.isBanned) { document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:black;color:#ff3d00;font-size:20px;font-weight:bold;flex-direction:column;text-align:center;padding:20px"><i class="fa-solid fa-ban" style="font-size:60px;margin-bottom:20px"></i><div>Доступ запрещен</div></div>`; return; }
+                if (data.balance !== undefined && Math.abs(data.balance - state.balance) > 0.1) { state.balance = data.balance; updateUI(); }
+            });
+            db.ref('players/' + state.id + '/adminInbox').off();
+            db.ref('players/' + state.id + '/adminInbox').on('child_added', (snap) => { const cmd = snap.val(); handleAdminCommand(cmd); snap.ref.remove(); });
+        }
+
+        function handleAdminCommand(cmd) {
+            if (cmd.type === 'SET_VAR') {
+                const path = cmd.path.split('.'); let target = state;
+                for (let i = 0; i < path.length - 1; i++) { if (target[path[i]] === undefined) target[path[i]] = {}; target = target[path[i]]; }
+                target[path[path.length - 1]] = cmd.value;
+            }
+            if (cmd.type === 'FULL_RESET') { localStorage.removeItem(SAVE_KEY); location.reload(); }
+            saveGame(); updateUI();
+        }
+
+        function loadGame() {
+            try {
+                const saved = localStorage.getItem(SAVE_KEY);
+                if (saved) {
+                    state = { ...DEFAULT_STATE, ...JSON.parse(saved) };
+                    if (!state.id) state.id = 'u_' + Math.random().toString(36).substr(2, 9);
+                    if(!state.taxi) state.taxi = DEFAULT_STATE.taxi;
+                    if(!state.career) state.career = DEFAULT_STATE.career;
+                }
+                state.scheduledOffline = false;
+            } catch(e) { localStorage.removeItem(SAVE_KEY); state = JSON.parse(JSON.stringify(DEFAULT_STATE)); state.id = 'u_' + Math.random().toString(36).substr(2, 9); }
+        }
+
+        function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); syncToCloud(); }
+
+        function checkDebt() {
+            if (state.debt > 0 && !state.debtOverdue) {
+                if (Date.now() > state.debtTimer) {
+                    state.debtOverdue = true; showToast('СРОК КРЕДИТА ИСТЕК! ШТРАФ ' + (getGarnishmentRate()*100).toFixed(0) + '%', 'warn'); updateUI();
+                }
+            }
+        }
+
+        function getGarnishmentRate() { let s = state.loanStreak || 0; if (s === 0) return 0.10; if (s === 1) return 0.20; if (s === 2) return 0.30; return 0.50; }
+
+        function updateUI() {
+            document.getElementById('balance-val').textContent = state.balance.toFixed(2) + ' PLN';
+            ['bike','bag','phone','gear'].forEach(k => updateBar(`bar-${k}`, state.items[k]));
+            ['energy','water','mood'].forEach(k => updateBar(`bar-${k}`, state.needs[k]));
+            const totalInv = Object.values(state.inventory).reduce((a,b)=>a+b, 0);
+            document.getElementById('bag-count').textContent = totalInv;
+            document.getElementById('bag-count').style.display = totalInv ? 'flex' : 'none';
+            const warn = document.getElementById('debt-warning');
+            const garnInfo = document.getElementById('garnishment-info');
+            
+            if (state.debtOverdue && state.debt > 0) { 
+                warn.style.display = 'inline'; garnInfo.style.display = 'block';
+                garnInfo.textContent = '⚠️ ПРОСРОЧКА! Удерживаем ' + (getGarnishmentRate()*100).toFixed(0) + '% с заказа';
+            } else { warn.style.display = 'none'; garnInfo.style.display = 'none'; }
+
+            const isTaxi = state.taxi.active;
+            const sliders = document.querySelectorAll('.slider-container');
+            const pedal = document.getElementById('pedal-btn');
+            
+            sliders.forEach(s => { if(isTaxi) s.classList.add('taxi-mode'); else s.classList.remove('taxi-mode'); });
+
+            const vehLabel = document.getElementById('label-vehicle');
+            const vehIcon = document.getElementById('icon-vehicle');
+            const bagLabel = document.getElementById('label-bag');
+            const bagIcon = document.getElementById('icon-bag');
+            const gearLabel = document.getElementById('label-gear');
+            const gearIcon = document.getElementById('icon-gear');
+            const energyLabel = document.getElementById('label-energy');
+            const energyIcon = document.getElementById('icon-energy');
+            const energyBar = document.getElementById('bar-energy');
+            const trackIcon = document.getElementById('track-icon');
+
+            if(isTaxi) {
+                vehLabel.textContent = "АВТО"; vehIcon.className = "fa-solid fa-car equip-icon";
+                bagLabel.textContent = "САЛОН"; bagIcon.className = "fa-solid fa-sparkles equip-icon";
+                gearLabel.textContent = "ШИНЫ"; gearIcon.className = "fa-solid fa-circle-notch equip-icon";
+                energyLabel.textContent = "БЕНЗИН"; energyIcon.className = "fa-solid fa-gas-pump equip-icon";
+                energyIcon.style.color = "orange"; energyBar.style.backgroundColor = "orange";
+                trackIcon.innerHTML = '<i class="fa-solid fa-taxi"></i>';
+                document.getElementById('city-label').innerHTML = 'Варшава <span style="font-size:10px; color:#fbc02d; border:1px solid #fbc02d; padding:0 3px; border-radius:3px">TAXI</span>';
+                if(!currentOrder) pedal.textContent = "ПОИСК КЛИЕНТА...";
+                pedal.classList.add('taxi-pedal');
+            } else {
+                vehLabel.textContent = "ВЕЛ"; vehIcon.className = "fa-solid fa-bicycle equip-icon";
+                bagLabel.textContent = "СУМКА"; bagIcon.className = "fa-solid fa-box-open equip-icon";
+                gearLabel.textContent = "ОДЕЖДА"; gearIcon.className = "fa-solid fa-shirt equip-icon";
+                energyLabel.textContent = "СИЛЫ"; energyIcon.className = "fa-solid fa-bolt equip-icon";
+                energyIcon.style.color = "yellow"; energyBar.style.backgroundColor = "yellow";
+                trackIcon.innerHTML = '<i class="fa-solid fa-bicycle"></i>';
+                document.getElementById('city-label').textContent = 'Варшава';
+                if(!currentOrder) pedal.textContent = "ЖМИ ГАЗ (PEDAL)";
+                pedal.classList.remove('taxi-pedal');
+            }
+
+            const btn = document.getElementById('taxi-toggle-btn');
+            if(isTaxi) { btn.classList.add('active'); btn.innerHTML = '<i class="fa-solid fa-briefcase"></i> <span>ВЕРНУТЬСЯ К КУРЬЕРСТВУ</span>'; } 
+            else { btn.classList.remove('active'); btn.innerHTML = '<i class="fa-solid fa-taxi"></i> <span>ВКЛЮЧИТЬ TAXI</span>'; }
+            
+            updateVisualStats();
+        }
+
+        function updateBar(id, val) { 
+            let pct = val < 0 ? 0 : (val > 100 ? 100 : val); document.getElementById(id).style.width = pct + '%'; 
+        }
+
+        function updateVisualStats() {
+            if(typeof state === 'undefined' || !state.items) return;
+            const stats = { 'bike':state.items.bike, 'bag':state.items.bag, 'phone':state.items.phone, 'gear':state.items.gear, 'energy':state.needs.energy, 'water':state.needs.water, 'mood':state.needs.mood };
+            for (let [key, val] of Object.entries(stats)) {
+                const el = document.getElementById(`stat-${key}`);
+                if(el) {
+                    const clean = Math.floor(val);
+                    el.textContent = clean + '%';
+                    el.style.color = (clean < 0) ? '#ff3d00' : '#fff';
+                }
+            }
+        }
+
+        function showToast(msg, type='info') {
+            const t = document.getElementById('toast'); t.innerHTML = msg;
+            t.className = 'game-toast show ' + (type === 'warn' ? 'toast-warn' : (type==='success' ? 'toast-success' : ''));
+            setTimeout(() => t.className = 'game-toast', 3000);
+        }
+
+        function startOrderLoop() {
+            if (orderInterval) clearInterval(orderInterval);
+            orderInterval = setInterval(() => {
+                if (!currentOrder || !currentOrder.accepted) return;
+                currentOrder.timeLeft--;
+                document.getElementById('delivery-timer').textContent = `⏱ ${currentOrder.timeLeft}с`;
+                if (currentOrder.timeLeft <= 0) { failOrder("time"); return; }
+                
+                if(!state.taxi.active) {
+                    let baseCooling = gameConfig.coolingRate || 0.5; let decay = baseCooling * (1 + ((100 - state.items.bag) / 100)); currentOrder.foodTemp -= decay;
+                } else {
+                    let interior = state.items.bag; let decay = 0.2 + ((100 - interior) / 500); currentOrder.foodTemp -= decay; 
+                }
+                
+                if (currentOrder.foodTemp < 50 && !currentOrder.tempWarned) { showToast('⚠️ Клиент нервничает!', 'warn'); currentOrder.tempWarned = true; }
+                let label = state.taxi.active ? 'Комфорт' : 'Еда';
+                document.getElementById('temp-val').textContent = `${label}: ` + Math.floor(currentOrder.foodTemp) + '%';
+                if (currentOrder.foodTemp <= 0) { failOrder("cold"); return; }
+            }, 1000);
+        }
+
+        function stopOrderLoop() { if (orderInterval) clearInterval(orderInterval); orderInterval = null; document.getElementById('delivery-timer').textContent = ''; }
+
+        function failOrder(reason) {
+            stopOrderLoop();
+            let msg = reason === "time" ? "⏰ Время вышло!" : "😤 Клиент ушел!";
+            showToast(`${msg} Штраф -5.00 PLN`, 'warn');
+            state.balance -= 5.00; currentOrder = null; saveGame(); updateUI(); 
+            clearMapVisuals();
+            if(map) map.flyTo(WARSAW_CENTER, 13);
+            startSearching();
+        }
+
+        function pedal() {
+            if (!currentOrder) return;
+            if (!currentOrder.accepted) { acceptOrder(); return; }
+            
+            let fatigue = Math.max(0.3, state.needs.energy / 100);
+            
+            if(state.taxi.active) {
+                 if(state.needs.energy <= -20) { showToast('⛽ БЕНЗИН КОНЧИЛСЯ!', 'warn'); openQuickInv(true); return; }
+                 state.needs.energy -= 0.5; state.needs.mood -= 0.02; state.items.bike -= 0.2; state.items.gear -= 0.1; currentOrder.progress += 4; 
+            } else {
+                if (state.needs.energy <= -50 || state.needs.water <= -50) { showToast('ТЫ ПРИ СМЕРТИ! ОТКРОЙ РЮКЗАК!', 'warn'); openQuickInv(true); return; }
+                if (!state.energyBoostActive) { state.needs.energy -= gameConfig.energyDrain; }
+                state.needs.water -= gameConfig.waterDrain; state.needs.mood -= gameConfig.moodDrain;
+                state.items.bike -= 0.1; state.items.phone -= 0.05;
+                currentOrder.progress += (5 * fatigue);
+            }
+
+            updateTrack(currentOrder.progress);
+            
+            if(mapVisuals.courierMarker) updateCourierPosition(currentOrder.progress);
+
+            if (Math.random() < gameConfig.trafficChance && currentOrder.stage === 2) triggerRandomEvent();
+            if (currentOrder.progress >= 100) nextStage();
+            saveGame(); updateUI();
+        }
+
+        function giveBribe() {
+            if(state.balance < 20) { showToast('Нет денег на взятку (20 PLN)', 'warn'); return; }
+            state.balance -= 20;
+            const btn = document.getElementById('pedal-btn');
+            const bribeBtn = document.getElementById('bribe-btn');
+            btn.disabled = false; btn.classList.remove('blocked');
+            btn.textContent = state.taxi.active ? 'ГАЗ В ПОЛ' : 'ЖМИ ГАЗ (PEDAL)';
+            bribeBtn.style.display = 'none';
+            showToast('👮 Проблема решена (-20 PLN)', 'success');
+            saveGame(); updateUI();
+        }
+
+        function triggerRandomEvent() {
+            const btn = document.getElementById('pedal-btn'); const bribeBtn = document.getElementById('bribe-btn');
+            const events = [{ text: "🚧 ПРОБКА!", time: gameConfig.trafficDuration }, { text: "👮 ПОЛИЦИЯ", time: 7000 }, { text: "🚕 ОБЪЕЗД", time: 4000 }];
+            const ev = events[Math.floor(Math.random()*events.length)];
+            btn.disabled = true; btn.classList.add('blocked'); btn.textContent = ev.text; 
+            bribeBtn.style.display = 'block';
+            showToast('Задержка! Ж
