@@ -45,33 +45,77 @@
             left: 10px; 
             right: 10px; 
             display: flex; 
-            gap: 10px; 
+            gap: 8px; 
             z-index: 100;
         }
         
         .action-btn-small { 
             flex: 1; 
-            padding: 12px 8px; 
+            padding: 12px 4px; 
             border: none; 
-            border-radius: 15px; 
-            font-size: 13px; 
+            border-radius: 12px; 
+            font-size: 12px; 
             font-weight: bold; 
             cursor: pointer; 
             transition: all 0.2s;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
         
         .action-btn-small:active { transform: scale(0.95); }
         
         .btn-water { background: linear-gradient(135deg, #00ccff, #0099cc); color: #000; }
         .btn-energy { background: linear-gradient(135deg, #ffcc00, #ff9900); color: #000; }
-        .btn-find { background: linear-gradient(135deg, #00e676, #00c853); color: #000; font-size: 15px; }
+        .btn-find { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
+        .btn-up { background: linear-gradient(135deg, #2979ff, #2962ff); color: #fff; }
+        .btn-down { background: linear-gradient(135deg, #7c4dff, #651fff); color: #fff; }
         
-        .action-icon { font-size: 20px; }
-        .action-cost { font-size: 10px; opacity: 0.9; }
+        .action-icon { font-size: 18px; }
+        .action-cost { font-size: 9px; opacity: 0.9; }
+        
+        /* Игровая панель (компактная, снизу но маленькая) */
+        .game-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            background: rgba(10,10,10,0.95);
+            border-radius: 20px;
+            padding: 15px;
+            border: 2px solid #333;
+            display: none;
+            z-index: 100;
+        }
+        
+        .game-panel.active { display: block; }
+        
+        .game-road { 
+            width: 100%; 
+            height: 80px; 
+            background: linear-gradient(to bottom, #1a1a1a, #0f0f0f); 
+            border-radius: 12px; 
+            position: relative; 
+            overflow: hidden; 
+            margin-bottom: 10px;
+            border: 2px solid #444;
+        }
+        
+        .lane { position: absolute; width: 100%; height: 33.33%; border-bottom: 1px dashed #555; }
+        .player-bike { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 24px; transition: top 0.15s; }
+        .obstacle { position: absolute; right: -40px; font-size: 20px; animation: moveLeft 2.5s linear; }
+        
+        @keyframes moveLeft { from { right: -40px; } to { right: 110%; } }
+        
+        .game-status { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .game-hint { color: #888; font-size: 12px; }
         
         /* Нижняя панель (только для заказов) */
         .bottom-panel { 
@@ -81,7 +125,7 @@
             right: 0; 
             background: linear-gradient(to top, rgba(0,0,0,0.98), transparent); 
             padding: 15px 20px 30px; 
-            max-height: 40%; 
+            max-height: 35%; 
             overflow-y: auto;
             pointer-events: none;
         }
@@ -94,7 +138,7 @@
         
         @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
-        .card-title { font-size: 20px; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .card-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
         .card-subtitle { color: #888; font-size: 13px; margin-bottom: 15px; }
         
         /* Кнопки */
@@ -103,16 +147,14 @@
         .btn-primary { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
         .btn-warning { background: linear-gradient(135deg, #ff9100, #ff6d00); color: #000; }
         .btn-danger { background: linear-gradient(135deg, #ff3d00, #dd2c00); color: #fff; }
-        .btn-info { background: linear-gradient(135deg, #2979ff, #2962ff); color: #fff; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         /* Выбор маршрута */
         .route-options { display: flex; flex-direction: column; gap: 10px; }
         .route-option { background: rgba(40,40,40,0.9); padding: 15px; border-radius: 15px; border: 2px solid #444; cursor: pointer; transition: all 0.2s; }
         .route-option:hover { border-color: #00e676; background: rgba(50,50,50,0.9); }
         .route-option.selected { border-color: #00e676; background: rgba(0,230,118,0.1); }
-        .route-name { font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-        .route-info { font-size: 12px; color: #aaa; display: flex; gap: 15px; }
+        .route-name { font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; font-size: 15px; }
+        .route-info { font-size: 12px; color: #aaa; display: flex; gap: 12px; flex-wrap: wrap; }
         .route-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 5px; }
         .tag-fast { background: #ff3d00; color: #fff; }
         .tag-safe { background: #00e676; color: #000; }
@@ -199,18 +241,6 @@
         .stop.active { opacity: 1; }
         .stop.completed { opacity: 0.6; color: #00e676; }
         
-        /* Мини-игра */
-        .drive-game { display: none; background: #0f0f0f; border-radius: 20px; padding: 20px; text-align: center; }
-        .drive-game.active { display: block; }
-        .road { width: 100%; height: 150px; background: linear-gradient(to bottom, #1a1a1a, #0f0f0f); border-radius: 15px; position: relative; overflow: hidden; margin: 15px 0; border: 2px solid #333; }
-        .lane { position: absolute; width: 100%; height: 33.33%; border-bottom: 2px dashed #444; }
-        .player-bike { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 30px; transition: top 0.2s; }
-        .obstacle { position: absolute; right: -50px; font-size: 25px; animation: moveLeft 3s linear; }
-        @keyframes moveLeft { from { right: -50px; } to { right: 110%; } }
-        .game-controls { display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
-        .game-btn { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #444; background: #1a1a1a; color: #fff; font-size: 24px; cursor: pointer; transition: all 0.1s; }
-        .game-btn:active { background: #333; transform: scale(0.95); }
-        
         /* Уведомления */
         .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); padding: 20px 30px; border-radius: 20px; border: 2px solid #00e676; color: #00e676; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 300; text-align: center; max-width: 300px; }
         .toast.show { opacity: 1; }
@@ -258,17 +288,40 @@
             <button class="action-btn-small btn-water" onclick="quickRefill('water')">
                 <span class="action-icon">💧</span>
                 <span>Вода</span>
-                <span class="action-cost">3-6 PLN</span>
+                <span class="action-cost">3 PLN</span>
             </button>
             <button class="action-btn-small btn-energy" onclick="quickRefill('energy')">
                 <span class="action-icon">⚡</span>
                 <span>Кофе</span>
-                <span class="action-cost">5-8 PLN</span>
+                <span class="action-cost">5 PLN</span>
             </button>
-            <button class="action-btn-small btn-find" onclick="findOrder()">
+            <button class="action-btn-small btn-find" onclick="findOrder()" id="btn-find">
                 <span class="action-icon">🔍</span>
                 <span>ЗАКАЗ</span>
             </button>
+            <!-- Кнопки управления игрой (скрыты по умолчанию) -->
+            <button class="action-btn-small btn-up" onclick="moveBike(-1)" id="btn-up" style="display:none;">
+                <span class="action-icon">⬆️</span>
+                <span>ВВЕРХ</span>
+            </button>
+            <button class="action-btn-small btn-down" onclick="moveBike(1)" id="btn-down" style="display:none;">
+                <span class="action-icon">⬇️</span>
+                <span>ВНИЗ</span>
+            </button>
+        </div>
+        
+        <!-- Компактная игровая панель (только дорога) -->
+        <div class="game-panel" id="game-panel">
+            <div class="game-road" id="game-road">
+                <div class="lane" style="top: 0;"></div>
+                <div class="lane" style="top: 33.33%;"></div>
+                <div class="lane" style="top: 66.66%;"></div>
+                <div class="player-bike" id="player">🚴</div>
+            </div>
+            <div class="game-status">
+                <span class="game-hint">Уклоняйся от препятствий!</span>
+                <span style="color: #00e676; font-weight: bold;">⬆️ ⬇️ наверху</span>
+            </div>
         </div>
         
         <!-- Нижняя панель (только для заказов) -->
@@ -292,19 +345,6 @@
                         <div class="progress-fill" id="progress-fill"></div>
                     </div>
                     <div class="progress-stops" id="progress-stops"></div>
-                </div>
-                <div class="drive-game" id="drive-game">
-                    <div class="card-subtitle">Уклоняйся! ⬆️ ⬇️</div>
-                    <div class="road" id="game-road">
-                        <div class="lane" style="top: 0;"></div>
-                        <div class="lane" style="top: 33.33%;"></div>
-                        <div class="lane" style="top: 66.66%;"></div>
-                        <div class="player-bike" id="player">🚴</div>
-                    </div>
-                    <div class="game-controls">
-                        <button class="game-btn" onclick="moveBike(-1)">⬆️</button>
-                        <button class="game-btn" onclick="moveBike(1)">⬇️</button>
-                    </div>
                 </div>
                 <button class="btn btn-primary" id="action-btn" onclick="handleAction()">🚲 Поехали!</button>
                 <button class="btn btn-danger" id="cancel-btn" onclick="cancelDelivery()">❌ Отменить</button>
@@ -567,7 +607,7 @@
             document.getElementById('rest-backdrop').classList.remove('active');
         }
 
-        // ПОИСК ЗАКАЗА — БЕЗ БЛОКИРОВКИ
+        // ПОИСК ЗАКАЗА
         function findOrder() {
             let warning = '';
             if (state.energy < 30) warning = '⚡ Мало энергии! Выпей кофе.';
@@ -735,7 +775,7 @@
             updateProgressUI();
             
             showPanel('delivery');
-            showToast('Поехали!', 2000);
+            showToast('Поехали! Нажми ПОЕХАЛИ', 2000);
         }
         
         function updateProgressUI() {
@@ -773,9 +813,19 @@
             startDrivingGame();
         }
         
+        // ИГРА — КНОПКИ НАВЕРХУ
         function startDrivingGame() {
             state.gameActive = true;
-            document.getElementById('drive-game').classList.add('active');
+            
+            // Меняем кнопки на управление
+            document.getElementById('btn-find').style.display = 'none';
+            document.getElementById('btn-water').style.display = 'none';
+            document.getElementById('btn-energy').style.display = 'none';
+            document.getElementById('btn-up').style.display = 'flex';
+            document.getElementById('btn-down').style.display = 'flex';
+            
+            // Показываем компактную игровую панель снизу
+            document.getElementById('game-panel').classList.add('active');
             document.getElementById('action-btn').style.display = 'none';
             
             state.bikeLane = 1;
@@ -795,6 +845,7 @@
         }
         
         function moveBike(dir) {
+            if (!state.gameActive) return;
             state.bikeLane += dir;
             if (state.bikeLane < 0) state.bikeLane = 0;
             if (state.bikeLane > 2) state.bikeLane = 2;
@@ -818,15 +869,23 @@
                     clearInterval(gameInterval);
                     endDrivingGame(false);
                 }
-                setTimeout(() => obstacle.remove(), 3000);
-            }, 2800);
+                setTimeout(() => obstacle.remove(), 2500);
+            }, 2300);
         }
         
         function endDrivingGame(success) {
             state.gameActive = false;
             clearInterval(obstacleInterval);
             clearInterval(gameInterval);
-            document.getElementById('drive-game').classList.remove('active');
+            
+            // Возвращаем обычные кнопки
+            document.getElementById('btn-find').style.display = 'flex';
+            document.getElementById('btn-water').style.display = 'flex';
+            document.getElementById('btn-energy').style.display = 'flex';
+            document.getElementById('btn-up').style.display = 'none';
+            document.getElementById('btn-down').style.display = 'none';
+            
+            document.getElementById('game-panel').classList.remove('active');
             document.getElementById('action-btn').style.display = 'block';
             document.querySelectorAll('.obstacle').forEach(o => o.remove());
             
@@ -1004,7 +1063,14 @@
             clearInterval(obstacleInterval);
             document.querySelectorAll('.obstacle').forEach(o => o.remove());
             
+            // Возвращаем все кнопки
             document.getElementById('action-bar').style.display = 'flex';
+            document.getElementById('btn-find').style.display = 'flex';
+            document.getElementById('btn-water').style.display = 'flex';
+            document.getElementById('btn-energy').style.display = 'flex';
+            document.getElementById('btn-up').style.display = 'none';
+            document.getElementById('btn-down').style.display = 'none';
+            document.getElementById('game-panel').classList.remove('active');
         }
         
         init();
