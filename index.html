@@ -62,6 +62,7 @@
             flex-direction: column;
             align-items: center;
             gap: 3px;
+            min-height: 65px;
         }
         
         .action-btn-small:active { transform: scale(0.95); }
@@ -72,10 +73,11 @@
         .btn-up { background: linear-gradient(135deg, #2979ff, #2962ff); color: #fff; }
         .btn-down { background: linear-gradient(135deg, #7c4dff, #651fff); color: #fff; }
         
-        .action-icon { font-size: 18px; }
+        .action-icon { font-size: 20px; }
+        .action-text { font-size: 11px; }
         .action-cost { font-size: 9px; opacity: 0.9; }
         
-        /* Игровая панель (компактная, снизу но маленькая) */
+        /* Игровая панель */
         .game-panel {
             position: absolute;
             bottom: 20px;
@@ -84,7 +86,7 @@
             background: rgba(10,10,10,0.95);
             border-radius: 20px;
             padding: 15px;
-            border: 2px solid #333;
+            border: 2px solid #444;
             display: none;
             z-index: 100;
         }
@@ -93,18 +95,18 @@
         
         .game-road { 
             width: 100%; 
-            height: 80px; 
+            height: 100px; 
             background: linear-gradient(to bottom, #1a1a1a, #0f0f0f); 
             border-radius: 12px; 
             position: relative; 
             overflow: hidden; 
             margin-bottom: 10px;
-            border: 2px solid #444;
+            border: 2px solid #555;
         }
         
-        .lane { position: absolute; width: 100%; height: 33.33%; border-bottom: 1px dashed #555; }
-        .player-bike { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 24px; transition: top 0.15s; }
-        .obstacle { position: absolute; right: -40px; font-size: 20px; animation: moveLeft 2.5s linear; }
+        .lane { position: absolute; width: 100%; height: 33.33%; border-bottom: 1px dashed #666; }
+        .player-bike { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 28px; transition: top 0.15s ease; z-index: 10; }
+        .obstacle { position: absolute; right: -40px; font-size: 22px; animation: moveLeft 2.5s linear; z-index: 5; }
         
         @keyframes moveLeft { from { right: -40px; } to { right: 110%; } }
         
@@ -115,9 +117,10 @@
             font-size: 14px;
         }
         
-        .game-hint { color: #888; font-size: 12px; }
+        .game-hint { color: #aaa; font-size: 12px; }
+        .game-controls-hint { color: #00e676; font-weight: bold; }
         
-        /* Нижняя панель (только для заказов) */
+        /* Нижняя панель */
         .bottom-panel { 
             position: absolute; 
             bottom: 0; 
@@ -125,7 +128,7 @@
             right: 0; 
             background: linear-gradient(to top, rgba(0,0,0,0.98), transparent); 
             padding: 15px 20px 30px; 
-            max-height: 35%; 
+            max-height: 40%; 
             overflow-y: auto;
             pointer-events: none;
         }
@@ -285,32 +288,32 @@
         
         <!-- КНОПКИ ДЕЙСТВИЙ СВЕРХУ -->
         <div class="action-bar" id="action-bar">
-            <button class="action-btn-small btn-water" onclick="quickRefill('water')">
+            <button class="action-btn-small btn-water" id="btn-water" onclick="quickRefill('water')">
                 <span class="action-icon">💧</span>
-                <span>Вода</span>
+                <span class="action-text">Вода</span>
                 <span class="action-cost">3 PLN</span>
             </button>
-            <button class="action-btn-small btn-energy" onclick="quickRefill('energy')">
+            <button class="action-btn-small btn-energy" id="btn-energy" onclick="quickRefill('energy')">
                 <span class="action-icon">⚡</span>
-                <span>Кофе</span>
+                <span class="action-text">Кофе</span>
                 <span class="action-cost">5 PLN</span>
             </button>
-            <button class="action-btn-small btn-find" onclick="findOrder()" id="btn-find">
+            <button class="action-btn-small btn-find" id="btn-find" onclick="findOrder()">
                 <span class="action-icon">🔍</span>
-                <span>ЗАКАЗ</span>
+                <span class="action-text">ЗАКАЗ</span>
             </button>
             <!-- Кнопки управления игрой (скрыты по умолчанию) -->
-            <button class="action-btn-small btn-up" onclick="moveBike(-1)" id="btn-up" style="display:none;">
+            <button class="action-btn-small btn-up" id="btn-up" onclick="moveBike(-1)" style="display:none;">
                 <span class="action-icon">⬆️</span>
-                <span>ВВЕРХ</span>
+                <span class="action-text">ВВЕРХ</span>
             </button>
-            <button class="action-btn-small btn-down" onclick="moveBike(1)" id="btn-down" style="display:none;">
+            <button class="action-btn-small btn-down" id="btn-down" onclick="moveBike(1)" style="display:none;">
                 <span class="action-icon">⬇️</span>
-                <span>ВНИЗ</span>
+                <span class="action-text">ВНИЗ</span>
             </button>
         </div>
         
-        <!-- Компактная игровая панель (только дорога) -->
+        <!-- Компактная игровая панель -->
         <div class="game-panel" id="game-panel">
             <div class="game-road" id="game-road">
                 <div class="lane" style="top: 0;"></div>
@@ -319,12 +322,12 @@
                 <div class="player-bike" id="player">🚴</div>
             </div>
             <div class="game-status">
-                <span class="game-hint">Уклоняйся от препятствий!</span>
-                <span style="color: #00e676; font-weight: bold;">⬆️ ⬇️ наверху</span>
+                <span class="game-hint">Уклоняйся от машин!</span>
+                <span class="game-controls-hint">⬆️ ⬇️ Наверху</span>
             </div>
         </div>
         
-        <!-- Нижняя панель (только для заказов) -->
+        <!-- Нижняя панель -->
         <div class="bottom-panel" id="bottom-panel">
             <!-- Панель выбора маршрута -->
             <div class="card" id="route-panel">
@@ -774,7 +777,11 @@
                 `${state.currentOrder.restaurant.icon} Доставка из ${state.currentOrder.restaurant.name}`;
             updateProgressUI();
             
+            // Показываем панель доставки и кнопки действий
             showPanel('delivery');
+            document.getElementById('action-bar').style.display = 'flex';
+            document.getElementById('action-btn').style.display = 'block';
+            
             showToast('Поехали! Нажми ПОЕХАЛИ', 2000);
         }
         
@@ -818,13 +825,13 @@
             state.gameActive = true;
             
             // Меняем кнопки на управление
-            document.getElementById('btn-find').style.display = 'none';
             document.getElementById('btn-water').style.display = 'none';
             document.getElementById('btn-energy').style.display = 'none';
+            document.getElementById('btn-find').style.display = 'none';
             document.getElementById('btn-up').style.display = 'flex';
             document.getElementById('btn-down').style.display = 'flex';
             
-            // Показываем компактную игровую панель снизу
+            // Показываем игровую панель снизу
             document.getElementById('game-panel').classList.add('active');
             document.getElementById('action-btn').style.display = 'none';
             
@@ -841,7 +848,10 @@
         }
         
         function updateBikePosition() {
-            document.getElementById('player').style.top = (state.bikeLane * 33.33 + 16.66) + '%';
+            const bike = document.getElementById('player');
+            if (bike) {
+                bike.style.top = (state.bikeLane * 33.33 + 16.66) + '%';
+            }
         }
         
         function moveBike(dir) {
@@ -854,6 +864,8 @@
         
         function spawnObstacle() {
             const road = document.getElementById('game-road');
+            if (!road) return;
+            
             const obstacle = document.createElement('div');
             obstacle.className = 'obstacle';
             obstacle.textContent = ['🚗', '🚧', '🕳️', '🐕', '🚶'][Math.floor(Math.random() * 5)];
@@ -861,7 +873,10 @@
             road.appendChild(obstacle);
             
             setTimeout(() => {
-                const bikeRect = document.getElementById('player').getBoundingClientRect();
+                const bike = document.getElementById('player');
+                if (!bike) return;
+                
+                const bikeRect = bike.getBoundingClientRect();
                 const obsRect = obstacle.getBoundingClientRect();
                 
                 if (Math.abs(bikeRect.top - obsRect.top) < 30 && obsRect.left < bikeRect.right && obsRect.right > bikeRect.left) {
@@ -869,7 +884,9 @@
                     clearInterval(gameInterval);
                     endDrivingGame(false);
                 }
-                setTimeout(() => obstacle.remove(), 2500);
+                setTimeout(() => {
+                    if (obstacle.parentNode) obstacle.remove();
+                }, 2500);
             }, 2300);
         }
         
@@ -879,14 +896,16 @@
             clearInterval(gameInterval);
             
             // Возвращаем обычные кнопки
-            document.getElementById('btn-find').style.display = 'flex';
             document.getElementById('btn-water').style.display = 'flex';
             document.getElementById('btn-energy').style.display = 'flex';
+            document.getElementById('btn-find').style.display = 'flex';
             document.getElementById('btn-up').style.display = 'none';
             document.getElementById('btn-down').style.display = 'none';
             
             document.getElementById('game-panel').classList.remove('active');
             document.getElementById('action-btn').style.display = 'block';
+            
+            // Чистим препятствия
             document.querySelectorAll('.obstacle').forEach(o => o.remove());
             
             if (success) {
@@ -1063,11 +1082,11 @@
             clearInterval(obstacleInterval);
             document.querySelectorAll('.obstacle').forEach(o => o.remove());
             
-            // Возвращаем все кнопки
+            // Возвращаем все кнопки в исходное состояние
             document.getElementById('action-bar').style.display = 'flex';
-            document.getElementById('btn-find').style.display = 'flex';
             document.getElementById('btn-water').style.display = 'flex';
             document.getElementById('btn-energy').style.display = 'flex';
+            document.getElementById('btn-find').style.display = 'flex';
             document.getElementById('btn-up').style.display = 'none';
             document.getElementById('btn-down').style.display = 'none';
             document.getElementById('game-panel').classList.remove('active');
