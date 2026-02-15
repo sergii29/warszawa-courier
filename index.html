@@ -202,7 +202,149 @@
             
             state.isDelivering = true;
             
-            // Маршрут
+
+
+
+    <script>
+        // ТВОЯ БАЗА
+        const firebaseConfig = {
+          apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk", 
+          authDomain: "warszawa-courier.firebaseapp.com",
+          databaseURL: "https://warszawa-courier-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "warszawa-courier",
+          storageBucket: "warszawa-courier.firebasestorage.app",
+          messagingSenderId: "295860613508",
+          appId: "1:295860613508:web:86fe8364377d6875612dd1",
+          measurementId: "G-TGSCHBVLX2"
+        };
+
+        const WARSAW_CENTER = [52.2297, 21.0122];
+        
+        // Инвентарь
+        const SHOP_ITEMS = {
+            water: { name: 'Вода 0.5л', icon: '💧', cost: 3, effect: { water: 40, energy: 5 } },
+            coffee: { name: 'Кофе', icon: '☕', cost: 6, effect: { energy: 35, mood: 15 } },
+            energy: { name: 'Red Bull', icon: '⚡', cost: 8, effect: { energy: 60, water: -10 } },
+            chocolate: { name: 'Сникерс', icon: '🍫', cost: 5, effect: { mood: 30, energy: 10 } }
+        };
+
+        let state = {
+            balance: 50,
+            energy: 100,
+            water: 100,
+            mood: 100,
+            currentOrder: null,
+            isDelivering: false,
+            inventory: { water: 0, coffee: 0, energy: 0, chocolate: 0 },
+            shopOpen: false
+        };
+
+        let map, courierMarker, destMarker, routeLine;
+        let deliveryInterval = null;
+
+        const restaurants = [
+            { name: "McDonald's", icon: "🍔" },
+            { name: "KFC", icon: "🍗" },
+            { name: "Pizza Hut", icon: "🍕" },
+            { name: "Sushi Master", icon: "🍣" },
+            { name: "Kebab King", icon: "🌯" },
+            { name: "Burger King", icon: "🍔" }
+        ];
+
+        // События на маршруте
+        const ROAD_EVENTS = [
+            { name: "🚦 Светофор", delay: 2000, msg: "Ждём зелёный..." },
+            { name: "🚧 Ремонт дороги", delay: 3000, msg: "Объезд..." },
+            { name: "☔ Дождь", delay: 1500, msg: "Скользко!" },
+            { name: "🐕 Собака", delay: 1000, msg: "Осторожно!" }
+        ];
+
+        function init() {
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(WARSAW_CENTER, 13);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19
+            }).addTo(map);
+
+            const courierIcon = L.divIcon({
+                html: '<div class="marker-courier"></div>',
+                className: 'custom-marker',
+                iconSize: [20, 20]
+            });
+            courierMarker = L.marker(WARSAW_CENTER, { icon: courierIcon }).addTo(map);
+
+            updateUI();
+            setInterval(updateStats, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('balance').textContent = Math.floor(state.balance) + ' PLN';
+            document.getElementById('energy-val').textContent = Math.floor(state.energy);
+            document.getElementById('water-val').textContent = Math.floor(state.water);
+            document.getElementById('mood-val').textContent = Math.floor(state.mood);
+            
+            // Цвета для критических значений
+            document.getElementById('energy-val').style.color = state.energy < 30 ? '#ff3d00' : '#ffcc00';
+            document.getElementById('water-val').style.color = state.water < 30 ? '#ff3d00' : '#00ccff';
+            document.getElementById('mood-val').style.color = state.mood < 30 ? '#ff3d00' : '#d500f9';
+        }
+
+        function updateStats() {
+            if (state.isDelivering) {
+                state.energy -= 0.8;
+                state.water -= 0.5;
+                state.mood -= 0.3;
+                
+                if (state.energy < 0) state.energy = 0;
+                if (state.water < 0) state.water = 0;
+                if (state.mood < 0) state.mood = 0;
+                
+                // Если всё закончилось — провал
+                if (state.energy === 0 || state.water === 0) {
+                    failDelivery("Силы кончились! Заказ отменён.");
+                }
+                
+                updateUI();
+            }
+        }
+
+        function findOrder() {
+            if (state.isDelivering || state.shopOpen) return;
+            
+            // Проверка минимальных статов
+            if (state.energy < 20 || state.water < 20) {
+                showToast('⚠️ Нужно восстановить силы! Откройте магазин.');
+                return;
+            }
+            
+            const rest = restaurants[Math.floor(Math.random() * restaurants.length)];
+            const dist = (1 + Math.random() * 4).toFixed(1);
+            const basePrice = Math.floor(15 + Math.random() * 25);
+            const bonus = state.mood > 80 ? 10 : 0;
+            const price = basePrice + bonus;
+            
+            state.currentOrder = {
+                restaurant: rest,
+                distance: dist,
+                price: price,
+                destLat: WARSAW_CENTER[0] + (Math.random() - 0.5) * 0.05,
+                destLng: WARSAW_CENTER[1] + (Math.random() - 0.5) * 0.08
+            };
+            
+            document.getElementById('rest-name').textContent = rest.name + ' ' + rest.icon;
+            document.getElementById('order-dist').textContent = dist + ' км • ~' + Math.floor(dist * 4) + ' мин';
+            document.getElementById('order-price').textContent = price + ' PLN' + (bonus > 0 ? ' (+настроение!)' : '');
+            
+            document.getElementById('wait-panel').style.display = 'none';
+            document.getElementById('shop-panel').style.display = 'none';
+            document.getElementById('order-panel').classList.add('active');
+        }
+
+        function acceptOrder() {
+            if (!state.currentOrder) return;
+            
+            state.isDelivering = true;
+            
             const dest = [state.currentOrder.destLat, state.currentOrder.destLng];
             
             const destIcon = L.divIcon({
@@ -221,67 +363,175 @@
             
             map.fitBounds([WARSAW_CENTER, dest], { padding: [50, 50] });
             
-            // UI
             document.getElementById('accept-btn').style.display = 'none';
-            document.getElementById('deliver-btn').style.display = 'block';
-            document.getElementById('order-dist').textContent = 'В пути...';
+            document.getElementById('deliver-btn').style.display = 'none';
+            document.getElementById('order-dist').textContent = 'В пути... Нажимайте "Ехать!"';
             
-            showToast('Заказ принят! Едем к клиенту...');
+            // Кнопка езды
+            const driveBtn = document.createElement('button');
+            driveBtn.className = 'btn btn-primary';
+            driveBtn.id = 'drive-btn';
+            driveBtn.textContent = '🚲 Ехать!';
+            driveBtn.onclick = drive;
+            document.getElementById('order-panel').appendChild(driveBtn);
             
-            // Анимация движения
-            animateDelivery();
+            showToast('Поехали! Жмите "Ехать!" чтобы двигаться.');
         }
 
-        function animateDelivery() {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 2;
+        let driveProgress = 0;
+        let eventTriggered = false;
+
+        function drive() {
+            if (!state.isDelivering) return;
+            
+            // Расход ресурсов за каждое нажатие
+            state.energy -= 3;
+            state.water -= 2;
+            state.mood -= 1;
+            updateUI();
+            
+            driveProgress += 8;
+            
+            // Случайное событие на середине
+            if (driveProgress > 50 && !eventTriggered && Math.random() > 0.5) {
+                eventTriggered = true;
+                const event = ROAD_EVENTS[Math.floor(Math.random() * ROAD_EVENTS.length)];
+                showToast(event.msg);
+                document.getElementById('order-dist').textContent = event.name + '...';
                 
-                // Двигаем курьера
-                const start = WARSAW_CENTER;
-                const end = [state.currentOrder.destLat, state.currentOrder.destLng];
-                const lat = start[0] + (end[0] - start[0]) * (progress / 100);
-                const lng = start[1] + (end[1] - start[1]) * (progress / 100);
-                courierMarker.setLatLng([lat, lng]);
-                
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    showToast('Прибыли! Нажмите "Доставлено"');
-                }
-            }, 100);
+                // Блокируем кнопку на время
+                const btn = document.getElementById('drive-btn');
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.disabled = false;
+                    document.getElementById('order-dist').textContent = 'Продолжаем путь...';
+                }, event.delay);
+            }
+            
+            // Двигаем курьера
+            const start = WARSAW_CENTER;
+            const end = [state.currentOrder.destLat, state.currentOrder.destLng];
+            const lat = start[0] + (end[0] - start[0]) * (driveProgress / 100);
+            const lng = start[1] + (end[1] - start[1]) * (driveProgress / 100);
+            courierMarker.setLatLng([lat, lng]);
+            
+            if (driveProgress >= 100) {
+                document.getElementById('drive-btn').remove();
+                document.getElementById('deliver-btn').style.display = 'block';
+                document.getElementById('order-dist').textContent = 'Прибыли! Клиент ждёт.';
+                showToast('На месте! Жмите "Доставлено"');
+            }
         }
 
         function completeDelivery() {
             if (!state.isDelivering) return;
             
-            // Начисляем деньги
             let earned = state.currentOrder.price;
             
-            // Бонус за настроение
-            if (state.mood > 80) earned += 5;
-            
-            // Штраф за низкую энергию
-            if (state.energy < 20) earned -= 3;
+            // Бонусы и штрафы
+            if (state.mood > 80) earned += Math.floor(earned * 0.2);
+            if (state.energy < 30) earned -= 5;
+            if (state.mood < 30) earned -= 3;
             
             state.balance += earned;
             
             // Сброс
             state.isDelivering = false;
             state.currentOrder = null;
+            driveProgress = 0;
+            eventTriggered = false;
             
-            // Очистка карты
             if (destMarker) map.removeLayer(destMarker);
             if (routeLine) map.removeLayer(routeLine);
             courierMarker.setLatLng(WARSAW_CENTER);
             map.setView(WARSAW_CENTER, 13);
             
-            // UI
             document.getElementById('order-panel').classList.remove('active');
             document.getElementById('wait-panel').style.display = 'block';
             document.getElementById('accept-btn').style.display = 'block';
             document.getElementById('deliver-btn').style.display = 'none';
             
-            showToast('+' + earned + ' PLN! Отличная работа!');
+            showToast('+' + earned + ' PLN! 💰');
+            updateUI();
+        }
+
+        function failDelivery(reason) {
+            state.isDelivering = false;
+            state.currentOrder = null;
+            driveProgress = 0;
+            
+            if (destMarker) map.removeLayer(destMarker);
+            if (routeLine) map.removeLayer(routeLine);
+            courierMarker.setLatLng(WARSAW_CENTER);
+            
+            const driveBtn = document.getElementById('drive-btn');
+            if (driveBtn) driveBtn.remove();
+            
+            document.getElementById('order-panel').classList.remove('active');
+            document.getElementById('wait-panel').style.display = 'block';
+            document.getElementById('accept-btn').style.display = 'block';
+            
+            showToast(reason);
+            updateUI();
+        }
+
+        // МАГАЗИН
+        function toggleShop() {
+            state.shopOpen = !state.shopOpen;
+            const shopPanel = document.getElementById('shop-panel');
+            const waitPanel = document.getElementById('wait-panel');
+            
+            if (state.shopOpen) {
+                renderShop();
+                shopPanel.style.display = 'block';
+                waitPanel.style.display = 'none';
+            } else {
+                shopPanel.style.display = 'none';
+                waitPanel.style.display = 'block';
+            }
+        }
+
+        function renderShop() {
+            const shopItems = document.getElementById('shop-items');
+            shopItems.innerHTML = '';
+            
+            for (let [key, item] of Object.entries(SHOP_ITEMS)) {
+                const div = document.createElement('div');
+                div.style.cssText = 'background:#1a1a1a; padding:15px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #333;';
+                div.innerHTML = `
+                    <div>
+                        <div style="font-size:18px; margin-bottom:5px;">${item.icon} ${item.name}</div>
+                        <div style="font-size:11px; color:#888;">${getEffectText(item.effect)}</div>
+                    </div>
+                    <button class="btn btn-primary" style="width:auto; padding:10px 20px;" onclick="buyItem('${key}')">
+                        ${item.cost} PLN
+                    </button>
+                `;
+                shopItems.appendChild(div);
+            }
+        }
+
+        function getEffectText(effect) {
+            let text = [];
+            if (effect.energy) text.push(`⚡${effect.energy > 0 ? '+' : ''}${effect.energy}`);
+            if (effect.water) text.push(`💧${effect.water > 0 ? '+' : ''}${effect.water}`);
+            if (effect.mood) text.push(`😎${effect.mood > 0 ? '+' : ''}${effect.mood}`);
+            return text.join(' • ');
+        }
+
+        function buyItem(key) {
+            const item = SHOP_ITEMS[key];
+            if (state.balance < item.cost) {
+                showToast('❌ Недостаточно денег!');
+                return;
+            }
+            
+            state.balance -= item.cost;
+            state.energy = Math.min(100, state.energy + (item.effect.energy || 0));
+            state.water = Math.min(100, state.water + (item.effect.water || 0));
+            state.mood = Math.min(100, state.mood + (item.effect.mood || 0));
+            
+            showToast(`${item.icon} Куплено!`);
             updateUI();
         }
 
@@ -289,14 +539,13 @@
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2000);
+            setTimeout(() => t.classList.remove('show'), 2500);
         }
 
-        // Старт
         init();
     </script>
 </body>
 </html>
 
 
-
+        
