@@ -1843,3 +1843,86 @@
     };
 
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    console.log("Applying Currency Patch...");
+
+    // 1. ПЕРЕОПРЕДЕЛЯЕМ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+    // Сохраняем оригинальную функцию
+    const originalUpdateUI = updateUI;
+    
+    updateUI = function() {
+        // Сначала вызываем оригинал, чтобы обновить цифры
+        originalUpdateUI();
+        
+        // Затем принудительно меняем текст во всех элементах, где есть PLN
+        const balanceEl = document.getElementById('balance');
+        if (balanceEl) {
+            balanceEl.textContent = Math.floor(state.balance) + ' ₽';
+        }
+
+        // Исправляем текст в статистике, если она открыта
+        const restOptions = document.getElementById('rest-options');
+        if (restOptions && restOptions.innerHTML.includes('PLN')) {
+            restOptions.innerHTML = restOptions.innerHTML.replace(/PLN/g, '₽');
+        }
+    };
+
+    // 2. ИСПРАВЛЯЕМ ОТОБРАЖЕНИЕ ВСПЛЫВАЮЩИХ ЦИФР (из первого патча)
+    // Если ты используешь мой первый патч с функцией spawnFloatingText
+    if (typeof finishDelivery !== 'undefined') {
+        const currentFinishDelivery = finishDelivery;
+        finishDelivery = function() {
+            const oldBalance = state.balance;
+            currentFinishDelivery.apply(this, arguments);
+            
+            // Находим и исправляем последний созданный элемент с PLN на ₽
+            setTimeout(() => {
+                const floaters = document.querySelectorAll('.floating-text');
+                floaters.forEach(el => {
+                    if (el.textContent.includes('PLN')) {
+                        el.textContent = el.textContent.replace('PLN', '₽');
+                    }
+                });
+            }, 10);
+        };
+    }
+
+    // 3. ИСПРАВЛЯЕМ ФОРМАТИРОВАНИЕ В МАГАЗИНЕ
+    const originalOpenShop = openShop;
+    openShop = function() {
+        originalOpenShop();
+        // Меняем P на ₽ в кнопках цен
+        const buttons = document.querySelectorAll('.neo-control-panel ~ div button, #rest-options button');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes('P')) {
+                btn.textContent = btn.textContent.replace('P', '₽');
+            }
+        });
+    };
+
+    // Принудительно вызываем обновление сразу после патча
+    updateUI();
+</script>
+
+<style>
+    /* Небольшая правка стиля, чтобы символ ₽ смотрелся лучше */
+    #balance {
+        color: #00e676;
+        text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+        font-weight: bold;
+    }
+</style>
