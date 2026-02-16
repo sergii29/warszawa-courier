@@ -1114,3 +1114,100 @@
 </html>
 
 
+
+
+
+// ПАТЧ: Магазин и статистика
+
+// Добавляем кнопки в панель быстрого пополнения
+const originalQuickRefill = quickRefill;
+quickRefill = function(type) {
+    if (type === 'shop') return openShop();
+    if (type === 'stats') return showStats();
+    return originalQuickRefill(type);
+};
+
+// Магазин
+function openShop() {
+    if (state.isDelivering) {
+        showToast('❌ Сначала заверши доставку!', 2000);
+        return;
+    }
+    
+    const items = [
+        { id: 'bike1', name: 'Горный велик', icon: '🚲', cost: 150, desc: '-20% энергии' },
+        { id: 'bike2', name: 'Электробайк', icon: '🛵', cost: 400, desc: 'Без энергии!' },
+        { id: 'helmet', name: 'Шлем', icon: '⛑️', cost: 80, desc: 'Защита от аварий' },
+        { id: 'thermos', name: 'Термос', icon: '🍶', cost: 60, desc: '-30% воды' },
+        { id: 'music', name: 'Наушники', icon: '🎧', cost: 100, desc: '-40% настроения' },
+        { id: 'vip', name: 'VIP', icon: '👑', cost: 500, desc: '+50% к заказам' }
+    ];
+    
+    const owned = JSON.parse(localStorage.getItem('shop') || '[]');
+    let html = '';
+    
+    items.forEach(item => {
+        const have = owned.includes(item.id);
+        html += `<div style="background:#222;padding:10px;border-radius:10px;margin-bottom:8px;border:2px solid ${have?'#0f0':'#444'}">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:24px">${item.icon}</span>
+                <div style="flex:1">
+                    <div style="font-weight:bold">${item.name} ${have?'✅':''}</div>
+                    <div style="font-size:11px;color:#888">${item.desc}</div>
+                </div>
+                <div style="color:${have?'#0f0':'#ff0'};font-weight:bold">${have?'ЕСТЬ':item.cost+'PLN'}</div>
+            </div>
+            ${!have?`<button class="btn btn-primary" onclick="buyItem('${item.id}',${item.cost})" style="margin-top:8px;width:100%;padding:8px">Купить</button>`:''}
+        </div>`;
+    });
+    
+    document.getElementById('rest-title').textContent = '🛒 Магазин';
+    document.getElementById('rest-options').innerHTML = html;
+    document.getElementById('quick-rest-panel').classList.add('active');
+    document.getElementById('rest-backdrop').classList.add('active');
+}
+
+function buyItem(id,cost) {
+    if (state.balance < cost) {
+        showToast('❌ Нет денег!', 2000);
+        return;
+    }
+    state.balance -= cost;
+    const owned = JSON.parse(localStorage.getItem('shop') || '[]');
+    owned.push(id);
+    localStorage.setItem('shop', JSON.stringify(owned));
+    updateUI();
+    showToast('✅ Куплено!', 2000);
+    closeQuickRest();
+}
+
+// Статистика
+function showStats() {
+    const html = `<div style="font-size:14px;line-height:2">
+        📦 Доставок: <b>${state.stats.totalDeliveries}</b><br>
+        💰 Заработано: <b>${state.stats.totalEarned}PLN</b><br>
+        💥 Аварий: <b>${state.stats.accidents}</b><br>
+        🏆 Чаевые: <b>${state.stats.bestTip}PLN</b>
+    </div>`;
+    
+    document.getElementById('rest-title').textContent = '📊 Статистика';
+    document.getElementById('rest-options').innerHTML = html;
+    document.getElementById('quick-rest-panel').classList.add('active');
+    document.getElementById('rest-backdrop').classList.add('active');
+}
+
+// Добавляем кнопки в интерфейс
+setTimeout(() => {
+    const bar = document.getElementById('action-bar');
+    if (bar) {
+        bar.innerHTML += `
+            <button class="action-btn-small" style="background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff" onclick="quickRefill('shop')">
+                <span class="action-icon">🛒</span>
+                <span class="action-text">Магаз</span>
+            </button>
+            <button class="action-btn-small" style="background:linear-gradient(135deg,#9c27b0,#7b1fa2);color:#fff" onclick="quickRefill('stats')">
+                <span class="action-icon">📊</span>
+                <span class="action-text">Стат</span>
+            </button>`;
+    }
+}, 100);
