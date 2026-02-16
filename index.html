@@ -67,14 +67,14 @@
         .btn-water { background: linear-gradient(135deg, #00ccff, #0099cc); color: #000; }
         .btn-energy { background: linear-gradient(135deg, #ffcc00, #ff9900); color: #000; }
         .btn-find { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
-        .btn-up { background: linear-gradient(135deg, #2979ff, #2962ff); color: #fff; }
-        .btn-down { background: linear-gradient(135deg, #7c4dff, #651fff); color: #fff; }
+        .btn-shop { background: linear-gradient(135deg, #e91e63, #c2185b); color: #fff; }
+        .btn-stats { background: linear-gradient(135deg, #9c27b0, #7b1fa2); color: #fff; }
         
         .action-icon { font-size: 16px; }
         .action-text { font-size: 9px; }
         .action-cost { font-size: 8px; opacity: 0.9; }
         
-        /* ВЫБОР МАРШРУТА — ПО ЦЕНТРУ */
+        /* Панели по центру */
         .center-panel {
             position: fixed;
             top: 50%;
@@ -123,7 +123,7 @@
         .delivery-buttons { display: flex; gap: 10px; }
         .btn-small { flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; }
         
-        /* Игровая панель — по центру поверх всего */
+        /* Игровой экран */
         .game-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -182,7 +182,49 @@
         .game-control-btn.down { border-color: #7c4dff; color: #7c4dff; }
         .game-control-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
         
-        /* Событие — по центру */
+        /* Панель быстрой паузы/магазина */
+        .quick-rest-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(20,20,20,0.98);
+            padding: 25px;
+            border-radius: 25px;
+            border: 2px solid #00e676;
+            z-index: 300;
+            width: 90%;
+            max-width: 350px;
+            transition: transform 0.3s;
+            text-align: center;
+        }
+        
+        .quick-rest-panel.active { transform: translate(-50%, -50%) scale(1); }
+        
+        .rest-title { font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #00e676; }
+        
+        .rest-option { 
+            background: rgba(40,40,40,0.9); 
+            padding: 15px; 
+            border-radius: 15px; 
+            margin-bottom: 10px; 
+            border: 2px solid #444;
+            cursor: pointer;
+        }
+        
+        .rest-option:hover { border-color: #00e676; }
+        
+        .overlay-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 290;
+            display: none;
+        }
+        
+        .overlay-backdrop.active { display: block; }
+        
+        /* Событие */
         .event-overlay { 
             position: fixed; 
             top: 0; left: 0; right: 0; bottom: 0; 
@@ -204,17 +246,14 @@
             width: 100%; 
             border: 2px solid #ff9100; 
             text-align: center; 
-            animation: slideUp 0.3s;
         }
-        
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
         .event-icon { font-size: 60px; margin-bottom: 15px; }
         .event-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
         .event-text { color: #aaa; margin-bottom: 20px; line-height: 1.5; }
         .event-choices { display: flex; flex-direction: column; gap: 10px; }
         
-        /* Пит-стоп — по центру */
+        /* Пит-стоп */
         .pitstop-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -252,47 +291,6 @@
         .pitstop-item:hover { border-color: #00e676; }
         .pitstop-item-header { display: flex; align-items: center; gap: 10px; font-size: 18px; margin-bottom: 5px; }
         .pitstop-item-desc { font-size: 12px; color: #888; }
-        
-        /* Панель быстрой паузы */
-        .quick-rest-panel {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            background: rgba(20,20,20,0.98);
-            padding: 25px;
-            border-radius: 25px;
-            border: 2px solid #00e676;
-            z-index: 300;
-            width: 90%;
-            max-width: 350px;
-            transition: transform 0.3s;
-            text-align: center;
-        }
-        
-        .quick-rest-panel.active { transform: translate(-50%, -50%) scale(1); }
-        
-        .rest-title { font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #00e676; }
-        .rest-option { 
-            background: rgba(40,40,40,0.9); 
-            padding: 15px; 
-            border-radius: 15px; 
-            margin-bottom: 10px; 
-            border: 2px solid #444;
-            cursor: pointer;
-        }
-        
-        .rest-option:hover { border-color: #00e676; }
-        
-        .overlay-backdrop {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 290;
-            display: none;
-        }
-        
-        .overlay-backdrop.active { display: block; }
         
         /* Уведомления */
         .toast { 
@@ -366,32 +364,40 @@
             </div>
         </div>
         
-        <!-- КНОПКИ СВЕРХУ — МАЛЕНЬКИЕ -->
+        <!-- КНОПКИ СВЕРХУ -->
         <div class="action-bar" id="action-bar">
-            <button class="action-btn-small btn-water" id="btn-water" onclick="quickRefill('water')">
+            <button class="action-btn-small btn-water" onclick="quickRefill('water')">
                 <span class="action-icon">💧</span>
                 <span class="action-text">Вода</span>
                 <span class="action-cost">3 PLN</span>
             </button>
-            <button class="action-btn-small btn-energy" id="btn-energy" onclick="quickRefill('energy')">
+            <button class="action-btn-small btn-energy" onclick="quickRefill('energy')">
                 <span class="action-icon">⚡</span>
                 <span class="action-text">Кофе</span>
                 <span class="action-cost">5 PLN</span>
             </button>
-            <button class="action-btn-small btn-find" id="btn-find" onclick="findOrder()">
+            <button class="action-btn-small btn-find" onclick="findOrder()">
                 <span class="action-icon">🔍</span>
                 <span class="action-text">ЗАКАЗ</span>
             </button>
+            <button class="action-btn-small btn-shop" onclick="openShop()">
+                <span class="action-icon">🛒</span>
+                <span class="action-text">Магаз</span>
+            </button>
+            <button class="action-btn-small btn-stats" onclick="showStats()">
+                <span class="action-icon">📊</span>
+                <span class="action-text">Стат</span>
+            </button>
         </div>
         
-        <!-- ВЫБОР МАРШРУТА — ПО ЦЕНТРУ -->
+        <!-- ВЫБОР МАРШРУТА -->
         <div class="center-panel" id="route-panel">
             <div class="center-title">🗺️ Выбери маршрут</div>
             <div class="center-subtitle">Каждый путь имеет свои риски и награды</div>
             <div id="route-options"></div>
         </div>
         
-        <!-- ПАНЕЛЬ ДОСТАВКИ — КОМПАКТНАЯ СНИЗУ -->
+        <!-- ПАНЕЛЬ ДОСТАВКИ -->
         <div class="delivery-panel-compact" id="delivery-panel">
             <div class="delivery-header">
                 <div class="delivery-title" id="delivery-title">🍔 Доставка</div>
@@ -407,7 +413,7 @@
         </div>
     </div>
     
-    <!-- ИГРОВОЙ ЭКРАН — ПОЛНОЭКРАННЫЙ -->
+    <!-- ИГРОВОЙ ЭКРАН -->
     <div class="game-overlay" id="game-overlay">
         <div class="game-box">
             <div class="game-title">⚠️ Внимание на дороге!</div>
@@ -425,7 +431,7 @@
         </div>
     </div>
     
-    <!-- ПИТ-СТОП — ПО ЦЕНТРУ -->
+    <!-- ПИТ-СТОП -->
     <div class="pitstop-overlay" id="pitstop-overlay">
         <div class="pitstop-card">
             <div class="pitstop-title" id="pitstop-title">⛽ Пит-стоп</div>
@@ -434,7 +440,7 @@
         </div>
     </div>
     
-    <!-- СОБЫТИЕ — ПО ЦЕНТРУ -->
+    <!-- СОБЫТИЕ -->
     <div class="event-overlay" id="event-overlay">
         <div class="event-card">
             <div class="event-icon" id="event-icon">⚠️</div>
@@ -444,7 +450,7 @@
         </div>
     </div>
     
-    <!-- ПАНЕЛЬ БЫСТРОЙ ПАУЗЫ -->
+    <!-- ПАНЕЛЬ БЫСТРОЙ ПАУЗЫ/МАГАЗИНА -->
     <div class="overlay-backdrop" id="rest-backdrop" onclick="closeQuickRest()"></div>
     <div class="quick-rest-panel" id="quick-rest-panel">
         <div class="rest-title" id="rest-title">🥤 Быстрая пауза</div>
@@ -456,6 +462,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // ==================== КОНФИГУРАЦИЯ ====================
+        
         const firebaseConfig = {
             apiKey: "AIzaSyChrQMyO2soPgoEHq_f3aYs5Cs19q3sWEk",
             authDomain: "warszawa-courier.firebaseapp.com",
@@ -467,6 +475,8 @@
         };
 
         const WARSAW_CENTER = [52.2297, 21.0122];
+        
+        // ==================== ДАННЫЕ ====================
         
         const QUICK_ITEMS = {
             water: [
@@ -522,11 +532,16 @@
             }
         ];
         
+        // ==================== СОСТОЯНИЕ ИГРЫ ====================
+        
         let state = {
             balance: 50,
             energy: 100,
             water: 100,
             mood: 100,
+            experience: 0,
+            level: 1,
+            stats: { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 },
             currentOrder: null,
             currentRoute: null,
             isDelivering: false,
@@ -539,8 +554,41 @@
         };
         
         let map, courierMarker, destMarker, routeLine, pitstopMarkers = [];
-        let gameInterval, obstacleInterval, autoDriveInterval;
+        let gameInterval, obstacleInterval;
 
+        // ==================== СОХРАНЕНИЕ ====================
+        
+        function saveGame() {
+            const data = {
+                balance: state.balance,
+                energy: state.energy,
+                water: state.water,
+                mood: state.mood,
+                stats: state.stats,
+                level: state.level,
+                experience: state.experience
+            };
+            localStorage.setItem('warsaw_courier_save', JSON.stringify(data));
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('warsaw_courier_save');
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.balance = data.balance ?? 50;
+                state.energy = data.energy ?? 100;
+                state.water = data.water ?? 100;
+                state.mood = data.mood ?? 100;
+                state.stats = data.stats ?? { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 };
+                state.level = data.level ?? 1;
+                state.experience = data.experience ?? 0;
+                return true;
+            }
+            return false;
+        }
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        
         function init() {
             map = L.map('map', { zoomControl: false, attributionControl: false }).setView(WARSAW_CENTER, 13);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
@@ -554,8 +602,17 @@
             
             updateUI();
             setInterval(gameTick, 1000);
+            
+            // Автосохранение каждые 5 секунд
+            setInterval(saveGame, 5000);
+            
+            // Сохраняем при закрытии
+            window.addEventListener('beforeunload', saveGame);
+            
             showToast('Готов к работе! Нажми ЗАКАЗ', 3000);
         }
+        
+        // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
         
         function updateUI() {
             document.getElementById('balance').textContent = Math.floor(state.balance) + ' PLN';
@@ -588,21 +645,24 @@
             setTimeout(() => t.classList.remove('show'), duration);
         }
 
-        // БЫСТРОЕ ПОПОЛНЕНИЕ
+        // ==================== БЫСТРОЕ ПОПОЛНЕНИЕ ====================
+        
         function quickRefill(type) {
             if (state.isDelivering) {
                 showToast('❌ Во время доставки нельзя!', 2000);
                 return;
             }
             
-            document.getElementById('rest-title').textContent = type === 'water' ? '🥤 Напитки' : '☕ Энергетики';
+            const title = type === 'water' ? '🥤 Напитки' : '☕ Энергетики';
+            document.getElementById('rest-title').textContent = title;
+            
             const container = document.getElementById('rest-options');
             container.innerHTML = '';
             
             QUICK_ITEMS[type].forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'rest-option';
-                div.onclick = () => buyItem(item);
+                div.onclick = () => buyQuickItem(item);
                 div.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 10px; font-size: 18px; margin-bottom: 5px;">
                         <span>${item.icon}</span>
@@ -623,7 +683,7 @@
             document.getElementById('rest-backdrop').classList.add('active');
         }
         
-        function buyItem(item) {
+        function buyQuickItem(item) {
             if (state.balance < item.cost) {
                 showToast('❌ Недостаточно денег!', 2000);
                 return;
@@ -633,6 +693,7 @@
             state.water = Math.min(100, Math.max(0, state.water + item.water));
             state.mood = Math.min(100, Math.max(0, state.mood + item.mood));
             updateUI();
+            saveGame();
             closeQuickRest();
             showToast(`${item.icon} Готово!`, 2000);
         }
@@ -642,7 +703,8 @@
             document.getElementById('rest-backdrop').classList.remove('active');
         }
 
-        // ПОИСК ЗАКАЗА
+        // ==================== ПОИСК ЗАКАЗА ====================
+        
         function findOrder() {
             if (state.energy < 20 || state.water < 20) {
                 showToast('⚠️ Мало ресурсов! Пополни сначала.', 3000);
@@ -704,7 +766,6 @@
                 destLng: WARSAW_CENTER[1] + (Math.random() - 0.5) * 0.08
             };
             
-            // Показываем выбор маршрута по центру
             const container = document.getElementById('route-options');
             container.innerHTML = '';
             
@@ -735,7 +796,6 @@
         function selectRoute(idx) {
             state.currentRoute = state.currentOrder.routes[idx];
             
-            // Генерируем пит-стопы
             const types = Object.keys(PITSTOPS);
             state.currentRoute.pitstopData = [];
             for (let i = 0; i < state.currentRoute.pitstops; i++) {
@@ -763,7 +823,6 @@
             
             const dest = [state.currentOrder.destLat, state.currentOrder.destLng];
             
-            // Маркеры на карте
             const destIcon = L.divIcon({
                 html: '<div class="marker-dest"></div>',
                 className: 'custom-marker',
@@ -793,9 +852,7 @@
             
             map.fitBounds([WARSAW_CENTER, dest], { padding: [60, 60] });
             
-            // Показываем панель доставки
-            document.getElementById('delivery-title').innerHTML = 
-                `${state.currentOrder.restaurant.icon} Доставка`;
+            document.getElementById('delivery-title').innerHTML = `${state.currentOrder.restaurant.icon} Доставка`;
             document.getElementById('delivery-panel').classList.add('active');
             document.getElementById('drive-btn').style.display = 'block';
             
@@ -809,51 +866,44 @@
             document.getElementById('progress-fill').style.width = state.progress + '%';
         }
 
-        // НАЧАЛО ПОЕЗДКИ — АВТОМАТИЧЕСКИЙ РЕЖИМ
+        // ==================== ДОСТАВКА ====================
+        
         function startDriving() {
             document.getElementById('drive-btn').style.display = 'none';
             document.getElementById('delivery-status').textContent = 'Едем...';
-            
-            // Запускаем автоматическую поездку с мини-играми
             autoDrive();
         }
         
         function autoDrive() {
-            // Проверяем пит-стоп
             const nextStop = state.currentRoute.pitstopData[state.currentStop];
             if (nextStop && state.progress >= nextStop.progress) {
                 showPitstop(nextStop);
                 return;
             }
             
-            // Проверяем финиш
             if (state.progress >= 100) {
                 finishDelivery();
                 return;
             }
             
-            // Случайное событие или мини-игра
             const rand = Math.random();
             
             if (rand < 0.3) {
-                // Мини-игра
                 startMiniGame();
             } else if (rand < 0.3 + (state.currentRoute.risk / 100)) {
-                // Событие
                 triggerEvent();
             } else {
-                // Обычный прогресс
                 state.progress += 15;
                 state.energy -= 3;
                 state.water -= 2;
                 updateProgress();
                 updateUI();
-                
                 setTimeout(autoDrive, 1000);
             }
         }
         
-        // МИНИ-ИГРА
+        // ==================== МИНИ-ИГРА ====================
+        
         function startMiniGame() {
             state.gameActive = true;
             state.bikeLane = 1;
@@ -864,7 +914,6 @@
             
             updateBikePosition();
             
-            // Спавним препятствия
             let spawnCount = 0;
             obstacleInterval = setInterval(() => {
                 spawnObstacle();
@@ -893,18 +942,18 @@
         
         function spawnObstacle() {
             const road = document.getElementById('game-road');
+            if (!road) return;
+            
             const obstacle = document.createElement('div');
             obstacle.className = 'obstacle-big';
             obstacle.textContent = ['🚗', '🚧', '🕳️', '🐕'][Math.floor(Math.random() * 4)];
             
-            // Выбираем полосу
             const lane = Math.floor(Math.random() * 3);
             obstacle.style.top = (lane * 33.33 + 8) + '%';
             obstacle.dataset.lane = lane;
             
             road.appendChild(obstacle);
             
-            // Проверка столкновения
             setTimeout(() => {
                 if (!state.gameActive) return;
                 
@@ -912,7 +961,6 @@
                 const bikeRect = bike.getBoundingClientRect();
                 const obsRect = obstacle.getBoundingClientRect();
                 
-                // Если на одной полосе и рядом
                 if (parseInt(obstacle.dataset.lane) === state.bikeLane && 
                     Math.abs(bikeRect.left - obsRect.left) < 60) {
                     state.gameHits++;
@@ -928,18 +976,14 @@
             document.getElementById('game-overlay').classList.remove('active');
             document.querySelectorAll('.obstacle-big').forEach(o => o.remove());
             
-            // Результаты мини-игры
             if (state.gameHits === 0) {
-                // Идеально
                 showToast('🌟 Идеально! Бонус: +5 PLN', 2000);
                 state.currentOrder.bonus = (state.currentOrder.bonus || 0) + 5;
                 state.progress += 10;
             } else if (state.gameHits === 1) {
-                // Нормально
                 showToast('✅ Неплохо', 1500);
                 state.progress += 5;
             } else {
-                // Плохо
                 showToast(`💥 ${state.gameHits} аварий! -10 энергии`, 2000);
                 state.energy -= 10;
                 state.mood -= 10;
@@ -948,12 +992,11 @@
             
             updateProgress();
             updateUI();
-            
-            // Продолжаем поездку
             setTimeout(autoDrive, 2000);
         }
         
-        // ПИТ-СТОП
+        // ==================== ПИТ-СТОП ====================
+        
         function showPitstop(stop) {
             document.getElementById('pitstop-title').innerHTML = `${stop.icon} ${stop.name}`;
             const container = document.getElementById('pitstop-items');
@@ -996,7 +1039,6 @@
             updateUI();
             document.getElementById('pitstop-overlay').classList.remove('active');
             showToast(`${item.icon} Куплено!`, 2000);
-            
             setTimeout(autoDrive, 1500);
         }
         
@@ -1006,7 +1048,8 @@
             setTimeout(autoDrive, 500);
         }
         
-        // СОБЫТИЕ
+        // ==================== СОБЫТИЯ ====================
+        
         function triggerEvent() {
             const event = ROAD_EVENTS[Math.floor(Math.random() * ROAD_EVENTS.length)];
             
@@ -1047,15 +1090,14 @@
             
             updateProgress();
             updateUI();
-            
             setTimeout(autoDrive, 1500);
         }
         
-        // ФИНИШ ДОСТАВКИ
+        // ==================== ЗАВЕРШЕНИЕ ====================
+        
         function finishDelivery() {
             let earned = state.currentRoute.price;
             
-            // Бонусы и штрафы
             if (state.mood > 80) earned += Math.floor(earned * 0.15);
             if (state.currentOrder.bonus) earned += state.currentOrder.bonus;
             if (state.accidents > 0) earned -= state.accidents * 5;
@@ -1064,11 +1106,21 @@
             earned += tip;
             
             state.balance += Math.max(0, earned);
+            state.stats.totalDeliveries++;
+            state.stats.totalEarned += Math.max(0, earned);
+            if (tip > state.stats.bestTip) state.stats.bestTip = tip;
+            
+            state.experience += 10;
+            if (state.experience >= state.level * 50) {
+                state.level++;
+                state.experience = 0;
+            }
             
             document.getElementById('delivery-panel').classList.remove('active');
             resetMap();
             
-            showToast(`💰 +${Math.max(0, earned)} PLN${tip > 0 ? ' (чаевые: ' + tip + ')' : ''}!`, 4000);
+            saveGame();
+            showToast(`💰 +${Math.max(0, earned)} PLN!`, 4000);
             updateUI();
         }
         
@@ -1084,6 +1136,7 @@
                 state.balance = Math.max(0, state.balance - 10);
                 document.getElementById('delivery-panel').classList.remove('active');
                 resetMap();
+                saveGame();
                 showToast('Заказ отменен. Штраф: 10 PLN', 3000);
                 updateUI();
             }
@@ -1107,233 +1160,83 @@
             
             clearInterval(obstacleInterval);
         }
+
+        // ==================== МАГАЗИН ====================
         
+        function openShop() {
+            if (state.isDelivering) {
+                showToast('❌ Сначала заверши доставку!', 2000);
+                return;
+            }
+            
+            const items = [
+                { id: 'bike1', name: 'Горный велик', icon: '🚲', cost: 150, desc: '-20% энергии' },
+                { id: 'bike2', name: 'Электробайк', icon: '🛵', cost: 400, desc: 'Без энергии!' },
+                { id: 'helmet', name: 'Шлем', icon: '⛑️', cost: 80, desc: 'Защита от аварий' },
+                { id: 'thermos', name: 'Термос', icon: '🍶', cost: 60, desc: '-30% воды' },
+                { id: 'music', name: 'Наушники', icon: '🎧', cost: 100, desc: '-40% настроения' },
+                { id: 'vip', name: 'VIP', icon: '👑', cost: 500, desc: '+50% к заказам' }
+            ];
+            
+            const owned = JSON.parse(localStorage.getItem('warsaw_courier_shop') || '[]');
+            let html = '';
+            
+            items.forEach(item => {
+                const have = owned.includes(item.id);
+                html += `<div style="background:#222;padding:10px;border-radius:10px;margin-bottom:8px;border:2px solid ${have?'#0f0':'#444'}">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <span style="font-size:24px">${item.icon}</span>
+                        <div style="flex:1">
+                            <div style="font-weight:bold">${item.name} ${have?'✅':''}</div>
+                            <div style="font-size:11px;color:#888">${item.desc}</div>
+                        </div>
+                        <div style="color:${have?'#0f0':'#ff0'};font-weight:bold">${have?'ЕСТЬ':item.cost+'PLN'}</div>
+                    </div>
+                    ${!have?`<button class="btn btn-primary" onclick="buyShopItem('${item.id}',${item.cost})" style="margin-top:8px;width:100%;padding:8px">Купить</button>`:''}
+                </div>`;
+            });
+            
+            document.getElementById('rest-title').textContent = '🛒 Магазин';
+            document.getElementById('rest-options').innerHTML = html;
+            document.getElementById('quick-rest-panel').classList.add('active');
+            document.getElementById('rest-backdrop').classList.add('active');
+        }
+        
+        function buyShopItem(id, cost) {
+            if (state.balance < cost) {
+                showToast('❌ Недостаточно денег!', 2000);
+                return;
+            }
+            state.balance -= cost;
+            const owned = JSON.parse(localStorage.getItem('warsaw_courier_shop') || '[]');
+            owned.push(id);
+            localStorage.setItem('warsaw_courier_shop', JSON.stringify(owned));
+            saveGame();
+            updateUI();
+            showToast('✅ Куплено!', 2000);
+            closeQuickRest();
+        }
+        
+        function showStats() {
+            const html = `<div style="font-size:14px;line-height:2">
+                📦 Доставок: <b>${state.stats.totalDeliveries}</b><br>
+                💰 Заработано: <b>${state.stats.totalEarned} PLN</b><br>
+                💥 Аварий: <b>${state.stats.accidents}</b><br>
+                🏆 Чаевые: <b>${state.stats.bestTip} PLN</b><br>
+                ⭐ Уровень: <b>${state.level}</b>
+            </div>`;
+            
+            document.getElementById('rest-title').textContent = '📊 Статистика';
+            document.getElementById('rest-options').innerHTML = html;
+            document.getElementById('quick-rest-panel').classList.add('active');
+            document.getElementById('rest-backdrop').classList.add('active');
+        }
+
+        // ==================== СТАРТ ====================
+        
+        // Загружаем сохранение ПЕРЕД инициализацией
+        loadGame();
         init();
     </script>
 </body>
 </html>
-
-
-
-
-
-// ПАТЧ: Магазин и статистика
-
-// Добавляем кнопки в панель быстрого пополнения
-const originalQuickRefill = quickRefill;
-quickRefill = function(type) {
-    if (type === 'shop') return openShop();
-    if (type === 'stats') return showStats();
-    return originalQuickRefill(type);
-};
-
-// Магазин
-function openShop() {
-    if (state.isDelivering) {
-        showToast('❌ Сначала заверши доставку!', 2000);
-        return;
-    }
-    
-    const items = [
-        { id: 'bike1', name: 'Горный велик', icon: '🚲', cost: 150, desc: '-20% энергии' },
-        { id: 'bike2', name: 'Электробайк', icon: '🛵', cost: 400, desc: 'Без энергии!' },
-        { id: 'helmet', name: 'Шлем', icon: '⛑️', cost: 80, desc: 'Защита от аварий' },
-        { id: 'thermos', name: 'Термос', icon: '🍶', cost: 60, desc: '-30% воды' },
-        { id: 'music', name: 'Наушники', icon: '🎧', cost: 100, desc: '-40% настроения' },
-        { id: 'vip', name: 'VIP', icon: '👑', cost: 500, desc: '+50% к заказам' }
-    ];
-    
-    const owned = JSON.parse(localStorage.getItem('shop') || '[]');
-    let html = '';
-    
-    items.forEach(item => {
-        const have = owned.includes(item.id);
-        html += `<div style="background:#222;padding:10px;border-radius:10px;margin-bottom:8px;border:2px solid ${have?'#0f0':'#444'}">
-            <div style="display:flex;align-items:center;gap:10px">
-                <span style="font-size:24px">${item.icon}</span>
-                <div style="flex:1">
-                    <div style="font-weight:bold">${item.name} ${have?'✅':''}</div>
-                    <div style="font-size:11px;color:#888">${item.desc}</div>
-                </div>
-                <div style="color:${have?'#0f0':'#ff0'};font-weight:bold">${have?'ЕСТЬ':item.cost+'PLN'}</div>
-            </div>
-            ${!have?`<button class="btn btn-primary" onclick="buyItem('${item.id}',${item.cost})" style="margin-top:8px;width:100%;padding:8px">Купить</button>`:''}
-        </div>`;
-    });
-    
-    document.getElementById('rest-title').textContent = '🛒 Магазин';
-    document.getElementById('rest-options').innerHTML = html;
-    document.getElementById('quick-rest-panel').classList.add('active');
-    document.getElementById('rest-backdrop').classList.add('active');
-}
-
-function buyItem(id,cost) {
-    if (state.balance < cost) {
-        showToast('❌ Нет денег!', 2000);
-        return;
-    }
-    state.balance -= cost;
-    const owned = JSON.parse(localStorage.getItem('shop') || '[]');
-    owned.push(id);
-    localStorage.setItem('shop', JSON.stringify(owned));
-    updateUI();
-    showToast('✅ Куплено!', 2000);
-    closeQuickRest();
-}
-
-// Статистика
-function showStats() {
-    const html = `<div style="font-size:14px;line-height:2">
-        📦 Доставок: <b>${state.stats.totalDeliveries}</b><br>
-        💰 Заработано: <b>${state.stats.totalEarned}PLN</b><br>
-        💥 Аварий: <b>${state.stats.accidents}</b><br>
-        🏆 Чаевые: <b>${state.stats.bestTip}PLN</b>
-    </div>`;
-    
-    document.getElementById('rest-title').textContent = '📊 Статистика';
-    document.getElementById('rest-options').innerHTML = html;
-    document.getElementById('quick-rest-panel').classList.add('active');
-    document.getElementById('rest-backdrop').classList.add('active');
-}
-
-// Добавляем кнопки в интерфейс
-setTimeout(() => {
-    const bar = document.getElementById('action-bar');
-    if (bar) {
-        bar.innerHTML += `
-            <button class="action-btn-small" style="background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff" onclick="quickRefill('shop')">
-                <span class="action-icon">🛒</span>
-                <span class="action-text">Магаз</span>
-            </button>
-            <button class="action-btn-small" style="background:linear-gradient(135deg,#9c27b0,#7b1fa2);color:#fff" onclick="quickRefill('stats')">
-                <span class="action-icon">📊</span>
-                <span class="action-text">Стат</span>
-            </button>`;
-    }
-}, 100);
-
-
-
-
-
-
-// ==================== ПАТЧ СОХРАНЕНИЯ (ГАРАНТИРОВАННЫЙ) ====================
-
-// Перезаписываем updateUI чтобы сохранять при каждом обновлении
-const originalUpdateUI = updateUI;
-updateUI = function() {
-    originalUpdateUI();
-    // Сохраняем после каждого обновления интерфейса
-    localStorage.setItem('courier_money', state.balance);
-    localStorage.setItem('courier_energy', state.energy);
-    localStorage.setItem('courier_water', state.water);
-    localStorage.setItem('courier_mood', state.mood);
-    localStorage.setItem('courier_stats', JSON.stringify(state.stats));
-};
-
-// Перезаписываем init чтобы загружать при старте
-const originalInit = init;
-init = function() {
-    // Загружаем ДО инициализации
-    const savedBalance = localStorage.getItem('courier_money');
-    if (savedBalance !== null) {
-        state.balance = parseInt(savedBalance);
-        state.energy = parseInt(localStorage.getItem('courier_energy') || 100);
-        state.water = parseInt(localStorage.getItem('courier_water') || 100);
-        state.mood = parseInt(localStorage.getItem('courier_mood') || 100);
-        const savedStats = localStorage.getItem('courier_stats');
-        if (savedStats) state.stats = JSON.parse(savedStats);
-    }
-    
-    originalInit();
-    
-    // Показываем загруженный баланс
-    if (savedBalance !== null) {
-        showToast('💾 Загружено: ' + state.balance + ' PLN', 3000);
-    }
-};
-
-// ==================== МАГАЗИН ====================
-
-function openShop() {
-    if (state.isDelivering) {
-        showToast('❌ Сначала заверши доставку!', 2000);
-        return;
-    }
-    
-    const items = [
-        { id: 'bike1', name: 'Горный велик', icon: '🚲', cost: 150, desc: '-20% энергии' },
-        { id: 'bike2', name: 'Электробайк', icon: '🛵', cost: 400, desc: 'Без энергии!' },
-        { id: 'helmet', name: 'Шлем', icon: '⛑️', cost: 80, desc: 'Защита от аварий' },
-        { id: 'thermos', name: 'Термос', icon: '🍶', cost: 60, desc: '-30% воды' },
-        { id: 'music', name: 'Наушники', icon: '🎧', cost: 100, desc: '-40% настроения' },
-        { id: 'vip', name: 'VIP', icon: '👑', cost: 500, desc: '+50% к заказам' }
-    ];
-    
-    const owned = JSON.parse(localStorage.getItem('courier_shop') || '[]');
-    let html = '';
-    
-    items.forEach(item => {
-        const have = owned.includes(item.id);
-        html += `<div style="background:#222;padding:10px;border-radius:10px;margin-bottom:8px;border:2px solid ${have?'#0f0':'#444'}">
-            <div style="display:flex;align-items:center;gap:10px">
-                <span style="font-size:24px">${item.icon}</span>
-                <div style="flex:1">
-                    <div style="font-weight:bold">${item.name} ${have?'✅':''}</div>
-                    <div style="font-size:11px;color:#888">${item.desc}</div>
-                </div>
-                <div style="color:${have?'#0f0':'#ff0'};font-weight:bold">${have?'ЕСТЬ':item.cost+'PLN'}</div>
-            </div>
-            ${!have?`<button class="btn btn-primary" onclick="buyShopItem('${item.id}',${item.cost})" style="margin-top:8px;width:100%;padding:8px">Купить</button>`:''}
-        </div>`;
-    });
-    
-    document.getElementById('rest-title').textContent = '🛒 Магазин';
-    document.getElementById('rest-options').innerHTML = html;
-    document.getElementById('quick-rest-panel').classList.add('active');
-    document.getElementById('rest-backdrop').classList.add('active');
-}
-
-function buyShopItem(id,cost) {
-    if (state.balance < cost) {
-        showToast('❌ Нет денег!', 2000);
-        return;
-    }
-    state.balance -= cost;
-    const owned = JSON.parse(localStorage.getItem('courier_shop') || '[]');
-    owned.push(id);
-    localStorage.setItem('courier_shop', JSON.stringify(owned));
-    updateUI(); // Это вызовет сохранение
-    showToast('✅ Куплено!', 2000);
-    closeQuickRest();
-}
-
-function showStats() {
-    const html = `<div style="font-size:14px;line-height:2">
-        📦 Доставок: <b>${state.stats.totalDeliveries}</b><br>
-        💰 Заработано: <b>${state.stats.totalEarned}PLN</b><br>
-        💥 Аварий: <b>${state.stats.accidents}</b><br>
-        🏆 Чаевые: <b>${state.stats.bestTip}PLN</b>
-    </div>`;
-    
-    document.getElementById('rest-title').textContent = '📊 Статистика';
-    document.getElementById('rest-options').innerHTML = html;
-    document.getElementById('quick-rest-panel').classList.add('active');
-    document.getElementById('rest-backdrop').classList.add('active');
-}
-
-// Добавляем кнопки
-setTimeout(() => {
-    const bar = document.getElementById('action-bar');
-    if (bar) {
-        bar.innerHTML += `
-            <button class="action-btn-small" style="background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff" onclick="openShop()">
-                <span class="action-icon">🛒</span>
-                <span class="action-text">Магаз</span>
-            </button>
-            <button class="action-btn-small" style="background:linear-gradient(135deg,#9c27b0,#7b1fa2);color:#fff" onclick="showStats()">
-                <span class="action-icon">📊</span>
-                <span class="action-text">Стат</span>
-            </button>`;
-    }
-}, 100);
