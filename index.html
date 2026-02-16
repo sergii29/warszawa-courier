@@ -1217,39 +1217,131 @@ setTimeout(() => {
 
 
 
-        // ПАТЧ: Сохранение прогресса
+// ==================== ПАТЧ: МАГАЗИН + СОХРАНЕНИЕ ====================
 
-// Сохраняем состояние
+// Сохранение игры
 function saveGame() {
-    const saveData = {
+    const data = {
         balance: state.balance,
+        energy: state.energy,
+        water: state.water,
+        mood: state.mood,
         stats: state.stats,
-        experience: state.experience,
         level: state.level,
-        timestamp: Date.now()
+        experience: state.experience
     };
-    localStorage.setItem('courier_save', JSON.stringify(saveData));
+    localStorage.setItem('warsaw_courier_save', JSON.stringify(data));
 }
 
-// Загружаем состояние
+// Загрузка игры
 function loadGame() {
-    const saved = localStorage.getItem('courier_save');
+    const saved = localStorage.getItem('warsaw_courier_save');
     if (saved) {
         const data = JSON.parse(saved);
-        state.balance = data.balance || 50;
-        state.stats = data.stats || { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 };
-        state.experience = data.experience || 0;
-        state.level = data.level || 1;
+        state.balance = data.balance ?? 50;
+        state.energy = data.energy ?? 100;
+        state.water = data.water ?? 100;
+        state.mood = data.mood ?? 100;
+        state.stats = data.stats ?? { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 };
+        state.level = data.level ?? 1;
+        state.experience = data.experience ?? 0;
         updateUI();
-        showToast('💾 Прогресс загружен!', 2000);
     }
 }
 
-// Автосохранение каждые 5 секунд
-setInterval(saveGame, 5000);
+// Магазин
+function openShop() {
+    if (state.isDelivering) {
+        showToast('❌ Сначала заверши доставку!', 2000);
+        return;
+    }
+    
+    const items = [
+        { id: 'bike1', name: 'Горный велик', icon: '🚲', cost: 150, desc: '-20% энергии' },
+        { id: 'bike2', name: 'Электробайк', icon: '🛵', cost: 400, desc: 'Без энергии!' },
+        { id: 'helmet', name: 'Шлем', icon: '⛑️', cost: 80, desc: 'Защита от аварий' },
+        { id: 'thermos', name: 'Термос', icon: '🍶', cost: 60, desc: '-30% воды' },
+        { id: 'music', name: 'Наушники', icon: '🎧', cost: 100, desc: '-40% настроения' },
+        { id: 'vip', name: 'VIP', icon: '👑', cost: 500, desc: '+50% к заказам' }
+    ];
+    
+    const owned = JSON.parse(localStorage.getItem('warsaw_courier_shop') || '[]');
+    let html = '';
+    
+    items.forEach(item => {
+        const have = owned.includes(item.id);
+        html += `<div style="background:#222;padding:10px;border-radius:10px;margin-bottom:8px;border:2px solid ${have?'#0f0':'#444'}">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:24px">${item.icon}</span>
+                <div style="flex:1">
+                    <div style="font-weight:bold">${item.name} ${have?'✅':''}</div>
+                    <div style="font-size:11px;color:#888">${item.desc}</div>
+                </div>
+                <div style="color:${have?'#0f0':'#ff0'};font-weight:bold">${have?'ЕСТЬ':item.cost+'PLN'}</div>
+            </div>
+            ${!have?`<button class="btn btn-primary" onclick="buyShopItem('${item.id}',${item.cost})" style="margin-top:8px;width:100%;padding:8px">Купить</button>`:''}
+        </div>`;
+    });
+    
+    document.getElementById('rest-title').textContent = '🛒 Магазин';
+    document.getElementById('rest-options').innerHTML = html;
+    document.getElementById('quick-rest-panel').classList.add('active');
+    document.getElementById('rest-backdrop').classList.add('active');
+}
 
-// Сохраняем при закрытии
-window.addEventListener('beforeunload', saveGame);
+function buyShopItem(id,cost) {
+    if (state.balance < cost) {
+        showToast('❌ Нет денег!', 2000);
+        return;
+    }
+    state.balance -= cost;
+    const owned = JSON.parse(localStorage.getItem('warsaw_courier_shop') || '[]');
+    owned.push(id);
+    localStorage.setItem('warsaw_courier_shop', JSON.stringify(owned));
+    saveGame();
+    updateUI();
+    showToast('✅ Куплено!', 2000);
+    closeQuickRest();
+}
 
-// Загружаем при старте
-setTimeout(loadGame, 500);
+// Статистика
+function showStats() {
+    const html = `<div style="font-size:14px;line-height:2">
+        📦 Доставок: <b>${state.stats.totalDeliveries}</b><br>
+        💰 Заработано: <b>${state.stats.totalEarned}PLN</b><br>
+        💥 Аварий: <b>${state.stats.accidents}</b><br>
+        🏆 Чаевые: <b>${state.stats.bestTip}PLN</b><br>
+        ⭐ Уровень: <b>${state.level}</b>
+    </div>`;
+    
+    document.getElementById('rest-title').textContent = '📊 Статистика';
+    document.getElementById('rest-options').innerHTML = html;
+    document.getElementById('quick-rest-panel').classList.add('active');
+    document.getElementById('rest-backdrop').classList.add('active');
+}
+
+// Добавляем кнопки
+setTimeout(() => {
+    const bar = document.getElementById('action-bar');
+    if (bar) {
+        bar.innerHTML += `
+            <button class="action-btn-small" style="background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff" onclick="openShop()">
+                <span class="action-icon">🛒</span>
+                <span class="action-text">Магаз</span>
+            </button>
+            <button class="action-btn-small" style="background:linear-gradient(135deg,#9c27b0,#7b1fa2);color:#fff" onclick="showStats()">
+                <span class="action-icon">📊</span>
+                <span class="action-text">Стат</span>
+            </button>`;
+    }
+    
+    // Загружаем сохранение
+    loadGame();
+    
+    // Автосохранение каждые 3 секунды
+    setInterval(saveGame, 3000);
+    
+    // Сохраняем при закрытии
+    window.addEventListener('beforeunload', saveGame);
+    
+}, 500);
