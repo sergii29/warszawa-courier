@@ -1211,3 +1211,45 @@ setTimeout(() => {
             </button>`;
     }
 }, 100);
+
+
+
+
+
+
+        // ПАТЧ: Сохранение прогресса
+
+// Сохраняем состояние
+function saveGame() {
+    const saveData = {
+        balance: state.balance,
+        stats: state.stats,
+        experience: state.experience,
+        level: state.level,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('courier_save', JSON.stringify(saveData));
+}
+
+// Загружаем состояние
+function loadGame() {
+    const saved = localStorage.getItem('courier_save');
+    if (saved) {
+        const data = JSON.parse(saved);
+        state.balance = data.balance || 50;
+        state.stats = data.stats || { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 };
+        state.experience = data.experience || 0;
+        state.level = data.level || 1;
+        updateUI();
+        showToast('💾 Прогресс загружен!', 2000);
+    }
+}
+
+// Автосохранение каждые 5 секунд
+setInterval(saveGame, 5000);
+
+// Сохраняем при закрытии
+window.addEventListener('beforeunload', saveGame);
+
+// Загружаем при старте
+setTimeout(loadGame, 500);
