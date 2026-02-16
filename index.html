@@ -1217,39 +1217,44 @@ setTimeout(() => {
 
 
 
-// ==================== ПАТЧ: МАГАЗИН + СОХРАНЕНИЕ ====================
+// ==================== ПАТЧ СОХРАНЕНИЯ (ГАРАНТИРОВАННЫЙ) ====================
 
-// Сохранение игры
-function saveGame() {
-    const data = {
-        balance: state.balance,
-        energy: state.energy,
-        water: state.water,
-        mood: state.mood,
-        stats: state.stats,
-        level: state.level,
-        experience: state.experience
-    };
-    localStorage.setItem('warsaw_courier_save', JSON.stringify(data));
-}
+// Перезаписываем updateUI чтобы сохранять при каждом обновлении
+const originalUpdateUI = updateUI;
+updateUI = function() {
+    originalUpdateUI();
+    // Сохраняем после каждого обновления интерфейса
+    localStorage.setItem('courier_money', state.balance);
+    localStorage.setItem('courier_energy', state.energy);
+    localStorage.setItem('courier_water', state.water);
+    localStorage.setItem('courier_mood', state.mood);
+    localStorage.setItem('courier_stats', JSON.stringify(state.stats));
+};
 
-// Загрузка игры
-function loadGame() {
-    const saved = localStorage.getItem('warsaw_courier_save');
-    if (saved) {
-        const data = JSON.parse(saved);
-        state.balance = data.balance ?? 50;
-        state.energy = data.energy ?? 100;
-        state.water = data.water ?? 100;
-        state.mood = data.mood ?? 100;
-        state.stats = data.stats ?? { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 };
-        state.level = data.level ?? 1;
-        state.experience = data.experience ?? 0;
-        updateUI();
+// Перезаписываем init чтобы загружать при старте
+const originalInit = init;
+init = function() {
+    // Загружаем ДО инициализации
+    const savedBalance = localStorage.getItem('courier_money');
+    if (savedBalance !== null) {
+        state.balance = parseInt(savedBalance);
+        state.energy = parseInt(localStorage.getItem('courier_energy') || 100);
+        state.water = parseInt(localStorage.getItem('courier_water') || 100);
+        state.mood = parseInt(localStorage.getItem('courier_mood') || 100);
+        const savedStats = localStorage.getItem('courier_stats');
+        if (savedStats) state.stats = JSON.parse(savedStats);
     }
-}
+    
+    originalInit();
+    
+    // Показываем загруженный баланс
+    if (savedBalance !== null) {
+        showToast('💾 Загружено: ' + state.balance + ' PLN', 3000);
+    }
+};
 
-// Магазин
+// ==================== МАГАЗИН ====================
+
 function openShop() {
     if (state.isDelivering) {
         showToast('❌ Сначала заверши доставку!', 2000);
@@ -1265,7 +1270,7 @@ function openShop() {
         { id: 'vip', name: 'VIP', icon: '👑', cost: 500, desc: '+50% к заказам' }
     ];
     
-    const owned = JSON.parse(localStorage.getItem('warsaw_courier_shop') || '[]');
+    const owned = JSON.parse(localStorage.getItem('courier_shop') || '[]');
     let html = '';
     
     items.forEach(item => {
@@ -1295,23 +1300,20 @@ function buyShopItem(id,cost) {
         return;
     }
     state.balance -= cost;
-    const owned = JSON.parse(localStorage.getItem('warsaw_courier_shop') || '[]');
+    const owned = JSON.parse(localStorage.getItem('courier_shop') || '[]');
     owned.push(id);
-    localStorage.setItem('warsaw_courier_shop', JSON.stringify(owned));
-    saveGame();
-    updateUI();
+    localStorage.setItem('courier_shop', JSON.stringify(owned));
+    updateUI(); // Это вызовет сохранение
     showToast('✅ Куплено!', 2000);
     closeQuickRest();
 }
 
-// Статистика
 function showStats() {
     const html = `<div style="font-size:14px;line-height:2">
         📦 Доставок: <b>${state.stats.totalDeliveries}</b><br>
         💰 Заработано: <b>${state.stats.totalEarned}PLN</b><br>
         💥 Аварий: <b>${state.stats.accidents}</b><br>
-        🏆 Чаевые: <b>${state.stats.bestTip}PLN</b><br>
-        ⭐ Уровень: <b>${state.level}</b>
+        🏆 Чаевые: <b>${state.stats.bestTip}PLN</b>
     </div>`;
     
     document.getElementById('rest-title').textContent = '📊 Статистика';
@@ -1334,14 +1336,4 @@ setTimeout(() => {
                 <span class="action-text">Стат</span>
             </button>`;
     }
-    
-    // Загружаем сохранение
-    loadGame();
-    
-    // Автосохранение каждые 3 секунды
-    setInterval(saveGame, 3000);
-    
-    // Сохраняем при закрытии
-    window.addEventListener('beforeunload', saveGame);
-    
-}, 500);
+}, 100);
