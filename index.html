@@ -1932,21 +1932,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <style>
     .neo-control-panel {
         /* Убираем привязку к верху и ставим вниз */
@@ -1981,4 +1966,88 @@
     // Если вдруг в коде остались старые элементы action-bar, окончательно их прячем
     const oldBar = document.querySelector('.action-bar');
     if (oldBar) oldBar.style.display = 'none';
+</script>
+
+
+
+
+
+<style>
+    /* 1. Поднимаем кнопку "В ПУТЬ" выше панели управления */
+    .delivery-action-panel {
+        bottom: 110px !important; /* Была ниже, теперь над кнопками управления */
+        z-index: 850 !important;
+        background: rgba(0, 230, 118, 0.9) !important;
+        box-shadow: 0 0 20px rgba(0, 230, 118, 0.4) !important;
+    }
+
+    /* 2. Поднимаем уведомления (тосты), чтобы их тоже было видно */
+    .toast {
+        bottom: 120px !important;
+    }
+
+    /* 3. Убеждаемся, что панель управления не "съедает" клики вокруг себя */
+    .neo-control-panel {
+        pointer-events: auto !important;
+    }
+</style>
+
+<script>
+    console.log("Applying Final UI Fixes...");
+
+    // 1. ПРИНУДИТЕЛЬНАЯ ЗАМЕНА ВЕЗДЕ (MutationObserver)
+    // Этот код следит за всем экраном: если где-то появляется "PLN", он сразу меняет на "₽"
+    const currencyObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+                let node;
+                while(node = walk.nextNode()) {
+                    if (node.textContent.includes('PLN')) {
+                        node.textContent = node.textContent.replace(/PLN/g, '₽');
+                    }
+                }
+            }
+        });
+    });
+
+    currencyObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    // 2. ИСПРАВЛЕНИЕ ЛЕТЯЩЕГО ТЕКСТА (Для гарантии)
+    // Перехватываем функцию создания летящего текста, если она была создана ранее
+    const originalSpawnText = window.spawnFloatingText;
+    if (originalSpawnText) {
+        window.spawnFloatingText = function(text, x, y, color) {
+            const cleanText = text.toString().replace(/PLN/g, '₽');
+            originalSpawnText(cleanText, x, y, color);
+        };
+    }
+
+    // 3. ИСПРАВЛЕНИЕ ОКНА СТАТИСТИКИ (Профиль)
+    // Переписываем функцию showStats, чтобы она сразу рисовала в рублях
+    const originalShowStats = showStats;
+    showStats = function() {
+        originalShowStats();
+        const container = document.getElementById('rest-options');
+        if (container) {
+            container.innerHTML = container.innerHTML.replace(/PLN/g, '₽');
+        }
+    };
+
+    // 4. ФИКС КНОПКИ "В ПУТЬ" (Корректируем стили динамически при появлении)
+    function fixDeliveryButton() {
+        const btn = document.querySelector('.delivery-action-panel');
+        if (btn) {
+            btn.style.bottom = '110px';
+        }
+    }
+    // Запускаем проверку каждые полсекунды (на всякий случай)
+    setInterval(fixDeliveryButton, 500);
+
+    // Сразу обновляем интерфейс
+    if (typeof updateUI === 'function') updateUI();
 </script>
