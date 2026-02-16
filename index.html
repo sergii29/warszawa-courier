@@ -2051,3 +2051,83 @@
     // Сразу обновляем интерфейс
     if (typeof updateUI === 'function') updateUI();
 </script>
+
+
+
+
+
+
+<style>
+    /* 1. Возвращаем панель наверх, но сдвигаем ниже основных статов */
+    .neo-control-panel {
+        top: 75px !important; /* Опускаем ниже полосок HP/Water/Mood */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 96% !important;
+        max-width: 500px !important;
+        height: auto !important;
+        flex-direction: row !important; /* Снова горизонтально */
+        bottom: auto !important;
+        background: rgba(10, 10, 10, 0.7) !important;
+        padding: 5px !important;
+        border-radius: 15px !important;
+        gap: 5px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .neo-btn {
+        height: 45px !important;
+        width: auto !important;
+        flex: 1 !important;
+    }
+
+    .neo-label {
+        font-size: 8px !important;
+    }
+
+    /* 2. Поднимаем кнопку "В ПУТЬ" выше, чтобы она была почти в центре */
+    .delivery-action-panel {
+        bottom: 35% !important; /* Подняли на 35% от низа экрана */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 80% !important;
+        max-width: 300px !important;
+        z-index: 1000 !important;
+    }
+
+    /* 3. Убираем все старые отступы и боковые стили */
+    body { padding: 0 !important; }
+</style>
+
+<script>
+    console.log("Re-positioning UI: Menu to top-center, Start button to middle...");
+
+    // Чистка валюты
+    function forceRub() {
+        const fullTextNodes = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+        let n;
+        while(n = fullTextNodes.nextNode()) {
+            if (n.textContent.includes('PLN')) {
+                n.textContent = n.textContent.replace(/PLN/g, '₽');
+            }
+        }
+        // Специально для баланса
+        const bal = document.getElementById('balance');
+        if (bal && bal.textContent.includes('PLN')) {
+            bal.textContent = bal.textContent.replace('PLN', '₽');
+        }
+    }
+
+    // Запуск фикса валюты
+    setInterval(forceRub, 200);
+
+    // Убеждаемся, что кнопка "В путь" всегда на нужной высоте
+    function repositionStartBtn() {
+        const btn = document.querySelector('.delivery-action-panel');
+        if (btn) {
+            btn.style.bottom = '35%';
+            btn.style.top = 'auto';
+        }
+    }
+    setInterval(repositionStartBtn, 500);
+</script>
