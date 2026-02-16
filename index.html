@@ -15,7 +15,7 @@
         .ui-layer { position: absolute; z-index: 100; pointer-events: none; width: 100%; height: 100%; }
         .ui-layer > * { pointer-events: auto; }
         
-        /* Верхняя панель компактная */
+        /* Верхняя панель */
         .top-panel { position: absolute; top: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); }
         
         .balance-box { background: rgba(0,0,0,0.8); padding: 6px 15px; border-radius: 15px; border: 1px solid #00e676; display: inline-block; margin-bottom: 8px; }
@@ -35,7 +35,7 @@
         .stat-bar { width: 100%; height: 3px; background: #333; border-radius: 2px; margin-top: 4px; overflow: hidden; }
         .stat-fill { height: 100%; transition: width 0.3s; }
         
-        /* КНОПКИ СВЕРХУ — Сдвинуты чуть ниже, чтобы не липли к статам */
+        /* КНОПКИ УПРАВЛЕНИЯ — Сдвинуты ниже статов */
         .action-bar { 
             position: absolute; 
             top: 135px; 
@@ -63,18 +63,13 @@
         }
         
         .action-btn-small:active { transform: scale(0.95); }
-        
         .btn-water { background: linear-gradient(135deg, #00ccff, #0099cc); color: #000; }
         .btn-energy { background: linear-gradient(135deg, #ffcc00, #ff9900); color: #000; }
         .btn-find { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
         .btn-shop { background: linear-gradient(135deg, #e91e63, #c2185b); color: #fff; }
         .btn-stats { background: linear-gradient(135deg, #9c27b0, #7b1fa2); color: #fff; }
         
-        .action-icon { font-size: 16px; }
-        .action-text { font-size: 9px; }
-        .action-cost { font-size: 8px; opacity: 0.9; }
-        
-        /* Панели по центру */
+        /* Панели */
         .center-panel {
             position: fixed;
             top: 50%;
@@ -89,15 +84,11 @@
             z-index: 150;
             display: none;
         }
-        
         .center-panel.active { display: block; animation: popIn 0.3s; }
-        
         @keyframes popIn { from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
-        
         .center-title { font-size: 20px; font-weight: bold; margin-bottom: 8px; text-align: center; }
         .center-subtitle { color: #888; font-size: 12px; margin-bottom: 15px; text-align: center; }
         
-        /* Панель доставки — компактная снизу */
         .delivery-panel-compact {
             position: absolute;
             bottom: 10px;
@@ -110,20 +101,13 @@
             display: none;
             z-index: 100;
         }
-        
         .delivery-panel-compact.active { display: block; }
-        
         .delivery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .delivery-title { font-size: 16px; font-weight: bold; }
         .delivery-status { font-size: 12px; color: #00e676; }
-        
         .progress-line { height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
         .progress-fill-line { height: 100%; background: linear-gradient(90deg, #00e676, #00c853); width: 0%; transition: width 0.5s; }
         
-        .delivery-buttons { display: flex; gap: 10px; }
-        .btn-small { flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; }
-        
-        /* Игровой экран */
+        /* Мини-игра */
         .game-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -134,55 +118,15 @@
             justify-content: center;
             flex-direction: column;
         }
-        
         .game-overlay.active { display: flex; }
-        
-        .game-box {
-            background: #1a1a1a;
-            border-radius: 25px;
-            padding: 25px;
-            width: 90%;
-            max-width: 350px;
-            border: 2px solid #2979ff;
-            text-align: center;
-        }
-        
-        .game-title { font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #2979ff; }
-        .game-road-big { 
-            width: 100%; 
-            height: 200px; 
-            background: linear-gradient(to bottom, #0f0f0f, #1a1a1a); 
-            border-radius: 15px; 
-            position: relative; 
-            overflow: hidden; 
-            margin-bottom: 20px;
-            border: 3px solid #444;
-        }
-        
+        .game-box { background: #1a1a1a; border-radius: 25px; padding: 25px; width: 90%; max-width: 350px; border: 2px solid #2979ff; text-align: center; }
+        .game-road-big { width: 100%; height: 200px; background: linear-gradient(to bottom, #0f0f0f, #1a1a1a); border-radius: 15px; position: relative; overflow: hidden; margin-bottom: 20px; border: 3px solid #444; }
         .lane-big { position: absolute; width: 100%; height: 33.33%; border-bottom: 2px dashed #555; }
         .player-bike-big { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 40px; transition: top 0.1s; z-index: 10; }
         .obstacle-big { position: absolute; right: -50px; font-size: 35px; animation: moveLeftBig 2s linear; z-index: 5; }
-        
         @keyframes moveLeftBig { from { right: -50px; } to { right: 110%; } }
         
-        .game-hint-big { color: #888; margin-bottom: 15px; }
-        .game-controls { display: flex; gap: 20px; justify-content: center; }
-        .game-control-btn { 
-            width: 100px; 
-            height: 100px; 
-            border-radius: 50%; 
-            border: 3px solid; 
-            background: transparent; 
-            font-size: 40px; 
-            cursor: pointer;
-            transition: all 0.1s;
-        }
-        
-        .game-control-btn.up { border-color: #2979ff; color: #2979ff; }
-        .game-control-btn.down { border-color: #7c4dff; color: #7c4dff; }
-        .game-control-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
-        
-        /* Панель быстрой паузы/магазина */
+        /* Пит-стоп и модалки */
         .quick-rest-panel {
             position: fixed;
             top: 50%;
@@ -198,135 +142,20 @@
             transition: transform 0.3s;
             text-align: center;
         }
-        
         .quick-rest-panel.active { transform: translate(-50%, -50%) scale(1); }
-        
-        .rest-title { font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #00e676; }
-        
-        .rest-option { 
-            background: rgba(40,40,40,0.9); 
-            padding: 15px; 
-            border-radius: 15px; 
-            margin-bottom: 10px; 
-            border: 2px solid #444;
-            cursor: pointer;
-        }
-        
-        .rest-option:hover { border-color: #00e676; }
-        
-        .overlay-backdrop {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 290;
-            display: none;
-        }
-        
+        .rest-option { background: rgba(40,40,40,0.9); padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 2px solid #444; cursor: pointer; }
+        .overlay-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 290; display: none; }
         .overlay-backdrop.active { display: block; }
         
-        /* Событие */
-        .event-overlay { 
-            position: fixed; 
-            top: 0; left: 0; right: 0; bottom: 0; 
-            background: rgba(0,0,0,0.9); 
-            z-index: 250; 
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 20px; 
-        }
-        
-        .event-overlay.active { display: flex; }
-        
-        .event-card { 
-            background: #1a1a1a; 
-            border-radius: 25px; 
-            padding: 30px; 
-            max-width: 350px; 
-            width: 100%; 
-            border: 2px solid #ff9100; 
-            text-align: center; 
-        }
-        
-        .event-icon { font-size: 60px; margin-bottom: 15px; }
-        .event-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-        .event-text { color: #aaa; margin-bottom: 20px; line-height: 1.5; }
-        .event-choices { display: flex; flex-direction: column; gap: 10px; }
-        
-        /* Пит-стоп */
-        .pitstop-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 220;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .pitstop-overlay.active { display: flex; }
-        
-        .pitstop-card {
-            background: #1a1a1a;
-            border-radius: 25px;
-            padding: 25px;
-            max-width: 350px;
-            width: 100%;
-            border: 2px solid #00e676;
-            text-align: center;
-        }
-        
-        .pitstop-title { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-        .pitstop-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .pitstop-item {
-            background: rgba(40,40,40,0.9);
-            padding: 15px;
-            border-radius: 15px;
-            border: 2px solid #444;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .pitstop-item:hover { border-color: #00e676; }
-        .pitstop-item-header { display: flex; align-items: center; gap: 10px; font-size: 18px; margin-bottom: 5px; }
-        .pitstop-item-desc { font-size: 12px; color: #888; }
-        
-        /* Уведомления */
-        .toast { 
-            position: fixed; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: rgba(0,0,0,0.95); 
-            padding: 20px 30px; 
-            border-radius: 20px; 
-            border: 2px solid #00e676; 
-            color: #00e676; 
-            font-weight: bold; 
-            opacity: 0; 
-            pointer-events: none; 
-            transition: opacity 0.3s; 
-            z-index: 400; 
-            text-align: center; 
-            max-width: 300px; 
-        }
-        
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); padding: 20px 30px; border-radius: 20px; border: 2px solid #00e676; color: #00e676; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 400; text-align: center; }
         .toast.show { opacity: 1; }
-        .toast.error { border-color: #ff3d00; color: #ff3d00; }
         
-        /* Кнопки */
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; }
-        .btn:active { transform: scale(0.97); }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
         .btn-primary { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
-        .btn-warning { background: linear-gradient(135deg, #ff9100, #ff6d00); color: #000; }
         .btn-danger { background: linear-gradient(135deg, #ff3d00, #dd2c00); color: #fff; }
         
-        /* Маркеры */
         .marker-courier { background: #00e676; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 20px #00e676; animation: pulse-green 2s infinite; }
         .marker-dest { background: #ff3d00; width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 25px #ff3d00; }
-        .marker-pitstop { background: #2979ff; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 15px #2979ff; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-        
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 10px #00e676; } 50% { box-shadow: 0 0 25px #00e676; } }
         
         .route-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 5px; }
@@ -337,108 +166,67 @@
 </head>
 <body>
     <div id="map"></div>
-    
     <div class="ui-layer">
         <div class="top-panel">
-            <div class="balance-box">
-                <div class="balance-amount" id="balance">50 ₽</div>
-            </div>
-            
+            <div class="balance-box"><div class="balance-amount" id="balance">50 ₽</div></div>
             <div class="stats-grid">
-                <div class="stat-card energy" id="energy-card">
-                    <div class="stat-icon">⚡</div>
-                    <div class="stat-value" id="energy-val">100</div>
-                    <div class="stat-bar"><div class="stat-fill" id="energy-bar" style="width: 100%; background: #ffcc00;"></div></div>
-                </div>
-                <div class="stat-card water" id="water-card">
-                    <div class="stat-icon">💧</div>
-                    <div class="stat-value" id="water-val">100</div>
-                    <div class="stat-bar"><div class="stat-fill" id="water-bar" style="width: 100%; background: #00ccff;"></div></div>
-                </div>
-                <div class="stat-card mood" id="mood-card">
-                    <div class="stat-icon">😎</div>
-                    <div class="stat-value" id="mood-val">100</div>
-                    <div class="stat-bar"><div class="stat-fill" id="mood-bar" style="width: 100%; background: #d500f9;"></div></div>
-                </div>
+                <div class="stat-card energy" id="energy-card">⚡ <span id="energy-val">100</span><div class="stat-bar"><div class="stat-fill" id="energy-bar" style="width: 100%; background: #ffcc00;"></div></div></div>
+                <div class="stat-card water" id="water-card">💧 <span id="water-val">100</span><div class="stat-bar"><div class="stat-fill" id="water-bar" style="width: 100%; background: #00ccff;"></div></div></div>
+                <div class="stat-card mood" id="mood-card">😎 <span id="mood-val">100</span><div class="stat-bar"><div class="stat-fill" id="mood-bar" style="width: 100%; background: #d500f9;"></div></div></div>
             </div>
         </div>
         
-        <div class="action-bar" id="action-bar">
-            <button class="action-btn-small btn-water" onclick="quickRefill('water')">
-                <span class="action-icon">💧</span>
-                <span class="action-text">Вода</span>
-                <span class="action-cost">3 ₽</span>
-            </button>
-            <button class="action-btn-small btn-energy" onclick="quickRefill('energy')">
-                <span class="action-icon">☕</span>
-                <span class="action-text">Кофе</span>
-                <span class="action-cost">5 ₽</span>
-            </button>
-            <button class="action-btn-small btn-find" onclick="findOrder()">
-                <span class="action-icon">🔍</span>
-                <span class="action-text">ЗАКАЗ</span>
-            </button>
-            <button class="action-btn-small btn-shop" onclick="openShop()">
-                <span class="action-icon">🛒</span>
-                <span class="action-text">Магаз</span>
-            </button>
-            <button class="action-btn-small btn-stats" onclick="showStats()">
-                <span class="action-icon">📊</span>
-                <span class="action-text">Стат</span>
-            </button>
+        <div class="action-bar">
+            <button class="action-btn-small btn-water" onclick="quickRefill('water')">💧 Вода <span class="action-cost">3 ₽</span></button>
+            <button class="action-btn-small btn-energy" onclick="quickRefill('energy')">☕ Кофе <span class="action-cost">5 ₽</span></button>
+            <button class="action-btn-small btn-find" onclick="findOrder()">🔍 ЗАКАЗ</button>
+            <button class="action-btn-small btn-shop" onclick="openShop()">🛒 Магаз</button>
+            <button class="action-btn-small btn-stats" onclick="showStats()">📊 Стат</button>
         </div>
-        
+
         <div class="center-panel" id="route-panel">
-            <div class="center-title">🗺️ Выбери маршрут</div>
-            <div class="center-subtitle">Каждый путь имеет риски и награды</div>
+            <div class="center-title">🗺️ Маршрут</div>
             <div id="route-options"></div>
         </div>
-        
+
         <div class="delivery-panel-compact" id="delivery-panel">
-            <div class="delivery-header">
-                <div class="delivery-title" id="delivery-title">🍔 Доставка</div>
-                <div class="delivery-status" id="delivery-status">В пути...</div>
-            </div>
-            <div class="progress-line">
-                <div class="progress-fill-line" id="progress-fill"></div>
-            </div>
-            <div class="delivery-buttons">
-                <button class="btn-small btn-primary" id="drive-btn" onclick="startDriving()" style="display:none;">🚲 Ехать</button>
-                <button class="btn-small btn-danger" onclick="cancelDelivery()">❌ Отмена</button>
+            <div class="delivery-header"><div id="delivery-title">🍔 Заказ</div><div class="delivery-status" id="delivery-status">В пути...</div></div>
+            <div class="progress-line"><div class="progress-fill-line" id="progress-fill"></div></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-primary" id="drive-btn" onclick="startDriving()" style="flex:1; padding:10px; border-radius:10px;">🚲 Ехать</button>
+                <button class="btn-danger" onclick="cancelDelivery()" style="flex:1; padding:10px; border-radius:10px;">❌ Отмена</button>
             </div>
         </div>
     </div>
 
     <div class="game-overlay" id="game-overlay">
         <div class="game-box">
-            <div class="game-title">⚠️ Внимание!</div>
             <div class="game-road-big" id="game-road">
-                <div class="lane-big" style="top: 0;"></div>
-                <div class="lane-big" style="top: 33.33%;"></div>
-                <div class="lane-big" style="top: 66.66%;"></div>
+                <div class="lane-big" style="top: 0;"></div><div class="lane-big" style="top: 33%;"></div><div class="lane-big" style="top: 66%;"></div>
                 <div class="player-bike-big" id="player">🚴</div>
             </div>
-            <div class="game-controls">
-                <button class="game-control-btn up" onclick="moveBike(-1)">⬆️</button>
-                <button class="game-control-btn down" onclick="moveBike(1)">⬇️</button>
+            <div style="display:flex; gap:20px; justify-content:center;">
+                <button class="btn-primary" style="width:80px; height:80px; font-size:30px; border-radius:50%;" onclick="moveBike(-1)">⬆️</button>
+                <button class="btn-primary" style="width:80px; height:80px; font-size:30px; border-radius:50%;" onclick="moveBike(1)">⬇️</button>
             </div>
         </div>
     </div>
 
     <div class="overlay-backdrop" id="rest-backdrop" onclick="closeQuickRest()"></div>
     <div class="quick-rest-panel" id="quick-rest-panel">
-        <div class="rest-title" id="rest-title">🥤 Быстрая пауза</div>
+        <div class="center-title" id="rest-title">🥤 Пауза</div>
         <div id="rest-options"></div>
-        <button class="btn" style="background: transparent; border: 2px solid #666; color: #888;" onclick="closeQuickRest()">Закрыть</button>
+        <button class="btn" onclick="closeQuickRest()">Закрыть</button>
     </div>
     <div class="toast" id="toast"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ВОЗВРАЩАЕМ ВСЮ ТВОЮ ЛОГИКУ
-        let state = { balance: 50, energy: 100, water: 100, mood: 100, stats: { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 }, isDelivering: false };
+        // ДАННЫЕ И СОСТОЯНИЕ
+        let state = { balance: 50, energy: 100, water: 100, mood: 100, stats: { totalDeliveries: 0, totalEarned: 0 }, isDelivering: false, progress: 0 };
+        const WARSAW_CENTER = [52.2297, 21.0122];
+        let map, courierMarker, destMarker, routeLine;
 
-        // Функция обновления UI (теперь с ₽)
         function updateUI() {
             document.getElementById('balance').textContent = Math.floor(state.balance) + ' ₽';
             document.getElementById('energy-val').textContent = Math.floor(state.energy);
@@ -449,51 +237,104 @@
             document.getElementById('mood-bar').style.width = state.mood + '%';
         }
 
-        // Остальные функции из твоего кода...
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.textContent = msg; t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 2000);
         }
 
-        function quickRefill(type) {
-            const items = type === 'water' ? 
-                [{name:'Вода', cost:3, w:40, e:0}] : 
-                [{name:'Кофе', cost:5, w:-5, e:35}];
-            
-            let html = '';
-            items.forEach(item => {
-                html += `<div class="rest-option" onclick="buy(${item.cost},${item.e},${item.w})">
-                    ${item.name} — ${item.cost} ₽
+        // КАРТА
+        map = L.map('map', { zoomControl: false }).setView(WARSAW_CENTER, 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        courierMarker = L.marker(WARSAW_CENTER, { icon: L.divIcon({className:'marker-courier'}) }).addTo(map);
+
+        // ЛОГИКА ЗАКАЗОВ
+        function findOrder() {
+            if(state.isDelivering) return showToast('Ты уже на заказе!');
+            const dist = (Math.random() * 3 + 1).toFixed(1);
+            const price = Math.floor(dist * 15 + 10);
+            const html = `
+                <div class="rest-option" onclick="acceptOrder(${dist}, ${price})">
+                    <b>🍔 Заказ из KFC</b><br> Дистанция: ${dist} км<br>Награда: <b>${price} ₽</b>
                 </div>`;
-            });
+            document.getElementById('route-options').innerHTML = html;
+            document.getElementById('route-panel').classList.add('active');
+        }
+
+        function acceptOrder(dist, price) {
+            state.isDelivering = true;
+            state.progress = 0;
+            state.currentOrder = { price: price };
+            document.getElementById('route-panel').classList.remove('active');
+            document.getElementById('delivery-panel').classList.add('active');
+            
+            const dest = [WARSAW_CENTER[0] + 0.02, WARSAW_CENTER[1] + 0.02];
+            destMarker = L.marker(dest, { icon: L.divIcon({className:'marker-dest'}) }).addTo(map);
+            routeLine = L.polyline([WARSAW_CENTER, dest], {color: '#00e676', dashArray: '10, 10'}).addTo(map);
+            map.fitBounds([WARSAW_CENTER, dest]);
+            updateUI();
+        }
+
+        function startDriving() {
+            if(state.progress >= 100) return finishOrder();
+            state.progress += 20;
+            state.energy -= 10;
+            state.water -= 5;
+            document.getElementById('progress-fill').style.width = state.progress + '%';
+            updateUI();
+            if(state.progress >= 100) {
+                document.getElementById('delivery-status').textContent = 'Приехал!';
+                showToast('Ты на месте!');
+            }
+        }
+
+        function finishOrder() {
+            state.balance += state.currentOrder.price;
+            state.stats.totalDeliveries++;
+            state.stats.totalEarned += state.currentOrder.price;
+            state.isDelivering = false;
+            document.getElementById('delivery-panel').classList.remove('active');
+            if(destMarker) map.removeLayer(destMarker);
+            if(routeLine) map.removeLayer(routeLine);
+            map.setView(WARSAW_CENTER, 13);
+            showToast('Заказ выполнен! + ' + state.currentOrder.price + ' ₽');
+            updateUI();
+        }
+
+        // МАГАЗИН И СТАТЫ
+        function openShop() {
+            const html = `
+                <div class="rest-option" onclick="buy(200)">🚲 Новый велик — 200 ₽</div>
+                <div class="rest-option" onclick="buy(50)">🔋 Энергетик — 50 ₽</div>`;
             document.getElementById('rest-options').innerHTML = html;
             document.getElementById('quick-rest-panel').classList.add('active');
             document.getElementById('rest-backdrop').classList.add('active');
         }
 
-        function buy(cost, e, w) {
-            if(state.balance >= cost) {
-                state.balance -= cost;
-                state.energy = Math.min(100, state.energy + e);
-                state.water = Math.min(100, state.water + w);
-                updateUI(); closeQuickRest();
-            } else { showToast('Нет денег!'); }
+        function showStats() {
+            const html = `
+                <div style="text-align:left; padding:10px;">
+                    Доставок: ${state.stats.totalDeliveries}<br>
+                    Заработано: ${state.stats.totalEarned} ₽
+                </div>`;
+            document.getElementById('rest-options').innerHTML = html;
+            document.getElementById('quick-rest-panel').classList.add('active');
+            document.getElementById('rest-backdrop').classList.add('active');
+        }
+
+        function quickRefill(type) {
+            const cost = type === 'water' ? 3 : 5;
+            if(state.balance < cost) return showToast('Мало денег!');
+            state.balance -= cost;
+            if(type === 'water') state.water = 100; else state.energy = 100;
+            updateUI();
+            showToast('Пополнено!');
         }
 
         function closeQuickRest() {
             document.getElementById('quick-rest-panel').classList.remove('active');
             document.getElementById('rest-backdrop').classList.remove('active');
         }
-
-        function findOrder() { showToast('Поиск заказа...'); /* Твоя логика */ }
-        function openShop() { showToast('Магазин закрыт'); }
-        function showStats() { showToast('Статистика пуста'); }
-
-        // Инициализация карты
-        const map = L.map('map', { zoomControl: false }).setView([52.2297, 21.0122], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-        L.marker([52.2297, 21.0122], {icon: L.divIcon({className:'marker-courier'})}).addTo(map);
 
         updateUI();
     </script>
