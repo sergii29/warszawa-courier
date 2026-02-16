@@ -1405,3 +1405,243 @@
     };
 
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+    /* Эффект тряски экрана при ударе */
+    @keyframes shake {
+        0% { transform: translate(1px, 1px) rotate(0deg); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        20% { transform: translate(-3px, 0px) rotate(1deg); }
+        30% { transform: translate(3px, 2px) rotate(0deg); }
+        40% { transform: translate(1px, -1px) rotate(1deg); }
+        50% { transform: translate(-1px, 2px) rotate(-1deg); }
+        60% { transform: translate(-3px, 1px) rotate(0deg); }
+        70% { transform: translate(3px, 1px) rotate(-1deg); }
+        80% { transform: translate(-1px, -1px) rotate(1deg); }
+        90% { transform: translate(1px, 2px) rotate(0deg); }
+        100% { transform: translate(1px, -2px) rotate(-1deg); }
+    }
+    .shake-hard { animation: shake 0.5s; }
+    .shake-medium { animation: shake 0.3s; }
+
+    /* Стиль для таймеров в магазине */
+    .item-timer { font-size: 11px; color: #ff9100; margin-top: 4px; font-family: monospace; }
+</style>
+
+<script>
+    console.log("Applying Hardcore Reality Patch...");
+
+    // 1. КОНФИГУРАЦИЯ СРОКОВ ГОДНОСТИ (в минутах) И ПРЕПЯТСТВИЙ
+    const ITEM_DURATIONS = {
+        'bike1': 20,    // Аренда на 20 мин
+        'bike2': 15,    // Электробайк на 15 мин
+        'helmet': 10,   // Шлем на 10 мин
+        'thermos': 30,  // Термос на 30 мин
+        'music': 12,    // Подписка на музыку 12 мин
+        'vip': 5        // VIP статус на 5 мин
+    };
+
+    const OBSTACLE_TYPES = {
+        '🚗': { type: 'car', damage: 15, fine: 0, effect: 'ТРАВМА: -Энергия!', func: () => applyDebuff('injury') },
+        '🚧': { type: 'construction', damage: 5, fine: 0, effect: 'ЗАДЕРЖКА: -Путь', func: () => { state.progress = Math.max(0, state.progress - 10); updateProgress(); } },
+        '🚔': { type: 'police', damage: 0, fine: 15, effect: 'ШТРАФ: -15 PLN', func: () => { state.balance -= 15; updateUI(); } },
+        '🕳️': { type: 'hole', damage: 5, fine: 0, effect: 'УДАР: Еда помялась', func: () => { state.mood -= 20; updateUI(); } }
+    };
+
+    // Состояние дебаффов
+    state.debuffs = { injury: false };
+
+    // 2. ПЕРЕОПРЕДЕЛЕНИЕ МАГАЗИНА (Система времени)
+    
+    // Функция получения активных предметов
+    function getActiveItems() {
+        const raw = localStorage.getItem('warsaw_courier_shop_v2');
+        if (!raw) return {};
+        
+        let items = JSON.parse(raw);
+        const now = Date.now();
+        const active = {};
+        
+        // Фильтруем просроченные
+        Object.keys(items).forEach(id => {
+            if (items[id] > now) {
+                active[id] = items[id];
+            }
+        });
+        
+        // Сохраняем почищенный список
+        if (Object.keys(active).length !== Object.keys(items).length) {
+            localStorage.setItem('warsaw_courier_shop_v2', JSON.stringify(active));
+        }
+        return active;
+    }
+
+    // Переписываем функцию покупки
+    buyShopItem = function(id, cost) {
+        if (state.balance < cost) {
+            showToast('❌ Недостаточно денег!', 2000);
+            return;
+        }
+        
+        state.balance -= cost;
+        const active = getActiveItems();
+        const durationMs = (ITEM_DURATIONS[id] || 10) * 60 * 1000;
+        
+        // Если уже есть, продлеваем, иначе создаем
+        const currentExpiry = active[id] || Date.now();
+        active[id] = (currentExpiry > Date.now() ? currentExpiry : Date.now()) + durationMs;
+        
+        localStorage.setItem('warsaw_courier_shop_v2', JSON.stringify(active));
+        
+        saveGame();
+        updateUI();
+        showToast(`✅ Куплено на ${ITEM_DURATIONS[id]} мин!`, 2000);
+        
+        // Перерисовать магазин, если открыт
+        openShop(); 
+    };
+
+    // Переписываем открытие магазина (для отображения таймеров)
+    openShop = function() {
+        if (state.isDelivering) {
+            showToast('❌ Сначала заверши доставку!', 2000);
+            return;
+        }
+        
+        const items = [
+            { id: 'bike1', name: 'Аренда MTB', icon: '🚲', cost: 20, desc: 'Аренда 20 мин: -20% расхода' },
+            { id: 'bike2', name: 'Аренда Electro', icon: '🛵', cost: 50, desc: 'Аренда 15 мин: Халявная энергия' },
+            { id: 'helmet', name: 'Страховка', icon: '⛑️', cost: 15, desc: '10 мин: Защита от штрафов' },
+            { id: 'thermos', name: 'Термос', icon: '🍶', cost: 10, desc: '30 мин: Вода не остывает' },
+            { id: 'vip', name: 'VIP Лицензия', icon: '👑', cost: 100, desc: '5 мин: Жирные заказы' }
+        ];
+        
+        const active = getActiveItems();
+        const now = Date.now();
+        let html = '';
+        
+        items.forEach(item => {
+            const expiry = active[item.id];
+            const isActive = expiry && expiry > now;
+            let timeStr = '';
+            
+            if (isActive) {
+                const leftSec = Math.floor((expiry - now) / 1000);
+                const m = Math.floor(leftSec / 60);
+                const s = leftSec % 60;
+                timeStr = `${m}:${s < 10 ? '0'+s : s}`;
+            }
+
+            html += `<div style="background:#222;padding:10px;border-radius:10px;margin-bottom:8px;border:2px solid ${isActive ? '#00e676' : '#444'}">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-size:24px">${item.icon}</span>
+                    <div style="flex:1">
+                        <div style="font-weight:bold">${item.name}</div>
+                        <div style="font-size:11px;color:#888">${item.desc}</div>
+                        ${isActive ? `<div class="item-timer">⏳ Осталось: ${timeStr}</div>` : ''}
+                    </div>
+                    ${!isActive ? 
+                        `<button class="btn btn-primary" onclick="buyShopItem('${item.id}',${item.cost})" style="width:auto;padding:6px 12px;font-size:12px;">${item.cost} P</button>` : 
+                        `<button class="btn" style="width:auto;padding:6px 12px;font-size:12px;background:#333;color:#fff;" onclick="buyShopItem('${item.id}',${item.cost})">Продлить</button>`
+                    }
+                </div>
+            </div>`;
+        });
+        
+        document.getElementById('rest-title').textContent = '🛒 Аренда и Баффы';
+        document.getElementById('rest-options').innerHTML = html;
+        document.getElementById('quick-rest-panel').classList.add('active');
+        document.getElementById('rest-backdrop').classList.add('active');
+    };
+
+    // 3. ПЕРЕОПРЕДЕЛЕНИЕ МИНИ-ИГРЫ (Умные препятствия)
+
+    // Функция дебаффа
+    function applyDebuff(name) {
+        state.debuffs[name] = true;
+        setTimeout(() => { state.debuffs[name] = false; showToast('🩹 Травма прошла', 2000); }, 15000); // 15 сек травмы
+    }
+
+    // Хук в игровой тик для обработки травмы
+    const originalGameTick = gameTick;
+    gameTick = function() {
+        originalGameTick();
+        if (state.debuffs && state.debuffs.injury && state.isDelivering) {
+            // Если травма, энергия падает дополнительно
+            state.energy -= 0.3; 
+        }
+    };
+
+    // Полная замена spawnObstacle для добавления типов
+    spawnObstacle = function() {
+        const road = document.getElementById('game-road');
+        if (!road) return;
+        
+        const obstacle = document.createElement('div');
+        obstacle.className = 'obstacle-big';
+        
+        // Выбор типа
+        const keys = Object.keys(OBSTACLE_TYPES);
+        const icon = keys[Math.floor(Math.random() * keys.length)];
+        // Иногда добавляем полицию (редко)
+        const finalIcon = (Math.random() < 0.1) ? '🚔' : icon;
+        
+        obstacle.textContent = finalIcon;
+        obstacle.dataset.typeIcon = finalIcon; // Сохраняем тип
+        
+        const lane = Math.floor(Math.random() * 3);
+        obstacle.style.top = (lane * 33.33 + 8) + '%';
+        obstacle.dataset.lane = lane;
+        
+        road.appendChild(obstacle);
+        
+        // Логика движения и удара
+        setTimeout(() => {
+            if (!state.gameActive) return;
+            
+            const bike = document.getElementById('player');
+            const bikeRect = bike.getBoundingClientRect();
+            const obsRect = obstacle.getBoundingClientRect();
+            
+            // Проверка коллизии
+            if (parseInt(obstacle.dataset.lane) === state.bikeLane && 
+                Math.abs(bikeRect.left - obsRect.left) < 60) {
+                
+                // === НОВАЯ ЛОГИКА УДАРА ===
+                const typeData = OBSTACLE_TYPES[obstacle.dataset.typeIcon] || OBSTACLE_TYPES['🚗'];
+                
+                // Визуал
+                document.body.classList.add('shake-hard');
+                setTimeout(() => document.body.classList.remove('shake-hard'), 500);
+                obstacle.style.backgroundColor = 'rgba(255,0,0,0.5)';
+                
+                // Последствия
+                state.gameHits++;
+                state.energy -= typeData.damage;
+                
+                // Проверка страховки (шлема)
+                const activeItems = getActiveItems();
+                if (activeItems['helmet']) {
+                    showToast(`🛡️ Шлем спас от эффекта: ${typeData.effect}`, 1500);
+                } else {
+                    showToast(`💥 ${typeData.effect}`, 2000);
+                    if (typeData.func) typeData.func();
+                }
+            }
+            
+            setTimeout(() => obstacle.remove(), 2000);
+        }, 1800);
+    };
+
+</script>
