@@ -2187,3 +2187,112 @@
     }
     setInterval(stabilizeButtons, 500);
 </script>
+
+
+
+
+
+
+
+
+
+
+<style>
+    /* 1. Настройка главной панели под индикаторами */
+    .neo-control-panel {
+        position: fixed !important;
+        top: 85px !important; /* Опустили чуть ниже индикаторов (молния, энергия, смайлик) */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 96% !important;
+        max-width: 480px !important;
+        background: rgba(15, 15, 15, 0.9) !important;
+        border: 1px solid rgba(0, 230, 118, 0.4) !important;
+        border-radius: 12px !important;
+        display: flex !important;
+        padding: 4px !important;
+        z-index: 2000 !important;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    /* 2. Когда открыто окно (Маркет/Заказ), панель становится "шапкой" окна */
+    .panel-fixed-top {
+        top: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        border-radius: 0 !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        background: #111 !important;
+        z-index: 4100 !important; /* Выше подложки окна */
+    }
+
+    /* 3. Сдвигаем содержимое окон вниз, чтобы кнопки управления не закрывали текст */
+    #quick-rest-panel.active {
+        padding-top: 55px !important; /* Место под наши кнопки внутри окна */
+        z-index: 4000 !important;
+    }
+
+    /* Прячем старый текстовый заголовок, кнопки и так всё объясняют */
+    #rest-title { display: none !important; }
+
+    /* Кнопка "В ПУТЬ" - фиксируем её снизу, чтобы не прыгала */
+    .delivery-action-panel {
+        bottom: 110px !important;
+        z-index: 3000 !important;
+    }
+
+    /* Скрываем старую полоску действий, если она еще где-то жива */
+    .action-bar { display: none !important; }
+</style>
+
+<script>
+    console.log("Applying Final UI Logic...");
+
+    // Функция переключения режима панели: Карта vs Окно
+    function adaptUI() {
+        const myPanel = document.querySelector('.neo-control-panel');
+        const gameModal = document.getElementById('quick-rest-panel');
+        
+        if (myPanel && gameModal) {
+            if (gameModal.classList.contains('active')) {
+                myPanel.classList.add('panel-fixed-top');
+            } else {
+                myPanel.classList.remove('panel-fixed-top');
+            }
+        }
+    }
+
+    // Следим за открытием/закрытием окон игры
+    const observer = new MutationObserver(adaptUI);
+    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+
+    // ТОТАЛЬНЫЙ РУБЛЬ (₽) - исправляем везде
+    function rublePower() {
+        // Текст баланса
+        const b = document.getElementById('balance');
+        if (b && b.textContent.includes('PLN')) {
+            b.textContent = b.textContent.replace(/PLN/g, '₽');
+        }
+
+        // Все остальные текстовые узлы
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        while(node = walker.nextNode()) {
+            if (node.textContent.includes('PLN')) {
+                node.textContent = node.textContent.replace(/PLN/g, '₽');
+            }
+        }
+    }
+    
+    // Проверяем валюту часто
+    setInterval(rublePower, 300);
+
+    // Дополнительная проверка кнопки "В путь"
+    setInterval(() => {
+        const btn = document.querySelector('.delivery-action-panel');
+        if (btn) btn.style.bottom = '110px';
+    }, 500);
+</script>
