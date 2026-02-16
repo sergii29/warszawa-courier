@@ -2131,3 +2131,59 @@
     }
     setInterval(repositionStartBtn, 500);
 </script>
+
+
+
+
+
+
+<style>
+    /* Опускаем панель управления еще ниже, чтобы не мешала статам и карте */
+    .neo-control-panel {
+        top: 140px !important; /* Было 75, теперь 140. Это ниже индикаторов */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        position: fixed !important;
+        display: flex !important;
+        width: 95% !important;
+        z-index: 900 !important;
+    }
+
+    /* Кнопку "В ПУТЬ" возвращаем вниз, но чуть приподнимаем над возможными системными кнопками */
+    .delivery-action-panel {
+        bottom: 100px !important; 
+        top: auto !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 1000 !important;
+    }
+
+    /* Убираем все старые попытки сделать меню вертикальным или боковым */
+    body { padding: 0 !important; }
+</style>
+
+<script>
+    console.log("Moving menu lower to avoid overlap...");
+
+    // Фикс валюты (оставляем, чтобы PLN не вылезал)
+    function finalCurrencyCheck() {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        while(node = walker.nextNode()) {
+            if (node.textContent.includes('PLN')) {
+                node.textContent = node.textContent.replace(/PLN/g, '₽');
+            }
+        }
+    }
+    setInterval(finalCurrencyCheck, 300);
+
+    // Принудительно ставим кнопку "В ПУТЬ" на место, если она дергается
+    function stabilizeButtons() {
+        const startBtn = document.querySelector('.delivery-action-panel');
+        if (startBtn) {
+            startBtn.style.bottom = '100px';
+            startBtn.style.top = 'auto';
+        }
+    }
+    setInterval(stabilizeButtons, 500);
+</script>
