@@ -1240,3 +1240,168 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+<style>
+    /* Стили для дождя */
+    #rain-canvas {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: 50; opacity: 0.4;
+    }
+    
+    /* Стили для всплывающего текста */
+    .floating-text {
+        position: fixed;
+        color: #fff;
+        font-weight: bold;
+        font-size: 20px;
+        pointer-events: none;
+        animation: floatUp 1.5s ease-out forwards;
+        z-index: 1000;
+        text-shadow: 0 0 5px #000;
+    }
+    
+    @keyframes floatUp {
+        0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -100px) scale(1.5); opacity: 0; }
+    }
+
+    /* Эффект вспышки при успехе */
+    .flash-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: white; opacity: 0; pointer-events: none; z-index: 999;
+        transition: opacity 0.1s;
+    }
+</style>
+
+<canvas id="rain-canvas"></canvas>
+<div id="flash-overlay" class="flash-overlay"></div>
+
+<script>
+    console.log("Applying Atmosphere Patch...");
+
+    // 1. СИСТЕМА ДОЖДЯ
+    const canvas = document.getElementById('rain-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h;
+    const rainDrops = [];
+
+    function resizeRain() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeRain);
+    resizeRain();
+
+    function createRain() {
+        for (let i = 0; i < 100; i++) {
+            rainDrops.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                l: Math.random() * 20 + 10, // длина
+                v: Math.random() * 10 + 20  // скорость
+            });
+        }
+    }
+
+    function drawRain() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(174, 194, 224, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        rainDrops.forEach(d => {
+            ctx.moveTo(d.x, d.y);
+            ctx.lineTo(d.x, d.y + d.l);
+            d.y += d.v;
+            if (d.y > h) {
+                d.y = -20;
+                d.x = Math.random() * w;
+            }
+        });
+        ctx.stroke();
+        requestAnimationFrame(drawRain);
+    }
+    
+    createRain();
+    drawRain();
+
+    // 2. СИСТЕМА ВСПЛЫВАЮЩЕГО ТЕКСТА
+    function spawnFloatingText(text, x, y, color = '#fff') {
+        const el = document.createElement('div');
+        el.className = 'floating-text';
+        el.textContent = text;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.color = color;
+        
+        if (color === '#00e676') el.style.textShadow = '0 0 10px #00e676';
+        if (color === '#ff3d00') el.style.textShadow = '0 0 10px #ff3d00';
+        
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1500);
+    }
+
+    function triggerFlash() {
+        const flash = document.getElementById('flash-overlay');
+        flash.style.opacity = 0.2;
+        setTimeout(() => flash.style.opacity = 0, 100);
+    }
+
+    // 3. MONKEY PATCHING (Внедрение в твои функции без их удаления)
+    
+    // Сохраняем оригинальную функцию завершения доставки
+    const originalFinishDelivery = finishDelivery;
+    
+    // Переопределяем её
+    finishDelivery = function() {
+        // Запоминаем баланс ДО начисления
+        const oldBalance = state.balance;
+        
+        // Вызываем твою оригинальную функцию
+        originalFinishDelivery.apply(this, arguments);
+        
+        // Вычисляем разницу
+        const earned = Math.floor(state.balance - oldBalance);
+        
+        if (earned > 0) {
+            // Показываем красивый текст по центру экрана
+            spawnFloatingText(`+${earned} PLN`, window.innerWidth / 2, window.innerHeight / 2, '#00e676');
+            triggerFlash();
+        }
+    };
+
+    // Патчим покупку в магазине/пит-стопе для визуализации трат
+    const originalBuy = buyAtPitstop;
+    buyAtPitstop = function(item) {
+        if (state.balance >= item.cost) {
+            spawnFloatingText(`-${item.cost} PLN`, window.innerWidth / 2, window.innerHeight / 2 + 50, '#ff3d00');
+        }
+        originalBuy.apply(this, arguments);
+    };
+
+    // Патчим быструю покупку
+    const originalQuickBuy = buyQuickItem;
+    buyQuickItem = function(item) {
+        if (state.balance >= item.cost) {
+            spawnFloatingText(`-${item.cost} PLN`, window.innerWidth / 2, window.innerHeight / 2 + 50, '#ff3d00');
+        }
+        originalQuickBuy.apply(this, arguments);
+    };
+
+    // Патчим мини-игру для отображения ударов
+    const originalEndGame = endMiniGame;
+    endMiniGame = function() {
+        const hits = state.gameHits;
+        originalEndGame.apply(this, arguments);
+        
+        if (hits === 0) {
+             spawnFloatingText(`ИДЕАЛЬНО!`, window.innerWidth / 2, window.innerHeight / 3, '#ffd600');
+        }
+    };
+
+</script>
