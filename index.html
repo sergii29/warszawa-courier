@@ -1220,9 +1220,9 @@
         function showStats() {
             const html = `<div style="font-size:14px;line-height:2">
                 📦 Доставок: <b>${state.stats.totalDeliveries}</b><br>
-                💰 Заработано: <b>${state.stats.totalEarned} PLN</b><br>
+                💰 Заработано: <b>${state.stats.totalEarned} P</b><br>
                 💥 Аварий: <b>${state.stats.accidents}</b><br>
-                🏆 Чаевые: <b>${state.stats.bestTip} PLN</b><br>
+                🏆 Чаевые: <b>${state.stats.bestTip} P</b><br>
                 ⭐ Уровень: <b>${state.level}</b>
             </div>`;
             
@@ -1370,7 +1370,7 @@
         
         if (earned > 0) {
             // Показываем красивый текст по центру экрана
-            spawnFloatingText(`+${earned} PLN`, window.innerWidth / 2, window.innerHeight / 2, '#00e676');
+            spawnFloatingText(`+${earned} P`, window.innerWidth / 2, window.innerHeight / 2, '#00e676');
             triggerFlash();
         }
     };
@@ -1379,7 +1379,7 @@
     const originalBuy = buyAtPitstop;
     buyAtPitstop = function(item) {
         if (state.balance >= item.cost) {
-            spawnFloatingText(`-${item.cost} PLN`, window.innerWidth / 2, window.innerHeight / 2 + 50, '#ff3d00');
+            spawnFloatingText(`-${item.cost} P`, window.innerWidth / 2, window.innerHeight / 2 + 50, '#ff3d00');
         }
         originalBuy.apply(this, arguments);
     };
@@ -1388,7 +1388,7 @@
     const originalQuickBuy = buyQuickItem;
     buyQuickItem = function(item) {
         if (state.balance >= item.cost) {
-            spawnFloatingText(`-${item.cost} PLN`, window.innerWidth / 2, window.innerHeight / 2 + 50, '#ff3d00');
+            spawnFloatingText(`-${item.cost} P`, window.innerWidth / 2, window.innerHeight / 2 + 50, '#ff3d00');
         }
         originalQuickBuy.apply(this, arguments);
     };
@@ -1455,7 +1455,7 @@
     const OBSTACLE_TYPES = {
         '🚗': { type: 'car', damage: 15, fine: 0, effect: 'ТРАВМА: -Энергия!', func: () => applyDebuff('injury') },
         '🚧': { type: 'construction', damage: 5, fine: 0, effect: 'ЗАДЕРЖКА: -Путь', func: () => { state.progress = Math.max(0, state.progress - 10); updateProgress(); } },
-        '🚔': { type: 'police', damage: 0, fine: 15, effect: 'ШТРАФ: -15 PLN', func: () => { state.balance -= 15; updateUI(); } },
+        '🚔': { type: 'police', damage: 0, fine: 15, effect: 'ШТРАФ: -15 P', func: () => { state.balance -= 15; updateUI(); } },
         '🕳️': { type: 'hole', damage: 5, fine: 0, effect: 'УДАР: Еда помялась', func: () => { state.mood -= 20; updateUI(); } }
     };
 
