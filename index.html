@@ -1928,107 +1928,78 @@
 
 
 <style>
-    /* 1. ИСПРАВЛЕНИЕ ИНТЕРФЕЙСА (КНОПКИ) */
+    /* 1. ИНТЕРФЕЙС: Поднимаем и уменьшаем всю панель целиком */
     .neo-control-panel {
-        /* Поднимаем панель выше, чтобы не перекрывало меню браузера */
-        bottom: 50px !important; 
-        /* Делаем панель компактнее */
-        padding: 8px !important;
-        gap: 6px !important;
-        width: 96% !important;
+        bottom: 80px !important; /* Поднимаем выше (над меню iPhone/Android) */
+        transform: translateX(-50%) scale(0.85) !important; /* Уменьшаем размер всей панели на 15% */
+        transform-origin: bottom center !important; /* Чтобы она не уезжала при уменьшении */
+        width: 95% !important;
         max-width: 500px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        /* Скругляем углы сильнее */
-        border-radius: 16px !important;
-    }
-
-    /* Стили для кнопок (Желтая, Синяя, Красная) */
-    .neo-control-panel button {
-        /* Уменьшаем отступы внутри кнопок */
-        padding: 8px 10px !important;
-        /* Уменьшаем шрифт */
-        font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        /* Убираем лишнюю высоту */
-        height: auto !important;
-        min-height: 44px !important;
-        /* Добавляем перенос текста, если он длинный */
-        white-space: normal !important;
-        line-height: 1.2 !important;
-    }
-    
-    /* Дополнительно уменьшаем иконки внутри кнопок, если они есть */
-    .neo-control-panel button i, 
-    .neo-control-panel button span {
-        font-size: 0.9em !important;
+        z-index: 9999 !important; /* Поверх всего */
     }
 </style>
 
 <script>
-    console.log("Applying UI & Inflation Patch...");
-
-    // 2. СИСТЕМА ИНФЛЯЦИИ
-    // Сохраняем оригинальную функцию открытия магазина (с учетом предыдущих патчей)
-    const _inflationOpenShop = openShop;
+    // 2. ИНФЛЯЦИЯ (Безопасная версия)
+    // Сохраняем оригинал функции открытия магазина
+    if (typeof window.originalOpenShop === 'undefined') {
+        window.originalOpenShop = openShop;
+    }
 
     openShop = function() {
-        // Вызываем оригинальное открытие магазина
-        _inflationOpenShop.apply(this, arguments);
+        // Запускаем стандартное открытие
+        window.originalOpenShop.apply(this, arguments);
 
-        // Рассчитываем множитель инфляции: 10% за каждый уровень
-        // Уровень 0 = цена х1.0, Уровень 5 = цена х1.5, Уровень 10 = цена х2.0
-        const inflationRate = 0.10; 
-        const multiplier = 1 + (state.level * inflationRate);
-
-        // Если уровень 0, инфляция не нужна
-        if (state.level === 0) return;
-
-        // Находим контейнер магазина (обычно это div после панели или id rest-options)
-        // Ищем все кнопки в магазине
-        const shopButtons = document.querySelectorAll('#rest-options button, .neo-control-panel ~ div button');
-
-        shopButtons.forEach(btn => {
-            // Проверяем, есть ли цена в тексте кнопки (ищем цифры)
-            // Регулярка ищет число перед символом ₽, P, PLN или просто число в скобках
-            const text = btn.innerHTML;
+        try {
+            // Проверка: если уровня нет, считаем его 0
+            let currentLevel = (typeof state !== 'undefined' && state.level) ? state.level : 0;
             
-            // Пытаемся найти цену. Ищем число, за которым могут идти символы валюты
-            const priceMatch = text.match(/(\d+)\s*(₽|P|PLN|\$)?/);
+            // Формула: +10% к цене за каждый уровень
+            let inflationMulti = 1 + (currentLevel * 0.10);
 
-            if (priceMatch) {
-                const oldPrice = parseInt(priceMatch[1]);
-                const currency = priceMatch[2] || '₽';
-                
-                // Рассчитываем новую цену
-                const newPrice = Math.floor(oldPrice * multiplier);
+            // Если уровень 0, ничего не меняем
+            if (currentLevel === 0) return;
 
-                // 1. Обновляем текст кнопки
-                // Заменяем старую цену на новую в тексте
-                btn.innerHTML = text.replace(oldPrice, newPrice);
+            // Ищем кнопки с ценами
+            const buttons = document.querySelectorAll('#rest-options button, .neo-control-panel ~ div button');
+            
+            buttons.forEach(btn => {
+                // Ищем цифры цен
+                let html = btn.innerHTML;
+                let priceMatch = html.match(/(\d+)\s*(₽|P|PLN)/); // Ищем число перед валютой
 
-                // 2. Обновляем логику покупки (onclick)
-                // Получаем текущий атрибут onclick (например: buyUpgrade('bike', 150))
-                const oldOnClick = btn.getAttribute('onclick');
-                if (oldOnClick && oldOnClick.includes(oldPrice)) {
-                    // Заменяем старую цену на новую прямо в коде вызова функции
-                    const newOnClick = oldOnClick.replace(oldPrice, newPrice);
-                    btn.setAttribute('onclick', newOnClick);
-                    
-                    // Визуально помечаем, что цена выросла (опционально, красный цвет цены)
-                    if (state.level > 0) {
-                        btn.style.border = "1px solid rgba(255, 100, 100, 0.5)";
+                if (priceMatch) {
+                    let oldPrice = parseInt(priceMatch[1]);
+                    let newPrice = Math.floor(oldPrice * inflationMulti);
+
+                    // Меняем только визуально и в атрибуте onclick
+                    if (!btn.dataset.inflated) { // Защита от двойного наложения
+                        btn.innerHTML = html.replace(oldPrice, newPrice);
+                        
+                        // Обновляем логику клика
+                        let oldClick = btn.getAttribute('onclick');
+                        if (oldClick && oldClick.includes(oldPrice)) {
+                            btn.setAttribute('onclick', oldClick.replace(oldPrice, newPrice));
+                        }
+                        
+                        // Помечаем, что кнопка уже обновлена
+                        btn.dataset.inflated = "true";
+                        
+                        // Красная рамка, чтобы видеть, где цены выросли
+                        btn.style.border = "1px solid rgba(255, 50, 50, 0.5)";
                     }
                 }
+            });
+
+            // Добавляем инфо об инфляции
+            const header = document.querySelector('#rest-options h2');
+            if (header && !document.getElementById('inf-msg')) {
+                let percent = Math.round((inflationMulti - 1) * 100);
+                header.insertAdjacentHTML('beforeend', `<div id="inf-msg" style="font-size:12px; color:red; margin-top:4px;">Инфляция: +${percent}% к ценам</div>`);
             }
-        });
-        
-        // Добавляем предупреждение об инфляции в заголовок магазина, если его нет
-        const shopTitle = document.querySelector('#rest-options h2, .neo-control-panel ~ div h2');
-        if (shopTitle && !shopTitle.innerText.includes('Инфляция')) {
-            const inflationPercent = Math.round((multiplier - 1) * 100);
-            shopTitle.innerHTML += `<div style="font-size: 0.6em; color: #ff5252; margin-top: 5px;">⚠ Рыночная инфляция: +${inflationPercent}%</div>`;
+
+        } catch (e) {
+            console.error("Ошибка инфляции:", e);
         }
     };
 </script>
-
