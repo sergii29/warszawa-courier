@@ -23,7 +23,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 50;
+            z-index: 5; /* Ниже всех UI элементов */
             overflow: hidden;
         }
         
@@ -51,6 +51,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            z-index: 101;
         }
         
         .resources-bar {
@@ -61,6 +62,7 @@
             border-radius: 20px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
+            z-index: 101;
         }
         
         .resource-item {
@@ -101,6 +103,7 @@
             border-radius: 20px;
             font-size: 14px;
             font-weight: 700;
+            z-index: 101;
         }
         
         /* === НОВОЕ МЕНЮ === */
@@ -113,6 +116,13 @@
             align-items: flex-end;
             gap: 15px;
             z-index: 100;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .main-menu.hidden {
+            transform: translateX(-50%) translateY(150px);
+            opacity: 0;
+            pointer-events: none;
         }
         
         /* Главная кнопка ЗАКАЗ */
@@ -181,6 +191,14 @@
             transform: translateX(-50%);
             display: flex;
             gap: 10px;
+            z-index: 101;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .top-actions.hidden {
+            transform: translateX(-50%) translateY(100px);
+            opacity: 0;
+            pointer-events: none;
         }
         
         .mini-btn {
@@ -419,6 +437,8 @@
             padding: 24px;
             max-width: 340px;
             width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
             border: 1px solid rgba(255,255,255,0.1);
         }
         
@@ -613,18 +633,19 @@
         /* === ПОГОДА И ВРЕМЯ === */
         .weather-indicator {
             position: absolute;
-            top: 8px;
+            top: 50px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.7);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 11px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
+            z-index: 101;
         }
         
         .weather-indicator.rain { border-color: #00d4ff; color: #00d4ff; }
@@ -633,7 +654,7 @@
         
         .inflation-warning {
             position: absolute;
-            top: 42px;
+            top: 78px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 61, 0, 0.2);
@@ -713,6 +734,7 @@
             border-radius: 12px;
             font-size: 11px;
             font-weight: 700;
+            z-index: 101;
         }
         
         .xp-bar {
@@ -724,6 +746,7 @@
             background: rgba(255,255,255,0.1);
             border-radius: 2px;
             overflow: hidden;
+            z-index: 101;
         }
         
         .xp-fill {
@@ -736,6 +759,7 @@
             position: absolute;
             top: 42px;
             left: 8px;
+            z-index: 101;
             display: flex;
             gap: 4px;
         }
@@ -771,7 +795,7 @@
         /* === КАЗИНО КНОПКА === */
         .casino-fab {
             position: absolute;
-            bottom: 100px;
+            bottom: 170px;
             right: 15px;
             width: 56px;
             height: 56px;
@@ -782,11 +806,17 @@
             font-size: 24px;
             cursor: pointer;
             box-shadow: 0 4px 20px rgba(233, 30, 99, 0.5);
-            transition: all 0.3s;
+            transition: all 0.3s, transform 0.3s ease, opacity 0.3s ease;
             z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        
+        .casino-fab.hidden {
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
         }
         
         .casino-fab:hover {
@@ -1162,18 +1192,18 @@
     
     <!-- АЧИВКИ -->
     <div class="shop-overlay" id="achievements-overlay">
-        <div class="shop-card" style="max-width: 380px;">
+        <div class="shop-card" style="max-width: 380px; max-height: 85vh;">
             <div class="shop-title">🏆 Достижения</div>
-            <div id="achievements-content"></div>
+            <div id="achievements-content" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
             <button class="btn-close" onclick="closeAchievements()">Закрыть</button>
         </div>
     </div>
     
     <!-- ЭКОНОМИКА -->
     <div class="shop-overlay" id="economy-overlay">
-        <div class="shop-card" style="max-width: 340px;">
+        <div class="shop-card" style="max-width: 340px; max-height: 85vh;">
             <div class="shop-title">📈 Экономика</div>
-            <div id="economy-content"></div>
+            <div id="economy-content" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
             <button class="btn-close" onclick="closeEconomy()">Закрыть</button>
         </div>
     </div>
@@ -2179,6 +2209,11 @@
             state.energy -= state.currentRoute.energyCost * 0.3;
             state.water -= state.currentRoute.waterCost * 0.3;
             
+            // Скрываем меню при доставке
+            document.querySelector('.main-menu').classList.add('hidden');
+            document.querySelector('.top-actions').classList.add('hidden');
+            document.querySelector('.casino-fab').classList.add('hidden');
+            
             const dest = [state.currentOrder.destLat, state.currentOrder.destLng];
             
             destMarker = L.marker(dest, { icon: L.divIcon({ html: '<div class="marker-dest"></div>', className: 'custom-marker', iconSize: [26, 26] }) }).addTo(map);
@@ -2376,6 +2411,11 @@
             
             updateUI(); saveGame(); saveEconomy();
             
+            // Показываем меню обратно
+            document.querySelector('.main-menu').classList.remove('hidden');
+            document.querySelector('.top-actions').classList.remove('hidden');
+            document.querySelector('.casino-fab').classList.remove('hidden');
+            
             if (originalTotal !== total) {
                 showToast(`✅ Доставка: +${total}₽ (было ${originalTotal}₽)`, 3000);
             } else {
@@ -2391,6 +2431,12 @@
             pitstopMarkers = [];
             if (routeLine) map.removeLayer(routeLine);
             map.setView(WARSAW_CENTER, 13);
+            
+            // Показываем меню обратно
+            document.querySelector('.main-menu').classList.remove('hidden');
+            document.querySelector('.top-actions').classList.remove('hidden');
+            document.querySelector('.casino-fab').classList.remove('hidden');
+            
             showToast('❌ ' + reason, 3000);
         }
         
@@ -2402,6 +2448,12 @@
             pitstopMarkers = [];
             if (routeLine) map.removeLayer(routeLine);
             map.setView(WARSAW_CENTER, 13);
+            
+            // Показываем меню обратно
+            document.querySelector('.main-menu').classList.remove('hidden');
+            document.querySelector('.top-actions').classList.remove('hidden');
+            document.querySelector('.casino-fab').classList.remove('hidden');
+            
             showToast('Заказ отменён', 2000);
         }
 
