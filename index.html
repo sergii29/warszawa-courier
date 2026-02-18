@@ -671,7 +671,17 @@
                 const div = document.createElement('div');
                 div.className = 'shop-item';
                 div.onclick = () => buyItem(item);
-                div.innerHTML = `<span>${item.icon} ${item.name}</span><span class="shop-item-price">${item.cost}₽</span>`;
+                const effects = [];
+                if (item.energy !== 0) effects.push(`⚡${item.energy > 0 ? '+' : ''}${item.energy}`);
+                if (item.water !== 0) effects.push(`💧${item.water > 0 ? '+' : ''}${item.water}`);
+                if (item.mood !== 0) effects.push(`😎${item.mood > 0 ? '+' : ''}${item.mood}`);
+                div.innerHTML = `
+                    <div>
+                        <div>${item.icon} ${item.name}</div>
+                        <div style="font-size:11px;color:#888;margin-top:2px;">${effects.join(' ')}</div>
+                    </div>
+                    <span class="shop-item-price">${item.cost}₽</span>
+                `;
                 container.appendChild(div);
             });
             document.getElementById('shop-overlay').classList.add('active');
@@ -686,7 +696,17 @@
                 const div = document.createElement('div');
                 div.className = 'shop-item';
                 div.onclick = () => buyItem(item);
-                div.innerHTML = `<span>${item.icon} ${item.name}</span><span class="shop-item-price">${item.cost}₽</span>`;
+                const effects = [];
+                if (item.energy !== 0) effects.push(`⚡${item.energy > 0 ? '+' : ''}${item.energy}`);
+                if (item.water !== 0) effects.push(`💧${item.water > 0 ? '+' : ''}${item.water}`);
+                if (item.mood !== 0) effects.push(`😎${item.mood > 0 ? '+' : ''}${item.mood}`);
+                div.innerHTML = `
+                    <div>
+                        <div>${item.icon} ${item.name}</div>
+                        <div style="font-size:11px;color:#888;margin-top:2px;">${effects.join(' ')}</div>
+                    </div>
+                    <span class="shop-item-price">${item.cost}₽</span>
+                `;
                 container.appendChild(div);
             });
             document.getElementById('shop-overlay').classList.add('active');
