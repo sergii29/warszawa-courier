@@ -103,56 +103,106 @@
             font-weight: 700;
         }
         
-        /* === НИЖНЕЕ МЕНЮ (одно) === */
-        .bottom-menu {
+        /* === НОВОЕ МЕНЮ === */
+        .main-menu {
             position: absolute;
             bottom: 15px;
-            left: 10px;
-            right: 10px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            justify-content: center;
-            gap: 8px;
+            align-items: flex-end;
+            gap: 15px;
+            z-index: 100;
         }
         
-        .menu-btn {
+        /* Главная кнопка ЗАКАЗ */
+        .order-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00e676, #00c853);
+            border: 4px solid rgba(0,230,118,0.3);
+            color: #000;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 2px;
-            padding: 10px 12px;
-            border: none;
-            border-radius: 14px;
             cursor: pointer;
             transition: all 0.2s;
-            min-width: 55px;
+            box-shadow: 0 4px 25px rgba(0,230,118,0.4);
         }
         
-        .menu-btn:active { transform: scale(0.92); }
-        
-        .menu-btn.primary {
-            background: linear-gradient(135deg, #00e676, #00c853);
-            color: #000;
-            padding: 12px 18px;
+        .order-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 35px rgba(0,230,118,0.6);
         }
         
-        .menu-btn.secondary {
+        .order-btn:active { transform: scale(0.95); }
+        
+        .order-btn .icon { font-size: 28px; }
+        .order-btn .label { font-size: 11px; font-weight: 700; }
+        
+        /* Боковые кнопки */
+        .side-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
             background: rgba(30,30,30,0.9);
             border: 1px solid rgba(255,255,255,0.15);
             color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
         }
         
-        .menu-btn.secondary.water { border-color: #00d4ff; }
-        .menu-btn.secondary.water .btn-icon { color: #00d4ff; }
-        .menu-btn.secondary.energy { border-color: #ffd700; }
-        .menu-btn.secondary.energy .btn-icon { color: #ffd700; }
-        .menu-btn.secondary.shop { border-color: #ff4081; }
-        .menu-btn.secondary.shop .btn-icon { color: #ff4081; }
-        .menu-btn.secondary.stats { border-color: #9c27b0; }
-        .menu-btn.secondary.stats .btn-icon { color: #9c27b0; }
+        .side-btn:hover { transform: translateY(-3px); }
+        .side-btn:active { transform: scale(0.92); }
         
-        .btn-icon { font-size: 20px; }
-        .btn-label { font-size: 10px; font-weight: 600; text-transform: uppercase; }
-        .btn-cost { font-size: 9px; opacity: 0.8; }
+        .side-btn .icon { font-size: 20px; }
+        .side-btn .label { font-size: 9px; font-weight: 600; }
+        
+        .side-btn.food { border-color: #00d4ff; }
+        .side-btn.food .icon { color: #00d4ff; }
+        
+        .side-btn.shop { border-color: #ff4081; }
+        .side-btn.shop .icon { color: #ff4081; }
+        
+        /* Маленькие кнопки сверху */
+        .top-actions {
+            position: absolute;
+            bottom: 105px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .mini-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(30,30,30,0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .mini-btn:hover { transform: scale(1.1); }
+        .mini-btn.bank { border-color: #ffd700; color: #ffd700; }
+        .mini-btn.stats { border-color: #9c27b0; color: #9c27b0; }
+        .mini-btn.gear { border-color: #00d4ff; color: #00d4ff; }
         
         /* === ПАНЕЛИ === */
         .center-panel {
@@ -560,6 +610,71 @@
         .rating-fill.medium { background: linear-gradient(90deg, #ffd700, #ffaa00); }
         .rating-fill.bad { background: linear-gradient(90deg, #ff3d00, #dd2c00); }
         
+        /* === УРОВЕНЬ И ИНВЕНТАРЬ === */
+        .level-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: linear-gradient(135deg, #9c27b0, #e91e63);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        
+        .xp-bar {
+            position: absolute;
+            top: 32px;
+            left: 8px;
+            width: 80px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9c27b0, #e91e63);
+            transition: width 0.3s;
+        }
+        
+        .inventory-bar {
+            position: absolute;
+            top: 42px;
+            left: 8px;
+            display: flex;
+            gap: 4px;
+        }
+        
+        .inventory-slot {
+            width: 28px;
+            height: 28px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            position: relative;
+        }
+        
+        .inventory-slot.active {
+            border-color: #00e676;
+            box-shadow: 0 0 8px rgba(0,230,118,0.4);
+        }
+        
+        .inventory-slot .timer {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            font-size: 8px;
+            background: #ff3d00;
+            padding: 1px 3px;
+            border-radius: 4px;
+        }
+        
         /* === КАЗИНО КНОПКА === */
         .casino-fab {
             position: absolute;
@@ -781,7 +896,15 @@
     <div id="map"></div>
     
     <div class="ui-layer">
-        <!-- ВЕРХ: ресурсы + баланс -->
+        <!-- ВЕРХ: уровень + инвентарь + ресурсы + баланс -->
+        <div class="level-badge" id="level-badge">Lv.1 Новичок</div>
+        <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width: 0%"></div></div>
+        <div class="inventory-bar" id="inventory-bar">
+            <div class="inventory-slot" id="inv-0"></div>
+            <div class="inventory-slot" id="inv-1"></div>
+            <div class="inventory-slot" id="inv-2"></div>
+        </div>
+        
         <div class="top-hud">
             <div class="resources-bar">
                 <div class="resource-item">
@@ -803,34 +926,54 @@
             <div class="balance-chip" id="balance">50 ₽</div>
         </div>
         
-        <!-- НИЗ: одно меню -->
-        <div class="bottom-menu">
-            <button class="menu-btn secondary water" onclick="openShopType('water')">
-                <span class="btn-icon">💧</span>
-                <span class="btn-label">Вода</span>
-                <span class="btn-cost">3₽</span>
+        <!-- Маленькие кнопки сверху -->
+        <div class="top-actions">
+            <button class="mini-btn bank" onclick="openBank()" title="Банк">🏦</button>
+            <button class="mini-btn stats" onclick="showStats()" title="Статистика">📊</button>
+            <button class="mini-btn gear" onclick="openGearShop()" title="Снаряжение">🎒</button>
+        </div>
+        
+        <!-- Главное меню -->
+        <div class="main-menu">
+            <!-- Еда (выпадает вода/кофе) -->
+            <div style="position: relative;">
+                <button class="side-btn food" onclick="toggleFoodMenu()">
+                    <span class="icon">🍔</span>
+                    <span class="label">Еда</span>
+                </button>
+                <!-- Выпадающее меню еды -->
+                <div id="food-menu" style="display: none; position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,0.95); border-radius: 12px; padding: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                    <button onclick="openShopType('water'); toggleFoodMenu();" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: transparent; border: none; color: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; border-radius: 8px;">
+                        <span>💧</span> <span>Вода 3₽</span>
+                    </button>
+                    <button onclick="openShopType('energy'); toggleFoodMenu();" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: transparent; border: none; color: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; border-radius: 8px;">
+                        <span>☕</span> <span>Кофе 5₽</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Главная кнопка ЗАКАЗ -->
+            <button class="order-btn" onclick="findOrder()">
+                <span class="icon">🚲</span>
+                <span class="label">ЗАКАЗ</span>
             </button>
-            <button class="menu-btn secondary energy" onclick="openShopType('energy')">
-                <span class="btn-icon">☕</span>
-                <span class="btn-label">Кофе</span>
-                <span class="btn-cost">5₽</span>
-            </button>
-            <button class="menu-btn primary" onclick="findOrder()">
-                <span class="btn-icon">🔍</span>
-                <span class="btn-label">Заказ</span>
-            </button>
-            <button class="menu-btn secondary shop" onclick="openShop()">
-                <span class="btn-icon">🛒</span>
-                <span class="btn-label">Магаз</span>
-            </button>
-            <button class="menu-btn secondary stats" onclick="showStats()">
-                <span class="btn-icon">📊</span>
-                <span class="btn-label">Стат</span>
-            </button>
-            <button class="menu-btn secondary" style="border-color: #ffd700;" onclick="openBank()">
-                <span class="btn-icon" style="color: #ffd700;">🏦</span>
-                <span class="btn-label">Банк</span>
-            </button>
+            
+            <!-- Шоп (выпадает магазин/снаряж) -->
+            <div style="position: relative;">
+                <button class="side-btn shop" onclick="toggleShopMenu()">
+                    <span class="icon">🛒</span>
+                    <span class="label">Шоп</span>
+                </button>
+                <!-- Выпадающее меню шопа -->
+                <div id="shop-menu" style="display: none; position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,0.95); border-radius: 12px; padding: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                    <button onclick="openShop(); toggleShopMenu();" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: transparent; border: none; color: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; border-radius: 8px;">
+                        <span>🛍️</span> <span>Магазин</span>
+                    </button>
+                    <button onclick="openGearShop(); toggleShopMenu();" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: transparent; border: none; color: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; border-radius: 8px;">
+                        <span>🎒</span> <span>Снаряжение</span>
+                    </button>
+                </div>
+            </div>
         </div>
         
         <!-- ПАНЕЛЬ ВЫБОРА МАРШРУТА -->
@@ -960,6 +1103,15 @@
         </div>
     </div>
     
+    <!-- СНАРЯЖЕНИЕ -->
+    <div class="shop-overlay" id="gear-overlay">
+        <div class="shop-card">
+            <div class="shop-title">🎒 Снаряжение</div>
+            <div id="gear-content"></div>
+            <button class="btn-close" onclick="closeGearShop()">Закрыть</button>
+        </div>
+    </div>
+    
     <div class="toast" id="toast"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1021,7 +1173,27 @@
             experience: 0, level: 1,
             stats: { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 },
             currentOrder: null, currentRoute: null, isDelivering: false,
-            progress: 0, currentStop: 0, gameActive: false, bikeLane: 1, gameHits: 0
+            progress: 0, currentStop: 0, gameActive: false, bikeLane: 1, gameHits: 0,
+            inventory: [], // Инвентарь
+            activeItems: { raincoat: false, thermos: false, powerbank: false, gps: false }
+        };
+        
+        // === ИНВЕНТАРЬ ===
+        const SHOP_GEAR = [
+            { id: 'raincoat', name: 'Дождевик', icon: '🧥', cost: 80, desc: 'Настроение не падает в дождь', duration: 300 },
+            { id: 'thermos', name: 'Термос', icon: '🍵', cost: 60, desc: 'Вода не падает 5 минут', duration: 300 },
+            { id: 'powerbank', name: 'Powerbank', icon: '🔋', cost: 70, desc: 'Энергия не падает 5 минут', duration: 300 },
+            { id: 'gps', name: 'GPS-навигатор', icon: '📡', cost: 150, desc: 'Маршруты на 20% короче', duration: -1 }
+        ];
+        
+        // === УРОВНИ ===
+        const LEVELS = {
+            1: { title: 'Новичок', xpNeed: 0, bonus: '' },
+            2: { title: 'Курьер', xpNeed: 100, bonus: 'Скидка 5% в магазине' },
+            3: { title: 'Опытный', xpNeed: 300, bonus: 'Скидка 10% в магазине' },
+            4: { title: 'Профи', xpNeed: 600, bonus: 'Скидка 15% в магазине' },
+            5: { title: 'Мастер', xpNeed: 1000, bonus: 'Скидка 20% в магазине' },
+            6: { title: 'Легенда', xpNeed: 2000, bonus: 'Скидка 25% + x2 XP' }
         };
         
         let map, courierMarker, destMarker, routeLine, pitstopMarkers = [];
@@ -1041,7 +1213,8 @@
         function saveGame() {
             localStorage.setItem('warsaw_courier_save', JSON.stringify({
                 balance: state.balance, energy: state.energy, water: state.water, mood: state.mood,
-                stats: state.stats, level: state.level, experience: state.experience
+                stats: state.stats, level: state.level, experience: state.experience,
+                inventory: state.inventory, activeItems: state.activeItems
             }));
         }
         
@@ -1056,6 +1229,8 @@
                 state.stats = data.stats ?? { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 };
                 state.level = data.level ?? 1;
                 state.experience = data.experience ?? 0;
+                state.inventory = data.inventory ?? [];
+                state.activeItems = data.activeItems ?? { raincoat: false, thermos: false, powerbank: false, gps: false };
             }
         }
 
@@ -1075,6 +1250,8 @@
             loadGame();
             loadBank();
             updateUI();
+            updateLevelUI();
+            updateInventoryUI();
             setInterval(gameTick, 1000);
             setInterval(saveGame, 5000);
             setInterval(bankInterestTick, 60000); // Проверка процентов каждую минуту
@@ -1168,6 +1345,29 @@
         function closeCasino() {
             document.getElementById('casino-overlay').classList.remove('active');
         }
+        
+        // === МЕНЮ ===
+        function toggleFoodMenu() {
+            const menu = document.getElementById('food-menu');
+            const shopMenu = document.getElementById('shop-menu');
+            shopMenu.style.display = 'none';
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function toggleShopMenu() {
+            const menu = document.getElementById('shop-menu');
+            const foodMenu = document.getElementById('food-menu');
+            foodMenu.style.display = 'none';
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Закрываем меню при клике вне их
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.side-btn') && !e.target.closest('#food-menu') && !e.target.closest('#shop-menu')) {
+                document.getElementById('food-menu').style.display = 'none';
+                document.getElementById('shop-menu').style.display = 'none';
+            }
+        });
         
         function setBet(amount) {
             currentBet = amount;
@@ -1268,6 +1468,157 @@
             saveGame();
         }
         
+        // === УРОВНИ И ОПЫТ ===
+        function addXP(amount) {
+            const multiplier = state.level >= 6 ? 2 : 1;
+            state.experience += amount * multiplier;
+            checkLevelUp();
+            updateLevelUI();
+        }
+        
+        function checkLevelUp() {
+            const nextLevel = state.level + 1;
+            if (LEVELS[nextLevel] && state.experience >= LEVELS[nextLevel].xpNeed) {
+                state.level = nextLevel;
+                showToast(`🎉 Уровень повышен! Теперь ты ${LEVELS[nextLevel].title}!`, 4000);
+            }
+        }
+        
+        function updateLevelUI() {
+            const currentLevel = LEVELS[state.level];
+            const nextLevel = LEVELS[state.level + 1];
+            document.getElementById('level-badge').textContent = `Lv.${state.level} ${currentLevel.title}`;
+            
+            if (nextLevel) {
+                const xpInLevel = state.experience - currentLevel.xpNeed;
+                const xpNeeded = nextLevel.xpNeed - currentLevel.xpNeed;
+                const percent = Math.min(100, (xpInLevel / xpNeeded) * 100);
+                document.getElementById('xp-fill').style.width = percent + '%';
+            } else {
+                document.getElementById('xp-fill').style.width = '100%';
+            }
+        }
+        
+        function getDiscount() {
+            if (state.level >= 6) return 0.25;
+            if (state.level >= 5) return 0.20;
+            if (state.level >= 4) return 0.15;
+            if (state.level >= 3) return 0.10;
+            if (state.level >= 2) return 0.05;
+            return 0;
+        }
+        
+        // === ИНВЕНТАРЬ ===
+        function openGearShop() {
+            if (state.isDelivering) { showToast('❌ Во время доставки нельзя!', 2000); return; }
+            
+            const container = document.getElementById('gear-content');
+            container.innerHTML = '';
+            
+            // Показываем активные предметы
+            const activeItems = Object.entries(state.activeItems).filter(([_, v]) => v);
+            if (activeItems.length > 0) {
+                container.innerHTML += '<div style="font-size:12px;color:#888;margin-bottom:10px;">✨ Активные эффекты:</div>';
+                activeItems.forEach(([id, _]) => {
+                    const item = SHOP_GEAR.find(g => g.id === id);
+                    if (item) {
+                        container.innerHTML += `
+                            <div class="shop-item" style="border-color:#00e676;">
+                                <span>${item.icon} ${item.name} — активно</span>
+                            </div>
+                        `;
+                    }
+                });
+                container.innerHTML += '<div style="margin:15px 0;border-top:1px solid rgba(255,255,255,0.1);"></div>';
+            }
+            
+            // Показываем доступные для покупки
+            container.innerHTML += '<div style="font-size:12px;color:#888;margin-bottom:10px;">🛒 Доступное:</div>';
+            
+            SHOP_GEAR.forEach(item => {
+                const discount = getDiscount();
+                const price = Math.floor(item.cost * (1 - discount));
+                const owned = state.inventory.includes(item.id);
+                
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                div.style.opacity = owned ? '0.5' : '1';
+                div.innerHTML = `
+                    <div>
+                        <div>${item.icon} ${item.name}</div>
+                        <div style="font-size:11px;color:#888;">${item.desc}</div>
+                    </div>
+                    <span class="shop-item-price">${owned ? '✓' : price + '₽'}</span>
+                `;
+                if (!owned) {
+                    div.onclick = () => buyGear(item);
+                }
+                container.appendChild(div);
+            });
+            
+            if (state.level >= 2) {
+                container.innerHTML += `
+                    <div style="margin-top:10px;font-size:11px;color:#00e676;text-align:center;">
+                        💎 Скидка ${(getDiscount() * 100).toFixed(0)}% за уровень ${state.level}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('gear-overlay').classList.add('active');
+        }
+        
+        function buyGear(item) {
+            const discount = getDiscount();
+            const price = Math.floor(item.cost * (1 - discount));
+            
+            if (state.balance < price) {
+                showToast('❌ Недостаточно денег!', 2000);
+                return;
+            }
+            if (state.inventory.length >= 3) {
+                showToast('❌ Инвентарь полон! (макс 3 предмета)', 2000);
+                return;
+            }
+            
+            state.balance -= price;
+            state.inventory.push(item.id);
+            state.activeItems[item.id] = true;
+            
+            // Таймер для временных предметов
+            if (item.duration > 0) {
+                setTimeout(() => {
+                    state.inventory = state.inventory.filter(id => id !== item.id);
+                    state.activeItems[item.id] = false;
+                    showToast(`⏰ ${item.name} закончился!`, 2000);
+                    updateInventoryUI();
+                }, item.duration * 1000);
+            }
+            
+            updateUI();
+            saveGame();
+            openGearShop();
+            showToast(`${item.icon} ${item.name} куплен!`, 2000);
+        }
+        
+        function updateInventoryUI() {
+            for (let i = 0; i < 3; i++) {
+                const slot = document.getElementById('inv-' + i);
+                const itemId = state.inventory[i];
+                if (itemId) {
+                    const item = SHOP_GEAR.find(g => g.id === itemId);
+                    slot.textContent = item ? item.icon : '';
+                    slot.classList.toggle('active', state.activeItems[itemId]);
+                } else {
+                    slot.textContent = '';
+                    slot.classList.remove('active');
+                }
+            }
+        }
+        
+        function closeGearShop() {
+            document.getElementById('gear-overlay').classList.remove('active');
+        }
+        
         function updateUI() {
             document.getElementById('balance').textContent = Math.floor(state.balance) + ' ₽';
             ['energy', 'water', 'mood'].forEach(stat => {
@@ -1279,9 +1630,11 @@
         
         function gameTick() {
             if (state.isDelivering && !state.gameActive) {
-                state.energy -= 0.2;
-                state.water -= 0.15;
-                state.mood -= 0.1;
+                // Эффекты инвентаря
+                if (!state.activeItems.powerbank) state.energy -= 0.2;
+                if (!state.activeItems.thermos) state.water -= 0.15;
+                if (!state.activeItems.raincoat) state.mood -= 0.1;
+                
                 if (state.energy <= 0 || state.water <= 0) failDelivery('Ресурсы кончились!');
                 updateUI();
             }
@@ -1376,10 +1729,13 @@
             const dist = (1.5 + Math.random() * 4).toFixed(1);
             const basePrice = Math.floor(15 + parseFloat(dist) * 8);
             
+            // GPS эффект: маршруты на 20% короче
+            const gpsMultiplier = state.activeItems.gps ? 0.8 : 1;
+            
             const routes = [
-                { id: 'fast', name: '🏎️ Короткий', tag: 'tag-fast', tagText: 'Быстро', time: Math.floor(dist * 2), risk: 40, energyCost: 20, waterCost: 15, price: basePrice + 5, pitstops: 0, desc: `${dist} км • Риск: высокий` },
-                { id: 'safe', name: '🛡️ Безопасный', tag: 'tag-safe', tagText: 'Надёжно', time: Math.floor(dist * 4), risk: 10, energyCost: 12, waterCost: 10, price: basePrice, pitstops: 1, desc: `${dist} км • 1 пит-стоп` },
-                { id: 'profit', name: '💰 Прибыльный', tag: 'tag-profit', tagText: 'Доход', time: Math.floor(dist * 5), risk: 25, energyCost: 30, waterCost: 20, price: Math.floor(basePrice * 1.4), pitstops: 2, desc: `${dist} км • 2 пит-стопа` }
+                { id: 'fast', name: '🏎️ Короткий', tag: 'tag-fast', tagText: 'Быстро', time: Math.floor(dist * 2 * gpsMultiplier), risk: 40, energyCost: 20, waterCost: 15, price: basePrice + 5, pitstops: 0, desc: `${dist} км • Риск: высокий` },
+                { id: 'safe', name: '🛡️ Безопасный', tag: 'tag-safe', tagText: 'Надёжно', time: Math.floor(dist * 4 * gpsMultiplier), risk: 10, energyCost: 12, waterCost: 10, price: basePrice, pitstops: 1, desc: `${dist} км • 1 пит-стоп` },
+                { id: 'profit', name: '💰 Прибыльный', tag: 'tag-profit', tagText: 'Доход', time: Math.floor(dist * 5 * gpsMultiplier), risk: 25, energyCost: 30, waterCost: 20, price: Math.floor(basePrice * 1.4), pitstops: 2, desc: `${dist} км • 2 пит-стопа` }
             ];
             
             state.currentOrder = { restaurant: rest, distance: parseFloat(dist), basePrice: basePrice, routes: routes, destLat: WARSAW_CENTER[0] + (Math.random() - 0.5) * 0.06, destLng: WARSAW_CENTER[1] + (Math.random() - 0.5) * 0.08 };
@@ -1589,6 +1945,10 @@
             state.stats.totalDeliveries++;
             state.stats.totalEarned += total;
             if (bonus > state.stats.bestTip) state.stats.bestTip = bonus;
+            
+            // Добавляем XP (10 базовый + 1 за каждые 10₽)
+            const xpGain = 10 + Math.floor(total / 10);
+            addXP(xpGain);
             
             document.getElementById('delivery-panel').classList.remove('active');
             if (destMarker) map.removeLayer(destMarker);
