@@ -610,6 +610,99 @@
         .rating-fill.medium { background: linear-gradient(90deg, #ffd700, #ffaa00); }
         .rating-fill.bad { background: linear-gradient(90deg, #ff3d00, #dd2c00); }
         
+        /* === ПОГОДА И ВРЕМЯ === */
+        .weather-indicator {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .weather-indicator.rain { border-color: #00d4ff; color: #00d4ff; }
+        .weather-indicator.night { border-color: #9c27b0; color: #9c27b0; }
+        .weather-indicator.bonus { border-color: #ffd700; color: #ffd700; }
+        
+        .inflation-warning {
+            position: absolute;
+            top: 42px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 61, 0, 0.2);
+            color: #ff3d00;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            border: 1px solid rgba(255, 61, 0, 0.3);
+            display: none;
+        }
+        
+        .inflation-warning.active { display: block; }
+        
+        /* === АЧИВКИ === */
+        .achievement {
+            background: rgba(40,40,40,0.8);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .achievement.unlocked { border-color: #ffd700; background: rgba(255,215,0,0.1); }
+        .achievement.locked { opacity: 0.5; }
+        
+        .achievement-icon { font-size: 28px; }
+        .achievement-info { flex: 1; }
+        .achievement-name { font-weight: 600; font-size: 14px; }
+        .achievement-desc { font-size: 11px; color: #888; }
+        .achievement-reward { font-size: 11px; color: #00e676; }
+        
+        /* === ЭКОНОМИКА ПАНЕЛЬ === */
+        .economy-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .economy-stat:last-child { border-bottom: none; }
+        
+        .economy-label { font-size: 13px; color: #888; }
+        .economy-value { font-weight: 600; }
+        .economy-value.good { color: #00e676; }
+        .economy-value.bad { color: #ff3d00; }
+        .economy-value.warning { color: #ffd700; }
+        
+        .inflation-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        
+        .inflation-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        .inflation-fill.low { background: #00e676; }
+        .inflation-fill.medium { background: #ffd700; }
+        .inflation-fill.high { background: #ff3d00; }
+        
         /* === УРОВЕНЬ И ИНВЕНТАРЬ === */
         .level-badge {
             position: absolute;
@@ -926,11 +1019,22 @@
             <div class="balance-chip" id="balance">50 ₽</div>
         </div>
         
+        <!-- Индикаторы погоды и экономики -->
+        <div class="weather-indicator" id="weather-indicator">
+            <span id="weather-icon">🌧️</span>
+            <span id="weather-text">Дождь +25% к заказам</span>
+        </div>
+        <div class="inflation-warning" id="inflation-warning">
+            📈 Инфляция: цены выросли!
+        </div>
+        
         <!-- Маленькие кнопки сверху -->
         <div class="top-actions">
             <button class="mini-btn bank" onclick="openBank()" title="Банк">🏦</button>
             <button class="mini-btn stats" onclick="showStats()" title="Статистика">📊</button>
             <button class="mini-btn gear" onclick="openGearShop()" title="Снаряжение">🎒</button>
+            <button class="mini-btn" style="border-color: #ffd700; color: #ffd700;" onclick="openAchievements()" title="Достижения">🏆</button>
+            <button class="mini-btn" style="border-color: #00e676; color: #00e676;" onclick="openEconomy()" title="Экономика">📈</button>
         </div>
         
         <!-- Главное меню -->
@@ -1056,6 +1160,24 @@
         </div>
     </div>
     
+    <!-- АЧИВКИ -->
+    <div class="shop-overlay" id="achievements-overlay">
+        <div class="shop-card" style="max-width: 380px;">
+            <div class="shop-title">🏆 Достижения</div>
+            <div id="achievements-content"></div>
+            <button class="btn-close" onclick="closeAchievements()">Закрыть</button>
+        </div>
+    </div>
+    
+    <!-- ЭКОНОМИКА -->
+    <div class="shop-overlay" id="economy-overlay">
+        <div class="shop-card" style="max-width: 340px;">
+            <div class="shop-title">📈 Экономика</div>
+            <div id="economy-content"></div>
+            <button class="btn-close" onclick="closeEconomy()">Закрыть</button>
+        </div>
+    </div>
+    
     <!-- БАНК -->
     <div class="shop-overlay" id="bank-overlay">
         <div class="shop-card" style="max-width: 380px;">
@@ -1145,6 +1267,44 @@
             ]}
         };
         
+        // === ЭКОНОМИЧЕСКАЯ СИСТЕМА ===
+        const ECONOMY = {
+            inflationRate: 0.02,        // +2% за каждую доставку
+            inflationCap: 2.0,          // Макс x2 цены
+            rainBonus: 0.25,            // +25% в дождь
+            nightBonus: 0.50,           // +50% ночью
+            nightPenalty: 0.30,         // -30% энергии ночью
+            crisisChance: 0.1,          // 10% шанс кризиса
+            crisisDuration: 300,        // 5 минут кризис
+            crisisPenalty: 0.30         // -30% к заказам в кризис
+        };
+        
+        // === АЧИВКИ ===
+        const ACHIEVEMENTS = [
+            { id: 'first_delivery', name: 'Первые шаги', desc: 'Выполните 1 доставку', icon: '🚲', check: () => state.stats.totalDeliveries >= 1, reward: 10 },
+            { id: 'delivery_10', name: 'Опытный курьер', desc: 'Выполните 10 доставок', icon: '📦', check: () => state.stats.totalDeliveries >= 10, reward: 50 },
+            { id: 'delivery_50', name: 'Мастер доставки', desc: 'Выполните 50 доставок', icon: '🏆', check: () => state.stats.totalDeliveries >= 50, reward: 200 },
+            { id: 'delivery_100', name: 'Легенда ночи', desc: 'Выполните 100 доставок', icon: '👑', check: () => state.stats.totalDeliveries >= 100, reward: 500 },
+            { id: 'rich_100', name: 'Первые деньги', desc: 'Заработайте 100₽', icon: '💰', check: () => state.stats.totalEarned >= 100, reward: 20 },
+            { id: 'rich_500', name: 'Бизнесмен', desc: 'Заработайте 500₽', icon: '💎', check: () => state.stats.totalEarned >= 500, reward: 100 },
+            { id: 'rich_1000', name: 'Миллионер', desc: 'Заработайте 1000₽', icon: '🏦', check: () => state.stats.totalEarned >= 1000, reward: 300 },
+            { id: 'no_accidents_10', name: 'Аккуратный', desc: '10 доставок без аварий', icon: '🛡️', check: () => state.stats.accidents === 0 && state.stats.totalDeliveries >= 10, reward: 50 },
+            { id: 'level_3', name: 'Взлёт карьеры', desc: 'Достигните 3 уровня', icon: '📈', check: () => state.level >= 3, reward: 30 },
+            { id: 'level_5', name: 'Элита', desc: 'Достигните 5 уровня', icon: '⭐', check: () => state.level >= 5, reward: 100 },
+            { id: 'casino_win', name: 'Везунчик', desc: 'Выиграйте в казино 50₽', icon: '🎰', check: () => state.stats.casinoWins >= 50, reward: 25 },
+            { id: 'rain_master', name: 'Дождевик', desc: 'Доставьте в дождь 5 раз', icon: '🌧️', check: () => state.stats.rainDeliveries >= 5, reward: 40 }
+        ];
+        
+        let economyState = {
+            inflationMultiplier: 1.0,   // Текущий множатель цен
+            deliveriesCount: 0,         // Счётчик для инфляции
+            isCrisis: false,            // Активен ли кризис
+            crisisEndTime: 0,           // Когда закончится кризис
+            isNight: false,             // Ночь сейчас?
+            isRain: true,               // Дождь сейчас?
+            unlockedAchievements: []    // Разблокированные ачивки
+        };
+        
         const RESTAURANTS = [
             { name: "McDonald's", icon: "🍔" },
             { name: "KFC", icon: "🍗" },
@@ -1171,7 +1331,7 @@
         let state = {
             balance: 50, energy: 100, water: 100, mood: 100,
             experience: 0, level: 1,
-            stats: { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 },
+            stats: { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0, casinoWins: 0, rainDeliveries: 0 },
             currentOrder: null, currentRoute: null, isDelivering: false,
             progress: 0, currentStop: 0, gameActive: false, bikeLane: 1, gameHits: 0,
             inventory: [], // Инвентарь
@@ -1210,6 +1370,207 @@
         const rivalNames = ['Speedy', 'Night Rider', 'Flash', 'Shadow', 'Ghost'];
         const rivalColors = ['red', 'blue', 'purple'];
 
+        // === ЭКОНОМИКА ===
+        function saveEconomy() {
+            localStorage.setItem('warsaw_courier_economy', JSON.stringify(economyState));
+        }
+        
+        function loadEconomy() {
+            const saved = localStorage.getItem('warsaw_courier_economy');
+            if (saved) {
+                economyState = { ...economyState, ...JSON.parse(saved) };
+            }
+        }
+        
+        function updateEconomy() {
+            const now = new Date();
+            const hour = now.getHours();
+            
+            // Проверяем ночь (22:00 - 06:00)
+            economyState.isNight = hour >= 22 || hour < 6;
+            
+            // Проверяем кризис
+            if (economyState.isCrisis && Date.now() > economyState.crisisEndTime) {
+                economyState.isCrisis = false;
+                showToast('📈 Кризис закончился!', 3000);
+            }
+            
+            // Обновляем индикатор погоды
+            updateWeatherIndicator();
+        }
+        
+        function updateWeatherIndicator() {
+            const indicator = document.getElementById('weather-indicator');
+            const icon = document.getElementById('weather-icon');
+            const text = document.getElementById('weather-text');
+            const inflationWarning = document.getElementById('inflation-warning');
+            
+            let bonusText = '';
+            let totalBonus = 0;
+            
+            if (economyState.isRain) {
+                totalBonus += ECONOMY.rainBonus;
+                bonusText += '🌧️ Дождь +' + (ECONOMY.rainBonus * 100) + '% ';
+            }
+            if (economyState.isNight) {
+                totalBonus += ECONOMY.nightBonus;
+                bonusText += '🌙 Ночь +' + (ECONOMY.nightBonus * 100) + '% ';
+            }
+            if (economyState.isCrisis) {
+                bonusText += '💥 Кризис -' + (ECONOMY.crisisPenalty * 100) + '%!';
+                indicator.className = 'weather-indicator';
+                indicator.style.borderColor = '#ff3d00';
+                indicator.style.color = '#ff3d00';
+            } else if (totalBonus > 0) {
+                indicator.className = 'weather-indicator bonus';
+            } else {
+                indicator.className = 'weather-indicator';
+            }
+            
+            icon.textContent = economyState.isRain ? '🌧️' : economyState.isNight ? '🌙' : '☀️';
+            text.textContent = bonusText || 'Обычный день';
+            
+            // Показываем инфляцию
+            if (economyState.inflationMultiplier > 1.3) {
+                inflationWarning.classList.add('active');
+            } else {
+                inflationWarning.classList.remove('active');
+            }
+        }
+        
+        function applyInflation() {
+            economyState.deliveriesCount++;
+            economyState.inflationMultiplier = Math.min(
+                ECONOMY.inflationCap,
+                1 + (economyState.deliveriesCount * ECONOMY.inflationRate)
+            );
+            saveEconomy();
+        }
+        
+        function getCurrentPrice(basePrice) {
+            let multiplier = economyState.inflationMultiplier;
+            
+            // Бонусы/штрафы
+            if (economyState.isRain) multiplier += ECONOMY.rainBonus;
+            if (economyState.isNight) multiplier += ECONOMY.nightBonus;
+            if (economyState.isCrisis) multiplier -= ECONOMY.crisisPenalty;
+            
+            return Math.floor(basePrice * Math.max(0.5, multiplier));
+        }
+        
+        function triggerCrisis() {
+            if (Math.random() < ECONOMY.crisisChance && !economyState.isCrisis) {
+                economyState.isCrisis = true;
+                economyState.crisisEndTime = Date.now() + ECONOMY.crisisDuration * 1000;
+                showToast('💥 ЭКОНОМИЧЕСКИЙ КРИЗИС! Заказы дают -30%!', 5000);
+                updateWeatherIndicator();
+            }
+        }
+        
+        // === АЧИВКИ ===
+        function checkAchievements() {
+            let newUnlocked = false;
+            
+            ACHIEVEMENTS.forEach(ach => {
+                if (!economyState.unlockedAchievements.includes(ach.id) && ach.check()) {
+                    economyState.unlockedAchievements.push(ach.id);
+                    state.balance += ach.reward;
+                    showToast(`🏆 Ачивка: ${ach.name}! +${ach.reward}₽`, 4000);
+                    newUnlocked = true;
+                }
+            });
+            
+            if (newUnlocked) {
+                saveEconomy();
+                updateUI();
+            }
+        }
+        
+        function openAchievements() {
+            const container = document.getElementById('achievements-content');
+            container.innerHTML = '';
+            
+            let unlockedCount = 0;
+            
+            ACHIEVEMENTS.forEach(ach => {
+                const isUnlocked = economyState.unlockedAchievements.includes(ach.id);
+                if (isUnlocked) unlockedCount++;
+                
+                const div = document.createElement('div');
+                div.className = 'achievement ' + (isUnlocked ? 'unlocked' : 'locked');
+                div.innerHTML = `
+                    <div class="achievement-icon">${ach.icon}</div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">${ach.name}</div>
+                        <div class="achievement-desc">${ach.desc}</div>
+                        ${isUnlocked ? `<div class="achievement-reward">✓ Получено +${ach.reward}₽</div>` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            const progress = document.createElement('div');
+            progress.style.cssText = 'text-align: center; margin-top: 15px; font-size: 13px; color: #888;';
+            progress.innerHTML = `Разблокировано: <b style="color: #ffd700;">${unlockedCount}/${ACHIEVEMENTS.length}</b>`;
+            container.appendChild(progress);
+            
+            document.getElementById('achievements-overlay').classList.add('active');
+        }
+        
+        function closeAchievements() {
+            document.getElementById('achievements-overlay').classList.remove('active');
+        }
+        
+        // === ЭКОНОМИКА ПАНЕЛЬ ===
+        function openEconomy() {
+            const container = document.getElementById('economy-content');
+            const inflationPercent = Math.round((economyState.inflationMultiplier - 1) * 100);
+            
+            let inflationClass = 'low';
+            if (inflationPercent > 30) inflationClass = 'medium';
+            if (inflationPercent > 70) inflationClass = 'high';
+            
+            container.innerHTML = `
+                <div class="economy-stat">
+                    <span class="economy-label">📈 Инфляция</span>
+                    <span class="economy-value ${inflationClass === 'high' ? 'bad' : inflationClass === 'medium' ? 'warning' : 'good'}">+${inflationPercent}%</span>
+                </div>
+                <div class="inflation-bar">
+                    <div class="inflation-fill ${inflationClass}" style="width: ${Math.min(100, inflationPercent / 2)}%"></div>
+                </div>
+                
+                <div class="economy-stat">
+                    <span class="economy-label">🌧️ Дождь</span>
+                    <span class="economy-value ${economyState.isRain ? 'good' : ''}">${economyState.isRain ? 'ДА (+25%)' : 'Нет'}</span>
+                </div>
+                
+                <div class="economy-stat">
+                    <span class="economy-label">🌙 Ночной бонус</span>
+                    <span class="economy-value ${economyState.isNight ? 'good' : ''}">${economyState.isNight ? 'ДА (+50%)' : 'Нет'}</span>
+                </div>
+                
+                <div class="economy-stat">
+                    <span class="economy-label">💥 Кризис</span>
+                    <span class="economy-value ${economyState.isCrisis ? 'bad' : 'good'}">${economyState.isCrisis ? 'АКТИВЕН (-30%)' : 'Нет'}</span>
+                </div>
+                
+                <div class="economy-stat">
+                    <span class="economy-label">📦 Доставок сделано</span>
+                    <span class="economy-value">${economyState.deliveriesCount}</span>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 10px; font-size: 11px; color: #888; line-height: 1.5;">
+                    💡 <b>Совет:</b> Дождь и ночь дают бонусы к заказам, но инфляция постоянно растёт с каждой доставкой!
+                </div>
+            `;
+            
+            document.getElementById('economy-overlay').classList.add('active');
+        }
+        
+        function closeEconomy() {
+            document.getElementById('economy-overlay').classList.remove('active');
+        }
+
         function saveGame() {
             localStorage.setItem('warsaw_courier_save', JSON.stringify({
                 balance: state.balance, energy: state.energy, water: state.water, mood: state.mood,
@@ -1226,11 +1587,17 @@
                 state.energy = data.energy ?? 100;
                 state.water = data.water ?? 100;
                 state.mood = data.mood ?? 100;
-                state.stats = data.stats ?? { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0 };
+                state.stats = data.stats ?? { totalDeliveries: 0, totalEarned: 0, accidents: 0, bestTip: 0, casinoWins: 0, rainDeliveries: 0 };
                 state.level = data.level ?? 1;
                 state.experience = data.experience ?? 0;
                 state.inventory = data.inventory ?? [];
                 state.activeItems = data.activeItems ?? { raincoat: false, thermos: false, powerbank: false, gps: false };
+                
+                // Новые поля статистики
+                if (state.stats) {
+                    state.stats.casinoWins = state.stats.casinoWins || 0;
+                    state.stats.rainDeliveries = state.stats.rainDeliveries || 0;
+                }
             }
         }
 
@@ -1249,14 +1616,19 @@
             
             loadGame();
             loadBank();
+            loadEconomy();
             updateUI();
             updateLevelUI();
             updateInventoryUI();
+            updateEconomy();
+            checkAchievements();
+            
             setInterval(gameTick, 1000);
             setInterval(saveGame, 5000);
             setInterval(bankInterestTick, 60000); // Проверка процентов каждую минуту
             setInterval(moveRivals, 3000); // Двигаем соперников каждые 3 сек
-            window.addEventListener('beforeunload', () => { saveGame(); saveBank(); });
+            setInterval(updateEconomy, 30000); // Обновляем экономику каждые 30 сек
+            window.addEventListener('beforeunload', () => { saveGame(); saveBank(); saveEconomy(); });
             
             // Проверяем долг при старте
             if (bankState.loan >= BANK_CONFIG.collectorThreshold) {
@@ -1456,8 +1828,10 @@
             
             if (win > 0) {
                 state.balance += win;
+                state.stats.casinoWins = (state.stats.casinoWins || 0) + win;
                 resultDiv.className = 'casino-result win';
                 showToast(`🎰 ${message}`, 3000);
+                checkAchievements(); // Проверяем ачивки
             } else {
                 resultDiv.className = 'casino-result lose';
             }
@@ -1537,7 +1911,8 @@
             
             SHOP_GEAR.forEach(item => {
                 const discount = getDiscount();
-                const price = Math.floor(item.cost * (1 - discount));
+                const inflatedBase = getCurrentPrice(item.cost);
+                const price = Math.floor(inflatedBase * (1 - discount));
                 const owned = state.inventory.includes(item.id);
                 
                 const div = document.createElement('div');
@@ -1551,7 +1926,7 @@
                     <span class="shop-item-price">${owned ? '✓' : price + '₽'}</span>
                 `;
                 if (!owned) {
-                    div.onclick = () => buyGear(item);
+                    div.onclick = () => buyGear({...item, cost: price});
                 }
                 container.appendChild(div);
             });
@@ -1568,8 +1943,8 @@
         }
         
         function buyGear(item) {
-            const discount = getDiscount();
-            const price = Math.floor(item.cost * (1 - discount));
+            // Цена уже рассчитана с учётом инфляции и скидки
+            const price = item.cost;
             
             if (state.balance < price) {
                 showToast('❌ Недостаточно денег!', 2000);
@@ -1652,10 +2027,20 @@
             document.getElementById('shop-title').textContent = type === 'water' ? '💧 Напитки' : '☕ Энергетики';
             const container = document.getElementById('shop-items');
             container.innerHTML = '';
+            
+            // Показываем инфляцию если есть
+            if (economyState.inflationMultiplier > 1.1) {
+                const inflationWarning = document.createElement('div');
+                inflationWarning.style.cssText = 'font-size:11px;color:#ff3d00;margin-bottom:10px;text-align:center;';
+                inflationWarning.innerHTML = `📈 Инфляция: цены +${Math.round((economyState.inflationMultiplier - 1) * 100)}%`;
+                container.appendChild(inflationWarning);
+            }
+            
             SHOP_ITEMS[type].forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'shop-item';
-                div.onclick = () => buyItem(item);
+                const inflatedCost = getCurrentPrice(item.cost);
+                div.onclick = () => buyItem({...item, cost: inflatedCost});
                 const effects = [];
                 if (item.energy !== 0) effects.push(`⚡${item.energy > 0 ? '+' : ''}${item.energy}`);
                 if (item.water !== 0) effects.push(`💧${item.water > 0 ? '+' : ''}${item.water}`);
@@ -1665,7 +2050,7 @@
                         <div>${item.icon} ${item.name}</div>
                         <div style="font-size:11px;color:#888;margin-top:2px;">${effects.join(' ')}</div>
                     </div>
-                    <span class="shop-item-price">${item.cost}₽</span>
+                    <span class="shop-item-price">${inflatedCost}₽</span>
                 `;
                 container.appendChild(div);
             });
@@ -1677,10 +2062,20 @@
             document.getElementById('shop-title').textContent = '🛒 Магазин';
             const container = document.getElementById('shop-items');
             container.innerHTML = '';
+            
+            // Показываем инфляцию если есть
+            if (economyState.inflationMultiplier > 1.1) {
+                const inflationWarning = document.createElement('div');
+                inflationWarning.style.cssText = 'font-size:11px;color:#ff3d00;margin-bottom:10px;text-align:center;';
+                inflationWarning.innerHTML = `📈 Инфляция: цены +${Math.round((economyState.inflationMultiplier - 1) * 100)}%`;
+                container.appendChild(inflationWarning);
+            }
+            
             SHOP_ITEMS.all.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'shop-item';
-                div.onclick = () => buyItem(item);
+                const inflatedCost = getCurrentPrice(item.cost);
+                div.onclick = () => buyItem({...item, cost: inflatedCost});
                 const effects = [];
                 if (item.energy !== 0) effects.push(`⚡${item.energy > 0 ? '+' : ''}${item.energy}`);
                 if (item.water !== 0) effects.push(`💧${item.water > 0 ? '+' : ''}${item.water}`);
@@ -1690,7 +2085,7 @@
                         <div>${item.icon} ${item.name}</div>
                         <div style="font-size:11px;color:#888;margin-top:2px;">${effects.join(' ')}</div>
                     </div>
-                    <span class="shop-item-price">${item.cost}₽</span>
+                    <span class="shop-item-price">${inflatedCost}₽</span>
                 `;
                 container.appendChild(div);
             });
@@ -1716,6 +2111,8 @@
                 <div class="shop-item"><span>💰 Заработано</span><span class="shop-item-price">${state.stats.totalEarned}₽</span></div>
                 <div class="shop-item"><span>💥 Аварий</span><span class="shop-item-price">${state.stats.accidents}</span></div>
                 <div class="shop-item"><span>🎁 Лучшие чаевые</span><span class="shop-item-price">${state.stats.bestTip}₽</span></div>
+                <div class="shop-item"><span>🎰 Выиграно в казино</span><span class="shop-item-price">${state.stats.casinoWins || 0}₽</span></div>
+                <div class="shop-item"><span>🌧️ Доставок в дождь</span><span class="shop-item-price">${state.stats.rainDeliveries || 0}</span></div>
             `;
             document.getElementById('stats-overlay').classList.add('active');
         }
@@ -1727,15 +2124,21 @@
             
             const rest = RESTAURANTS[Math.floor(Math.random() * RESTAURANTS.length)];
             const dist = (1.5 + Math.random() * 4).toFixed(1);
-            const basePrice = Math.floor(15 + parseFloat(dist) * 8);
+            const rawBasePrice = Math.floor(15 + parseFloat(dist) * 8);
+            
+            // ДИНАМИЧЕСКАЯ ЦЕНА: учитываем инфляцию, погоду, время
+            const basePrice = getCurrentPrice(rawBasePrice);
             
             // GPS эффект: маршруты на 20% короче
             const gpsMultiplier = state.activeItems.gps ? 0.8 : 1;
             
+            // Ночной штраф к энергии
+            const nightEnergyPenalty = economyState.isNight ? ECONOMY.nightPenalty : 0;
+            
             const routes = [
-                { id: 'fast', name: '🏎️ Короткий', tag: 'tag-fast', tagText: 'Быстро', time: Math.floor(dist * 2 * gpsMultiplier), risk: 40, energyCost: 20, waterCost: 15, price: basePrice + 5, pitstops: 0, desc: `${dist} км • Риск: высокий` },
-                { id: 'safe', name: '🛡️ Безопасный', tag: 'tag-safe', tagText: 'Надёжно', time: Math.floor(dist * 4 * gpsMultiplier), risk: 10, energyCost: 12, waterCost: 10, price: basePrice, pitstops: 1, desc: `${dist} км • 1 пит-стоп` },
-                { id: 'profit', name: '💰 Прибыльный', tag: 'tag-profit', tagText: 'Доход', time: Math.floor(dist * 5 * gpsMultiplier), risk: 25, energyCost: 30, waterCost: 20, price: Math.floor(basePrice * 1.4), pitstops: 2, desc: `${dist} км • 2 пит-стопа` }
+                { id: 'fast', name: '🏎️ Короткий', tag: 'tag-fast', tagText: 'Быстро', time: Math.floor(dist * 2 * gpsMultiplier), risk: 40, energyCost: Math.floor(20 * (1 + nightEnergyPenalty)), waterCost: 15, price: basePrice + 5, pitstops: 0, desc: `${dist} км • Риск: высокий` },
+                { id: 'safe', name: '🛡️ Безопасный', tag: 'tag-safe', tagText: 'Надёжно', time: Math.floor(dist * 4 * gpsMultiplier), risk: 10, energyCost: Math.floor(12 * (1 + nightEnergyPenalty)), waterCost: 10, price: basePrice, pitstops: 1, desc: `${dist} км • 1 пит-стоп` },
+                { id: 'profit', name: '💰 Прибыльный', tag: 'tag-profit', tagText: 'Доход', time: Math.floor(dist * 5 * gpsMultiplier), risk: 25, energyCost: Math.floor(30 * (1 + nightEnergyPenalty)), waterCost: 20, price: Math.floor(basePrice * 1.4), pitstops: 2, desc: `${dist} км • 2 пит-стопа` }
             ];
             
             state.currentOrder = { restaurant: rest, distance: parseFloat(dist), basePrice: basePrice, routes: routes, destLat: WARSAW_CENTER[0] + (Math.random() - 0.5) * 0.06, destLng: WARSAW_CENTER[1] + (Math.random() - 0.5) * 0.08 };
@@ -1946,9 +2349,23 @@
             state.stats.totalEarned += total;
             if (bonus > state.stats.bestTip) state.stats.bestTip = bonus;
             
+            // Статистика для ачивок
+            if (economyState.isRain) {
+                state.stats.rainDeliveries = (state.stats.rainDeliveries || 0) + 1;
+            }
+            
             // Добавляем XP (10 базовый + 1 за каждые 10₽)
             const xpGain = 10 + Math.floor(total / 10);
             addXP(xpGain);
+            
+            // ИНФЛЯЦИЯ: цены растут с каждой доставкой
+            applyInflation();
+            
+            // Проверяем ачивки
+            checkAchievements();
+            
+            // Шанс кризиса
+            triggerCrisis();
             
             document.getElementById('delivery-panel').classList.remove('active');
             if (destMarker) map.removeLayer(destMarker);
@@ -1957,7 +2374,7 @@
             if (routeLine) map.removeLayer(routeLine);
             map.setView(WARSAW_CENTER, 13);
             
-            updateUI(); saveGame();
+            updateUI(); saveGame(); saveEconomy();
             
             if (originalTotal !== total) {
                 showToast(`✅ Доставка: +${total}₽ (было ${originalTotal}₽)`, 3000);
