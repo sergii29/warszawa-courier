@@ -15,6 +15,33 @@
         .ui-layer { position: absolute; z-index: 100; pointer-events: none; width: 100%; height: 100%; }
         .ui-layer > * { pointer-events: auto; }
         
+        /* === ДОЖДЬ === */
+        .rain-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            overflow: hidden;
+        }
+        
+        .rain-drop {
+            position: absolute;
+            width: 1px;
+            height: 15px;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.4));
+            animation: rain-fall linear infinite;
+        }
+        
+        @keyframes rain-fall {
+            0% { transform: translateY(-20px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+        
         /* === ВЕРХНЯЯ ПАНЕЛЬ === */
         .top-hud {
             position: absolute;
@@ -532,9 +559,225 @@
         .rating-fill.good { background: linear-gradient(90deg, #00e676, #00c853); }
         .rating-fill.medium { background: linear-gradient(90deg, #ffd700, #ffaa00); }
         .rating-fill.bad { background: linear-gradient(90deg, #ff3d00, #dd2c00); }
+        
+        /* === КАЗИНО КНОПКА === */
+        .casino-fab {
+            position: absolute;
+            bottom: 100px;
+            right: 15px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(233, 30, 99, 0.5);
+            transition: all 0.3s;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .casino-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(233, 30, 99, 0.7);
+        }
+        
+        .casino-fab:active { transform: scale(0.95); }
+        
+        .casino-fab.pulse {
+            animation: casino-pulse 2s infinite;
+        }
+        
+        @keyframes casino-pulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(233, 30, 99, 0.5); }
+            50% { box-shadow: 0 4px 30px rgba(233, 30, 99, 0.9), 0 0 20px rgba(233, 30, 99, 0.5); }
+        }
+        
+        /* === КАЗИНО СТИЛИ === */
+        .casino-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .casino-overlay.active { display: flex; }
+        
+        .casino-card {
+            background: linear-gradient(135deg, #1a0a1a, #0d0d0d);
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 360px;
+            width: 100%;
+            border: 2px solid #e91e63;
+            box-shadow: 0 0 40px rgba(233, 30, 99, 0.3);
+        }
+        
+        .casino-title {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 4px;
+            background: linear-gradient(90deg, #ffd700, #ff4081);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .casino-subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .casino-balance {
+            background: rgba(0,0,0,0.5);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
+        
+        .casino-balance-label { font-size: 11px; color: #888; }
+        .casino-balance-amount { font-size: 28px; font-weight: 700; color: #ffd700; }
+        
+        .casino-game {
+            background: rgba(40,20,40,0.6);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .slot-reel {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #2a1a2a, #1a0a1a);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            border: 2px solid #e91e63;
+            transition: all 0.3s;
+        }
+        
+        .slot-reel.spinning {
+            animation: slot-spin 0.1s linear infinite;
+        }
+        
+        @keyframes slot-spin {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+        
+        .slot-reel.win {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+        
+        .casino-bet {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        
+        .bet-btn {
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .bet-btn:hover { border-color: #e91e63; }
+        .bet-btn.active {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            border-color: transparent;
+        }
+        
+        .spin-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .casino-result {
+            margin-top: 12px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        
+        .casino-result.win { color: #00e676; }
+        .casino-result.lose { color: #ff3d00; }
+        
+        /* === СОПЕРНИКИ === */
+        .rival-marker {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px currentColor;
+            animation: rival-pulse 2s infinite;
+        }
+        
+        .rival-marker.red { background: #ff3d00; color: #ff3d00; }
+        .rival-marker.blue { background: #2979ff; color: #2979ff; }
+        .rival-marker.purple { background: #9c27b0; color: #9c27b0; }
+        
+        @keyframes rival-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .rival-popup {
+            background: rgba(0,0,0,0.9);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            border: 1px solid;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
+    <!-- ДОЖДЬ -->
+    <div class="rain-overlay" id="rain"></div>
+    
     <div id="map"></div>
     
     <div class="ui-layer">
@@ -613,6 +856,9 @@
         </div>
     </div>
     
+    <!-- КАЗИНО КНОПКА -->
+    <button class="casino-fab pulse" onclick="openCasino()">🎰</button>
+    
     <!-- ИГРА -->
     <div class="game-overlay" id="game-overlay">
         <div class="game-box">
@@ -673,6 +919,44 @@
             <div class="shop-title">🏦 Night Bank</div>
             <div id="bank-content"></div>
             <button class="btn-close" onclick="closeBank()">Закрыть</button>
+        </div>
+    </div>
+    
+    <!-- КАЗИНО -->
+    <div class="casino-overlay" id="casino-overlay">
+        <div class="casino-card">
+            <div class="casino-title">🎰 NIGHT CASINO</div>
+            <div class="casino-subtitle">Рискни всё или стань богатым!</div>
+            
+            <div class="casino-balance">
+                <div class="casino-balance-label">Ваш баланс</div>
+                <div class="casino-balance-amount" id="casino-balance">50 ₽</div>
+            </div>
+            
+            <div class="casino-game">
+                <div class="slot-machine">
+                    <div class="slot-reel" id="slot1">🍒</div>
+                    <div class="slot-reel" id="slot2">🍋</div>
+                    <div class="slot-reel" id="slot3">🍇</div>
+                </div>
+                
+                <div class="casino-bet">
+                    <button class="bet-btn active" onclick="setBet(5)" data-bet="5">5₽</button>
+                    <button class="bet-btn" onclick="setBet(10)" data-bet="10">10₽</button>
+                    <button class="bet-btn" onclick="setBet(25)" data-bet="25">25₽</button>
+                    <button class="bet-btn" onclick="setBet(50)" data-bet="50">50₽</button>
+                </div>
+                
+                <button class="spin-btn" id="spin-btn" onclick="spinSlots()">🎰 КРУТИТЬ!</button>
+                
+                <div class="casino-result" id="casino-result"></div>
+            </div>
+            
+            <div style="font-size:11px;color:#666;text-align:center;margin-top:10px;">
+                🍒🍒🍒 = x10 | 🍋🍋🍋 = x5 | 🍇🍇🍇 = x3 | Любые 2 = x2
+            </div>
+            
+            <button class="btn-close" onclick="closeCasino()" style="margin-top:16px;">Выйти</button>
         </div>
     </div>
     
@@ -742,6 +1026,17 @@
         
         let map, courierMarker, destMarker, routeLine, pitstopMarkers = [];
         let obstacleInterval;
+        
+        // === КАЗИНО ===
+        let currentBet = 5;
+        const slotSymbols = ['🍒', '🍋', '🍇', '💎', '7️⃣', '🎰'];
+        const slotWeights = [30, 25, 20, 15, 8, 2]; // Шансы выпадения
+        let isSpinning = false;
+        
+        // === СОПЕРНИКИ ===
+        let rivals = [];
+        const rivalNames = ['Speedy', 'Night Rider', 'Flash', 'Shadow', 'Ghost'];
+        const rivalColors = ['red', 'blue', 'purple'];
 
         function saveGame() {
             localStorage.setItem('warsaw_courier_save', JSON.stringify({
@@ -771,12 +1066,19 @@
             const courierIcon = L.divIcon({ html: '<div class="marker-courier"></div>', className: 'custom-marker', iconSize: [20, 20] });
             courierMarker = L.marker(WARSAW_CENTER, { icon: courierIcon }).addTo(map);
             
+            // Генерируем дождь
+            createRain();
+            
+            // Спавним соперников
+            spawnRivals();
+            
             loadGame();
             loadBank();
             updateUI();
             setInterval(gameTick, 1000);
             setInterval(saveGame, 5000);
             setInterval(bankInterestTick, 60000); // Проверка процентов каждую минуту
+            setInterval(moveRivals, 3000); // Двигаем соперников каждые 3 сек
             window.addEventListener('beforeunload', () => { saveGame(); saveBank(); });
             
             // Проверяем долг при старте
@@ -785,6 +1087,185 @@
             }
             
             showToast('Готов к работе! Нажми ЗАКАЗ', 3000);
+        }
+        
+        // === ДОЖДЬ ===
+        function createRain() {
+            const rainContainer = document.getElementById('rain');
+            for (let i = 0; i < 80; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                drop.style.opacity = 0.3 + Math.random() * 0.4;
+                rainContainer.appendChild(drop);
+            }
+        }
+        
+        // === СОПЕРНИКИ ===
+        function spawnRivals() {
+            for (let i = 0; i < 3; i++) {
+                const rival = {
+                    name: rivalNames[i],
+                    color: rivalColors[i],
+                    earnings: Math.floor(Math.random() * 200) + 50,
+                    lat: WARSAW_CENTER[0] + (Math.random() - 0.5) * 0.04,
+                    lng: WARSAW_CENTER[1] + (Math.random() - 0.5) * 0.06,
+                    marker: null
+                };
+                
+                const icon = L.divIcon({
+                    html: `<div class="rival-marker ${rival.color}"></div>`,
+                    className: 'custom-marker',
+                    iconSize: [18, 18]
+                });
+                
+                rival.marker = L.marker([rival.lat, rival.lng], { icon: icon }).addTo(map);
+                rival.marker.bindPopup(`
+                    <div class="rival-popup" style="border-color: ${rival.color === 'red' ? '#ff3d00' : rival.color === 'blue' ? '#2979ff' : '#9c27b0'}">
+                        <b>🏍️ ${rival.name}</b><br>
+                        💰 Заработал: ${rival.earnings}₽
+                    </div>
+                `);
+                
+                rivals.push(rival);
+            }
+        }
+        
+        function moveRivals() {
+            rivals.forEach(rival => {
+                // Соперники случайно двигаются
+                rival.lat += (Math.random() - 0.5) * 0.002;
+                rival.lng += (Math.random() - 0.5) * 0.003;
+                rival.marker.setLatLng([rival.lat, rival.lng]);
+                
+                // Иногда зарабатывают
+                if (Math.random() < 0.3) {
+                    rival.earnings += Math.floor(Math.random() * 15) + 5;
+                    rival.marker.setPopupContent(`
+                        <div class="rival-popup" style="border-color: ${rival.color === 'red' ? '#ff3d00' : rival.color === 'blue' ? '#2979ff' : '#9c27b0'}">
+                            <b>🏍️ ${rival.name}</b><br>
+                            💰 Заработал: ${rival.earnings}₽
+                        </div>
+                    `);
+                }
+            });
+        }
+        
+        // === КАЗИНО ===
+        let slotReels = [];
+        
+        function openCasino() {
+            if (state.isDelivering) {
+                showToast('❌ Нельзя во время доставки!', 2000);
+                return;
+            }
+            document.getElementById('casino-balance').textContent = Math.floor(state.balance) + ' ₽';
+            document.getElementById('casino-overlay').classList.add('active');
+        }
+        
+        function closeCasino() {
+            document.getElementById('casino-overlay').classList.remove('active');
+        }
+        
+        function setBet(amount) {
+            currentBet = amount;
+            document.querySelectorAll('.bet-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.bet) === amount);
+            });
+        }
+        
+        function getRandomSymbol() {
+            const totalWeight = slotWeights.reduce((a, b) => a + b, 0);
+            let random = Math.random() * totalWeight;
+            for (let i = 0; i < slotSymbols.length; i++) {
+                random -= slotWeights[i];
+                if (random <= 0) return slotSymbols[i];
+            }
+            return slotSymbols[0];
+        }
+        
+        function spinSlots() {
+            if (isSpinning) return;
+            if (state.balance < currentBet) {
+                showToast('❌ Недостаточно денег!', 2000);
+                return;
+            }
+            
+            isSpinning = true;
+            state.balance -= currentBet;
+            updateUI();
+            document.getElementById('casino-balance').textContent = Math.floor(state.balance) + ' ₽';
+            document.getElementById('casino-result').textContent = '';
+            
+            const btn = document.getElementById('spin-btn');
+            btn.disabled = true;
+            btn.textContent = 'Крутим...';
+            
+            slotReels = [
+                document.getElementById('slot1'),
+                document.getElementById('slot2'),
+                document.getElementById('slot3')
+            ];
+            
+            slotReels.forEach(r => r.classList.remove('win'));
+            slotReels.forEach(r => r.classList.add('spinning'));
+            
+            // Останавливаем барабаны с задержкой
+            const results = [];
+            slotReels.forEach((reel, i) => {
+                setTimeout(() => {
+                    reel.classList.remove('spinning');
+                    const symbol = getRandomSymbol();
+                    reel.textContent = symbol;
+                    results.push(symbol);
+                    
+                    if (i === 2) {
+                        checkWin(results);
+                        isSpinning = false;
+                        btn.disabled = false;
+                        btn.textContent = '🎰 КРУТИТЬ!';
+                    }
+                }, 500 + i * 300);
+            });
+        }
+        
+        function checkWin(results) {
+            const resultDiv = document.getElementById('casino-result');
+            const [s1, s2, s3] = results;
+            let win = 0;
+            let message = '';
+            
+            // Все три одинаковые
+            if (s1 === s2 && s2 === s3) {
+                const multipliers = { '🍒': 10, '🍋': 5, '🍇': 3, '💎': 15, '7️⃣': 20, '🎰': 50 };
+                win = currentBet * (multipliers[s1] || 3);
+                message = `🎉 ДЖЕКПОТ! ${s1}${s1}${s1} = +${win}₽!`;
+                slotReels.forEach(r => r.classList.add('win'));
+                setTimeout(() => slotReels.forEach(r => r.classList.remove('win')), 1000);
+            }
+            // Две одинаковые
+            else if (s1 === s2 || s2 === s3 || s1 === s3) {
+                win = currentBet * 2;
+                message = `✅ Две одинаковые! +${win}₽`;
+            }
+            else {
+                message = '❌ Не повезло...';
+            }
+            
+            if (win > 0) {
+                state.balance += win;
+                resultDiv.className = 'casino-result win';
+                showToast(`🎰 ${message}`, 3000);
+            } else {
+                resultDiv.className = 'casino-result lose';
+            }
+            
+            resultDiv.textContent = message;
+            updateUI();
+            document.getElementById('casino-balance').textContent = Math.floor(state.balance) + ' ₽';
+            saveGame();
         }
         
         function updateUI() {
