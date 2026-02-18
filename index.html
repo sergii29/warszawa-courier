@@ -401,6 +401,137 @@
         .tag-safe { background: #00e676; color: #000; }
         .tag-profit { background: #ffd600; color: #000; }
         .route-price { color: #00e676; font-weight: 700; }
+        
+        /* === БАНК === */
+        .bank-section { margin-bottom: 16px; }
+        .bank-section-title { font-size: 14px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .bank-balance-box {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            padding: 14px;
+            border-radius: 14px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        .bank-balance-label { font-size: 11px; opacity: 0.7; margin-bottom: 4px; }
+        .bank-balance-amount { font-size: 24px; font-weight: 700; }
+        
+        .credit-warning {
+            background: rgba(255, 61, 0, 0.15);
+            border: 1px solid rgba(255, 61, 0, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #ff3d00;
+            margin-bottom: 12px;
+            display: none;
+        }
+        
+        .credit-warning.active { display: block; }
+        
+        .bank-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .bank-input {
+            flex: 1;
+            background: rgba(40,40,40,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .bank-input:focus { border-color: #ffd700; }
+        
+        .bank-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .bank-btn:active { transform: scale(0.95); }
+        
+        .bank-btn.gold {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+        }
+        
+        .bank-btn.red {
+            background: rgba(255, 61, 0, 0.2);
+            color: #ff3d00;
+            border: 1px solid rgba(255, 61, 0, 0.3);
+        }
+        
+        .credit-info {
+            background: rgba(40,40,40,0.6);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .credit-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .credit-info-row:last-child { margin-bottom: 0; }
+        
+        .credit-status-good { color: #00e676; }
+        .credit-status-bad { color: #ff3d00; }
+        
+        .loan-option {
+            background: rgba(40,40,40,0.8);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .loan-option:hover { border-color: #ffd700; }
+        
+        .loan-option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .loan-amount { font-size: 18px; font-weight: 700; color: #ffd700; }
+        .loan-rate { font-size: 11px; color: #888; }
+        .loan-payment { font-size: 12px; color: #aaa; }
+        
+        .rating-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .rating-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        .rating-fill.good { background: linear-gradient(90deg, #00e676, #00c853); }
+        .rating-fill.medium { background: linear-gradient(90deg, #ffd700, #ffaa00); }
+        .rating-fill.bad { background: linear-gradient(90deg, #ff3d00, #dd2c00); }
     </style>
 </head>
 <body>
@@ -452,6 +583,10 @@
             <button class="menu-btn secondary stats" onclick="showStats()">
                 <span class="btn-icon">📊</span>
                 <span class="btn-label">Стат</span>
+            </button>
+            <button class="menu-btn secondary" style="border-color: #ffd700;" onclick="openBank()">
+                <span class="btn-icon" style="color: #ffd700;">🏦</span>
+                <span class="btn-label">Банк</span>
             </button>
         </div>
         
@@ -529,6 +664,15 @@
             <div class="shop-title">📊 Статистика</div>
             <div id="stats-content"></div>
             <button class="btn-close" onclick="closeStats()">Закрыть</button>
+        </div>
+    </div>
+    
+    <!-- БАНК -->
+    <div class="shop-overlay" id="bank-overlay">
+        <div class="shop-card" style="max-width: 380px;">
+            <div class="shop-title">🏦 Night Bank</div>
+            <div id="bank-content"></div>
+            <button class="btn-close" onclick="closeBank()">Закрыть</button>
         </div>
     </div>
     
@@ -628,10 +772,17 @@
             courierMarker = L.marker(WARSAW_CENTER, { icon: courierIcon }).addTo(map);
             
             loadGame();
+            loadBank();
             updateUI();
             setInterval(gameTick, 1000);
             setInterval(saveGame, 5000);
-            window.addEventListener('beforeunload', saveGame);
+            setInterval(bankInterestTick, 60000); // Проверка процентов каждую минуту
+            window.addEventListener('beforeunload', () => { saveGame(); saveBank(); });
+            
+            // Проверяем долг при старте
+            if (bankState.loan >= BANK_CONFIG.collectorThreshold) {
+                setTimeout(() => showToast('⚠️ У вас большой долг! Коллекторы активны!', 4000), 2000);
+            }
             
             showToast('Готов к работе! Нажми ЗАКАЗ', 3000);
         }
@@ -946,7 +1097,12 @@
         function finishDelivery() {
             state.isDelivering = false;
             const bonus = state.currentOrder.bonus || 0;
-            const total = state.currentRoute.price + bonus;
+            let total = state.currentRoute.price + bonus;
+            
+            // ХИТРАЯ СИСТЕМА: Коллекторы забирают процент если долг большой
+            loadBank();
+            const originalTotal = total;
+            total = applyCollectorFee(total);
             
             state.balance += total;
             state.stats.totalDeliveries++;
@@ -961,7 +1117,12 @@
             map.setView(WARSAW_CENTER, 13);
             
             updateUI(); saveGame();
-            showToast(`✅ Доставка завершена! +${total}₽`, 3000);
+            
+            if (originalTotal !== total) {
+                showToast(`✅ Доставка: +${total}₽ (было ${originalTotal}₽)`, 3000);
+            } else {
+                showToast(`✅ Доставка завершена! +${total}₽`, 3000);
+            }
         }
         
         function failDelivery(reason) {
@@ -984,6 +1145,266 @@
             if (routeLine) map.removeLayer(routeLine);
             map.setView(WARSAW_CENTER, 13);
             showToast('Заказ отменён', 2000);
+        }
+
+        // ==================== БАНК ====================
+        const BANK_CONFIG = {
+            depositRate: 0.05,      // 5% в час на депозит
+            loanRates: {
+                small: 0.10,        // 10% на малый кредит
+                medium: 0.15,       // 15% на средний
+                large: 0.25         // 25% на большой (опасный!)
+            },
+            collectorThreshold: 50,  // После 50₽ долга приходят коллекторы
+            collectorCut: 0.30       // 30% от каждого заказа забирают коллекторы
+        };
+        
+        let bankState = {
+            deposit: 0,              // Деньги на депозите
+            loan: 0,                 // Текущий долг
+            loanRate: 0,             // Процент по кредиту
+            creditRating: 100,       // Кредитный рейтинг (0-100)
+            totalPaid: 0,            // Всего выплачено
+            missedPayments: 0,       // Пропущенные платежи
+            lastInterestTime: Date.now()
+        };
+        
+        function loadBank() {
+            const saved = localStorage.getItem('warsaw_courier_bank');
+            if (saved) {
+                const data = JSON.parse(saved);
+                bankState = { ...bankState, ...data };
+            }
+        }
+        
+        function saveBank() {
+            localStorage.setItem('warsaw_courier_bank', JSON.stringify(bankState));
+        }
+        
+        function bankInterestTick() {
+            const now = Date.now();
+            const hoursPassed = (now - bankState.lastInterestTime) / (1000 * 60 * 60);
+            
+            if (hoursPassed >= 1) {
+                // Начисляем проценты на депозит
+                if (bankState.deposit > 0) {
+                    const interest = Math.floor(bankState.deposit * BANK_CONFIG.depositRate * hoursPassed);
+                    bankState.deposit += interest;
+                }
+                
+                // Начисляем проценты по кредиту
+                if (bankState.loan > 0) {
+                    const interest = Math.floor(bankState.loan * bankState.loanRate * hoursPassed);
+                    bankState.loan += interest;
+                    
+                    // Понижаем рейтинг за долг
+                    if (bankState.loan > 20) {
+                        bankState.creditRating = Math.max(0, bankState.creditRating - 1);
+                    }
+                }
+                
+                bankState.lastInterestTime = now;
+                saveBank();
+            }
+        }
+        
+        function openBank() {
+            loadBank();
+            bankInterestTick();
+            renderBank();
+            document.getElementById('bank-overlay').classList.add('active');
+        }
+        
+        function closeBank() {
+            document.getElementById('bank-overlay').classList.remove('active');
+        }
+        
+        function renderBank() {
+            const container = document.getElementById('bank-content');
+            const hasDebt = bankState.loan > 0;
+            const hasCollectors = bankState.loan >= BANK_CONFIG.collectorThreshold;
+            
+            let ratingClass = 'good';
+            if (bankState.creditRating < 60) ratingClass = 'medium';
+            if (bankState.creditRating < 30) ratingClass = 'bad';
+            
+            container.innerHTML = `
+                <div class="credit-warning ${hasCollectors ? 'active' : ''}">
+                    ⚠️ <b>ВНИМАНИЕ!</b> Коллекторы активированы!<br>
+                    ${BANK_CONFIG.collectorCut * 100}% от каждого заказа уходит на погашение долга!
+                </div>
+                
+                <div class="bank-section">
+                    <div class="bank-section-title">💰 Ваш счёт</div>
+                    <div class="bank-balance-box">
+                        <div class="bank-balance-label">Депозит</div>
+                        <div class="bank-balance-amount">${Math.floor(bankState.deposit)} ₽</div>
+                    </div>
+                    <div class="bank-input-group">
+                        <input type="number" class="bank-input" id="deposit-amount" placeholder="Сумма" min="1">
+                        <button class="bank-btn gold" onclick="deposit()">Положить</button>
+                    </div>
+                    <div class="bank-input-group">
+                        <input type="number" class="bank-input" id="withdraw-amount" placeholder="Сумма" min="1">
+                        <button class="bank-btn" style="background:rgba(255,255,255,0.1);color:#fff;" onclick="withdraw()">Снять</button>
+                    </div>
+                    <div style="font-size:11px;color:#888;margin-top:6px;">
+                        💡 Депозит: +${BANK_CONFIG.depositRate * 100}% в час
+                    </div>
+                </div>
+                
+                ${hasDebt ? `
+                <div class="bank-section">
+                    <div class="bank-section-title">📋 Кредит</div>
+                    <div class="credit-info">
+                        <div class="credit-info-row">
+                            <span>Долг:</span>
+                            <span style="color:#ff3d00;font-weight:700;">${Math.floor(bankState.loan)} ₽</span>
+                        </div>
+                        <div class="credit-info-row">
+                            <span>Ставка:</span>
+                            <span>${(bankState.loanRate * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="credit-info-row">
+                            <span>Рейтинг:</span>
+                            <span class="${bankState.creditRating < 50 ? 'credit-status-bad' : 'credit-status-good'}">${bankState.creditRating}/100</span>
+                        </div>
+                        <div class="rating-bar">
+                            <div class="rating-fill ${ratingClass}" style="width:${bankState.creditRating}%"></div>
+                        </div>
+                    </div>
+                    <div class="bank-input-group" style="margin-top:10px;">
+                        <input type="number" class="bank-input" id="repay-amount" placeholder="Сумма погашения" min="1">
+                        <button class="bank-btn red" onclick="repayLoan()">Погасить</button>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="bank-section">
+                    <div class="bank-section-title">📜 Взять кредит</div>
+                    ${bankState.loan > 0 ? '<div style="font-size:12px;color:#ff3d00;margin-bottom:10px;">❌ Сначала погасите текущий долг!</div>' : ''}
+                    
+                    <div class="loan-option" onclick="takeLoan(50, 'small')" style="${bankState.loan > 0 || bankState.creditRating < 30 ? 'opacity:0.5;pointer-events:none;' : ''}">
+                        <div class="loan-option-header">
+                            <span class="loan-amount">50 ₽</span>
+                            <span class="loan-rate">${BANK_CONFIG.loanRates.small * 100}% / час</span>
+                        </div>
+                        <div class="loan-payment">Лёгкий старт для новичков</div>
+                    </div>
+                    
+                    <div class="loan-option" onclick="takeLoan(150, 'medium')" style="${bankState.loan > 0 || bankState.creditRating < 50 ? 'opacity:0.5;pointer-events:none;' : ''}">
+                        <div class="loan-option-header">
+                            <span class="loan-amount">150 ₽</span>
+                            <span class="loan-rate">${BANK_CONFIG.loanRates.medium * 100}% / час</span>
+                        </div>
+                        <div class="loan-payment">Требуется рейтинг 50+</div>
+                    </div>
+                    
+                    <div class="loan-option" onclick="takeLoan(300, 'large')" style="${bankState.loan > 0 || bankState.creditRating < 70 ? 'opacity:0.5;pointer-events:none;' : ''}">
+                        <div class="loan-option-header">
+                            <span class="loan-amount">300 ₽</span>
+                            <span class="loan-rate" style="color:#ff3d00;">${BANK_CONFIG.loanRates.large * 100}% / час ⚠️</span>
+                        </div>
+                        <div class="loan-payment">Требуется рейтинг 70+. Опасно!</div>
+                    </div>
+                </div>
+                
+                <div style="font-size:11px;color:#666;margin-top:10px;text-align:center;">
+                    💀 При долге ${BANK_CONFIG.collectorThreshold}₽+ коллекторы забирают ${BANK_CONFIG.collectorCut * 100}% с заказов
+                </div>
+            `;
+        }
+        
+        function deposit() {
+            const amount = parseInt(document.getElementById('deposit-amount').value);
+            if (!amount || amount <= 0) { showToast('Введите сумму!', 2000); return; }
+            if (state.balance < amount) { showToast('Недостаточно средств!', 2000); return; }
+            
+            state.balance -= amount;
+            bankState.deposit += amount;
+            saveBank();
+            updateUI();
+            renderBank();
+            showToast(`💰 Положено ${amount}₽ на депозит!`, 2000);
+        }
+        
+        function withdraw() {
+            const amount = parseInt(document.getElementById('withdraw-amount').value);
+            if (!amount || amount <= 0) { showToast('Введите сумму!', 2000); return; }
+            if (bankState.deposit < amount) { showToast('Недостаточно на депозите!', 2000); return; }
+            
+            bankState.deposit -= amount;
+            state.balance += amount;
+            saveBank();
+            updateUI();
+            renderBank();
+            showToast(`💵 Снято ${amount}₽!`, 2000);
+        }
+        
+        function takeLoan(amount, type) {
+            if (bankState.loan > 0) { showToast('❌ У вас уже есть кредит!', 2000); return; }
+            
+            const minRating = type === 'small' ? 30 : type === 'medium' ? 50 : 70;
+            if (bankState.creditRating < minRating) { showToast('❌ Низкий кредитный рейтинг!', 2000); return; }
+            
+            bankState.loan = amount;
+            bankState.loanRate = BANK_CONFIG.loanRates[type];
+            state.balance += amount;
+            bankState.lastInterestTime = Date.now();
+            
+            saveBank();
+            updateUI();
+            renderBank();
+            showToast(`🏦 Кредит ${amount}₽ получен! Ставка: ${(bankState.loanRate * 100).toFixed(0)}%`, 3000);
+        }
+        
+        function repayLoan() {
+            const amount = parseInt(document.getElementById('repay-amount').value);
+            if (!amount || amount <= 0) { showToast('Введите сумму!', 2000); return; }
+            if (state.balance < amount) { showToast('Недостаточно средств!', 2000); return; }
+            
+            const actualRepay = Math.min(amount, bankState.loan);
+            state.balance -= actualRepay;
+            bankState.loan -= actualRepay;
+            bankState.totalPaid += actualRepay;
+            
+            // Повышаем рейтинг за погашение
+            if (actualRepay >= bankState.loan * 0.5) {
+                bankState.creditRating = Math.min(100, bankState.creditRating + 5);
+            }
+            
+            if (bankState.loan <= 0) {
+                bankState.loan = 0;
+                bankState.loanRate = 0;
+                bankState.missedPayments = 0;
+                showToast('🎉 Кредит полностью погашен! Рейтинг +5', 3000);
+            } else {
+                showToast(`✅ Погашено ${actualRepay}₽`, 2000);
+            }
+            
+            saveBank();
+            updateUI();
+            renderBank();
+        }
+        
+        // Хитрая система: коллекторы отнимают % от заказов
+        function applyCollectorFee(amount) {
+            if (bankState.loan >= BANK_CONFIG.collectorThreshold) {
+                const fee = Math.floor(amount * BANK_CONFIG.collectorCut);
+                bankState.loan -= fee;
+                bankState.totalPaid += fee;
+                
+                if (bankState.loan <= 0) {
+                    bankState.loan = 0;
+                    bankState.loanRate = 0;
+                    showToast('🎉 Коллекторы погасили ваш долг!', 3000);
+                } else {
+                    showToast(`💀 Коллекторы забрали ${fee}₽ (${BANK_CONFIG.collectorCut * 100}%)`, 2500);
+                }
+                saveBank();
+                return amount - fee;
+            }
+            return amount;
         }
 
         window.onload = init;
