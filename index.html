@@ -1300,12 +1300,12 @@
     const ECONOMY = {
         inflationRate: 0.02, // +2% за каждую доставку
         inflationCap: 2.0, // Макс x2 цены
-        rainBonus: 0.25, // +25% в дождь
-        nightBonus: 0.50, // +50% ночью
+        rainBonus: 0.15, // +15% в дождь
+        nightBonus: 0.25, // +25% ночью
         nightPenalty: 0.30, // -30% энергии ночью
         crisisChance: 0.1, // 10% шанс кризиса
-        crisisDuration: 300, // 5 минут кризис
-        crisisPenalty: 0.30 // -30% к заказам в кризис
+        crisisDuration: 180, // 3 минуты кризис
+        crisisPenalty: 0.20 // -20% к заказам в кризис
     };
 
     // === АЧИВКИ ===
@@ -1372,7 +1372,7 @@
         { id: 'raincoat', name: 'Дождевик', icon: '🧥', cost: 80, desc: 'Настроение не падает в дождь', duration: 420 }, // 7 минут
         { id: 'thermos', name: 'Термос', icon: '🍵', cost: 60, desc: 'Вода не падает 5 минут', duration: 300 }, // 5 минут
         { id: 'powerbank', name: 'Powerbank', icon: '🔋', cost: 70, desc: 'Энергия не падает 5 минут', duration: 300 }, // 5 минут
-        { id: 'gps', name: 'GPS-навигатор', icon: '📡', cost: 150, desc: 'Маршруты на 20% короче', duration: 600 } // 10 минут (НЕ ВЕЧНЫЙ!)
+        { id: 'gps', name: 'GPS-навигатор', icon: '📡', cost: 150, desc: 'Маршруты на 20% короче (меньше энергии и воды) — временный бонус', duration: 600 } // 10 минут (НЕ ВЕЧНЫЙ!)
     ];
 
     // Время окончания действия предметов (timestamp)
@@ -1479,6 +1479,16 @@
         saveEconomy();
     }
 
+    function inflationDecay() {
+        if (economyState.inflationMultiplier > 1.0) {
+            economyState.inflationMultiplier = Math.max(1.0, economyState.inflationMultiplier - 0.005);
+            // Sync deliveriesCount so next applyInflation() stays consistent
+            economyState.deliveriesCount = Math.round((economyState.inflationMultiplier - 1) / ECONOMY.inflationRate);
+            saveEconomy();
+            updateWeatherIndicator();
+        }
+    }
+
     function getCurrentPrice(basePrice) {
         let multiplier = economyState.inflationMultiplier;
 
@@ -1490,27 +1500,35 @@
         return Math.floor(basePrice * Math.max(0.5, multiplier));
     }
 
+    // Обновляем текст тоста кризиса чтобы отражать актуальный штраф
     function triggerCrisis() {
         if (Math.random() < ECONOMY.crisisChance && !economyState.isCrisis) {
             economyState.isCrisis = true;
             economyState.crisisEndTime = Date.now() + ECONOMY.crisisDuration * 1000;
-            showToast('💥 ЭКОНОМИЧЕСКИЙ КРИЗИС! Заказы дают -30%!', 5000);
+            showToast(`💥 ЭКОНОМИЧЕСКИЙ КРИЗИС! Заказы дают -${Math.round(ECONOMY.crisisPenalty * 100)}%!`, 5000);
             updateWeatherIndicator();
         }
     }
 
     // === АЧИВКИ ===
+    let _checkingAchievements = false;
     function checkAchievements() {
+        if (_checkingAchievements) return;
+        _checkingAchievements = true;
+
         let newUnlocked = false;
 
         ACHIEVEMENTS.forEach(ach => {
             if (!economyState.unlockedAchievements.includes(ach.id) && ach.check()) {
                 economyState.unlockedAchievements.push(ach.id);
+                saveEconomy(); // Сохраняем сразу, чтобы предотвратить дубли
                 state.balance += ach.reward;
                 showToast(`🏆 Ачивка: ${ach.name}! +${ach.reward}₽`, 4000);
                 newUnlocked = true;
             }
         });
+
+        _checkingAchievements = false;
 
         if (newUnlocked) {
             saveEconomy();
@@ -1711,6 +1729,7 @@
         setInterval(moveRivals, 3000);
         setInterval(updateEconomy, 30000);
         setInterval(updateInventoryTimers, 1000); // Обновляем таймеры каждую секунду
+        setInterval(inflationDecay, 120000); // Снижаем инфляцию каждые 2 минуты
         
         window.addEventListener('beforeunload', () => { saveGame(); saveBank(); saveEconomy(); });
 
@@ -2097,7 +2116,7 @@
         state.balance -= price;
         state.inventory.push(item.id);
         
-        activateGear(item.id, item.duration);
+        activateGear(item.id);
         
         updateUI();
         saveGame();
@@ -2107,18 +2126,14 @@
         setTimeout(() => openGearShop(), 100);
     }
 
-    function activateGear(itemId, duration) {
+    function activateGear(itemId) {
         const item = SHOP_GEAR.find(g => g.id === itemId);
         if (!item) return;
         
-        const durationMs = (duration || item.duration) * 1000;
+        const durationMs = item.duration * 1000;
         itemExpiryTimes[itemId] = Date.now() + durationMs;
         
         state.activeItems[itemId] = true;
-        
-        setTimeout(() => {
-            deactivateGear(itemId);
-        }, durationMs);
         
         updateInventoryUI();
         saveGame();
@@ -2326,9 +2341,9 @@
         const nightEnergyPenalty = economyState.isNight ? ECONOMY.nightPenalty : 0;
 
         const routes = [
-            { id: 'fast', name: '🏎️ Короткий', tag: 'tag-fast', tagText: 'Быстро', time: Math.floor(dist * 2 * gpsMultiplier), risk: 40, energyCost: Math.floor(20 * (1 + nightEnergyPenalty)), waterCost: 15, price: basePrice + 5, pitstops: 0, desc: `${dist} км • Риск: высокий` },
-            { id: 'safe', name: '🛡️ Безопасный', tag: 'tag-safe', tagText: 'Надёжно', time: Math.floor(dist * 4 * gpsMultiplier), risk: 10, energyCost: Math.floor(12 * (1 + nightEnergyPenalty)), waterCost: 10, price: basePrice, pitstops: 1, desc: `${dist} км • 1 пит-стоп` },
-            { id: 'profit', name: '💰 Прибыльный', tag: 'tag-profit', tagText: 'Доход', time: Math.floor(dist * 5 * gpsMultiplier), risk: 25, energyCost: Math.floor(30 * (1 + nightEnergyPenalty)), waterCost: 20, price: Math.floor(basePrice * 1.4), pitstops: 2, desc: `${dist} км • 2 пит-стопа` }
+            { id: 'fast', name: '🏎️ Короткий', tag: 'tag-fast', tagText: 'Быстро', time: Math.floor(dist * 2 * gpsMultiplier), risk: 40, energyCost: Math.floor(20 * (1 + nightEnergyPenalty) * gpsMultiplier), waterCost: Math.floor(15 * gpsMultiplier), price: basePrice + 5, pitstops: 0, desc: `${dist} км • Риск: высокий` },
+            { id: 'safe', name: '🛡️ Безопасный', tag: 'tag-safe', tagText: 'Надёжно', time: Math.floor(dist * 4 * gpsMultiplier), risk: 10, energyCost: Math.floor(12 * (1 + nightEnergyPenalty) * gpsMultiplier), waterCost: Math.floor(10 * gpsMultiplier), price: basePrice, pitstops: 1, desc: `${dist} км • 1 пит-стоп` },
+            { id: 'profit', name: '💰 Прибыльный', tag: 'tag-profit', tagText: 'Доход', time: Math.floor(dist * 5 * gpsMultiplier), risk: 25, energyCost: Math.floor(30 * (1 + nightEnergyPenalty) * gpsMultiplier), waterCost: Math.floor(20 * gpsMultiplier), price: Math.floor(basePrice * 1.4), pitstops: 2, desc: `${dist} км • 2 пит-стопа` }
         ];
 
         state.currentOrder = { restaurant: rest, distance: parseFloat(dist), basePrice: basePrice, routes: routes, destLat: WARSAW_CENTER[0] + (Math.random() - 0.5) * 0.06, destLng: WARSAW_CENTER[1] + (Math.random() - 0.5) * 0.08 };
@@ -2856,4 +2871,4 @@
     window.onload = init;
     </script>
 </body>
-</html>
+                    </html>
