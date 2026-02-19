@@ -1076,7 +1076,7 @@
                     <span class="label">Еда</span>
                 </button>
                 <!-- Выпадающее меню еды -->
-                <div id="food-menu" style="display: none; position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,0.95); border-radius: 12px; padding: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                <div id="food-menu" style="display: none; position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,0.98); border-radius: 12px; padding: 8px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); z-index: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
                     <button onclick="openShopType('water'); toggleFoodMenu();" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: transparent; border: none; color: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; border-radius: 8px;">
                         <span>💧</span> <span>Вода 3₽</span>
                     </button>
@@ -1099,7 +1099,7 @@
                     <span class="label">Шоп</span>
                 </button>
                 <!-- Выпадающее меню шопа -->
-                <div id="shop-menu" style="display: none; position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,0.95); border-radius: 12px; padding: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                <div id="shop-menu" style="display: none; position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,0.98); border-radius: 12px; padding: 8px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); z-index: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
                     <button onclick="openShop(); toggleShopMenu();" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: transparent; border: none; color: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; border-radius: 8px;">
                         <span>🛍️</span> <span>Магазин</span>
                     </button>
@@ -1516,7 +1516,40 @@
             }
         }
         
+        // === УПРАВЛЕНИЕ МЕНЮ ===
+        function hideMenu() {
+            // Скрываем только верхние кнопки и казино
+            const topActions = document.querySelector('.top-actions');
+            const casinoFab = document.querySelector('.casino-fab');
+            
+            if (topActions) topActions.style.display = 'none';
+            if (casinoFab) casinoFab.style.display = 'none';
+        }
+        
+        function hideAllMenu() {
+            // Скрываем ВСЁ (для доставки)
+            const mainMenu = document.querySelector('.main-menu');
+            const topActions = document.querySelector('.top-actions');
+            const casinoFab = document.querySelector('.casino-fab');
+            
+            if (mainMenu) mainMenu.style.display = 'none';
+            if (topActions) topActions.style.display = 'none';
+            if (casinoFab) casinoFab.style.display = 'none';
+        }
+        
+        function showMenu() {
+            // Показываем всё обратно
+            const mainMenu = document.querySelector('.main-menu');
+            const topActions = document.querySelector('.top-actions');
+            const casinoFab = document.querySelector('.casino-fab');
+            
+            if (mainMenu) mainMenu.style.display = 'flex';
+            if (topActions) topActions.style.display = 'flex';
+            if (casinoFab) casinoFab.style.display = 'flex';
+        }
+        
         function openAchievements() {
+            hideMenu();
             const container = document.getElementById('achievements-content');
             container.innerHTML = '';
             
@@ -1549,10 +1582,12 @@
         
         function closeAchievements() {
             document.getElementById('achievements-overlay').classList.remove('active');
+            showMenu();
         }
         
         // === ЭКОНОМИКА ПАНЕЛЬ ===
         function openEconomy() {
+            hideMenu();
             const container = document.getElementById('economy-content');
             const inflationPercent = Math.round((economyState.inflationMultiplier - 1) * 100);
             
@@ -1599,6 +1634,7 @@
         
         function closeEconomy() {
             document.getElementById('economy-overlay').classList.remove('active');
+            showMenu();
         }
 
         function saveGame() {
@@ -1740,18 +1776,21 @@
                 showToast('❌ Нельзя во время доставки!', 2000);
                 return;
             }
+            hideMenu();
             document.getElementById('casino-balance').textContent = Math.floor(state.balance) + ' ₽';
             document.getElementById('casino-overlay').classList.add('active');
         }
         
         function closeCasino() {
             document.getElementById('casino-overlay').classList.remove('active');
+            showMenu();
         }
         
         // === МЕНЮ ===
         function toggleFoodMenu() {
             const menu = document.getElementById('food-menu');
             const shopMenu = document.getElementById('shop-menu');
+            
             shopMenu.style.display = 'none';
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
         }
@@ -1759,11 +1798,12 @@
         function toggleShopMenu() {
             const menu = document.getElementById('shop-menu');
             const foodMenu = document.getElementById('food-menu');
+            
             foodMenu.style.display = 'none';
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
         }
         
-        // Закрываем меню при клике вне их
+        // Закрываем выпадающие меню при клике вне их
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.side-btn') && !e.target.closest('#food-menu') && !e.target.closest('#shop-menu')) {
                 document.getElementById('food-menu').style.display = 'none';
@@ -1915,6 +1955,10 @@
         // === ИНВЕНТАРЬ ===
         function openGearShop() {
             if (state.isDelivering) { showToast('❌ Во время доставки нельзя!', 2000); return; }
+            // Закрываем выпадающие меню
+            document.getElementById('food-menu').style.display = 'none';
+            document.getElementById('shop-menu').style.display = 'none';
+            hideMenu();
             
             const container = document.getElementById('gear-content');
             container.innerHTML = '';
@@ -2022,6 +2066,7 @@
         
         function closeGearShop() {
             document.getElementById('gear-overlay').classList.remove('active');
+            showMenu();
         }
         
         function updateUI() {
@@ -2054,6 +2099,10 @@
 
         function openShopType(type) {
             if (state.isDelivering) { showToast('❌ Во время доставки нельзя!', 2000); return; }
+            // Закрываем выпадающие меню и верхние кнопки
+            document.getElementById('food-menu').style.display = 'none';
+            document.getElementById('shop-menu').style.display = 'none';
+            hideMenu();
             document.getElementById('shop-title').textContent = type === 'water' ? '💧 Напитки' : '☕ Энергетики';
             const container = document.getElementById('shop-items');
             container.innerHTML = '';
@@ -2089,6 +2138,10 @@
         
         function openShop() {
             if (state.isDelivering) { showToast('❌ Во время доставки нельзя!', 2000); return; }
+            // Закрываем выпадающие меню
+            document.getElementById('food-menu').style.display = 'none';
+            document.getElementById('shop-menu').style.display = 'none';
+            hideMenu();
             document.getElementById('shop-title').textContent = '🛒 Магазин';
             const container = document.getElementById('shop-items');
             container.innerHTML = '';
@@ -2132,9 +2185,13 @@
             showToast(`${item.icon} Готово!`, 2000);
         }
         
-        function closeShop() { document.getElementById('shop-overlay').classList.remove('active'); }
+        function closeShop() { 
+            document.getElementById('shop-overlay').classList.remove('active'); 
+            showMenu();
+        }
 
         function showStats() {
+            hideMenu();
             const container = document.getElementById('stats-content');
             container.innerHTML = `
                 <div class="shop-item"><span>📦 Доставок</span><span class="shop-item-price">${state.stats.totalDeliveries}</span></div>
@@ -2147,7 +2204,10 @@
             document.getElementById('stats-overlay').classList.add('active');
         }
         
-        function closeStats() { document.getElementById('stats-overlay').classList.remove('active'); }
+        function closeStats() { 
+            document.getElementById('stats-overlay').classList.remove('active'); 
+            showMenu();
+        }
 
         function findOrder() {
             if (state.energy < 20 || state.water < 20) { showToast('⚠️ Мало ресурсов!', 3000); return; }
@@ -2210,9 +2270,7 @@
             state.water -= state.currentRoute.waterCost * 0.3;
             
             // Скрываем меню при доставке
-            document.querySelector('.main-menu').classList.add('hidden');
-            document.querySelector('.top-actions').classList.add('hidden');
-            document.querySelector('.casino-fab').classList.add('hidden');
+            hideAllMenu();
             
             const dest = [state.currentOrder.destLat, state.currentOrder.destLng];
             
@@ -2412,9 +2470,7 @@
             updateUI(); saveGame(); saveEconomy();
             
             // Показываем меню обратно
-            document.querySelector('.main-menu').classList.remove('hidden');
-            document.querySelector('.top-actions').classList.remove('hidden');
-            document.querySelector('.casino-fab').classList.remove('hidden');
+            showMenu();
             
             if (originalTotal !== total) {
                 showToast(`✅ Доставка: +${total}₽ (было ${originalTotal}₽)`, 3000);
@@ -2433,9 +2489,7 @@
             map.setView(WARSAW_CENTER, 13);
             
             // Показываем меню обратно
-            document.querySelector('.main-menu').classList.remove('hidden');
-            document.querySelector('.top-actions').classList.remove('hidden');
-            document.querySelector('.casino-fab').classList.remove('hidden');
+            showMenu();
             
             showToast('❌ ' + reason, 3000);
         }
@@ -2450,9 +2504,7 @@
             map.setView(WARSAW_CENTER, 13);
             
             // Показываем меню обратно
-            document.querySelector('.main-menu').classList.remove('hidden');
-            document.querySelector('.top-actions').classList.remove('hidden');
-            document.querySelector('.casino-fab').classList.remove('hidden');
+            showMenu();
             
             showToast('Заказ отменён', 2000);
         }
@@ -2519,6 +2571,7 @@
         }
         
         function openBank() {
+            hideMenu();
             loadBank();
             bankInterestTick();
             renderBank();
@@ -2527,6 +2580,7 @@
         
         function closeBank() {
             document.getElementById('bank-overlay').classList.remove('active');
+            showMenu();
         }
         
         function renderBank() {
