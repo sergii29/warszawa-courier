@@ -1490,14 +1490,8 @@
     }
 
     function getCurrentPrice(basePrice) {
-        let multiplier = economyState.inflationMultiplier;
-
-        // Бонусы/штрафы
-        if (economyState.isRain) multiplier += ECONOMY.rainBonus;
-        if (economyState.isNight) multiplier += ECONOMY.nightBonus;
-        if (economyState.isCrisis) multiplier -= ECONOMY.crisisPenalty;
-
-        return Math.floor(basePrice * Math.max(0.5, multiplier));
+        const multiplier = Math.min(ECONOMY.inflationCap, Math.max(1.0, economyState.inflationMultiplier));
+        return Math.floor(basePrice * multiplier);
     }
 
     // Обновляем текст тоста кризиса чтобы отражать актуальный штраф
@@ -2103,7 +2097,13 @@
     }
 
     function buyGear(item, price) {
-        if (state.balance < price) {
+        price = Number(price);
+        if (!isFinite(price)) {
+            showToast('❌ Некорректная цена товара', 2000);
+            return;
+        }
+        const balance = Number(state.balance) || 0;
+        if (balance < price) {
             showToast('❌ Недостаточно денег!', 2000);
             return;
         }
@@ -2113,7 +2113,7 @@
             return;
         }
 
-        state.balance -= price;
+        state.balance = balance - price;
         state.inventory.push(item.id);
         
         activateGear(item.id);
