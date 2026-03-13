@@ -85,7 +85,7 @@
     .mini-btn.economy { border-color:#ff9800; color:#ff9800; }
 
     /* === ПАНЕЛИ === */
-    .center-panel { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:90%; max-width:380px; background:rgba(15,15,15,0.98); border-radius:24px; padding:24px; border:1px solid rgba(255,255,255,0.1); z-index:150; display:none; }
+    .center-panel { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:90%; max-width:380px; background:rgba(15,15,15,0.98); border-radius:24px; padding:24px; border:1px solid rgba(255,255,255,0.1); z-index:300; display:none; }
     .center-panel.active { display:block; }
     .panel-title { font-size:22px; font-weight:700; margin-bottom:6px; text-align:center; }
     .panel-subtitle { color:#888; font-size:13px; margin-bottom:20px; text-align:center; }
@@ -148,7 +148,7 @@
     .event-btn:active { transform:scale(0.97); }
 
     /* === МАГАЗИН === */
-    .shop-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:210; display:none; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
+    .shop-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:400; display:none; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
     .shop-overlay.active { display:flex; }
     .shop-card { background:#1a1a1a; border-radius:24px; padding:24px; max-width:380px; width:100%; border:1px solid rgba(255,255,255,0.1); max-height:90vh; overflow-y:auto; }
     .shop-title { font-size:22px; font-weight:700; margin-bottom:20px; text-align:center; }
@@ -1169,28 +1169,22 @@ function openGearShop() {
         const isActive = state.activeItems[item.id];
 
         const div = document.createElement('div');
-        div.className = 'shop-item' + (alreadyOwned ? ' disabled' : '');
+        div.className = 'shop-item' + (alreadyOwned ? ' owned' : '');
+        div.style.cursor = alreadyOwned ? 'default' : 'pointer';
+        
         div.innerHTML = `
-            <div>
+            <div style="flex:1;">
                 <div class="shop-item-name">${item.icon} ${item.name}</div>
                 <div class="shop-item-desc">${item.desc}</div>
                 <div class="shop-item-effects">${item.effect} · ⏱️ ${formatDuration(item.duration)}</div>
             </div>
-            <div style="text-align:right;">
+            <div style="text-align:right; min-width:60px;">
                 ${discount > 0 && !alreadyOwned ? `<div class="shop-item-price old">${getCurrentPrice(item.cost)}₽</div>` : ''}
                 <div class="shop-item-price">${alreadyOwned ? (isActive ? '✓ Активно' : '📦 Есть') : price + '₽'}</div>
             </div>`;
 
-        // Исправлено: добавляем обработчик клика только если предмет не куплен
         if (!alreadyOwned) {
-            div.style.cursor = 'pointer';
-            div.onclick = (e) => {
-                e.preventDefault();
-                buyGear(item, price);
-            };
-        } else {
-            div.style.cursor = 'default';
-            div.style.opacity = '0.7';
+            div.onclick = () => buyGear(item, price);
         }
         container.appendChild(div);
     });
@@ -1253,9 +1247,7 @@ function formatDuration(sec) {
 // =====================================================
 //  МАГАЗИН АПГРЕЙДОВ
 // =====================================================
-
-function openUpgradeShop() {
-    if (state.function switchUpgradeTab(tab) {
+function switchUpgradeTab(tab) {
     const skillsTab = document.getElementById('tab-upgrades');
     const bikeTab = document.getElementById('tab-bike');
     const skillsContent = document.getElementById('upgrade-content');
@@ -1355,7 +1347,6 @@ function buyBikeUpgrade(id, cost) {
     saveGame();
     renderBikeUpgrades();
     showToast('🛠️ Байк улучшен!', 2000);
-}active');
 }
 
 function buyUpgrade(upg, price) {
@@ -1916,10 +1907,14 @@ function finishDelivery() {
     const xpGain = Math.floor(route.dist * 10);
     addXP(xpGain);
 
+    applyInflation();
+    checkAchievements();
+    triggerCrisis();
     cleanupDeliveryMap();
+
+    updateUI(); saveGame(); saveEconomy();
     showMenu();
     showToast(msg, 4000);
-    saveGame();
 }
 
 function triggerRandomEvent() {
@@ -1938,20 +1933,6 @@ function triggerRandomEvent() {
         alert(`${ev.title}\n\n${ev.desc}`);
         ev.effect();
     }
-}
-
-    applyInflation();
-    checkAchievements();
-    triggerCrisis();
-    cleanupDeliveryMap();
-
-    updateUI(); saveGame(); saveEconomy();
-    showMenu();
-
-    const msg = originalTotal !== total
-        ? `✅ Доставка: +${total}₽ (коллекторы забрали ${originalTotal - total}₽)`
-        : `✅ Доставка завершена! +${total}₽ (+${xpGain} XP)`;
-    showToast(msg, 3500);
 }
 
 function failDelivery(reason) {
@@ -2652,6 +2633,7 @@ function saveGame() {
         stats: state.stats,
         inventory: state.inventory,
         upgrades: state.upgrades,
+        bike: state.bike,
         activeItems: state.activeItems,
         itemExpiryTimes: itemExpiryTimes
     }));
@@ -2677,6 +2659,7 @@ function loadGame() {
         // Фильтруем null из инвентаря
         state.inventory  = (d.inventory ?? []).filter(id => id !== null && id !== undefined);
         state.upgrades   = (d.upgrades  ?? []).filter(id => id !== null && id !== undefined);
+        state.bike       = { ...state.bike, ...(d.bike || {}) };
         state.activeItems = { ...state.activeItems, ...(d.activeItems || {}) };
         itemExpiryTimes   = d.itemExpiryTimes ?? {};
         checkExpiredItems();
