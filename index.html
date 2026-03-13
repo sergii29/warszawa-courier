@@ -487,8 +487,13 @@
 <!-- АПГРЕЙДЫ -->
 <div class="shop-overlay" id="upgrade-overlay">
     <div class="shop-card">
-        <div class="shop-title">⬆️ Апгрейды</div>
+        <div class="shop-title">🛠️ Мастерская</div>
+        <div class="shop-tabs">
+            <div class="shop-tab active" id="tab-upgrades" onclick="switchUpgradeTab('upgrades')">Навыки</div>
+            <div class="shop-tab" id="tab-bike" onclick="switchUpgradeTab('bike')">Байк</div>
+        </div>
         <div id="upgrade-content"></div>
+        <div id="bike-upgrade-content" style="display:none;"></div>
         <button class="btn-close" onclick="closeUpgradeShop()">Закрыть</button>
     </div>
 </div>
@@ -751,6 +756,12 @@ let state = {
     },
     inventory: [],          // массив id активных предметов снаряжения
     upgrades: [],           // массив id купленных апгрейдов
+    bike: {
+        speed: 1,           // Уровень скорости
+        stamina: 1,         // Уровень выносливости (меньше трата энергии)
+        trunk: 1,           // Уровень багажника (больше чаевые)
+        lights: 1           // Уровень фар (лучше видимость в гонках)
+    },
     currentOrder: null, currentRoute: null,
     isDelivering: false,
     progress: 0, currentStop: 0,
@@ -972,8 +983,12 @@ function getDeliveryEarnings(basePrice) {
     // Репутационный бонус
     const repBonus = Math.max(0, (state.reputation - 3) * ECONOMY_CFG.reputationBonus);
     mult *= (1 + repBonus);
-    // Апгрейд велосипеда
+    // Апгрейд велосипеда (старый)
     if (state.upgrades.includes('bike_v2')) mult *= 1.10;
+    // Прокачка багажника (новый)
+    const trunkBonus = (state.bike.trunk - 1) * 0.05;
+    mult *= (1 + trunkBonus);
+    
     return Math.max(1, Math.floor(basePrice * mult));
 }
 
@@ -1166,8 +1181,16 @@ function openGearShop() {
                 <div class="shop-item-price">${alreadyOwned ? (isActive ? '✓ Активно' : '📦 Есть') : price + '₽'}</div>
             </div>`;
 
+        // Исправлено: добавляем обработчик клика только если предмет не куплен
         if (!alreadyOwned) {
-            div.onclick = () => buyGear(item, price);
+            div.style.cursor = 'pointer';
+            div.onclick = (e) => {
+                e.preventDefault();
+                buyGear(item, price);
+            };
+        } else {
+            div.style.cursor = 'default';
+            div.style.opacity = '0.7';
         }
         container.appendChild(div);
     });
@@ -1232,12 +1255,37 @@ function formatDuration(sec) {
 // =====================================================
 
 function openUpgradeShop() {
+    if (state.function switchUpgradeTab(tab) {
+    const skillsTab = document.getElementById('tab-upgrades');
+    const bikeTab = document.getElementById('tab-bike');
+    const skillsContent = document.getElementById('upgrade-content');
+    const bikeContent = document.getElementById('bike-upgrade-content');
+
+    if (tab === 'upgrades') {
+        skillsTab.classList.add('active');
+        bikeTab.classList.remove('active');
+        skillsContent.style.display = 'block';
+        bikeContent.style.display = 'none';
+        renderSkills();
+    } else {
+        skillsTab.classList.remove('active');
+        bikeTab.classList.add('active');
+        skillsContent.style.display = 'none';
+        bikeContent.style.display = 'block';
+        renderBikeUpgrades();
+    }
+}
+
+function openUpgradeShop() {
     if (state.isDelivering) { showToast('❌ Во время доставки нельзя!', 2000); return; }
     hideMenu();
-    const container = document.getElementById('upgrade-content');
-    container.innerHTML = '';
+    switchUpgradeTab('upgrades');
+    document.getElementById('upgrade-overlay').classList.add('active');
+}
 
-    container.innerHTML += `<div style="font-size:12px;color:#888;margin-bottom:14px;text-align:center;">Постоянные улучшения, действующие навсегда</div>`;
+function renderSkills() {
+    const container = document.getElementById('upgrade-content');
+    container.innerHTML = '<div style="font-size:12px;color:#888;margin-bottom:14px;text-align:center;">Постоянные навыки курьера</div>';
 
     UPGRADES.forEach(upg => {
         const owned = state.upgrades.includes(upg.id);
@@ -1251,17 +1299,63 @@ function openUpgradeShop() {
                 <div class="shop-item-name">${upg.icon} ${upg.name}</div>
                 <div class="shop-item-desc">${upg.desc}</div>
             </div>
-            <div style="text-align:right;">
-                <div class="shop-item-price">${owned ? '✓ Куплено' : price + '₽'}</div>
-            </div>`;
+            <div class="shop-item-price">${owned ? '✓ Куплено' : price + '₽'}</div>`;
 
-        if (!owned) {
+        if (!owned && canAfford) {
             div.onclick = () => buyUpgrade(upg, price);
         }
         container.appendChild(div);
     });
+}
 
-    document.getElementById('upgrade-overlay').classList.add('active');
+const BIKE_UPGRADES = [
+    { id: 'speed', name: 'Скорость', icon: '🚀', desc: 'Быстрее едешь — больше успеваешь', baseCost: 100 },
+    { id: 'stamina', name: 'Выносливость', icon: '🔋', desc: 'Меньше тратишь сил на кручение педалей', baseCost: 80 },
+    { id: 'trunk', name: 'Багажник', icon: '📦', desc: 'Больше места для заказов — выше чаевые', baseCost: 120 },
+    { id: 'lights', name: 'Освещение', icon: '💡', desc: 'Лучше видишь дорогу ночью и в гонках', baseCost: 60 }
+];
+
+function renderBikeUpgrades() {
+    const container = document.getElementById('bike-upgrade-content');
+    container.innerHTML = '<div style="font-size:12px;color:#888;margin-bottom:14px;text-align:center;">Улучшение характеристик вашего велосипеда</div>';
+
+    BIKE_UPGRADES.forEach(upg => {
+        const level = state.bike[upg.id] || 1;
+        const isMax = level >= 5;
+        const cost = upg.baseCost * level;
+        const canAfford = state.balance >= cost;
+
+        const div = document.createElement('div');
+        div.className = 'bike-upgrade-card';
+        div.innerHTML = `
+            <div class="bike-visual">${upg.icon}</div>
+            <div class="bike-upgrade-info">
+                <div class="bike-upgrade-name">${upg.name}</div>
+                <div class="bike-upgrade-level">Уровень ${level}/5</div>
+                <div class="bike-upgrade-bar"><div class="bike-upgrade-fill" style="width:${(level/5)*100}%"></div></div>
+            </div>
+            <button class="bike-upgrade-btn ${isMax ? 'max' : ''}" ${isMax || !canAfford ? 'disabled' : ''} onclick="buyBikeUpgrade('${upg.id}', ${cost})">
+                ${isMax ? 'MAX' : cost + '₽'}
+            </button>`;
+        container.appendChild(div);
+    });
+}
+
+function buyBikeUpgrade(id, cost) {
+    if (state.balance < cost) return;
+    state.balance -= cost;
+    state.bike[id]++;
+    
+    // Эффекты прокачки
+    if (id === 'stamina') {
+        // Уменьшаем базовый расход энергии (виртуально, через множитель в будущем)
+    }
+    
+    updateUI();
+    saveGame();
+    renderBikeUpgrades();
+    showToast('🛠️ Байк улучшен!', 2000);
+}active');
 }
 
 function buyUpgrade(upg, price) {
@@ -1362,6 +1456,12 @@ function findOrder() {
     if (state.isDelivering) { showToast('⚠️ Уже в доставке!', 2000); return; }
     if (state.energy < 15) { showToast('⚡ Слишком мало энергии! Поешь!', 3000); return; }
     if (state.water  < 15) { showToast('💧 Слишком мало воды! Выпей!', 3000); return; }
+
+    // Шанс на ночную гонку (только ночью)
+    if (economyState.isNight && Math.random() < 0.3) {
+        showRaceInvite();
+        return;
+    }
 
     const rest = RESTAURANTS[Math.floor(Math.random() * RESTAURANTS.length)];
     const dist = parseFloat((1.5 + Math.random() * 4.5).toFixed(1));
@@ -1535,17 +1635,25 @@ function autoDrive() {
         triggerEvent();
     } else {
         // Обычное движение
-        const progressGain = 12 + Math.floor(Math.random() * 8);
+        // Бонус скорости от байка
+        const speedBonus = (state.bike.speed - 1) * 2;
+        const progressGain = 12 + Math.floor(Math.random() * 8) + speedBonus;
         state.progress += progressGain;
 
-        // Расход ресурсов (с учётом снаряжения)
-        const energyDrain = state.activeItems.powerbank ? 1.5 : 3;
-        const waterDrain  = state.activeItems.thermos   ? 1.0 : 2;
+        // Расход ресурсов (с учётом снаряжения и выносливости байка)
+        const staminaMult = 1 - (state.bike.stamina - 1) * 0.1;
+        const energyDrain = (state.activeItems.powerbank ? 1.5 : 3) * staminaMult;
+        const waterDrain  = (state.activeItems.thermos   ? 1.0 : 2) * staminaMult;
         const moodDrain   = (economyState.isRain && !state.activeItems.raincoat) ? 2 : 0.5;
 
         state.energy = Math.max(0, state.energy - energyDrain);
         state.water  = Math.max(0, state.water  - waterDrain);
         state.mood   = Math.max(0, state.mood   - moodDrain);
+        
+        // Шанс на случайное событие на дороге
+        if (Math.random() < 0.15) {
+            setTimeout(() => triggerRandomEvent(), 500);
+        }
 
         updateProgress();
         updateUI();
@@ -1757,44 +1865,80 @@ function handleEventChoice(effect) {
 
 function finishDelivery() {
     state.isDelivering = false;
+    const order = state.currentOrder;
+    const route = state.currentRoute;
 
-    let total = state.currentRoute.price + (state.currentOrder.bonus || 0);
+    let total = route.price + (order.bonus || 0);
+    let msg = `✅ Доставлено! Получено ${total}₽`;
 
-    // Чаевые
-    const rest = state.currentOrder.restaurant;
-    const tipChance = rest.tipChance + (state.upgrades.includes('charm') ? 0.10 : 0);
-    if (Math.random() < tipChance) {
-        const tip = Math.floor(5 + Math.random() * 25);
-        const finalTip = state.upgrades.includes('charm') ? Math.floor(tip * 1.10) : tip;
-        total += finalTip;
-        state.currentOrder.bonus += finalTip;
-        if (finalTip > state.stats.bestTip) state.stats.bestTip = finalTip;
-        showToast(`💝 Чаевые +${finalTip}₽!`, 2500);
-    }
+    // Логика гонки
+    if (order.type === 'race') {
+        const win = state.gameHits < 3; // Если мало столкновений - победил
+        if (win) {
+            total = order.basePrice; // Приз за победу
+            updateReputation(0.2);
+            msg = `🏆 Вы победили ${order.rival}! Выигрыш: ${total}₽`;
+        } else {
+            total = 0;
+            updateReputation(-0.1);
+            msg = `📉 ${order.rival} приехал первым. Вы проиграли ставку.`;
+        }
+    } else {
+        // Чаевые (только для обычных заказов)
+        const rest = order.restaurant;
+        const tipChance = (rest.tipChance || 0.1) + (state.upgrades.includes('charm') ? 0.10 : 0);
+        if (Math.random() < tipChance) {
+            const tip = Math.floor(5 + Math.random() * 25);
+            const finalTip = state.upgrades.includes('charm') ? Math.floor(tip * 1.10) : tip;
+            total += finalTip;
+            if (finalTip > state.stats.bestTip) state.stats.bestTip = finalTip;
+            showToast(`💝 Чаевые +${finalTip}₽!`, 2500);
+        }
 
-    // Коллекторы
-    loadBank();
-    const originalTotal = total;
-    if (bankState.loan >= BANK_CFG.collectorThreshold) {
-        const cut = Math.floor(total * BANK_CFG.collectorCut);
-        bankState.loan = Math.max(0, bankState.loan - cut);
-        total -= cut;
-        saveBank();
+        // Коллекторы
+        loadBank();
+        if (bankState.loan >= BANK_CFG.collectorThreshold) {
+            const cut = Math.floor(total * BANK_CFG.collectorCut);
+            bankState.loan = Math.max(0, bankState.loan - cut);
+            total -= cut;
+            saveBank();
+        }
+        
+        // Репутация
+        updateReputation(0.05);
     }
 
     state.balance += total;
-    state.stats.totalDeliveries++;
     state.stats.totalEarned += total;
+    state.stats.totalDeliveries++;
 
-    if (economyState.isRain)  state.stats.rainDeliveries  = (state.stats.rainDeliveries  || 0) + 1;
-    if (economyState.isNight) state.stats.nightDeliveries = (state.stats.nightDeliveries || 0) + 1;
-
-    // XP
-    const xpGain = 10 + Math.floor(total / 8);
+    // Опыт
+    const xpGain = Math.floor(route.dist * 10);
     addXP(xpGain);
 
-    // Репутация
-    updateReputation(0.1);
+    cleanupDeliveryMap();
+    showMenu();
+    showToast(msg, 4000);
+    saveGame();
+}
+
+function triggerRandomEvent() {
+    const events = [
+        { id: 'dog', title: '🐕 Злая собака!', desc: 'За вами погналась собака! Нужно крутить педали быстрее!', effect: () => { state.energy -= 10; showToast('💨 Убежали, но устали (-10⚡)', 3000); } },
+        { id: 'grandma', title: '👵 Помощь', desc: 'Бабушка просит перевести через дорогу. Помочь?', choice: true, 
+          yes: () => { updateReputation(0.1); state.progress -= 5; showToast('😇 +Репутация, но потеряли время', 3000); },
+          no: () => { updateReputation(-0.05); showToast('😐 Проехали мимо...', 2000); } },
+        { id: 'money', title: '💵 Находка', desc: 'Вы нашли 10₽ на тротуаре!', effect: () => { state.balance += 10; showToast('💰 Везение! +10₽', 3000); } }
+    ];
+    
+    const ev = events[Math.floor(Math.random() * events.length)];
+    if (ev.choice) {
+        if (confirm(`${ev.title}\n\n${ev.desc}`)) ev.yes(); else ev.no();
+    } else {
+        alert(`${ev.title}\n\n${ev.desc}`);
+        ev.effect();
+    }
+}
 
     applyInflation();
     checkAchievements();
@@ -1835,6 +1979,75 @@ function cleanupDeliveryMap() {
     if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
     courierMarker.setLatLng(WARSAW_CENTER);
     map.setView(WARSAW_CENTER, 13);
+}
+
+function showRaceInvite() {
+    const rivalNames = ['Серый', 'Молния', 'Тень', 'Турбо-Томаш', 'Варшавский Волк'];
+    const rival = rivalNames[Math.floor(Math.random() * rivalNames.length)];
+    const bet = 50 + (state.level * 20);
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'shop-overlay active';
+    overlay.id = 'race-invite';
+    overlay.style.display = 'flex';
+    overlay.innerHTML = `
+        <div class="shop-card" style="border-color:#e91e63;box-shadow:0 0 30px rgba(233,30,99,0.4);">
+            <div class="shop-title" style="color:#e91e63;">🏁 Вызов на гонку!</div>
+            <div style="text-align:center;margin-bottom:15px;">
+                Курьер <b>${rival}</b> вызывает вас на ночной заезд по Варшаве.
+            </div>
+            <div style="margin:15px 0;padding:12px;background:rgba(233,30,99,0.1);border-radius:12px;font-size:14px;text-align:center;border:1px solid rgba(233,30,99,0.2);">
+                💰 Ставка: <b>${bet}₽</b><br>
+                🏆 Приз: <b>${bet * 2}₽</b> + Репутация
+            </div>
+            <button class="btn-action" style="background:#e91e63;margin-bottom:10px;" onclick="startRace('${rival}', ${bet})">Принять вызов!</button>
+            <button class="btn-close" onclick="closeRaceInvite()">Отказаться</button>
+        </div>`;
+    document.body.appendChild(overlay);
+}
+
+function closeRaceInvite() {
+    const el = document.getElementById('race-invite');
+    if (el) el.remove();
+}
+
+function startRace(rival, bet) {
+    if (state.balance < bet) { showToast('❌ Недостаточно денег для ставки!', 2000); return; }
+    closeRaceInvite();
+    state.balance -= bet;
+    state.isDelivering = true;
+    
+    const dist = 5.0;
+    const basePrice = bet * 2;
+    
+    state.currentOrder = {
+        id: 'race',
+        restaurant: '🏁 Ночная гонка',
+        dist: dist,
+        basePrice: basePrice,
+        type: 'race',
+        rival: rival,
+        bet: bet
+    };
+    
+    // Генерируем маршрут
+    const stops = 2;
+    const route = {
+        id: 'race-route',
+        name: 'Маршрут гонки',
+        dist: dist,
+        stops: stops,
+        risk: 0.5,
+        bonus: 0.5
+    };
+    
+    state.currentRoute = route;
+    state.progress = 0;
+    state.currentStop = 0;
+    
+    updateUI();
+    saveGame();
+    showToast(`🏁 Гонка против ${rival} началась!`, 3000);
 }
 
 // =====================================================
@@ -2341,11 +2554,14 @@ function checkCasinoWin(results, reels) {
 function gameTick() {
     if (state.isDelivering && !state.gameActive) {
         // Пассивный расход во время доставки
+        // Учитываем выносливость байка (stamina)
+        const staminaMult = 1 - (state.bike.stamina - 1) * 0.1; // до -40% расхода
+        
         if (!state.activeItems.powerbank) {
-            state.energy = Math.max(0, state.energy - 0.15);
+            state.energy = Math.max(0, state.energy - 0.15 * staminaMult);
         }
         if (!state.activeItems.thermos) {
-            state.water = Math.max(0, state.water - 0.12);
+            state.water = Math.max(0, state.water - 0.12 * staminaMult);
         }
         if (economyState.isRain && !state.activeItems.raincoat) {
             state.mood = Math.max(0, state.mood - 0.08);
@@ -2490,3 +2706,4 @@ window.addEventListener('load', init);
 </script>
 </body>
 </html>
+
